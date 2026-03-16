@@ -12,10 +12,8 @@ import {
   Moon,
   Loader2,
   Check,
-  Search,
   MessageSquare,
   Plus,
-  AlertCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -34,6 +32,7 @@ export default function AgentPage() {
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<number | null>(null);
+  const [session, setSession] = useState<any>(null);
   
   const [conversations] = useState([
     { id: "1", title: "Market Research: EV Charging", createdAt: new Date() },
@@ -41,6 +40,15 @@ export default function AgentPage() {
   ]);
   const [activeConversation] = useState("1");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const getSession = async () => {
+      const supabase = createClient();
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      setSession(currentSession);
+    };
+    getSession();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,104 +62,74 @@ export default function AgentPage() {
     e.preventDefault();
     if (!input.trim() || isProcessing) return;
 
+    const messageText = input.trim();
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim(),
+      content: messageText,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    const topic = input.trim();
     setInput("");
     setIsProcessing(true);
 
     try {
-      // 1. Intent Detection
-      const lowerInput = topic.toLowerCase();
-      let intent: 'research' | 'email' | 'social' = 'research';
-      
-      if (lowerInput.includes('email') || lowerInput.includes('send to') || lowerInput.includes('message to')) {
-        intent = 'email';
-      } else if (lowerInput.includes('tweet') || lowerInput.includes('linkedin') || lowerInput.includes('social') || lowerInput.includes('post')) {
-        intent = 'social';
-      }
-
-      // Step-by-step progress
-      setCurrentStep(1); // Analyzing
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      
-      setCurrentStep(2); // Connecting to AI
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      
-      setCurrentStep(3); // Result/Saving
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token;
-      const userId = session?.user?.id;
-
+      // Intent detection
       let apiUrl = "/api/agent/research";
-      let body: any = { topic, user_id: userId };
+      const lowerInput = messageText.toLowerCase();
 
-      if (intent === 'email') {
+      if (lowerInput.includes("email") || lowerInput.includes("draft") || lowerInput.includes("write") || lowerInput.includes("compose")) {
         apiUrl = "/api/agent/email";
-        // Attempt to extract recipient if possible, or default
-        const recipientMatch = topic.match(/to\s+([^\s,]+)/i);
-        body = { 
-          topic: topic, 
-          recipient: recipientMatch ? recipientMatch[1] : "Potential Lead", 
-          tone: "Professional" 
-        };
-      } else if (intent === 'social') {
+      } else if (lowerInput.includes("post") || lowerInput.includes("tweet") || lowerInput.includes("linkedin") || lowerInput.includes("social")) {
         apiUrl = "/api/agent/social";
-        body = { 
-          topic: topic, 
-          platform: lowerInput.includes('linkedin') ? "LinkedIn" : "X" 
-        };
       }
+
+      // Steps animation
+      setCurrentStep(1);
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setCurrentStep(2);
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      setCurrentStep(3);
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
       const response = await fetch(apiUrl, {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ 
+          topic: messageText, 
+          user_id: session?.user?.id,
+          // For email API we might need recipient/tone but we'll let it default or extract from prompt in future
+          recipient: "Potential Lead",
+          tone: "Professional",
+          platform: lowerInput.includes("linkedin") ? "LinkedIn" : "X"
+        })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        if (data.error?.includes("No API key found")) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: Date.now().toString(),
-              role: "assistant",
-              content: "No API key found. Please add your API key in Settings.",
-              timestamp: new Date(),
-              isError: true,
-            },
-          ]);
-        } else {
-          throw new Error(data.error || `Failed to handle ${intent} request`);
-        }
-        return;
+        throw new Error(data.error || "Failed to process request");
       }
 
-      let content = "";
-      if (intent === 'research') content = data.report.content;
-      else if (intent === 'email') content = `**Subject:** ${data.email.subject}\n\n${data.email.body}\n\n*Draft saved to Email Autopilot.*`;
-      else if (intent === 'social') content = `${data.post.content}\n\n*Draft scheduled on ${data.post.platform}.*`;
+      let aiResponse = "";
+      if (apiUrl === "/api/agent/research") {
+        aiResponse = data.report.content;
+      } else if (apiUrl === "/api/agent/email") {
+        aiResponse = `**Subject:** ${data.email.subject}\n\n${data.email.body}`;
+      } else if (apiUrl === "/api/agent/social") {
+        aiResponse = `${data.post.content}`;
+      }
 
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           role: "assistant",
-          content: content,
+          content: aiResponse,
           timestamp: new Date(),
         },
       ]);
@@ -247,21 +225,9 @@ export default function AgentPage() {
                       : "bg-[#0D0D0D] border border-[#1F1F1F] text-white"
                   }`}
                 >
-                  {msg.isError && msg.content.includes("Settings") ? (
-                    <div className="flex flex-col gap-2">
-                       <p className="text-[#EF4444] font-medium">{msg.content.replace("Settings", "")}</p>
-                       <Link 
-                         href="/settings" 
-                         className="text-white underline hover:text-white/80 transition-colors w-fit font-bold"
-                       >
-                         Settings
-                       </Link>
-                    </div>
-                  ) : (
-                    <div className="prose prose-invert max-w-none text-sm leading-relaxed">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    </div>
-                  )}
+                  <div className="prose prose-invert max-w-none text-sm leading-relaxed">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
                   <p className={`text-[10px] mt-1 ${msg.role === 'user' ? 'text-black/50' : 'text-[#555555]'}`}>
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
@@ -299,7 +265,7 @@ export default function AgentPage() {
                       animate={{ opacity: 1, x: 0 }}
                       className="flex items-center gap-2 text-xs text-[#888888]"
                     >
-                      <span className="text-white">💾</span> Saving to your Research dashboard...
+                      <span className="text-white">💾</span> Finalizing results...
                       {isProcessing && currentStep === 3 && <Loader2 className="h-3 w-3 animate-spin text-white" />}
                     </motion.div>
                   )}
