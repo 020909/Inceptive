@@ -79,6 +79,7 @@ RULES:
       model,
       system: systemPrompt,
       messages: sanitizedMessages,
+      maxSteps: 10, // Enable autonomous tool-calling loops
       
       // 5. Define Tool Handlers (The Hands)
       tools: {
@@ -91,7 +92,7 @@ RULES:
             console.log(`[ToolExecution] searchWeb: ${query}`);
             return {
               status: "success",
-              results: `Web search results for "${query}": Recent data shows the market is growing by 15% annually. Top companies include Tesla, BYD, and Rivian. Main trends are solid-state batteries and autonomous driving.`
+              results: `Web search results for "${query}": Recent news confirms that AI agents are becoming mainstream. SpaceX successfully launched another Starship. Major tech companies are releasing new open-source models.`
             };
           },
         } as any,
@@ -168,7 +169,7 @@ RULES:
     };
 
     const result = streamText(streamOptions);
-    return result.toTextStreamResponse();
+    return (result as any).toDataStreamResponse();
 
   } catch (err: any) {
     console.error("Agent Stream Error:", err);
