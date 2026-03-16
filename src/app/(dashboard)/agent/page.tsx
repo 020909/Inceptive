@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
@@ -15,8 +16,6 @@ import {
   MessageSquare,
   Plus,
   AlertCircle,
-  Database,
-  Radio,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -29,38 +28,18 @@ interface Message {
   isError?: boolean;
 }
 
-interface Step {
-  id: string;
-  label: string;
-  status: "pending" | "loading" | "complete";
-  icon: any;
-}
-
-interface Conversation {
-  id: string;
-  title: string;
-  createdAt: Date;
-}
-
-const RESEARCH_KEYWORDS = [
-  "research",
-  "find",
-  "analyze",
-  "look up",
-  "investigate",
-  "competitors",
-  "market",
-];
-
 export default function AgentPage() {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentSteps, setCurrentSteps] = useState<Step[]>([]);
+  const [currentStep, setCurrentStep] = useState<number | null>(null);
   
-  const [conversations] = useState<Conversation[]>([]);
-  const [activeConversation, setActiveConversation] = useState<string | null>(null);
+  const [conversations] = useState([
+    { id: "1", title: "Market Research: EV Charging", createdAt: new Date() },
+    { id: "2", title: "Competitor Analysis", createdAt: new Date() },
+  ]);
+  const [activeConversation] = useState("1");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -69,7 +48,7 @@ export default function AgentPage() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, currentSteps]);
+  }, [messages, currentStep]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,96 +62,73 @@ export default function AgentPage() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    const userPrompt = input.trim().toLowerCase();
+    const topic = input.trim();
     setInput("");
     setIsProcessing(true);
 
-    // Initial steps
-    const steps: Step[] = [
-      { id: "1", label: "RESEARCH — Analyzing your request...", status: "loading", icon: Search },
-      { id: "2", label: "FETCHING — Calling AI with your API key...", status: "pending", icon: Radio },
-      { id: "3", label: "SAVING — Saving report to your dashboard...", status: "pending", icon: Database },
-      { id: "4", label: "COMPLETE — Report ready. Check your Research tab.", status: "pending", icon: Check },
-    ];
-    setCurrentSteps(steps);
+    try {
+      // Step-by-step progress with 800ms delays as requested
+      setCurrentStep(1);
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      
+      setCurrentStep(2);
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      
+      setCurrentStep(3);
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
-    // Detect research intent
-    const isResearchRequest = RESEARCH_KEYWORDS.some(k => userPrompt.includes(k));
+      const response = await fetch("/api/agent/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          topic: topic, 
+          user_id: user?.id 
+        }),
+      });
 
-    if (isResearchRequest) {
-      try {
-        // Step 1: Analyzing... (done by UI)
-        await new Promise(r => setTimeout(r, 1000));
-        setCurrentSteps(prev => prev.map(s => s.id === "1" ? { ...s, status: "complete" } : s.id === "2" ? { ...s, status: "loading" } : s));
+      const data = await response.json();
 
-        // Step 2: Calling AI
-        const response = await fetch("/api/agent/research", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topic: userPrompt, user_id: user?.id }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          if (data.error?.includes("No API key found")) {
-            setMessages(prev => [...prev, {
+      if (!response.ok) {
+        if (data.error?.includes("No API key found")) {
+          setMessages((prev) => [
+            ...prev,
+            {
               id: Date.now().toString(),
               role: "assistant",
-              content: "You haven't added an API key yet. Go to Settings to add your Gemini, OpenAI, or Claude key.",
+              content: "No API key found. Please add your API key in Settings.",
               timestamp: new Date(),
-              isError: true
-            }]);
-            setCurrentSteps([]);
-            return;
-          }
+              isError: true,
+            },
+          ]);
+        } else {
           throw new Error(data.error || "Failed to conduct research");
         }
+        return;
+      }
 
-        setCurrentSteps(prev => prev.map(s => s.id === "2" ? { ...s, status: "complete" } : s.id === "3" ? { ...s, status: "loading" } : s));
-        
-        // Step 3: Saving... (already done by API, just simulate short delay for UX)
-        await new Promise(r => setTimeout(r, 800));
-        setCurrentSteps(prev => prev.map(s => s.id === "3" ? { ...s, status: "complete" } : s.id === "4" ? { ...s, status: "loading" } : s));
-
-        // Step 4: Complete
-        await new Promise(r => setTimeout(r, 500));
-        setCurrentSteps(prev => prev.map(s => s.id === "4" ? { ...s, status: "complete" } : s));
-
-        // Add final report message
-        setMessages(prev => [...prev, {
+      setMessages((prev) => [
+        ...prev,
+        {
           id: Date.now().toString(),
           role: "assistant",
           content: data.report.content,
           timestamp: new Date(),
-        }]);
-
-      } catch (err: any) {
-        setMessages(prev => [...prev, {
+        },
+      ]);
+    } catch (err: any) {
+      setMessages((prev) => [
+        ...prev,
+        {
           id: Date.now().toString(),
           role: "assistant",
           content: `Error: ${err.message}`,
           timestamp: new Date(),
-          isError: true
-        }]);
-        setCurrentSteps([]);
-      } finally {
-        setIsProcessing(false);
-        // Clear steps after a few seconds
-        setTimeout(() => setCurrentSteps([]), 5000);
-      }
-    } else {
-      // For non-research, we just give a simple response for now or call a generic AI
-      // The requirement focuses on Research fixing.
-      await new Promise(r => setTimeout(r, 1000));
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: "I'm currently specialized in Research tasks. Try asking me to 'Research' a topic or 'Analyze' a market!",
-        timestamp: new Date(),
-      }]);
+          isError: true,
+        },
+      ]);
+    } finally {
       setIsProcessing(false);
-      setCurrentSteps([]);
+      setCurrentStep(null);
     }
   };
 
@@ -184,7 +140,7 @@ export default function AgentPage() {
           <div className="p-4">
             <Button
               className="w-full h-10 bg-[#111111] text-white hover:bg-[#1F1F1F] border border-[#1F1F1F] rounded-lg text-sm font-medium transition-all duration-200"
-              onClick={() => { setMessages([]); setCurrentSteps([]); }}
+              onClick={() => setMessages([])}
             >
               <Plus className="h-4 w-4 mr-2" />
               New Chat
@@ -230,7 +186,7 @@ export default function AgentPage() {
                   What should your AI work on?
                 </h3>
                 <p className="text-sm text-[#888888] max-w-md">
-                  Ask me to research a topic, analyze a market, or find competitors. I&apos;ll execute it in real-time.
+                  I can conduct research, analyze markets, find competitors, and much more. Try asking me "Research the future of SpaceX".
                 </p>
               </div>
             )}
@@ -238,10 +194,12 @@ export default function AgentPage() {
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex ${
+                  msg.role === "user" ? "justify-end" : "justify-start"
+                }`}
               >
                 <div
-                  className={`max-w-3xl rounded-xl px-4 py-3 text-sm ${
+                  className={`max-w-2xl lg:max-w-3xl rounded-xl px-4 py-3 text-sm flex flex-col gap-2 ${
                     msg.role === "user"
                       ? "bg-white text-black"
                       : msg.isError
@@ -250,52 +208,61 @@ export default function AgentPage() {
                   }`}
                 >
                   {msg.isError && msg.content.includes("Settings") ? (
-                    <div>
-                      {msg.content.split("Settings")[0]}
-                      <Link href="/settings" className="text-white underline font-semibold">
-                        Settings
-                      </Link>
-                      {msg.content.split("Settings")[1]}
+                    <div className="flex flex-col gap-2">
+                       <p className="text-[#EF4444] font-medium">{msg.content.replace("Settings", "")}</p>
+                       <Link 
+                         href="/settings" 
+                         className="text-white underline hover:text-white/80 transition-colors w-fit font-bold"
+                       >
+                         Settings
+                       </Link>
                     </div>
                   ) : (
-                    <div className="prose prose-invert prose-sm max-w-none">
-                       <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <div className="prose prose-invert max-w-none text-sm leading-relaxed">
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
                   )}
-                  <p className={`text-[10px] mt-2 ${msg.role === "user" ? "text-black/50" : "text-[#555555]"}`}>
+                  <p className={`text-[10px] mt-1 ${msg.role === 'user' ? 'text-black/50' : 'text-[#555555]'}`}>
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
               </div>
             ))}
 
-            {/* Status Steps */}
+            {/* Steps feedback */}
             <AnimatePresence>
-              {currentSteps.length > 0 && (
-                <div className="space-y-3 pt-4">
-                  {currentSteps.map((step) => (
+              {currentStep !== null && (
+                <div className="space-y-2 pt-2">
+                  {currentStep >= 1 && (
                     <motion.div
-                      key={step.id}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className={`flex items-center gap-3 px-4 py-2 rounded-lg border text-sm transition-colors duration-200 ${
-                        step.status === "loading"
-                          ? "bg-[#111111] border-[#333333] text-white"
-                          : step.status === "complete"
-                          ? "bg-[#0D0D0D] border-[#1F1F1F] text-[#888888]"
-                          : "bg-transparent border-transparent text-[#555555]"
-                      }`}
+                      className="flex items-center gap-2 text-xs text-[#888888]"
                     >
-                      {step.status === "loading" ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <step.icon className={`h-3.5 w-3.5 ${step.status === 'complete' ? 'text-white' : ''}`} />
-                      )}
-                      <span className="font-medium">{step.label}</span>
-                      {step.status === "complete" && <Check className="h-3 w-3 ml-auto text-white" />}
+                      <span className="text-white">🔍</span> Analyzing your request...
+                      {currentStep > 1 && <Check className="h-3 w-3 text-emerald-500" />}
                     </motion.div>
-                  ))}
+                  )}
+                  {currentStep >= 2 && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex items-center gap-2 text-xs text-[#888888]"
+                    >
+                      <span className="text-white">📡</span> Calling AI with your API key...
+                      {currentStep > 2 && <Check className="h-3 w-3 text-emerald-500" />}
+                    </motion.div>
+                  )}
+                  {currentStep >= 3 && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex items-center gap-2 text-xs text-[#888888]"
+                    >
+                      <span className="text-white">💾</span> Saving to your Research dashboard...
+                      {isProcessing && currentStep === 3 && <Loader2 className="h-3 w-3 animate-spin text-white" />}
+                    </motion.div>
+                  )}
                 </div>
               )}
             </AnimatePresence>

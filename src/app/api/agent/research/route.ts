@@ -1,66 +1,47 @@
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export const maxDuration = 120; // Research can take time
+export const maxDuration = 120; // Allow 2 minutes for research
 
 export async function POST(request: Request) {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
   const body = await request.json();
   const { topic, user_id } = body;
 
-  const targetUserId = user_id || authUser?.id;
-
-  if (!targetUserId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user_id || !topic) {
+    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  if (!topic) {
-    return NextResponse.json({ error: "Topic is required" }, { status: 400 });
-  }
+  // Create Supabase client using the SERVICE_ROLE_KEY so it bypasses RLS
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
-  // Fetch user API key and provider from Supabase using service role for security
-  // (Standard client is fine here as we're on the server)
+  // Query user settings
   const { data: userData, error: userError } = await supabase
     .from("users")
-    .select("api_provider, api_key_encrypted")
-    .eq("id", targetUserId)
+    .select("api_key_encrypted, api_provider")
+    .eq("id", user_id)
     .single();
 
-  if (userError || !userData) {
-    return NextResponse.json({ error: "Could not fetch user settings" }, { status: 500 });
-  }
-
-  const { api_provider, api_key_encrypted } = userData;
-
-  if (!api_key_encrypted) {
+  if (userError || !userData?.api_key_encrypted) {
     return NextResponse.json(
       { error: "No API key found. Please add your API key in Settings." },
       { status: 400 }
     );
   }
 
-  const systemPrompt = "You are a professional research analyst working for Inceptive, a 24/7 AI agent platform. Given a research topic, produce a detailed structured research report with the following clearly labeled sections: EXECUTIVE SUMMARY (2-3 sentences), KEY FINDINGS (exactly 5 bullet points starting with •), MARKET SIZE AND OPPORTUNITY (specific numbers and percentages), MAIN PLAYERS AND COMPETITION (list top 5 with one line each), KEY TRENDS (3 trends shaping the space), RISKS AND CHALLENGES (3 main risks), SOURCES AND REFERENCES (list 5 credible sources with URLs). Be specific, factual, data-driven, and professional.";
+  const { api_key_encrypted: apiKey, api_provider } = userData;
+  const systemPrompt = "You are a professional research analyst working for Inceptive, a 24/7 AI agent platform. Given a research topic, produce a detailed structured research report with these clearly labeled sections: EXECUTIVE SUMMARY (2-3 sentences), KEY FINDINGS (exactly 5 bullet points starting with •), MARKET SIZE AND OPPORTUNITY (specific numbers), MAIN PLAYERS AND COMPETITION (top 5 with one line each), KEY TRENDS (3 trends), RISKS AND CHALLENGES (3 risks), SOURCES AND REFERENCES (5 sources with URLs). Be specific, factual, and professional.";
 
-  let content = "";
+  let responseText = "";
 
   try {
-    if (api_provider === "gemini") {
-      const genAI = new GoogleGenerativeAI(api_key_encrypted);
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.0-flash",
-        systemInstruction: systemPrompt
-      });
-      const result = await model.generateContent(topic);
-      content = result.response.text();
-    } else if (api_provider === "openai") {
-      const openai = new OpenAI({ apiKey: api_key_encrypted });
+    if (api_provider === "openai") {
+      const openai = new OpenAI({ apiKey });
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -68,60 +49,55 @@ export async function POST(request: Request) {
           { role: "user", content: topic },
         ],
       });
-      content = response.choices[0]?.message?.content || "";
+      responseText = response.choices[0]?.message?.content || "";
     } else if (api_provider === "claude") {
-      const anthropic = new Anthropic({ apiKey: api_key_encrypted });
+      const anthropic = new Anthropic({ apiKey });
       const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20240620", // Matches requirement for sonnet
-        max_tokens: 4000,
+        model: "claude-3-5-sonnet-20240620",
+        max_tokens: 2000,
         system: systemPrompt,
         messages: [{ role: "user", content: topic }],
       });
-      // Handle the content parts safely
-      content = response.content
-        .filter(block => block.type === 'text')
-        .map(block => (block as any).text)
-        .join('\n');
+      const contentBlock = response.content[0];
+      if (contentBlock.type === 'text') {
+        responseText = contentBlock.text;
+      }
     } else {
-      return NextResponse.json({ error: "Invalid API provider selected" }, { status: 400 });
+      // Default to gemini or explicit gemini
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const result = await model.generateContent(systemPrompt + "\n\nTopic: " + topic);
+      responseText = result.response.text();
     }
 
-    // Count URLs in the response
+    // Count URLs in the response for sources_count
     const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/gi;
-    const urls = content.match(urlRegex) || [];
+    const urls = responseText.match(urlRegex) || [];
     const sources_count = urls.length;
 
-    // Save report to Supabase
-    const { data: report, error: insertError } = await supabase
+    // Save to research_reports table
+    const { data: savedReport, error: insertError } = await supabase
       .from("research_reports")
       .insert({
-        user_id: targetUserId,
+        user_id,
         topic,
-        content,
+        content: responseText,
         sources_count,
+        created_at: new Date().toISOString(),
       })
       .select()
       .single();
 
     if (insertError) {
       console.error("Insert Error:", insertError);
-      return NextResponse.json({ error: "Failed to save report" }, { status: 500 });
+      return NextResponse.json({ error: "Failed to save the report." }, { status: 500 });
     }
 
-    return NextResponse.json({
-      success: true,
-      report: {
-        id: report.id,
-        topic: report.topic,
-        content: report.content,
-        sources_count: report.sources_count,
-        created_at: report.created_at
-      }
-    });
+    return NextResponse.json({ success: true, report: savedReport });
   } catch (err: any) {
     console.error("Research API Error:", err);
     return NextResponse.json(
-      { error: err.message || "An error occurred during research" },
+      { error: err.message || "Failed to generate research report" },
       { status: 500 }
     );
   }

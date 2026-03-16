@@ -1,8 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
-const EXCLUDED_FIELDS = ["password", "salt"]; // Security precaution
-
 export async function GET() {
   const supabase = await createServerSupabaseClient();
   const {
@@ -13,31 +11,43 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data, error } = await supabase
+  // Query the users table
+  let { data, error } = await supabase
     .from("users")
     .select("api_provider, api_key_encrypted")
     .eq("id", user.id)
     .single();
 
-  if (error) {
+  // If no row exists, insert one first as requested
+  if (error && error.code === 'PGRST116') {
+    const { data: newUser, error: insertError } = await supabase
+      .from("users")
+      .insert({ id: user.id, email: user.email })
+      .select("api_provider, api_key_encrypted")
+      .single();
+    
+    if (insertError) {
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
+    data = newUser;
+  } else if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Mask the API key for security (e.g., sk-...def)
+  // Mask the API key showing only last 4 characters as requested
   let maskedKey = "";
   if (data?.api_key_encrypted) {
     const key = data.api_key_encrypted;
-    if (key.length > 8) {
-      maskedKey = `${key.slice(0, 4)}...${key.slice(-4)}`;
+    if (key.length > 4) {
+      maskedKey = `••••${key.slice(-4)}`;
     } else {
-      maskedKey = "••••••••";
+      maskedKey = "••••";
     }
   }
 
   return NextResponse.json({
-    api_provider: data?.api_provider || "openai",
+    api_provider: data?.api_provider || "gemini",
     api_key_masked: maskedKey,
-    has_key: !!data?.api_key_encrypted
   });
 }
 
@@ -52,21 +62,16 @@ export async function PATCH(request: Request) {
   }
 
   const body = await request.json();
-  const { api_provider, api_key } = body;
+  const { api_provider, api_key: api_key_encrypted } = body;
 
-  const updates: Record<string, string> = {};
-  if (api_provider) updates.api_provider = api_provider;
-  if (api_key) updates.api_key_encrypted = api_key;
-
-  if (Object.keys(updates).length === 0) {
-    return NextResponse.json({ error: "No fields to update" }, { status: 400 });
-  }
-
-  // We use the authenticated user's ID to ensure they only update their own record
+  // Upsert into users table as requested
   const { error } = await supabase
     .from("users")
-    .update(updates)
-    .eq("id", user.id);
+    .upsert({ 
+      id: user.id, 
+      api_provider, 
+      api_key_encrypted 
+    });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
