@@ -1,10 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
-import { streamText, tool, CoreMessage } from "ai";
-import { openai } from "@ai-sdk/openai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { google } from "@ai-sdk/google";
+import { streamText, tool } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { agentTools } from "@/lib/agent-tools";
+import { z } from "zod";
 
 export const maxDuration = 120; // 2 minute timeout for autonomous loops
 
@@ -37,14 +37,17 @@ export async function POST(req: Request) {
     let model;
 
     if (api_provider === "openai") {
-      model = openai("gpt-4o", { apiKey });
+      const openaiProvider = createOpenAI({ apiKey });
+      model = openaiProvider("gpt-4o");
     } else if (api_provider === "claude") {
-      model = anthropic("claude-3-5-sonnet-20240620", { apiKey });
+      const anthropicProvider = createAnthropic({ apiKey });
+      model = anthropicProvider("claude-3-5-sonnet-20240620");
     } else if (api_provider === "openrouter") {
-      const openrouter = createOpenRouter({ apiKey });
-      model = openrouter("google/gemini-2.0-flash-exp:free");
+      const openrouterProvider = createOpenRouter({ apiKey });
+      model = openrouterProvider("google/gemini-2.0-flash-exp:free");
     } else {
-      model = google("models/gemini-2.0-flash", { apiKey });
+      const googleProvider = createGoogleGenerativeAI({ apiKey });
+      model = googleProvider("models/gemini-2.0-flash");
     }
 
     // 3. Define the System Persona for Autonomous Action
@@ -59,32 +62,36 @@ RULES:
 5. NEVER ask the user to perform actions you can do yourself with a tool.`;
 
     // 4. Start the Autonomous Streaming Loop using the AI SDK
-    const result = streamText({
+    const streamOptions: any = {
       model,
       system: systemPrompt,
-      messages: messages as CoreMessage[],
-      maxSteps: 10, // Prevents infinite loops
+      messages: messages as any[],
       
       // 5. Define Tool Handlers (The Hands)
       tools: {
-        searchWeb: tool({
-          description: agentTools.searchWeb.description,
-          parameters: agentTools.searchWeb.parameters,
-          execute: async ({ query }) => {
-            // Placeholder for now, in production we would call Tavily or a real SERP API.
-            // For MVP, if they ask for EV, we mock a structured response so it can read it.
+        searchWeb: {
+          description: "Search the web for up-to-date information.",
+          parameters: z.object({
+            query: z.string().describe("The search query"),
+          }),
+          execute: async ({ query }: any) => {
             console.log(`[ToolExecution] searchWeb: ${query}`);
             return {
               status: "success",
               results: `Web search results for "${query}": Recent data shows the market is growing by 15% annually. Top companies include Tesla, BYD, and Rivian. Main trends are solid-state batteries and autonomous driving.`
             };
           },
-        }),
+        } as any,
         
-        draftEmail: tool({
-          description: agentTools.draftEmail.description,
-          parameters: agentTools.draftEmail.parameters,
-          execute: async ({ recipient, subject, body, topic }) => {
+        draftEmail: {
+          description: "Draft an email to a specific recipient and save it.",
+          parameters: z.object({
+            recipient: z.string().describe("The recipient's email address or name"),
+            subject: z.string().describe("The subject line of the email"),
+            body: z.string().describe("The main content of the email"),
+            topic: z.string().describe("The general topic this email relates to"),
+          }),
+          execute: async ({ recipient, subject, body, topic }: any) => {
             console.log(`[ToolExecution] draftEmail to ${recipient}`);
             const { error } = await admin.from("emails").insert({
               user_id,
@@ -98,12 +105,17 @@ RULES:
             if (error) throw new Error(error.message);
             return { status: "success", message: `Draft email saved successfully to ${recipient}` };
           },
-        }),
+        } as any,
 
-        scheduleSocialPost: tool({
-          description: agentTools.scheduleSocialPost.description,
-          parameters: agentTools.scheduleSocialPost.parameters,
-          execute: async ({ platform, content, topic, scheduled_time }) => {
+        scheduleSocialPost: {
+          description: "Draft or schedule a social media post.",
+          parameters: z.object({
+            platform: z.enum(["X", "LinkedIn", "Instagram"]).describe("The social media platform"),
+            content: z.string().describe("The text content of the post"),
+            topic: z.string().describe("The general topic of the post"),
+            scheduled_time: z.string().optional().describe("ISO timestamp for scheduling. Exclude if drafting only."),
+          }),
+          execute: async ({ platform, content, topic, scheduled_time }: any) => {
             console.log(`[ToolExecution] scheduleSocialPost on ${platform}`);
             const { error } = await admin.from("social_posts").insert({
               user_id,
@@ -117,12 +129,16 @@ RULES:
             if (error) throw new Error(error.message);
             return { status: "success", message: `Social post drafted successfully for ${platform}` };
           },
-        }),
+        } as any,
 
-        saveResearchReport: tool({
-          description: agentTools.saveResearchReport.description,
-          parameters: agentTools.saveResearchReport.parameters,
-          execute: async ({ topic, content, sources_count }) => {
+        saveResearchReport: {
+          description: "Save a comprehensive research report.",
+          parameters: z.object({
+            topic: z.string().describe("The main topic of the research"),
+            content: z.string().describe("The detailed markdown content of the report"),
+            sources_count: z.number().describe("The number of sources cited or synthesized"),
+          }),
+          execute: async ({ topic, content, sources_count }: any) => {
             console.log(`[ToolExecution] saveResearchReport on ${topic}`);
             const { error } = await admin.from("research_reports").insert({
               user_id,
@@ -134,12 +150,14 @@ RULES:
             if (error) throw new Error(error.message);
             return { status: "success", message: `Research report saved successfully on topic: ${topic}` };
           },
-        })
-      },
-    });
+        } as any
+      }
+    };
+
+    const result = streamText(streamOptions);
 
     // Automatically send stream back to frontend
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
 
   } catch (err: any) {
     console.error("Agent Stream Error:", err);

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
-import { useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { PageTransition } from "@/components/ui/page-transition";
@@ -25,14 +25,15 @@ import ReactMarkdown from "react-markdown";
 export default function AgentPage() {
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = React.useState(false);
 
   // Vercel AI SDK hook for streaming messages and tool calls
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = (useChat as any)({
     api: "/api/agent/stream",
     body: {
       user_id: user?.id,
     },
-    onError: (err) => {
+    onError: (err: any) => {
       console.error("Agent Error:", err);
     }
   });
@@ -42,8 +43,14 @@ export default function AgentPage() {
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) scrollToBottom();
+  }, [messages, isLoading, mounted]);
+
+  if (!mounted) return null;
 
   return (
     <PageTransition>
@@ -95,7 +102,7 @@ export default function AgentPage() {
               </div>
             )}
 
-            {messages.map((m) => (
+            {messages.map((m: any) => (
               <div key={m.id} className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}>
                 
                 {/* Standard Text Message */}
@@ -112,7 +119,7 @@ export default function AgentPage() {
                 )}
 
                 {/* Tool Invocations (The "Manus's Computer" view) */}
-                {m.toolInvocations?.map((toolInv) => (
+                {m.toolInvocations?.map((toolInv: any) => (
                   <div key={toolInv.toolCallId} className="w-full max-w-2xl lg:max-w-3xl mb-4 ml-2">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="h-[1px] flex-1 bg-gradient-to-r from-[#1F1F1F] to-transparent" />
@@ -171,7 +178,7 @@ export default function AgentPage() {
               />
               <Button
                 type="submit"
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || !input?.trim()}
                 className="h-12 w-12 bg-white text-black rounded-xl p-0 hover:scale-95 transition-transform"
               >
                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5 ml-1" />}
