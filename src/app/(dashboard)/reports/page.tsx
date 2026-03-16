@@ -4,201 +4,264 @@ import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { PageTransition } from "@/components/ui/page-transition";
-import { EmptyState } from "@/components/ui/empty-state";
-import { LoadingCard } from "@/components/ui/loading-skeleton";
-import type { WeeklyReport } from "@/types/database";
-import { FileBarChart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, TrendingUp, BarChart3, Target } from "lucide-react";
 import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
-  Tooltip,
-  ResponsiveContainer,
   CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
 } from "recharts";
+import { toast } from "sonner";
 
-function LatestReportCard({ report }: { report: WeeklyReport }) {
-  const stats = [
-    {
-      label: "Hours worked by your AI",
-      value: `${report.hours_worked}h`,
-    },
-    { label: "Tasks completed", value: report.tasks_completed },
-    { label: "Emails sent", value: report.emails_sent },
-    {
-      label: "Research reports delivered",
-      value: (report.report_json as Record<string, number>)?.research_reports || 0,
-    },
-    {
-      label: "Social media posts scheduled",
-      value: (report.report_json as Record<string, number>)?.social_posts || 0,
-    },
-    { label: "Goals active", value: report.goals_active },
-  ];
-
-  return (
-    <div className="rounded-xl border border-[#1F1F1F] bg-[#0D0D0D] p-8 mb-8">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xs font-semibold text-[#888888] uppercase tracking-wider">
-          Inceptive Weekly Report
-        </h2>
-        <span className="text-xs text-[#555555]">
-          {new Date(report.week_start).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })}{" "}
-          —{" "}
-          {new Date(report.week_end).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </span>
-      </div>
-
-      <div className="space-y-4">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="flex items-center justify-between py-2 border-b border-[#1F1F1F] last:border-b-0"
-          >
-            <span className="text-sm text-[#888888]">{stat.label}</span>
-            <span className="text-sm font-semibold text-white">
-              {stat.value}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-6 pt-6 border-t border-[#1F1F1F]">
-        <p className="text-xs text-[#555555] text-center">
-          Every Sunday. Delivered to your inbox.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CustomTooltip({ active, payload, label }: any) {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-[#0D0D0D] border border-[#1F1F1F] rounded-lg px-3 py-2">
-        <p className="text-xs text-[#888888]">{label}</p>
-        <p className="text-sm font-semibold text-white">
-          {payload[0].value} tasks
-        </p>
-      </div>
-    );
-  }
-  return null;
+interface WeeklyReport {
+  id: string;
+  week_start: string;
+  date_range_str: string;
+  hours_worked: string;
+  tasks_completed: number;
+  emails_sent: number;
+  research_reports: number;
+  social_posts: number;
+  goals_active: number;
+  chart_data: any[];
+  created_at: string;
 }
 
 export default function ReportsPage() {
   const { user } = useAuth();
-  const supabase = createClient();
   const [reports, setReports] = useState<WeeklyReport[]>([]);
+  const [topGoal, setTopGoal] = useState<{ title: string; progress_percent: number } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+
+  const fetchReports = async (token: string) => {
+    try {
+      const res = await fetch("/api/reports", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch reports");
+      const data = await res.json();
+      setReports(data.reports || []);
+      setTopGoal(data.topGoal);
+    } catch (error) {
+      console.error(error);
+      toast.error("Could not load reports");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!user) return;
-
-    const fetchReports = async () => {
-      const { data } = await supabase
-        .from("weekly_reports")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("week_start", { ascending: false })
-        .limit(8);
-
-      setReports((data as WeeklyReport[]) || []);
-      setLoading(false);
+    const init = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        setAccessToken(session.access_token);
+        if (user) fetchReports(session.access_token);
+      } else {
+        setLoading(false);
+      }
     };
+    init();
+  }, [user]);
 
-    fetchReports();
-  }, [user, supabase]);
-
-  const chartData = [...reports]
-    .reverse()
-    .map((r) => ({
-      week: new Date(r.week_start).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-      tasks: r.tasks_completed,
-    }));
+  const handleGenerateSample = async () => {
+    if (!accessToken || !user) return;
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate");
+      toast.success("Sample report generated");
+      fetchReports(accessToken);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   if (loading) {
     return (
       <PageTransition>
-        <div>
-          <h1 className="text-2xl font-bold text-white mb-1">
-            Weekly Reports
-          </h1>
-          <p className="text-sm text-[#888888] mb-6">
-            Your AI&apos;s productivity summary, delivered weekly
-          </p>
-          <LoadingCard />
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl font-bold text-white mb-2">Weekly Reports</h1>
+          <Button disabled className="bg-[#111] text-[#888] h-10 px-4">
+            <TrendingUp className="h-4 w-4 mr-2" /> Generate Report
+          </Button>
         </div>
+        <div className="rounded-xl border border-[#1F1F1F] bg-[#0D0D0D] p-10 skeleton h-[400px]" />
       </PageTransition>
     );
   }
 
+  const latestReport = reports.length > 0 ? reports[0] : null;
+
   return (
     <PageTransition>
-      <div>
-        <h1 className="text-2xl font-bold text-white mb-1">Weekly Reports</h1>
-        <p className="text-sm text-[#888888] mb-6">
-          Your AI&apos;s productivity summary, delivered weekly
-        </p>
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-2">Weekly Reports</h1>
+            <p className="text-sm text-[#888888]">Analytics and insights from your AI</p>
+          </div>
+          {reports.length > 0 && (
+            <Button 
+              onClick={handleGenerateSample}
+              disabled={generating}
+              className="bg-[#111111] border border-[#333] text-white hover:bg-[#1A1A1A] rounded-lg h-10 px-4 text-sm font-medium transition-all"
+            >
+              {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <TrendingUp className="h-4 w-4 mr-2" />}
+              Generate Latest
+            </Button>
+          )}
+        </div>
 
         {reports.length === 0 ? (
-          <EmptyState
-            icon={FileBarChart}
-            title="No reports yet"
-            description="Weekly reports will appear here every Sunday with a full summary of your AI's activity."
-          />
+          <div className="flex flex-col items-center justify-center py-32 text-center border border-[#1F1F1F] rounded-xl bg-[#0D0D0D]">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#111111] border border-[#333333] mb-6">
+              <BarChart3 className="h-8 w-8 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">No reports generated</h3>
+            <p className="text-[#888888] mb-6 max-w-sm">
+              Generate your first weekly report to see analytics based on your real platform data.
+            </p>
+            <Button 
+              onClick={handleGenerateSample}
+              disabled={generating}
+              className="bg-white text-black hover:bg-white/90"
+            >
+              {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : "Generate Sample Report"}
+            </Button>
+          </div>
         ) : (
-          <>
-            <LatestReportCard report={reports[0]} />
+          latestReport && (
+            <div className="space-y-6">
+              {/* Main Report Card */}
+              <div className="rounded-2xl border border-[#1F1F1F] bg-black overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
+                
+                <div className="p-8 md:p-12 relative z-10">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
+                    <div>
+                      <h2 className="text-[11px] font-bold text-[#888888] uppercase tracking-[0.2em] mb-3">Inceptive Weekly Report</h2>
+                      <p className="text-2xl md:text-3xl font-light text-white">{latestReport.date_range_str}</p>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 w-fit">
+                      <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-xs font-semibold tracking-wide text-emerald-500 uppercase">All systems running</span>
+                    </div>
+                  </div>
 
-            {/* Bar chart */}
-            {chartData.length > 1 && (
-              <div className="rounded-xl border border-[#1F1F1F] bg-[#0D0D0D] p-6">
-                <h3 className="text-sm font-semibold text-white mb-6">
-                  Tasks Completed Over Time
-                </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="#1F1F1F"
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="week"
-                      tick={{ fill: "#888888", fontSize: 12 }}
-                      axisLine={{ stroke: "#1F1F1F" }}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fill: "#888888", fontSize: 12 }}
-                      axisLine={{ stroke: "#1F1F1F" }}
-                      tickLine={false}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar
-                      dataKey="tasks"
-                      fill="#ffffff"
-                      radius={[4, 4, 0, 0]}
-                      maxBarSize={40}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-8 mb-12">
+                    <div className="space-y-6">
+                      <div className="flex justify-between items-end border-b border-[#1F1F1F] pb-4">
+                        <span className="text-[#888888] text-sm">Hours worked by your AI</span>
+                        <span className="text-white font-mono text-xl">{latestReport.hours_worked}h</span>
+                      </div>
+                      <div className="flex justify-between items-end border-b border-[#1F1F1F] pb-4">
+                        <span className="text-[#888888] text-sm">Tasks completed</span>
+                        <span className="text-white font-mono text-xl">{latestReport.tasks_completed}</span>
+                      </div>
+                      <div className="flex justify-between items-end border-b border-[#1F1F1F] pb-4">
+                        <span className="text-[#888888] text-sm">Emails sent</span>
+                        <span className="text-white font-mono text-xl">{latestReport.emails_sent}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      <div className="flex justify-between items-end border-b border-[#1F1F1F] pb-4">
+                        <span className="text-[#888888] text-sm">Research reports</span>
+                        <span className="text-white font-mono text-xl">{latestReport.research_reports}</span>
+                      </div>
+                      <div className="flex justify-between items-end border-b border-[#1F1F1F] pb-4">
+                        <span className="text-[#888888] text-sm">Social posts scheduled</span>
+                        <span className="text-white font-mono text-xl">{latestReport.social_posts}</span>
+                      </div>
+                      <div className="flex justify-between items-end border-b border-[#1F1F1F] pb-4">
+                        <span className="text-[#888888] text-sm">Goals active</span>
+                        <span className="text-white font-mono text-xl">{latestReport.goals_active}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {topGoal && (
+                    <div className="bg-[#050505] border border-[#1F1F1F] rounded-xl p-6 mb-12">
+                      <div className="flex items-center gap-3 mb-4">
+                        <Target className="h-5 w-5 text-white" />
+                        <h3 className="text-sm font-semibold text-white">Current Priority Focus</h3>
+                      </div>
+                      <p className="text-white mb-4 text-lg">{topGoal.title}</p>
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1 h-1.5 bg-[#1F1F1F] rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-white rounded-full"
+                            style={{ width: `${topGoal.progress_percent}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-bold text-white min-w-[3ch]">{topGoal.progress_percent}%</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-8 border-t border-[#1F1F1F] flex justify-between items-center text-xs text-[#555555]">
+                    <span>Every Sunday. Delivered to your inbox.</span>
+                    <span>Inceptive AI</span>
+                  </div>
+                </div>
               </div>
-            )}
-          </>
+
+              {/* Chart Section */}
+              {latestReport.chart_data && latestReport.chart_data.length > 0 && (
+                <div className="rounded-2xl border border-[#1F1F1F] bg-black p-8">
+                  <h3 className="text-sm font-bold text-white mb-8">Tasks Completed (Past 8 Weeks)</h3>
+                  <div className="h-[250px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={latestReport.chart_data}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1F1F1F" vertical={false} />
+                        <XAxis 
+                          dataKey="week" 
+                          stroke="#555555" 
+                          fontSize={12} 
+                          tickLine={false}
+                          axisLine={false}
+                          dy={10}
+                        />
+                        <YAxis 
+                          stroke="#555555" 
+                          fontSize={12} 
+                          tickLine={false}
+                          axisLine={false}
+                          dx={-10}
+                        />
+                        <Tooltip 
+                          cursor={{ fill: '#111111' }}
+                          contentStyle={{ backgroundColor: '#0D0D0D', border: '1px solid #1F1F1F', borderRadius: '8px', color: '#FFF' }}
+                          itemStyle={{ color: '#FFF' }}
+                        />
+                        <Bar 
+                          dataKey="tasks_completed" 
+                          fill="#FFFFFF" 
+                          radius={[4, 4, 0, 0]} 
+                          maxBarSize={40}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
         )}
       </div>
     </PageTransition>

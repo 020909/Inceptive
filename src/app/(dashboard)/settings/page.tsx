@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
-import { useAuth } from "@/lib/auth-context";
 import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,25 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, Loader2, Check } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-
-const timezones = [
-  "America/New_York",
-  "America/Chicago",
-  "America/Denver",
-  "America/Los_Angeles",
-  "America/Anchorage",
-  "Pacific/Honolulu",
-  "Europe/London",
-  "Europe/Paris",
-  "Europe/Berlin",
-  "Asia/Tokyo",
-  "Asia/Shanghai",
-  "Asia/Kolkata",
-  "Australia/Sydney",
-];
 
 const providers = [
   { id: "gemini", name: "Google Gemini" },
@@ -41,141 +23,95 @@ const providers = [
 ];
 
 export default function SettingsPage() {
-  const { user, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
-
-  // Settings state
-  const [apiProvider, setApiProvider] = useState<string>("openai");
-  const [apiKey, setApiKey] = useState("");
-  const [maskedKey, setMaskedKey] = useState("");
-  const [wakeTime, setWakeTime] = useState("07:00");
-  const [timezone, setTimezone] = useState("America/New_York");
-
-  // Connected accounts (mock for demo)
-  const [connectedAccounts] = useState({
-    gmail: false,
-    twitter: false,
-    linkedin: false,
-  });
+  
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [apiProvider, setApiProvider] = useState<string>("gemini");
+  const [apiKeyInput, setApiKeyInput] = useState("");
+  const [hasApiKey, setHasApiKey] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-
-    const fetchSettings = async () => {
+    const fetchSessionAndSettings = async () => {
       try {
-        const supabaseClient = createClient();
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        const token = session?.access_token;
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.access_token) {
+          setLoading(false);
+          return;
+        }
 
-        const response = await fetch("/api/settings", {
+        const token = session.access_token;
+        setAccessToken(token);
+
+        const res = await fetch("/api/settings", {
           headers: {
-            'Authorization': `Bearer ${token}`
+            "Authorization": `Bearer ${token}`
           }
         });
-        const data = await response.json();
         
-        if (data.api_provider) setApiProvider(data.api_provider);
-        if (data.masked_key) setMaskedKey(data.masked_key);
-        
-        // Fetch other user profile data from Supabase
-        const { data: profile } = await supabaseClient
-          .from("users")
-          .select("wake_time, timezone")
-          .eq("id", user.id)
-          .single();
-
-        if (profile) {
-          if (profile.wake_time) setWakeTime(profile.wake_time);
-          if (profile.timezone) setTimezone(profile.timezone);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.api_provider) setApiProvider(data.api_provider);
+          setHasApiKey(data.has_api_key);
         }
-      } catch (error) {
-        console.error("Failed to fetch settings:", error);
+      } catch (err) {
+        console.error("Failed to fetch settings", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSettings();
-  }, [user]);
+    fetchSessionAndSettings();
+  }, []);
 
-  const handleSaveAIConfig = async () => {
-    if (!user) return;
+  const handleSave = async () => {
+    if (!accessToken) return;
+    if (!apiProvider || !apiKeyInput) {
+      toast.error("Please select a provider and enter an API key");
+      return;
+    }
+
     setSaving(true);
-
     try {
-      const supabaseClient = createClient();
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      const token = session?.access_token;
-
-      const response = await fetch("/api/settings", {
+      const res = await fetch("/api/settings", {
         method: "PATCH",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          "Authorization": `Bearer ${accessToken}`
         },
-        body: JSON.stringify({
-          api_provider: apiProvider,
-          api_key_encrypted: apiKey || undefined, // Send as api_key_encrypted
-        }),
+        body: JSON.stringify({ 
+          api_provider: apiProvider, 
+          api_key_encrypted: apiKeyInput 
+        })
       });
 
-      if (!response.ok) throw new Error("Failed to save AI config");
-
-      toast.success("AI configuration saved successfully");
-      if (apiKey) {
-        // Update mask if a new key was saved
-        setMaskedKey(`••••${apiKey.slice(-4)}`);
-        setApiKey("");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to save settings");
       }
-    } catch (error) {
-      toast.error("Failed to save settings");
+
+      toast.success("Settings saved");
+      setHasApiKey(true);
+      setApiKeyInput(""); // Clear input after successful save
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleSaveSchedule = async () => {
-    if (!user) return;
-    setSaving(true);
-
-    const supabaseClient = createClient();
-    const { error } = await supabaseClient
-      .from("users")
-      .update({
-        wake_time: wakeTime,
-        timezone: timezone,
-      })
-      .eq("id", user.id);
-
-    if (error) {
-      toast.error("Failed to save schedule");
-    } else {
-      toast.success("Schedule settings saved");
-    }
-    setSaving(false);
-  };
-
-  const handleDeleteAccount = async () => {
-    if (!confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-      return;
-    }
-    toast.error("Account deletion requires admin support. Please contact support@inceptive.ai");
-  };
-
   if (loading) {
     return (
       <PageTransition>
-        <div className="max-w-2xl">
+        <div className="max-w-xl">
           <h1 className="text-2xl font-bold text-white mb-6">Settings</h1>
-          <div className="space-y-6">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-xl border border-[#1F1F1F] bg-[#0D0D0D] p-6">
-                <div className="h-5 w-40 shimmer rounded mb-4" />
-                <div className="h-11 w-full shimmer rounded" />
-              </div>
-            ))}
+          <div className="rounded-xl border border-[#1F1F1F] bg-[#0D0D0D] p-6">
+            <div className="h-6 w-32 shimmer rounded mb-6" />
+            <div className="h-11 w-full shimmer rounded mb-4" />
+            <div className="h-11 w-full shimmer rounded" />
           </div>
         </div>
       </PageTransition>
@@ -184,24 +120,24 @@ export default function SettingsPage() {
 
   return (
     <PageTransition>
-      <div className="max-w-2xl">
+      <div className="max-w-xl">
         <h1 className="text-2xl font-bold text-white mb-6">Settings</h1>
 
-        {/* AI Provider */}
-        <section className="rounded-xl border border-[#1F1F1F] bg-[#0D0D0D] p-6 mb-6">
-          <h2 className="text-base font-semibold text-white mb-4">
-            AI Provider
-          </h2>
-          <div className="space-y-4">
+        <div className="rounded-xl border border-[#1F1F1F] bg-[#0D0D0D] p-6">
+          <h2 className="text-lg font-semibold text-white mb-6">AI Provider Configuration</h2>
+          
+          <div className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-sm text-[#888888]">Provider</Label>
-              <Select value={apiProvider} onValueChange={(v) => v && setApiProvider(v)}>
+              <Label className="text-sm font-medium text-[#888888]">
+                Select AI Provider
+              </Label>
+              <Select value={apiProvider} onValueChange={setApiProvider}>
                 <SelectTrigger className="h-11 bg-[#111111] border-[#333333] text-white rounded-lg focus:border-white focus:ring-0">
-                  <SelectValue />
+                  <SelectValue placeholder="Select a provider" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0D0D0D] border-[#1F1F1F]">
                   {providers.map((p) => (
-                    <SelectItem key={p.id} value={p.id} className="text-white hover:bg-[#111111]">
+                    <SelectItem key={p.id} value={p.id} className="text-white hover:bg-[#111111] focus:bg-[#111111] focus:text-white cursor-pointer">
                       {p.name}
                     </SelectItem>
                   ))}
@@ -210,15 +146,15 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm text-[#888888]">
-                API Key {maskedKey && <span className="text-[#555555]">({maskedKey})</span>}
+              <Label className="text-sm font-medium text-[#888888]">
+                API Key
               </Label>
               <div className="relative">
                 <Input
                   type={showApiKey ? "text" : "password"}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={maskedKey ? "Enter new key to replace existing" : "Enter your API key"}
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  placeholder={hasApiKey ? "••••••••••••" : "Paste your API key here"}
                   className="h-11 bg-[#111111] border-[#333333] text-white placeholder:text-[#555555] rounded-lg focus:border-white focus:ring-0 transition-colors duration-200 pr-11"
                 />
                 <button
@@ -233,126 +169,20 @@ export default function SettingsPage() {
                   )}
                 </button>
               </div>
+              <p className="text-xs text-[#555555] mt-2">
+                Your API key is stored securely and is only used to run your connected agents.
+              </p>
             </div>
 
             <Button
-              onClick={handleSaveAIConfig}
+              onClick={handleSave}
               disabled={saving}
-              className="bg-white text-black hover:bg-white/90 rounded-lg h-10 px-6 text-sm font-medium transition-all duration-200"
+              className="w-full bg-white text-black hover:bg-white/90 rounded-lg h-11 text-sm font-medium transition-all duration-200 mt-2"
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Settings"}
             </Button>
           </div>
-        </section>
-
-        {/* Wake Up Time */}
-        <section className="rounded-xl border border-[#1F1F1F] bg-[#0D0D0D] p-6 mb-6">
-          <h2 className="text-base font-semibold text-white mb-4">
-            Wake Up Time
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm text-[#888888]">Time</Label>
-              <Input
-                type="time"
-                value={wakeTime}
-                onChange={(e) => setWakeTime(e.target.value)}
-                className="h-11 bg-[#111111] border-[#333333] text-white rounded-lg focus:border-white focus:ring-0 transition-colors duration-200"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm text-[#888888]">Timezone</Label>
-              <Select value={timezone} onValueChange={(v) => v && setTimezone(v)}>
-                <SelectTrigger className="h-11 bg-[#111111] border-[#333333] text-white rounded-lg focus:border-white focus:ring-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-[#0D0D0D] border-[#1F1F1F] max-h-60">
-                  {timezones.map((tz) => (
-                    <SelectItem
-                      key={tz}
-                      value={tz}
-                      className="text-white hover:bg-[#111111]"
-                    >
-                      {tz.replace(/_/g, " ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <Button
-            onClick={handleSaveSchedule}
-            disabled={saving}
-            className="mt-4 bg-white text-black hover:bg-white/90 rounded-lg h-10 px-6 text-sm font-medium transition-all duration-200"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
-          </Button>
-        </section>
-
-        {/* Connected Accounts */}
-        <section className="rounded-xl border border-[#1F1F1F] bg-[#0D0D0D] p-6 mb-6">
-          <h2 className="text-base font-semibold text-white mb-4">
-            Connected Accounts
-          </h2>
-          <div className="space-y-3">
-            {[
-              { name: "Gmail", connected: connectedAccounts.gmail },
-              { name: "Twitter", connected: connectedAccounts.twitter },
-              { name: "LinkedIn", connected: connectedAccounts.linkedin },
-            ].map((account) => (
-              <div
-                key={account.name}
-                className="flex items-center justify-between py-3 border-b border-[#1F1F1F] last:border-b-0"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-white">{account.name}</span>
-                  {account.connected && (
-                    <div className="flex items-center gap-1">
-                      <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                      <span className="text-xs text-emerald-500">
-                        Connected
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  className="h-9 bg-transparent border-[#333333] text-white hover:bg-[#111111] rounded-lg text-sm transition-all duration-200"
-                >
-                  {account.connected ? "Disconnect" : "Connect"}
-                </Button>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <Separator className="bg-[#1F1F1F] my-6" />
-
-        {/* Danger Zone */}
-        <section className="rounded-xl border border-[#EF4444]/30 bg-[#0D0D0D] p-6">
-          <h2 className="text-base font-semibold text-[#EF4444] mb-2">
-            Danger Zone
-          </h2>
-          <p className="text-sm text-[#888888] mb-4">
-            Once you delete your account, there is no going back. Please be
-            certain.
-          </p>
-          <div className="flex gap-3">
-            <Button
-              onClick={handleDeleteAccount}
-              className="bg-[#EF4444] text-white hover:bg-[#DC2626] rounded-lg h-10 px-6 text-sm font-medium transition-all duration-200"
-            >
-              Delete Account
-            </Button>
-            <Button
-              onClick={signOut}
-              variant="outline"
-              className="bg-transparent border-[#333333] text-white hover:bg-[#111111] rounded-lg h-10 px-6 text-sm font-medium transition-all duration-200"
-            >
-              Sign Out
-            </Button>
-          </div>
-        </section>
+        </div>
       </div>
     </PageTransition>
   );

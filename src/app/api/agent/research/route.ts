@@ -10,21 +10,33 @@ export async function POST(request: Request) {
   const body = await request.json();
   const { topic, user_id } = body;
 
-  if (!user_id || !topic) {
+  if (!topic) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
   // Create Supabase client using the SERVICE_ROLE_KEY so it bypasses RLS
-  const supabase = createClient(
+  const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const token = authHeader.replace('Bearer ', '')
+  const { data: { user }, error: authError } = await admin.auth.getUser(token)
+  
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  
+  const verifiedUserId = user.id;
+
   // Query user settings
-  const { data: userData, error: userError } = await supabase
+
+  const { data: userData, error: userError } = await admin
     .from("users")
     .select("api_key_encrypted, api_provider")
-    .eq("id", user_id)
+    .eq("id", verifiedUserId)
     .single();
 
   if (userError || !userData?.api_key_encrypted) {
@@ -76,10 +88,10 @@ export async function POST(request: Request) {
     const sources_count = urls.length;
 
     // Save to research_reports table
-    const { data: savedReport, error: insertError } = await supabase
+    const { data: savedReport, error: insertError } = await admin
       .from("research_reports")
       .insert({
-        user_id,
+        user_id: verifiedUserId,
         topic,
         content: responseText,
         sources_count,
