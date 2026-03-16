@@ -111,7 +111,9 @@ Be specific, factual, and professional.`;
         })
       });
       const data = await response.json();
-      if (data.error) throw new Error(data.error.message || "OpenRouter error");
+      if (data.error) {
+        throw new Error(`OpenRouter Error (${api_provider}): ${data.error.message || "Endpoint not found"}`);
+      }
       responseText = data.choices?.[0]?.message?.content || "";
 
     } else {

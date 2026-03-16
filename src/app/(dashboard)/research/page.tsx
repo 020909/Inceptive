@@ -122,10 +122,15 @@ export default function ResearchPage() {
             </div>
             <Button
               type="submit"
-              disabled={researching || !topic.trim()}
+              disabled={researching || !topic.trim() || !accessToken}
               className="h-14 px-8 bg-white text-black hover:bg-white/90 rounded-xl text-base font-medium transition-all duration-200 shrink-0"
             >
-              {researching ? (
+              {!accessToken ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  Syncing session...
+                </>
+              ) : researching ? (
                 <>
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                   Researching...

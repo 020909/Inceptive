@@ -193,13 +193,13 @@ export default function AgentPage() {
               <Input
                 value={input}
                 onChange={handleInputChange}
-                placeholder="Give your agent a complex mission..."
-                disabled={isLoading}
+                placeholder={!user?.id ? "Syncing session..." : "Give your agent a complex mission..."}
+                disabled={isLoading || !user?.id}
                 className="flex-1 h-12 bg-[#111111] border-[#333333] text-white placeholder:text-[#555555] rounded-xl focus:border-white focus:ring-0 shadow-inner"
               />
               <Button
                 type="submit"
-                disabled={isLoading || !input?.trim()}
+                disabled={isLoading || !input?.trim() || !user?.id}
                 className="h-12 w-12 bg-white text-black rounded-xl p-0 hover:scale-95 transition-transform"
               >
                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5 ml-1" />}
