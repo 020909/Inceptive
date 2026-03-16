@@ -87,6 +87,7 @@ function AgentChatContent({ user }: { user: any }) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantContent = "";
+      let buffer = ""; // Buffer for partial chunks
 
       // Initialize assistant message
       setMessages(prev => [...prev, { id: assistantMsgId, role: "assistant", content: "" }]);
@@ -96,11 +97,22 @@ function AgentChatContent({ user }: { user: any }) {
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter(l => l.trim() !== '');
+        buffer += chunk;
+        
+        const lines = buffer.split('\n');
+        // Keep the last (possibly partial) line in the buffer
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
+          if (!line.trim()) continue;
+
           const firstColon = line.indexOf(':');
-          if (firstColon === -1) continue;
+          
+          // Fallback: If no colon (not SDK protocol), treat line as raw text
+          if (firstColon === -1) {
+            assistantContent += line;
+            continue;
+          }
 
           const type = line.substring(0, firstColon);
           const content = line.substring(firstColon + 1);
@@ -119,7 +131,7 @@ function AgentChatContent({ user }: { user: any }) {
                   toolInvocations: [...toolInvocations, { ...toolCall, state: 'call' }] 
                 };
               }));
-              setLastTrace(`TOOL_CALL: ${toolCall.toolName}`);
+              setLastTrace(`TOOL: ${toolCall.toolName}`);
             } else if (type === '2') { // Tool Result
               const toolResult = JSON.parse(content);
               setMessages(prev => prev.map(m => {
@@ -129,12 +141,12 @@ function AgentChatContent({ user }: { user: any }) {
                 );
                 return { ...m, toolInvocations };
               }));
-              setLastTrace(`TOOL_RESULT: ${toolResult.toolCallId.substring(0,8)}`);
             } else if (type === 'd') { // Finish Data
               setLastTrace("DONE");
             }
           } catch (e) {
-            console.warn("Parse error for chunk:", line, e);
+            // Final fallback: if JSON parse fails, append raw content
+            assistantContent += content;
           }
         }
 
