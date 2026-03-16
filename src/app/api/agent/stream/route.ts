@@ -161,8 +161,9 @@ RULES:
 
     const result = streamText(streamOptions);
 
-    // Automatically send stream back to frontend
-    return result.toTextStreamResponse();
+    // Use toDataStreamResponse to send the full protocol (0:, 1:, 2:, etc.) 
+    // This allows the manual reader to see tool calls and text.
+    return result.toDataStreamResponse();
 
   } catch (err: any) {
     console.error("Agent Stream Error:", err);
