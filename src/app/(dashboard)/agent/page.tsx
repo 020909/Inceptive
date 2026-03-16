@@ -67,29 +67,58 @@ export default function AgentPage() {
     setIsProcessing(true);
 
     try {
-      // Step-by-step progress with 800ms delays as requested
-      setCurrentStep(1);
+      // 1. Intent Detection
+      const lowerInput = topic.toLowerCase();
+      let intent: 'research' | 'email' | 'social' = 'research';
+      
+      if (lowerInput.includes('email') || lowerInput.includes('send to') || lowerInput.includes('message to')) {
+        intent = 'email';
+      } else if (lowerInput.includes('tweet') || lowerInput.includes('linkedin') || lowerInput.includes('social') || lowerInput.includes('post')) {
+        intent = 'social';
+      }
+
+      // Step-by-step progress
+      setCurrentStep(1); // Analyzing
       await new Promise((resolve) => setTimeout(resolve, 800));
       
-      setCurrentStep(2);
+      setCurrentStep(2); // Connecting to AI
       await new Promise((resolve) => setTimeout(resolve, 800));
       
-      setCurrentStep(3);
+      setCurrentStep(3); // Result/Saving
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      const userId = session?.user?.id;
 
-      const response = await fetch('/api/agent/research', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
+      let apiUrl = "/api/agent/research";
+      let body: any = { topic, user_id: userId };
+
+      if (intent === 'email') {
+        apiUrl = "/api/agent/email";
+        // Attempt to extract recipient if possible, or default
+        const recipientMatch = topic.match(/to\s+([^\s,]+)/i);
+        body = { 
+          topic: topic, 
+          recipient: recipientMatch ? recipientMatch[1] : "Potential Lead", 
+          tone: "Professional" 
+        };
+      } else if (intent === 'social') {
+        apiUrl = "/api/agent/social";
+        body = { 
+          topic: topic, 
+          platform: lowerInput.includes('linkedin') ? "LinkedIn" : "X" 
+        };
+      }
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`
         },
-        body: JSON.stringify({
-          topic: topic,
-          user_id: session?.user?.id
-        })
+        body: JSON.stringify(body),
       });
 
       const data = await response.json();
@@ -107,17 +136,22 @@ export default function AgentPage() {
             },
           ]);
         } else {
-          throw new Error(data.error || "Failed to conduct research");
+          throw new Error(data.error || `Failed to handle ${intent} request`);
         }
         return;
       }
+
+      let content = "";
+      if (intent === 'research') content = data.report.content;
+      else if (intent === 'email') content = `**Subject:** ${data.email.subject}\n\n${data.email.body}\n\n*Draft saved to Email Autopilot.*`;
+      else if (intent === 'social') content = `${data.post.content}\n\n*Draft scheduled on ${data.post.platform}.*`;
 
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           role: "assistant",
-          content: data.report.content,
+          content: content,
           timestamp: new Date(),
         },
       ]);
