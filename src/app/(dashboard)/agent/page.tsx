@@ -96,23 +96,45 @@ function AgentChatContent({ user }: { user: any }) {
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        
-        // The Vercel AI SDK stream format is usually prefixes like 0:"...", but we'll try to handle raw text too
-        // For simplicity in this manual override, we assume the stream might be text-tokens
-        // If it's the complex protocol, we'd need a more complex parser, but simple tokenization usually works for display
-        
         const lines = chunk.split('\n').filter(l => l.trim() !== '');
+
         for (const line of lines) {
-          // Simple heuristic to extract content from Vercel AI SDK protocol
-          // Format usually: 0:"token" or 1:{"toolCall":...}
-          if (line.startsWith('0:')) {
-            try {
-               const content = JSON.parse(line.substring(2));
-               assistantContent += content;
-            } catch (e) { assistantContent += line.substring(2); }
-          } else if (line.startsWith('d:')) {
-             // Data/Finish record
-             setLastTrace("DONE");
+          const firstColon = line.indexOf(':');
+          if (firstColon === -1) continue;
+
+          const type = line.substring(0, firstColon);
+          const content = line.substring(firstColon + 1);
+
+          try {
+            if (type === '0') { // Text chunk
+              const text = JSON.parse(content);
+              assistantContent += text;
+            } else if (type === '1') { // Tool Call
+              const toolCall = JSON.parse(content);
+              setMessages(prev => prev.map(m => {
+                if (m.id !== assistantMsgId) return m;
+                const toolInvocations = m.toolInvocations || [];
+                return { 
+                  ...m, 
+                  toolInvocations: [...toolInvocations, { ...toolCall, state: 'call' }] 
+                };
+              }));
+              setLastTrace(`TOOL_CALL: ${toolCall.toolName}`);
+            } else if (type === '2') { // Tool Result
+              const toolResult = JSON.parse(content);
+              setMessages(prev => prev.map(m => {
+                if (m.id !== assistantMsgId) return m;
+                const toolInvocations = (m.toolInvocations || []).map(ti => 
+                  ti.toolCallId === toolResult.toolCallId ? { ...ti, state: 'result', result: toolResult.result } : ti
+                );
+                return { ...m, toolInvocations };
+              }));
+              setLastTrace(`TOOL_RESULT: ${toolResult.toolCallId.substring(0,8)}`);
+            } else if (type === 'd') { // Finish Data
+              setLastTrace("DONE");
+            }
+          } catch (e) {
+            console.warn("Parse error for chunk:", line, e);
           }
         }
 
@@ -174,6 +196,39 @@ function AgentChatContent({ user }: { user: any }) {
                 </div>
               </div>
             )}
+
+            {m.toolInvocations?.map((toolInv: any) => (
+              <div key={toolInv.toolCallId} className="w-full max-w-2xl lg:max-w-3xl mb-4 ml-2">
+                <div className="bg-[#050505] border border-[#1F1F1F] rounded-lg p-3 overflow-hidden">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-[#888] uppercase tracking-wider">
+                      <ToolIcon toolName={toolInv.toolName} />
+                      <span>{toolInv.toolName}</span>
+                    </div>
+                    {toolInv.state === "result" ? (
+                      <span className="text-xs bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded border border-emerald-500/20">Success</span>
+                    ) : (
+                      <div className="flex items-center gap-2 text-[10px] text-[#555] animate-pulse">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Thinking...
+                      </div>
+                    )}
+                  </div>
+                  <div className="bg-black border border-[#111] rounded p-2 text-xs font-mono text-[#555] whitespace-pre-wrap overflow-x-auto">
+                    <span className="text-[#888]">// Executing:</span>
+                    <br />
+                    {JSON.stringify(toolInv.args, null, 2)}
+                  </div>
+                  {toolInv.state === "result" && (
+                    <div className="mt-2 bg-[#0A0A0A] border border-[#1F1F1F] rounded p-2 text-xs font-mono text-emerald-500/80 max-h-32 overflow-y-auto whitespace-pre-wrap">
+                      <span className="text-[#555]">// Result:</span>
+                      <br />
+                      {typeof toolInv.result === 'object' ? JSON.stringify(toolInv.result, null, 2) : String(toolInv.result)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         ))}
 
@@ -256,6 +311,18 @@ export default function AgentPage() {
       </div>
     </PageTransition>
   );
+}
+
+function ToolIcon({ toolName }: { toolName: string }) {
+  const cn = "h-4 w-4";
+  switch (toolName) {
+    case "searchWeb": return <Globe className={cn} />;
+    case "draftEmail": return <Mail className={cn} />;
+    case "scheduleSocialPost": return <Share2 className={cn} />;
+    case "saveResearchReport": return <FileText className={cn} />;
+    case "updateGoalProgress": return <Target className={cn} />;
+    default: return <Cpu className={cn} />;
+  }
 }
 
 function BotIcon({ className }: { className?: string }) {
