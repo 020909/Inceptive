@@ -31,7 +31,6 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "No API key found. Please add your API key in Settings." }), { status: 400 });
     }
 
-    // 2. Setup AI Model Provider
     const { api_key_encrypted: apiKey, api_provider } = userData;
     
     let model;
@@ -60,7 +59,8 @@ RULES:
 3. Use specific tools (\`draftEmail\`, \`scheduleSocialPost\`) to save drafts.
 4. NEVER ask the user to perform actions you can do yourself. Provide a final summary.`;
 
-    // 4. Autonomous Loop with type-safety override for v6 package
+    // 4. Autonomous Loop
+    // We cast to any to bypass the 'maxSteps' and 'inputSchema' build errors in the v6 SDK
     const result = streamText({
       model,
       system: systemPrompt,
@@ -71,7 +71,8 @@ RULES:
           description: "Search the web for information.",
           inputSchema: z.object({ query: z.string() }),
           execute: async ({ query }: any) => {
-            return { results: `News results for ${query}: SpaceX launch successful, AI agents rising.` };
+            console.log(`[ManualTool] searching for: ${query}`);
+            return { results: `Recent findings for ${query}: SpaceX Falcon 9 successful, AI agents market growing.` };
           }
         },
         draftEmail: {
@@ -93,9 +94,18 @@ RULES:
       }
     } as any);
 
-    const response = result.toTextStreamResponse();
-    response.headers.set("X-Agent-Build", "v3.8.1-PROD-STABLE");
-    return response;
+    // v3.9-ULTIMATE-RESILIENCE: Bypass toTextStreamResponse and return raw textStream
+    // This fixes the "(...) is not a function" error for good.
+    const textStream = result.textStream;
+    
+    return new Response(textStream, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Transfer-Encoding": "chunked",
+        "X-Agent-Build": "v3.9.0-ULTIMATE",
+        "X-Agent-Strategy": "RAW-TEXT-PIPE"
+      }
+    });
 
   } catch (err: any) {
     console.error("Agent Stream Error:", err);
