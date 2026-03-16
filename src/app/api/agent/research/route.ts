@@ -103,7 +103,7 @@ Be specific, factual, and professional.`;
           "X-Title": "Inceptive"
         },
         body: JSON.stringify({
-          model: "google/gemini-2.0-flash-exp",
+          model: "google/gemini-2.0-flash-exp:free",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: topic }

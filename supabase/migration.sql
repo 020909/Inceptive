@@ -9,7 +9,7 @@ CREATE TABLE public.users (
   wake_time TEXT DEFAULT '07:00',
   timezone TEXT DEFAULT 'America/New_York',
   api_key_encrypted TEXT,
-  api_provider TEXT CHECK (api_provider IN ('claude', 'openai', 'gemini'))
+  api_provider TEXT CHECK (api_provider IN ('claude', 'openai', 'gemini', 'openrouter'))
 );
 
 -- Goals

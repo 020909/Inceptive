@@ -45,8 +45,10 @@ export default function AgentPage() {
 
   const onAgentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!input?.trim()) return;
+    
     if (!user?.id) {
-      toast.error("Please wait... loading session");
+      toast.error("Still synchronizing your session... please wait 2 seconds.");
       return;
     }
     // Force user_id into the body for this specific request

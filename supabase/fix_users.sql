@@ -1,6 +1,16 @@
 -- Add missing columns to users table if they don't exist
 ALTER TABLE users ADD COLUMN IF NOT EXISTS api_key_encrypted TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS api_provider TEXT DEFAULT 'gemini';
+
+-- Ensure the constraint allows openrouter
+DO $$ 
+BEGIN 
+  ALTER TABLE users DROP CONSTRAINT IF EXISTS users_api_provider_check;
+  ALTER TABLE users ADD CONSTRAINT users_api_provider_check CHECK (api_provider IN ('claude', 'openai', 'gemini', 'openrouter'));
+EXCEPTION 
+  WHEN undefined_object THEN NULL; 
+END $$;
+
 ALTER TABLE users ADD COLUMN IF NOT EXISTS wake_time TEXT DEFAULT '06:47';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone TEXT DEFAULT 'America/New_York';
 
