@@ -34,7 +34,8 @@ export async function POST(req: Request) {
 
     // 2. Setup AI Model Provider
     const { api_key_encrypted: apiKey, api_provider } = userData;
-    console.log(`[AgentStream] New request for user: ${user_id}, Provider: ${api_provider}`);
+    console.log(`[AgentStream] Turn ${messages.length} for user: ${user_id}, Provider: ${api_provider}`);
+    
     let model;
 
     if (api_provider === "openai") {
@@ -44,16 +45,19 @@ export async function POST(req: Request) {
       const anthropicProvider = createAnthropic({ apiKey });
       model = anthropicProvider("claude-3-5-sonnet-20240620");
     } else if (api_provider === "openrouter") {
-      // Use standard OpenAI provider directed at OpenRouter for max stability
       const openrouterProvider = createOpenAI({
         apiKey,
         baseURL: "https://openrouter.ai/api/v1",
       });
-      model = openrouterProvider("google/gemini-2.0-flash-001");
+      // Standardize on the most reliable free model ID
+      model = openrouterProvider("google/gemini-2.0-flash-exp:free");
     } else {
       const googleProvider = createGoogleGenerativeAI({ apiKey });
       model = googleProvider("models/gemini-2.0-flash");
     }
+
+    // 2.5 Clean History: Some models crash if Turn 2 has empty assistant content
+    const sanitizedMessages = (messages as any[]).filter(m => m.content?.trim() || m.toolInvocations?.length > 0);
 
     // 3. Define the System Persona for Autonomous Action
     const systemPrompt = `You are Inceptive, a 24/7 highly capable autonomous AI agent. 
@@ -70,7 +74,7 @@ RULES:
     const streamOptions: any = {
       model,
       system: systemPrompt,
-      messages: messages as any[],
+      messages: sanitizedMessages,
       
       // 5. Define Tool Handlers (The Hands)
       tools: {
