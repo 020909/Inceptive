@@ -21,6 +21,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
 
 export default function AgentPage() {
   const { user } = useAuth();
@@ -33,11 +34,28 @@ export default function AgentPage() {
     body: {
       user_id: user?.id,
     },
-    enabled: !!user?.id, // Only enable if user is loaded
+    // We pass user_id again in the submission to be safe
+    onResponse: () => {
+      console.log("Agent started responding...");
+    },
     onError: (err: any) => {
       console.error("Agent Error:", err);
     }
   });
+
+  const onAgentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.id) {
+      toast.error("Please wait... loading session");
+      return;
+    }
+    // Force user_id into the body for this specific request
+    handleSubmit(e, {
+      body: {
+        user_id: user.id
+      }
+    });
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -169,7 +187,7 @@ export default function AgentPage() {
 
           {/* Input Form */}
           <div className="p-4 border-t border-[#1F1F1F] bg-[#050505]">
-            <form onSubmit={handleSubmit} className="flex gap-3 max-w-4xl mx-auto">
+            <form onSubmit={onAgentSubmit} className="flex gap-3 max-w-4xl mx-auto">
               <Input
                 value={input}
                 onChange={handleInputChange}

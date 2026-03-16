@@ -55,6 +55,7 @@ export async function POST(request: Request) {
     }
 
     const { api_key_encrypted: apiKey, api_provider } = userData;
+    console.log(`[ResearchAPI] Using provider: ${api_provider} for user: ${user_id}`);
 
     const systemPrompt = `You are a professional research analyst working for Inceptive, a 24/7 AI agent platform. Given a research topic, produce a detailed structured research report with these clearly labeled sections:
 
