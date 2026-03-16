@@ -56,11 +56,29 @@ export async function POST(request: Request) {
         messages: [{ role: "user", content: topic }],
       });
       const contentBlock = response.content[0];
-      if (contentBlock.type === 'text') {
+      if (contentBlock.type === "text") {
         responseText = contentBlock.text;
       }
+    } else if (api_provider === "openrouter") {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://app.inceptive-ai.com",
+          "X-Title": "Inceptive"
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.0-flash-exp:free",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: topic }
+          ]
+        })
+      });
+      const data = await response.json();
+      responseText = data.choices[0]?.message?.content || "";
     } else {
-      // Default to gemini or explicit gemini
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
       const result = await model.generateContent(systemPrompt + "\n\nTopic: " + topic);
