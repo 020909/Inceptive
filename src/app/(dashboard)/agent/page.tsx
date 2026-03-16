@@ -97,56 +97,55 @@ function AgentChatContent({ user }: { user: any }) {
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk;
+        setLastTrace(`RECEIVING: ${chunk.length}b`);
         
-        const lines = buffer.split('\n');
-        // Keep the last (possibly partial) line in the buffer
-        buffer = lines.pop() || "";
+        // Protocol-Agnostic Aggressive Update:
+        // If it's a standard token (no SDK prefix), just append it.
+        // If it looks like protocol lines (0:"), try to parse them.
+        
+        if (chunk.includes('\n')) {
+          buffer += chunk;
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || "";
 
-        for (const line of lines) {
-          if (!line.trim()) continue;
-
-          const firstColon = line.indexOf(':');
-          
-          // Fallback: If no colon (not SDK protocol), treat line as raw text
-          if (firstColon === -1) {
-            assistantContent += line;
-            continue;
-          }
-
-          const type = line.substring(0, firstColon);
-          const content = line.substring(firstColon + 1);
-
-          try {
-            if (type === '0') { // Text chunk
-              const text = JSON.parse(content);
-              assistantContent += text;
-            } else if (type === '1') { // Tool Call
-              const toolCall = JSON.parse(content);
-              setMessages(prev => prev.map(m => {
-                if (m.id !== assistantMsgId) return m;
-                const toolInvocations = m.toolInvocations || [];
-                return { 
-                  ...m, 
-                  toolInvocations: [...toolInvocations, { ...toolCall, state: 'call' }] 
-                };
-              }));
-              setLastTrace(`TOOL: ${toolCall.toolName}`);
-            } else if (type === '2') { // Tool Result
-              const toolResult = JSON.parse(content);
-              setMessages(prev => prev.map(m => {
-                if (m.id !== assistantMsgId) return m;
-                const toolInvocations = (m.toolInvocations || []).map(ti => 
-                  ti.toolCallId === toolResult.toolCallId ? { ...ti, state: 'result', result: toolResult.result } : ti
-                );
-                return { ...m, toolInvocations };
-              }));
-            } else if (type === 'd') { // Finish Data
-              setLastTrace("DONE");
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            const firstColon = line.indexOf(':');
+            
+            if (firstColon !== -1 && firstColon < 3) {
+              const type = line.substring(0, firstColon);
+              const content = line.substring(firstColon + 1);
+              try {
+                if (type === '0') { // Text chunk
+                   assistantContent += JSON.parse(content);
+                } else if (type === '1') { // Tool Call
+                  const toolCall = JSON.parse(content);
+                  setMessages(prev => prev.map(m => {
+                    if (m.id !== assistantMsgId) return m;
+                    const toolInvocations = m.toolInvocations || [];
+                    return { ...m, toolInvocations: [...toolInvocations, { ...toolCall, state: 'call' }] };
+                  }));
+                } else if (type === '2') { // Tool Result
+                  const toolResult = JSON.parse(content);
+                  setMessages(prev => prev.map(m => {
+                    if (m.id !== assistantMsgId) return m;
+                    const toolInvocations = (m.toolInvocations || []).map(ti => 
+                      ti.toolCallId === toolResult.toolCallId ? { ...ti, state: 'result', result: toolResult.result } : ti
+                    );
+                    return { ...m, toolInvocations };
+                  }));
+                }
+              } catch (e) { assistantContent += content; }
+            } else {
+              assistantContent += line + "\n";
             }
-          } catch (e) {
-            // Final fallback: if JSON parse fails, append raw content
-            assistantContent += content;
+          }
+        } else {
+          // If no newlines, check if it's a likely raw text token
+          if (!chunk.includes(':') || chunk.length > 5) {
+            assistantContent += chunk;
+          } else {
+            buffer += chunk; // Might be a partial protocol chunk
           }
         }
 

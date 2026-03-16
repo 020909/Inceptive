@@ -160,10 +160,7 @@ RULES:
     };
 
     const result = streamText(streamOptions);
-
-    // Use toDataStreamResponse to send the full protocol (0:, 1:, 2:, etc.) 
-    // This allows the manual reader to see tool calls and text.
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
 
   } catch (err: any) {
     console.error("Agent Stream Error:", err);
