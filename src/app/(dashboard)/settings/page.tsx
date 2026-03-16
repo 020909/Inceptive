@@ -28,7 +28,7 @@ export default function SettingsPage() {
   const [showApiKey, setShowApiKey] = useState(false);
   
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [apiProvider, setApiProvider] = useState<string>("gemini");
+  const [apiProvider, setApiProvider] = useState<string | null>("gemini");
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [hasApiKey, setHasApiKey] = useState(false);
 
@@ -131,7 +131,7 @@ export default function SettingsPage() {
               <Label className="text-sm font-medium text-[#888888]">
                 Select AI Provider
               </Label>
-              <Select value={apiProvider} onValueChange={setApiProvider}>
+              <Select value={apiProvider || "gemini"} onValueChange={(value) => setApiProvider(value || 'gemini')}>
                 <SelectTrigger className="h-11 bg-[#111111] border-[#333333] text-white rounded-lg focus:border-white focus:ring-0">
                   <SelectValue placeholder="Select a provider" />
                 </SelectTrigger>

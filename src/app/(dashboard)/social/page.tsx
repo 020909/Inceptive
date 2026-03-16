@@ -236,7 +236,7 @@ export default function SocialPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Platform</Label>
-                <Select value={platform} onValueChange={setPlatform}>
+                <Select value={platform} onValueChange={(v) => v && setPlatform(v)}>
                   <SelectTrigger className="bg-[#111111] border-[#333333] text-white focus:border-white">
                     <SelectValue />
                   </SelectTrigger>
