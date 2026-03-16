@@ -65,15 +65,22 @@ export default function SettingsPage() {
 
     const fetchSettings = async () => {
       try {
-        const response = await fetch("/api/settings");
+        const supabaseClient = createClient();
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const token = session?.access_token;
+
+        const response = await fetch("/api/settings", {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         const data = await response.json();
         
         if (data.api_provider) setApiProvider(data.api_provider);
-        if (data.api_key_masked) setMaskedKey(data.api_key_masked);
+        if (data.masked_key) setMaskedKey(data.masked_key);
         
         // Fetch other user profile data from Supabase
-        const supabase = createClient();
-        const { data: profile } = await supabase
+        const { data: profile } = await supabaseClient
           .from("users")
           .select("wake_time, timezone")
           .eq("id", user.id)
@@ -98,12 +105,19 @@ export default function SettingsPage() {
     setSaving(true);
 
     try {
+      const supabaseClient = createClient();
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const token = session?.access_token;
+
       const response = await fetch("/api/settings", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           api_provider: apiProvider,
-          api_key: apiKey || undefined, // Only send if user typed something new
+          api_key_encrypted: apiKey || undefined, // Send as api_key_encrypted
         }),
       });
 
@@ -112,7 +126,7 @@ export default function SettingsPage() {
       toast.success("AI configuration saved successfully");
       if (apiKey) {
         // Update mask if a new key was saved
-        setMaskedKey(`${apiKey.slice(0, 4)}...${apiKey.slice(-4)}`);
+        setMaskedKey(`••••${apiKey.slice(-4)}`);
         setApiKey("");
       }
     } catch (error) {
@@ -126,8 +140,8 @@ export default function SettingsPage() {
     if (!user) return;
     setSaving(true);
 
-    const supabase = createClient();
-    const { error } = await supabase
+    const supabaseClient = createClient();
+    const { error } = await supabaseClient
       .from("users")
       .update({
         wake_time: wakeTime,
