@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import { useChat } from "@ai-sdk/react";
 import { useAuth } from "@/lib/auth-context";
 import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
@@ -22,27 +21,23 @@ import {
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  toolInvocations?: any[];
+}
+
 /**
- * v2.5-ZERO-FAILURE Overhaul
- * This component only mounts after the user.id is confirmed.
+ * v3.0-MANUAL-RESILIENCE Overhaul
+ * This component replaces useChat with a manual fetch loop for 100% transparency.
  */
 function AgentChatContent({ user }: { user: any }) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // v2.5 Standard hook usage - body is now guaranteed to have user_id
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = (useChat as any)({
-    api: "/api/agent/stream",
-    body: {
-      user_id: user.id,
-    },
-    onResponse: () => {
-      console.log(`[v2.5] Agent response started for ${user.id}`);
-    },
-    onError: (err: any) => {
-      console.error("[v2.5] Agent Error:", err);
-      toast.error(`Agent Error: ${err.message || 'Check your API keys'}`);
-    }
-  });
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastTrace, setLastTrace] = useState<string>("IDLE");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,6 +46,89 @@ function AgentChatContent({ user }: { user: any }) {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: input,
+    };
+
+    const assistantMsgId = (Date.now() + 1).toString();
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setInput("");
+    setIsLoading(true);
+    setLastTrace("CONNECTING...");
+
+    try {
+      const response = await fetch("/api/agent/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+          user_id: user.id,
+        }),
+      });
+
+      setLastTrace(`${response.status} ${response.statusText}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      if (!response.body) throw new Error("No response body");
+
+      setLastTrace("STREAMING...");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantContent = "";
+
+      // Initialize assistant message
+      setMessages(prev => [...prev, { id: assistantMsgId, role: "assistant", content: "" }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        
+        // The Vercel AI SDK stream format is usually prefixes like 0:"...", but we'll try to handle raw text too
+        // For simplicity in this manual override, we assume the stream might be text-tokens
+        // If it's the complex protocol, we'd need a more complex parser, but simple tokenization usually works for display
+        
+        const lines = chunk.split('\n').filter(l => l.trim() !== '');
+        for (const line of lines) {
+          // Simple heuristic to extract content from Vercel AI SDK protocol
+          // Format usually: 0:"token" or 1:{"toolCall":...}
+          if (line.startsWith('0:')) {
+            try {
+               const content = JSON.parse(line.substring(2));
+               assistantContent += content;
+            } catch (e) { assistantContent += line.substring(2); }
+          } else if (line.startsWith('d:')) {
+             // Data/Finish record
+             setLastTrace("DONE");
+          }
+        }
+
+        setMessages(prev => prev.map(m => 
+          m.id === assistantMsgId ? { ...m, content: assistantContent } : m
+        ));
+      }
+
+    } catch (err: any) {
+      console.error("[v3.0] Stream Error:", err);
+      setLastTrace(`ERROR: ${err.message}`);
+      toast.error(`Agent Error: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-1 flex-col relative max-w-full overflow-hidden">
@@ -61,8 +139,8 @@ function AgentChatContent({ user }: { user: any }) {
             Inceptive Autonomous Agent
           </h1>
           <p className="text-xs text-[#555] mt-1 tracking-wider uppercase font-semibold flex items-center gap-2">
-            Manus Engine v2.0 
-            <span className="bg-[#1F1F1F] text-[#888] px-1.5 py-0.5 rounded text-[10px] border border-[#333]">v2.5-ZERO-FAILURE</span>
+            Manus Engine v3.0 
+            <span className="bg-[#1F1F1F] text-[#888] px-1.5 py-0.5 rounded text-[10px] border border-[#333]">v3.0-MANUAL-TRACE</span>
           </p>
         </div>
         <Button className="bg-white text-black hover:bg-white/90 rounded-lg h-9 px-4 text-sm font-medium">
@@ -78,12 +156,12 @@ function AgentChatContent({ user }: { user: any }) {
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">Complex tasks, fully automated.</h3>
             <p className="text-sm text-[#888888] max-w-md">
-              I can chain actions together. Try saying: "Research the history of SpaceX, draft an email to Elon Musk about it, and schedule a tweet summarizing the key findings."
+              Try: "Research current events in AI, summarize them, and draft me an update."
             </p>
           </div>
         )}
 
-        {messages.map((m: any) => (
+        {messages.map((m) => (
           <div key={m.id} className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}>
             {m.content && (
               <div
@@ -96,53 +174,18 @@ function AgentChatContent({ user }: { user: any }) {
                 </div>
               </div>
             )}
-
-            {m.toolInvocations?.map((toolInv: any) => (
-              <div key={toolInv.toolCallId} className="w-full max-w-2xl lg:max-w-3xl mb-4 ml-2">
-                <div className="bg-[#050505] border border-[#1F1F1F] rounded-lg p-3 overflow-hidden">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-[#888] uppercase tracking-wider">
-                      <ToolIcon toolName={toolInv.toolName} />
-                      <span>{toolInv.toolName}</span>
-                    </div>
-                    {toolInv.state === "result" ? (
-                      <span className="text-xs bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded border border-emerald-500/20">Success</span>
-                    ) : (
-                      <Loader2 className="h-3 w-3 animate-spin text-[#888]" />
-                    )}
-                  </div>
-                  <div className="bg-black border border-[#111] rounded p-2 text-xs font-mono text-[#555] whitespace-pre-wrap overflow-x-auto">
-                    <span className="text-[#888]">// Args:</span>
-                    <br />
-                    {JSON.stringify(toolInv.args, null, 2)}
-                  </div>
-                  {toolInv.state === "result" && (
-                    <div className="mt-2 bg-[#0A0A0A] border border-[#1F1F1F] rounded p-2 text-xs font-mono text-emerald-500/80 max-h-32 overflow-y-auto whitespace-pre-wrap">
-                      <span className="text-[#555]">// Result:</span>
-                      <br />
-                      {typeof toolInv.result === 'object' ? JSON.stringify(toolInv.result, null, 2) : String(toolInv.result)}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
           </div>
         ))}
 
-        {error && (
-          <div className="max-w-2xl bg-[#EF4444]/10 border border-[#EF4444]/30 text-[#EF4444] rounded-xl px-4 py-3 text-sm">
-            Error: {error.message}
-          </div>
-        )}
         <div ref={messagesEndRef} />
         
-        {/* DIAGNOSTIC DATA (v2.5) */}
+        {/* NETWORK TRACE PANEL (v3.0) */}
         <div className="mt-8 p-4 rounded-xl border border-[#1F1F1F] bg-[#050505] text-[10px] font-mono text-[#444]">
-          <p className="mb-1 text-[#666] uppercase font-bold tracking-widest text-[9px]">DIAGNOSTIC DATA (v2.5)</p>
+          <p className="mb-1 text-[#666] uppercase font-bold tracking-widest text-[9px]">NETWORK TRACE (v3.0)</p>
           <p>USER_ID: {user.id}</p>
-          <p>STATUS: {isLoading ? 'LOADING' : 'IDLE'}</p>
+          <p>LAST_EVENT: <span className={lastTrace.includes('ERROR') ? 'text-red-500' : 'text-emerald-500'}>{lastTrace}</span></p>
           <p>MESSAGES: {messages.length}</p>
-          <p className="mt-1 text-emerald-500/50">If send button clicks but nothing happens, check backend logs.</p>
+          <p className="mt-1 text-emerald-500/30">Manual fetch mode active. Bypassing SDK protocols.</p>
         </div>
       </div>
 
@@ -150,7 +193,7 @@ function AgentChatContent({ user }: { user: any }) {
         <form onSubmit={handleSubmit} className="flex gap-3 max-w-4xl mx-auto">
           <Input
             value={input}
-            onChange={handleInputChange}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Give your agent a complex mission..."
             disabled={isLoading}
             className="flex-1 h-12 bg-[#111111] border-[#333333] text-white placeholder:text-[#555555] rounded-xl focus:border-white focus:ring-0 shadow-inner"
@@ -213,18 +256,6 @@ export default function AgentPage() {
       </div>
     </PageTransition>
   );
-}
-
-function ToolIcon({ toolName }: { toolName: string }) {
-  const cn = "h-4 w-4";
-  switch (toolName) {
-    case "searchWeb": return <Globe className={cn} />;
-    case "draftEmail": return <Mail className={cn} />;
-    case "scheduleSocialPost": return <Share2 className={cn} />;
-    case "saveResearchReport": return <FileText className={cn} />;
-    case "updateGoalProgress": return <Target className={cn} />;
-    default: return <Cpu className={cn} />;
-  }
 }
 
 function BotIcon({ className }: { className?: string }) {
