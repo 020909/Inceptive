@@ -20,6 +20,7 @@ const providers = [
   { id: "gemini", name: "Google Gemini" },
   { id: "openai", name: "OpenAI" },
   { id: "claude", name: "Anthropic Claude" },
+  { id: "openrouter", name: "OpenRouter" },
 ];
 
 export default function SettingsPage() {
