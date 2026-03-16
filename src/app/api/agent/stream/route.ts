@@ -169,7 +169,7 @@ RULES:
     };
 
     const result = streamText(streamOptions);
-    return (result as any).toDataStreamResponse();
+    return result.toTextStreamResponse();
 
   } catch (err: any) {
     console.error("Agent Stream Error:", err);
