@@ -84,7 +84,7 @@ Be specific, factual, and professional.`;
     } else if (api_provider === "claude") {
       const anthropic = new Anthropic({ apiKey });
       const response = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
+        model: "claude-3-5-sonnet-20240622",
         max_tokens: 2000,
         system: systemPrompt,
         messages: [{ role: "user", content: topic }]
@@ -102,7 +102,7 @@ Be specific, factual, and professional.`;
           "X-Title": "Inceptive"
         },
         body: JSON.stringify({
-          model: "google/gemini-2.0-flash-exp:free",
+          model: "google/gemini-2.0-flash-exp",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: topic }

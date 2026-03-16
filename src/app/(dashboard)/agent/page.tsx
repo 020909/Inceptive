@@ -33,6 +33,7 @@ export default function AgentPage() {
     body: {
       user_id: user?.id,
     },
+    enabled: !!user?.id, // Only enable if user is loaded
     onError: (err: any) => {
       console.error("Agent Error:", err);
     }
