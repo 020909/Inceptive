@@ -48,9 +48,13 @@ export async function POST(req: Request) {
       const openrouterProvider = createOpenAI({
         apiKey,
         baseURL: "https://openrouter.ai/api/v1",
+        headers: {
+          "HTTP-Referer": "https://app.inceptive-ai.com",
+          "X-Title": "Inceptive AI",
+        }
       });
-      // Standardize on the most reliable free model ID
-      model = openrouterProvider("google/gemini-2.0-flash-exp:free");
+      // Match the working Research model ID for consistency
+      model = openrouterProvider("google/gemini-2.0-flash-001");
     } else {
       const googleProvider = createGoogleGenerativeAI({ apiKey });
       model = googleProvider("models/gemini-2.0-flash");
