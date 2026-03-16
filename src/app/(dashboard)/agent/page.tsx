@@ -93,15 +93,37 @@ export default function AgentPage() {
       setCurrentStep(3);
       await new Promise((resolve) => setTimeout(resolve, 800));
 
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            role: "assistant",
+            content: "Please log in to use the agent.",
+            timestamp: new Date(),
+            isError: true,
+          },
+        ]);
+        setIsProcessing(false);
+        setCurrentStep(null);
+        return;
+      }
+
+      const user_id = session.user.id;
+      const access_token = session.access_token;
+
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
+          'Authorization': `Bearer ${access_token}`
         },
         body: JSON.stringify({ 
           topic: messageText, 
-          user_id: session?.user?.id,
+          user_id,
           // For email API we might need recipient/tone but we'll let it default or extract from prompt in future
           recipient: "Potential Lead",
           tone: "Professional",
