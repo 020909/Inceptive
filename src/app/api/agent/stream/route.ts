@@ -34,6 +34,7 @@ export async function POST(req: Request) {
 
     // 2. Setup AI Model Provider
     const { api_key_encrypted: apiKey, api_provider } = userData;
+    console.log(`[AgentStream] New request for user: ${user_id}, Provider: ${api_provider}`);
     let model;
 
     if (api_provider === "openai") {
@@ -43,7 +44,11 @@ export async function POST(req: Request) {
       const anthropicProvider = createAnthropic({ apiKey });
       model = anthropicProvider("claude-3-5-sonnet-20240620");
     } else if (api_provider === "openrouter") {
-      const openrouterProvider = createOpenRouter({ apiKey });
+      // Use standard OpenAI provider directed at OpenRouter for max stability
+      const openrouterProvider = createOpenAI({
+        apiKey,
+        baseURL: "https://openrouter.ai/api/v1",
+      });
       model = openrouterProvider("google/gemini-2.0-flash-001");
     } else {
       const googleProvider = createGoogleGenerativeAI({ apiKey });
