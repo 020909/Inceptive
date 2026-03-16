@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 
 const timezones = [
@@ -34,9 +34,14 @@ const timezones = [
   "Australia/Sydney",
 ];
 
+const providers = [
+  { id: "gemini", name: "Google Gemini" },
+  { id: "openai", name: "OpenAI" },
+  { id: "claude", name: "Anthropic Claude" },
+];
+
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
-  const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -44,10 +49,11 @@ export default function SettingsPage() {
   // Settings state
   const [apiProvider, setApiProvider] = useState<string>("openai");
   const [apiKey, setApiKey] = useState("");
+  const [maskedKey, setMaskedKey] = useState("");
   const [wakeTime, setWakeTime] = useState("07:00");
   const [timezone, setTimezone] = useState("America/New_York");
 
-  // Connected accounts
+  // Connected accounts (mock for demo)
   const [connectedAccounts] = useState({
     gmail: false,
     twitter: false,
@@ -58,48 +64,69 @@ export default function SettingsPage() {
     if (!user) return;
 
     const fetchSettings = async () => {
-      const { data } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", user.id)
-        .single();
+      try {
+        const response = await fetch("/api/settings");
+        const data = await response.json();
+        
+        if (data.api_provider) setApiProvider(data.api_provider);
+        if (data.api_key_masked) setMaskedKey(data.api_key_masked);
+        
+        // Fetch other user profile data from Supabase
+        const supabase = createClient();
+        const { data: profile } = await supabase
+          .from("users")
+          .select("wake_time, timezone")
+          .eq("id", user.id)
+          .single();
 
-      if (data) {
-        setApiProvider(data.api_provider || "openai");
-        setApiKey(data.api_key_encrypted || "");
-        setWakeTime(data.wake_time || "07:00");
-        setTimezone(data.timezone || "America/New_York");
+        if (profile) {
+          if (profile.wake_time) setWakeTime(profile.wake_time);
+          if (profile.timezone) setTimezone(profile.timezone);
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchSettings();
-  }, [user, supabase]);
+  }, [user]);
 
-  const handleSaveProvider = async () => {
+  const handleSaveAIConfig = async () => {
     if (!user) return;
     setSaving(true);
 
-    const { error } = await supabase
-      .from("users")
-      .update({
-        api_provider: apiProvider,
-        api_key_encrypted: apiKey,
-      })
-      .eq("id", user.id);
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          api_provider: apiProvider,
+          api_key: apiKey || undefined, // Only send if user typed something new
+        }),
+      });
 
-    if (error) {
+      if (!response.ok) throw new Error("Failed to save AI config");
+
+      toast.success("AI configuration saved successfully");
+      if (apiKey) {
+        // Update mask if a new key was saved
+        setMaskedKey(`${apiKey.slice(0, 4)}...${apiKey.slice(-4)}`);
+        setApiKey("");
+      }
+    } catch (error) {
       toast.error("Failed to save settings");
-    } else {
-      toast.success("AI provider settings saved");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const handleSaveSchedule = async () => {
     if (!user) return;
     setSaving(true);
 
+    const supabase = createClient();
     const { error } = await supabase
       .from("users")
       .update({
@@ -109,7 +136,7 @@ export default function SettingsPage() {
       .eq("id", user.id);
 
     if (error) {
-      toast.error("Failed to save settings");
+      toast.error("Failed to save schedule");
     } else {
       toast.success("Schedule settings saved");
     }
@@ -159,27 +186,25 @@ export default function SettingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0D0D0D] border-[#1F1F1F]">
-                  <SelectItem value="openai" className="text-white hover:bg-[#111111]">
-                    OpenAI
-                  </SelectItem>
-                  <SelectItem value="claude" className="text-white hover:bg-[#111111]">
-                    Claude
-                  </SelectItem>
-                  <SelectItem value="gemini" className="text-white hover:bg-[#111111]">
-                    Gemini
-                  </SelectItem>
+                  {providers.map((p) => (
+                    <SelectItem key={p.id} value={p.id} className="text-white hover:bg-[#111111]">
+                      {p.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm text-[#888888]">API Key</Label>
+              <Label className="text-sm text-[#888888]">
+                API Key {maskedKey && <span className="text-[#555555]">({maskedKey})</span>}
+              </Label>
               <div className="relative">
                 <Input
                   type={showApiKey ? "text" : "password"}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Enter your API key"
+                  placeholder={maskedKey ? "Enter new key to replace existing" : "Enter your API key"}
                   className="h-11 bg-[#111111] border-[#333333] text-white placeholder:text-[#555555] rounded-lg focus:border-white focus:ring-0 transition-colors duration-200 pr-11"
                 />
                 <button
@@ -197,7 +222,7 @@ export default function SettingsPage() {
             </div>
 
             <Button
-              onClick={handleSaveProvider}
+              onClick={handleSaveAIConfig}
               disabled={saving}
               className="bg-white text-black hover:bg-white/90 rounded-lg h-10 px-6 text-sm font-medium transition-all duration-200"
             >
