@@ -77,13 +77,19 @@ export default function AgentPage() {
       setCurrentStep(3);
       await new Promise((resolve) => setTimeout(resolve, 800));
 
-      const response = await fetch("/api/agent/research", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          topic: topic, 
-          user_id: user?.id 
-        }),
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const response = await fetch('/api/agent/research', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({
+          topic: topic,
+          user_id: session?.user?.id
+        })
       });
 
       const data = await response.json();

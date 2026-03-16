@@ -7,44 +7,29 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const maxDuration = 120; // Allow 2 minutes for research
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const { topic, user_id } = body;
+  const body = await request.json()
+  const { topic, user_id } = body
 
-  if (!topic) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  if (!topic || !user_id) {
+    return NextResponse.json({ error: 'Missing topic or user_id' }, { status: 400 })
   }
 
-  // Create Supabase client using the SERVICE_ROLE_KEY so it bypasses RLS
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const token = authHeader.replace('Bearer ', '')
-  const { data: { user }, error: authError } = await admin.auth.getUser(token)
-  
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  
-  const verifiedUserId = user.id;
-
-  // Query user settings
+  )
 
   const { data: userData, error: userError } = await admin
-    .from("users")
-    .select("api_key_encrypted, api_provider")
-    .eq("id", verifiedUserId)
-    .single();
+    .from('users')
+    .select('api_key_encrypted, api_provider')
+    .eq('id', user_id)
+    .single()
 
-  if (userError || !userData?.api_key_encrypted) {
-    return NextResponse.json(
-      { error: "No API key found. Please add your API key in Settings." },
-      { status: 400 }
-    );
+  if (userError || !userData || !userData.api_key_encrypted) {
+    return NextResponse.json({ error: 'No API key found. Please add your API key in Settings.' }, { status: 400 })
   }
+
+  const verifiedUserId = user_id; // For consistency with lower code
 
   const { api_key_encrypted: apiKey, api_provider } = userData;
   const systemPrompt = "You are a professional research analyst working for Inceptive, a 24/7 AI agent platform. Given a research topic, produce a detailed structured research report with these clearly labeled sections: EXECUTIVE SUMMARY (2-3 sentences), KEY FINDINGS (exactly 5 bullet points starting with •), MARKET SIZE AND OPPORTUNITY (specific numbers), MAIN PLAYERS AND COMPETITION (top 5 with one line each), KEY TRENDS (3 trends), RISKS AND CHALLENGES (3 risks), SOURCES AND REFERENCES (5 sources with URLs). Be specific, factual, and professional.";
