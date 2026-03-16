@@ -103,7 +103,10 @@ export default function AgentPage() {
                 <Cpu className="h-5 w-5 text-[#888]" />
                 Inceptive Autonomous Agent
               </h1>
-              <p className="text-xs text-[#555] mt-1 tracking-wider uppercase font-semibold">Manus Engine v2.0</p>
+              <p className="text-xs text-[#555] mt-1 tracking-wider uppercase font-semibold flex items-center gap-2">
+                Manus Engine v2.0 
+                <span className="bg-[#1F1F1F] text-[#888] px-1.5 py-0.5 rounded text-[10px] border border-[#333]">v2.1-HARDENED</span>
+              </p>
             </div>
             <Button className="bg-white text-black hover:bg-white/90 rounded-lg h-9 px-4 text-sm font-medium">
               <Moon className="h-4 w-4 mr-2" /> Run Overnight
@@ -185,6 +188,16 @@ export default function AgentPage() {
             )}
 
             <div ref={messagesEndRef} />
+
+            {/* In-App Diagnostic Panel (Hidden by default, shown for debugging) */}
+            <div className="mt-8 p-4 rounded-xl border border-[#1F1F1F] bg-[#050505] text-[10px] font-mono text-[#444]">
+              <p className="mb-1 text-[#666] uppercase font-bold tracking-widest text-[9px]">DIAGNOSTIC DATA (v2.1)</p>
+              <p>USER_ID: {user?.id || 'NULL'}</p>
+              <p>STATUS: {isLoading ? 'LOADING' : 'IDLE'}</p>
+              <p>MESSAGES: {messages.length}</p>
+              <p>AUTH: {user ? 'AUTHENTICATED' : 'WAITING'}</p>
+              <p className="mt-1 text-emerald-500/50">If the button below is gray, check USER_ID and AUTH.</p>
+            </div>
           </div>
 
           {/* Input Form */}

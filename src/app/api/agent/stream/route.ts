@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       model = anthropicProvider("claude-3-5-sonnet-20240620");
     } else if (api_provider === "openrouter") {
       const openrouterProvider = createOpenRouter({ apiKey });
-      model = openrouterProvider("google/gemini-2.0-flash-exp:free");
+      model = openrouterProvider("google/gemini-2.0-flash-001");
     } else {
       const googleProvider = createGoogleGenerativeAI({ apiKey });
       model = googleProvider("models/gemini-2.0-flash");
