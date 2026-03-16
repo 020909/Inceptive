@@ -77,7 +77,11 @@ export async function POST(request: Request) {
         })
       });
       const data = await response.json();
-      responseText = data.choices[0]?.message?.content || "";
+      console.log("OpenRouter response:", JSON.stringify(data));
+      if (data.error) {
+        throw new Error(data.error.message || "OpenRouter error");
+      }
+      responseText = data.choices?.[0]?.message?.content || data.choices?.[0]?.text || JSON.stringify(data);
     } else {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
