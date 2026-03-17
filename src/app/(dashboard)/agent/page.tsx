@@ -1,350 +1,330 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
-import { useAuth } from "@/lib/auth-context";
-import { PageTransition } from "@/components/ui/page-transition";
+import { useState, useEffect, useRef } from "react";
+import { Send, User, Bot, Loader2, Info, ChevronDown, Check, X, Shield, Globe, Mail, Twitter, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Send,
-  Moon,
-  Loader2,
-  Cpu,
-  Globe,
-  Mail,
-  Share2,
-  FileText,
-  Target,
-  Plus,
-  MessageSquare
-} from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { createClient } from "@supabase/supabase-js";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
 
-interface Message {
+// Types
+type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  toolInvocations?: any[];
-}
+};
 
-/**
- * v3.0-MANUAL-RESILIENCE Overhaul
- * This component replaces useChat with a manual fetch loop for 100% transparency.
- */
-function AgentChatContent({ user }: { user: any }) {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+type ToolCall = {
+  toolName: string;
+  args: any;
+  toolCallId: string;
+};
+
+type ToolResult = {
+  toolName: string;
+  result: any;
+  toolCallId: string;
+};
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!
+);
+
+const ToolIcon = ({ name }: { name: string }) => {
+  if (name === 'searchWeb') return <Globe className="w-3 h-3 text-blue-400" />;
+  if (name === 'draftEmail') return <Mail className="w-3 h-3 text-emerald-400" />;
+  if (name === 'scheduleSocialPost') return <Twitter className="w-3 h-3 text-sky-400" />;
+  if (name === 'saveResearchReport') return <FileText className="w-3 h-3 text-purple-400" />;
+  return <Info className="w-3 h-3 text-gray-400" />;
+};
+
+export default function AgentPage() {
   const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [lastTrace, setLastTrace] = useState<string>("IDLE");
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const [user, setUser] = useState<any>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  
+  // Real-time Diagnostics
+  const [lastTrace, setLastTrace] = useState("IDLE");
+  const [toolCalls, setToolCalls] = useState<ToolCall[]>([]);
+  const [toolResults, setToolResults] = useState<ToolResult[]>([]);
+  
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+      }
+      setSessionLoading(false);
+    });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setSessionLoading(false);
+    });
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input,
-    };
+    return () => subscription.unsubscribe();
+  }, []);
 
-    const assistantMsgId = (Date.now() + 1).toString();
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, toolCalls, toolResults]);
+
+  const handleSend = async () => {
+    if (!input.trim() || !user || isLoading) return;
+
+    const userMsg: Message = { id: Date.now().toString(), role: "user", content: input };
+    setMessages(prev => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
     setLastTrace("CONNECTING...");
+    setToolCalls([]);
+    setToolResults([]);
+
+    const assistantMsgId = (Date.now() + 1).toString();
+    setMessages(prev => [...prev, { id: assistantMsgId, role: "assistant", content: "" }]);
 
     try {
       const response = await fetch("/api/agent/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-          user_id: user.id,
+          messages: [...messages, userMsg],
+          user_id: user.id
         }),
       });
 
-      setLastTrace(`${response.status} ${response.statusText}`);
-
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
+        const err = await response.json();
+        throw new Error(err.error || "Failed to connect to agent");
       }
 
-      if (!response.body) throw new Error("No response body");
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No reader available");
 
-      setLastTrace("STREAMING...");
-      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantContent = "";
-      let buffer = ""; // Buffer for partial chunks
-
-      // Initialize assistant message
-      setMessages(prev => [...prev, { id: assistantMsgId, role: "assistant", content: "" }]);
+      let buffer = "";
+      setLastTrace("STREAMING...");
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        setLastTrace(`RECEIVING: ${chunk.length}b`);
-        
-        // Protocol-Agnostic Aggressive Update:
-        // If it's a standard token (no SDK prefix), just append it.
-        // If it looks like protocol lines (0:"), try to parse them.
-        
-        if (chunk.includes('\n')) {
-          buffer += chunk;
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || "";
+        buffer += decoder.decode(value, { stream: true });
+        setLastTrace(`RECEIVING: ${buffer.length}b`);
 
-          for (const line of lines) {
-            if (!line.trim()) continue;
-            const firstColon = line.indexOf(':');
-            
-            if (firstColon !== -1 && firstColon < 3) {
-              const type = line.substring(0, firstColon);
-              const content = line.substring(firstColon + 1);
-              try {
-                if (type === '0') { // Text chunk
-                   assistantContent += JSON.parse(content);
-                } else if (type === '1') { // Tool Call
-                  const toolCall = JSON.parse(content);
-                  setMessages(prev => prev.map(m => {
-                    if (m.id !== assistantMsgId) return m;
-                    const toolInvocations = m.toolInvocations || [];
-                    return { ...m, toolInvocations: [...toolInvocations, { ...toolCall, state: 'call' }] };
-                  }));
-                } else if (type === '2') { // Tool Result
-                  const toolResult = JSON.parse(content);
-                  setMessages(prev => prev.map(m => {
-                    if (m.id !== assistantMsgId) return m;
-                    const toolInvocations = (m.toolInvocations || []).map(ti => 
-                      ti.toolCallId === toolResult.toolCallId ? { ...ti, state: 'result', result: toolResult.result } : ti
-                    );
-                    return { ...m, toolInvocations };
-                  }));
-                }
-              } catch (e) { assistantContent += content; }
-            } else {
-              assistantContent += line + "\n";
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ""; // Keep the incomplete line in buffer
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+
+          const firstColon = line.indexOf(':');
+          if (firstColon === -1) {
+            // Raw text fallback
+            assistantContent += line;
+          } else {
+            const type = line.substring(0, firstColon);
+            const contentJson = line.substring(firstColon + 1);
+
+            try {
+              const data = JSON.parse(contentJson);
+              if (type === '0') { // Text Delta
+                assistantContent += data;
+              } else if (type === '1') { // Tool Call
+                setToolCalls(prev => [...prev, data]);
+              } else if (type === '2') { // Tool Result
+                setToolResults(prev => [...prev, data]);
+              } else if (type === '3') { // Error
+                setLastTrace(`ERROR: ${data}`);
+                toast.error(`Agent Error: ${data}`);
+              }
+            } catch (e) {
+              // Parse failed, treat as raw text
+              assistantContent += line;
             }
           }
-        } else {
-          // If no newlines, check if it's a likely raw text token
-          if (!chunk.includes(':') || chunk.length > 5) {
-            assistantContent += chunk;
-          } else {
-            buffer += chunk; // Might be a partial protocol chunk
-          }
-        }
 
-        setMessages(prev => prev.map(m => 
-          m.id === assistantMsgId ? { ...m, content: assistantContent } : m
-        ));
+          // Update message UI
+          setMessages(prev => {
+            const next = [...prev];
+            const msg = next.find(m => m.id === assistantMsgId);
+            if (msg) msg.content = assistantContent;
+            return next;
+          });
+        }
       }
 
+      setLastTrace("IDLE");
     } catch (err: any) {
-      console.error("[v3.0] Stream Error:", err);
+      console.error("[Agent] Request failed:", err);
       setLastTrace(`ERROR: ${err.message}`);
-      toast.error(`Agent Error: ${err.message}`);
+      toast.error(err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (sessionLoading) {
+    return (
+      <div className="flex h-full items-center justify-center bg-black">
+        <Loader2 className="w-8 h-8 animate-spin text-white" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex h-full items-center justify-center bg-black p-4">
+        <div className="text-center space-y-4 max-w-sm">
+          <div className="bg-[#111] p-6 rounded-2xl border border-[#1F1F1F]">
+            <Shield className="w-12 h-12 text-[#444] mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-white mb-2">Authenticated Session Required</h2>
+            <p className="text-sm text-gray-500 mb-6">Please sign in to your Inceptive account to access the autonomous agent engine.</p>
+            <Button className="w-full bg-white text-black hover:bg-gray-200" onClick={() => (window.location.href = "/login")}>
+              Go to Login
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-1 flex-col relative max-w-full overflow-hidden">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#1F1F1F]">
+    <div className="flex flex-col h-full bg-black text-white p-4 lg:p-6 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-bold text-white flex items-center gap-2">
-            <Cpu className="h-5 w-5 text-[#888]" />
+          <h1 className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
             Inceptive Autonomous Agent
           </h1>
           <p className="text-xs text-[#555] mt-1 tracking-wider uppercase font-semibold flex items-center gap-2">
-            Manus Engine v4.0.0
-            <span className="bg-[#1F1F1F] text-[#888] px-1.5 py-0.5 rounded text-[10px] border border-[#333]">v4.0.0-STABLE</span>
+            Manus Engine v5.0.0
+            <span className="bg-[#1F1F1F] text-[#888] px-1.5 py-0.5 rounded text-[10px] border border-[#333]">v5.0.0-ULTRA-STABLE</span>
           </p>
         </div>
-        <Button className="bg-white text-black hover:bg-white/90 rounded-lg h-9 px-4 text-sm font-medium">
-          <Moon className="h-4 w-4 mr-2" /> Run Overnight
-        </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      {/* Main Chat Area */}
+      <div className="flex-1 overflow-y-auto space-y-6 px-2 pb-4 scroll-smooth custom-scrollbar" ref={scrollRef}>
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0D0D0D] border border-[#1F1F1F] mb-6">
-              <BotIcon className="h-7 w-7 text-white" />
+          <div className="h-full flex flex-col items-center justify-center text-center space-y-6 py-12">
+            <div className="w-16 h-16 rounded-full bg-[#0D0D0D] border border-[#1F1F1F] flex items-center justify-center">
+              <Bot className="w-8 h-8 text-white" />
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Complex tasks, fully automated.</h3>
-            <p className="text-sm text-[#888888] max-w-md">
-              Try: "Research current events in AI, summarize them, and draft me an update."
-            </p>
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold">What is your mission today?</h2>
+              <p className="text-sm text-[#888] max-w-sm mx-auto">
+                I can research topics, draft emails, and schedule social posts autonomously.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg w-full">
+              {[
+                "Research the latest news on AI Agents",
+                "Draft an introductory email to a VC",
+                "Suggest 3 tweets about SpaceX Starship",
+                "What is my current goal status?"
+              ].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => setInput(suggestion)}
+                  className="text-left px-4 py-3 rounded-xl border border-[#1F1F1F] bg-[#0A0A0A] hover:bg-[#111] hover:border-[#333] transition-all text-xs text-gray-300"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
         {messages.map((m) => (
-          <div key={m.id} className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}>
-            {m.content && (
-              <div
-                className={`max-w-2xl lg:max-w-3xl rounded-xl px-4 py-3 text-sm flex flex-col gap-2 mb-2 ${
-                  m.role === "user" ? "bg-white text-black" : "bg-[#0D0D0D] border border-[#1F1F1F] text-white"
-                }`}
-              >
-                <div className="prose prose-invert max-w-none text-sm leading-relaxed">
-                  <ReactMarkdown>{m.content}</ReactMarkdown>
-                </div>
+          <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div className={`flex gap-3 max-w-[85%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${
+                m.role === "user" ? "bg-white border-white" : "bg-black border-[#1F1F1F]"
+              }`}>
+                {m.role === "user" ? <User className="w-4 h-4 text-black" /> : <Bot className="w-4 h-4 text-white" />}
               </div>
-            )}
-
-            {m.toolInvocations?.map((toolInv: any) => (
-              <div key={toolInv.toolCallId} className="w-full max-w-2xl lg:max-w-3xl mb-4 ml-2">
-                <div className="bg-[#050505] border border-[#1F1F1F] rounded-lg p-3 overflow-hidden">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-[#888] uppercase tracking-wider">
-                      <ToolIcon toolName={toolInv.toolName} />
-                      <span>{toolInv.toolName}</span>
-                    </div>
-                    {toolInv.state === "result" ? (
-                      <span className="text-xs bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded border border-emerald-500/20">Success</span>
-                    ) : (
-                      <div className="flex items-center gap-2 text-[10px] text-[#555] animate-pulse">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        Thinking...
+              <div className="space-y-3">
+                {m.content && (
+                  <div className={`rounded-2xl px-4 py-3 text-sm prose prose-invert max-w-none leading-relaxed ${
+                    m.role === "user" ? "bg-white text-black font-medium" : "bg-[#0D0D0D] border border-[#1F1F1F] text-gray-100"
+                  }`}>
+                    <ReactMarkdown>{m.content}</ReactMarkdown>
+                  </div>
+                )}
+                
+                {/* Visualizing Autonomous Thoughts/Tools */}
+                {m.role === "assistant" && (toolCalls.length > 0) && (
+                  <div className="flex flex-col gap-2 w-full">
+                    {toolCalls.map((tc, idx) => (
+                      <div key={tc.toolCallId || idx} className="flex items-center gap-3 bg-[#080808] border border-[#111] rounded-lg px-3 py-2 text-[11px] text-[#888]">
+                        <div className="w-5 h-5 rounded bg-[#111] flex items-center justify-center">
+                          <ToolIcon name={tc.toolName} />
+                        </div>
+                        <span className="flex-1 truncate">Executing <span className="text-white">{tc.toolName}</span>...</span>
+                        {toolResults.some(r => r.toolCallId === tc.toolCallId) ? (
+                          <div className="flex items-center gap-1.5 text-emerald-500 font-medium">
+                            <Check className="w-3 h-3" /> Done
+                          </div>
+                        ) : (
+                          <Loader2 className="w-3 h-3 animate-spin text-white/50" />
+                        )}
                       </div>
-                    )}
+                    ))}
                   </div>
-                  <div className="bg-black border border-[#111] rounded p-2 text-xs font-mono text-[#555] whitespace-pre-wrap overflow-x-auto">
-                    <span className="text-[#888]">// Executing:</span>
-                    <br />
-                    {JSON.stringify(toolInv.args, null, 2)}
-                  </div>
-                  {toolInv.state === "result" && (
-                    <div className="mt-2 bg-[#0A0A0A] border border-[#1F1F1F] rounded p-2 text-xs font-mono text-emerald-500/80 max-h-32 overflow-y-auto whitespace-pre-wrap">
-                      <span className="text-[#555]">// Result:</span>
-                      <br />
-                      {typeof toolInv.result === 'object' ? JSON.stringify(toolInv.result, null, 2) : String(toolInv.result)}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
-            ))}
+            </div>
           </div>
         ))}
+      </div>
 
-        <div ref={messagesEndRef} />
-        
-        {/* NETWORK TRACE PANEL (v3.0) */}
-        <div className="mt-8 p-4 rounded-xl border border-[#1F1F1F] bg-[#050505] text-[10px] font-mono text-[#444]">
-          <p className="mb-1 text-[#666] uppercase font-bold tracking-widest text-[9px]">NETWORK TRACE (v3.0)</p>
-          <p>USER_ID: {user.id}</p>
-          <p>LAST_EVENT: <span className={lastTrace.includes('ERROR') ? 'text-red-500' : 'text-emerald-500'}>{lastTrace}</span></p>
-          <p>MESSAGES: {messages.length}</p>
-          <p className="mt-1 text-emerald-500/30">Manual fetch mode active. Bypassing SDK protocols.</p>
+      {/* Diagnostics Panel (Small) */}
+      <div className="mt-4 p-3 rounded-xl border border-[#1F1F1F] bg-[#050505] text-[10px] font-mono text-[#444] flex justify-between items-center h-8">
+        <div className="flex gap-4">
+          <span className="text-[#666]">TRACE: <span className={lastTrace.includes('ERROR') ? 'text-red-500' : 'text-emerald-500'}>{lastTrace}</span></span>
+          <span className="text-[#666]">MSGS: <span className="text-white">{messages.length}</span></span>
+        </div>
+        <div className="flex gap-2">
+          <span className="bg-[#111] px-1.5 rounded border border-[#1F1F1F]">MANUAL_FETCH_MODE</span>
         </div>
       </div>
 
-      <div className="p-4 border-t border-[#1F1F1F] bg-[#050505]">
-        <form onSubmit={handleSubmit} className="flex gap-3 max-w-4xl mx-auto">
+      {/* Input Section */}
+      <div className="mt-4 relative">
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent -top-20 pointer-events-none" />
+        <div className="relative group">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Give your agent a complex mission..."
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+            placeholder="Type your mission (e.g. 'Update me on the latest news')..."
             disabled={isLoading}
-            className="flex-1 h-12 bg-[#111111] border-[#333333] text-white placeholder:text-[#555555] rounded-xl focus:border-white focus:ring-0 shadow-inner"
+            className="w-full bg-[#0D0D0D] border-[#1F1F1F] text-white rounded-2xl h-14 pl-5 pr-20 focus-visible:ring-1 focus-visible:ring-white transition-all group-hover:border-[#333] shadow-2xl"
           />
-          <Button
-            type="submit"
-            disabled={isLoading || !input?.trim()}
-            className="h-12 w-12 bg-white text-black rounded-xl p-0 hover:scale-95 transition-transform"
-          >
-            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5 ml-1" />}
-          </Button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-export default function AgentPage() {
-  const { user, loading } = useAuth();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
-  return (
-    <PageTransition>
-      <div className="flex h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] -m-6 md:-m-8">
-        <div className="hidden lg:flex w-[280px] flex-col bg-[#050505] border-r border-[#1F1F1F] h-full">
-          <div className="p-4">
-            <Button className="w-full h-10 bg-[#111111] text-white border border-[#1F1F1F] rounded-lg">
-              <Plus className="h-4 w-4 mr-2" /> New Chat
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            <Button
+              onClick={handleSend}
+              disabled={isLoading || !input.trim()}
+              size="icon"
+              className="w-10 h-10 rounded-xl bg-white text-black hover:bg-gray-200"
+            >
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             </Button>
           </div>
-          <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
-            <button className="w-full text-left px-3 py-2.5 rounded-lg text-sm bg-[#111111] text-white">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-3.5 w-3.5" />
-                <span>Current Session</span>
-              </div>
-            </button>
-          </div>
         </div>
-
-        {loading ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-[#444]">
-             <Loader2 className="h-8 w-8 animate-spin mb-4" />
-             <p className="text-sm font-mono tracking-widest uppercase">Syncing Autonomous Session...</p>
-          </div>
-        ) : !user ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-[#EF4444]">
-             <p className="text-sm font-bold uppercase tracking-widest">Authentication Required</p>
-             <p className="text-xs text-[#555] mt-2">Please login to access the autonomous agent.</p>
-          </div>
-        ) : (
-          <AgentChatContent user={user} key={user.id} />
-        )}
+        <p className="text-[10px] text-center text-[#444] mt-3 uppercase tracking-widest font-bold">
+          Powered by Inceptive Autonomous ReAct Engine
+        </p>
       </div>
-    </PageTransition>
-  );
-}
-
-function ToolIcon({ toolName }: { toolName: string }) {
-  const cn = "h-4 w-4";
-  switch (toolName) {
-    case "searchWeb": return <Globe className={cn} />;
-    case "draftEmail": return <Mail className={cn} />;
-    case "scheduleSocialPost": return <Share2 className={cn} />;
-    case "saveResearchReport": return <FileText className={cn} />;
-    case "updateGoalProgress": return <Target className={cn} />;
-    default: return <Cpu className={cn} />;
-  }
-}
-
-function BotIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 8V4H8" />
-      <rect width="16" height="12" x="4" y="8" rx="2" />
-      <path d="M2 14h2" />
-      <path d="M20 14h2" />
-      <path d="M15 13v2" />
-      <path d="M9 13v2" />
-    </svg>
+    </div>
   );
 }
