@@ -94,7 +94,8 @@ RULES:
 
             let line = "";
             if (value.type === 'text-delta') {
-              line = `0:${JSON.stringify(value.textDelta)}\n`;
+              // The project's SDK uses 'text' instead of 'textDelta'
+              line = `0:${JSON.stringify((value as any).text || (value as any).textDelta)}\n`;
             } else if (value.type === 'tool-call') {
               line = `1:${JSON.stringify(value)}\n`;
             } else if (value.type === 'tool-result') {
