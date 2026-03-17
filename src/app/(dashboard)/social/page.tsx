@@ -38,16 +38,16 @@ interface SocialPost {
 
 // Top 10 social media platforms by number of users
 const SOCIAL_CONNECTORS = [
-  { id: "facebook", name: "Facebook", domain: "facebook.com", users: "3B+ users" },
-  { id: "youtube", name: "YouTube", domain: "youtube.com", users: "2.5B+ users" },
-  { id: "whatsapp", name: "WhatsApp", domain: "whatsapp.com", users: "2B+ users" },
-  { id: "instagram", name: "Instagram", domain: "instagram.com", users: "2B+ users" },
-  { id: "tiktok", name: "TikTok", domain: "tiktok.com", users: "1.5B+ users" },
-  { id: "wechat", name: "WeChat", domain: "wechat.com", users: "1.3B+ users" },
-  { id: "telegram", name: "Telegram", domain: "telegram.org", users: "900M+ users" },
-  { id: "snapchat", name: "Snapchat", domain: "snapchat.com", users: "750M+ users" },
-  { id: "x", name: "X (Twitter)", domain: "x.com", users: "600M+ users" },
-  { id: "linkedin", name: "LinkedIn", domain: "linkedin.com", users: "950M+ users" },
+  { id: "facebook",  name: "Facebook",   logo: "/logos/social/facebook.png",  users: "3B+ users",    lightBg: true  },
+  { id: "youtube",   name: "YouTube",    logo: "/logos/social/youtube.png",   users: "2.5B+ users",  lightBg: false },
+  { id: "whatsapp",  name: "WhatsApp",   logo: "/logos/social/whatsapp.png",  users: "2B+ users",    lightBg: false },
+  { id: "instagram", name: "Instagram",  logo: "/logos/social/instagram.png", users: "2B+ users",    lightBg: false },
+  { id: "tiktok",    name: "TikTok",     logo: "/logos/social/tiktok.png",    users: "1.5B+ users",  lightBg: false },
+  { id: "wechat",    name: "WeChat",     logo: "/logos/social/wechat.png",    users: "1.3B+ users",  lightBg: false },
+  { id: "telegram",  name: "Telegram",   logo: "/logos/social/telegram.png",  users: "900M+ users",  lightBg: false },
+  { id: "snapchat",  name: "Snapchat",   logo: "/logos/social/snapchat.png",  users: "750M+ users",  lightBg: false },
+  { id: "x",         name: "X (Twitter)",logo: "/logos/social/x.png",         users: "600M+ users",  lightBg: false },
+  { id: "linkedin",  name: "LinkedIn",   logo: "/logos/social/linkedin.png",  users: "950M+ users",  lightBg: false },
 ];
 
 function ConnectorCard({ connector, connected, onConnect }: {
@@ -57,28 +57,22 @@ function ConnectorCard({ connector, connected, onConnect }: {
 }) {
   return (
     <motion.div
-      whileHover={{ y: -1 }}
-      className="flex items-center gap-3 p-4 rounded-2xl border transition-all duration-150"
-      style={{ background: "#242426", borderColor: connected ? "#007AFF40" : "#38383A" }}
+      whileHover={{ y: -2, boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}
+      transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="flex items-center gap-3 p-4 rounded-2xl border transition-colors duration-150"
+      style={{ background: "#242426", borderColor: connected ? "#007AFF40" : "#2C2C2E" }}
     >
-      <div className="w-9 h-9 rounded-xl overflow-hidden border flex items-center justify-center shrink-0"
-        style={{ borderColor: "#38383A", background: "#1C1C1E" }}>
+      <div
+        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
+        style={{ background: connector.lightBg ? "#FFFFFF" : "#1C1C1E" }}
+      >
         <img
-          src={`https://logo.clearbit.com/${connector.domain}`}
+          src={connector.logo}
           alt={connector.name}
-          width={24}
-          height={24}
+          width={connector.lightBg ? 28 : 22}
+          height={connector.lightBg ? 28 : 22}
           className="object-contain"
-          onError={(e) => {
-            const target = e.currentTarget as HTMLImageElement;
-            target.style.display = "none";
-            (target.nextSibling as HTMLElement).style.display = "flex";
-          }}
         />
-        <div className="w-6 h-6 rounded-lg hidden items-center justify-center text-xs font-bold text-[#8E8E93]"
-          style={{ background: "#2C2C2E" }}>
-          {connector.name[0]}
-        </div>
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-white leading-tight">{connector.name}</div>

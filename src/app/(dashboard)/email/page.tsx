@@ -37,11 +37,11 @@ interface Email {
 }
 
 const EMAIL_CONNECTORS = [
-  { id: "gmail", name: "Gmail", domain: "google.com", description: "Connect your Google account" },
-  { id: "outlook", name: "Outlook", domain: "microsoft.com", description: "Microsoft 365 & Outlook.com" },
-  { id: "icloud", name: "iCloud Mail", domain: "apple.com", description: "Apple iCloud email" },
-  { id: "yahoo", name: "Yahoo Mail", domain: "yahoo.com", description: "Yahoo email account" },
-  { id: "protonmail", name: "ProtonMail", domain: "proton.me", description: "End-to-end encrypted mail" },
+  { id: "gmail",      name: "Gmail",       logo: "/logos/email/gmail.png",   description: "Connect your Google account",  lightBg: true  },
+  { id: "outlook",    name: "Outlook",     logo: "/logos/email/outlook.png", description: "Microsoft 365 & Outlook.com",  lightBg: true  },
+  { id: "icloud",     name: "iCloud Mail", logo: "/logos/email/icloud.png",  description: "Apple iCloud email",           lightBg: false },
+  { id: "yahoo",      name: "Yahoo Mail",  logo: "/logos/email/yahoo.png",   description: "Yahoo email account",          lightBg: false },
+  { id: "protonmail", name: "ProtonMail",  logo: "/logos/email/proton.png",  description: "End-to-end encrypted mail",    lightBg: false },
 ];
 
 function ConnectorCard({ connector, connected, onConnect }: {
@@ -55,24 +55,17 @@ function ConnectorCard({ connector, connected, onConnect }: {
       className="flex items-center gap-4 p-4 rounded-2xl border transition-colors duration-150"
       style={{ background: "#242426", borderColor: connected ? "#007AFF40" : "#38383A" }}
     >
-      <div className="w-10 h-10 rounded-xl overflow-hidden border flex items-center justify-center shrink-0"
-        style={{ borderColor: "#38383A", background: "#1C1C1E" }}>
+      <div
+        className="w-10 h-10 rounded-xl overflow-hidden border flex items-center justify-center shrink-0"
+        style={{ borderColor: "#38383A", background: connector.lightBg ? "#FFFFFF" : "#1C1C1E" }}
+      >
         <img
-          src={`https://logo.clearbit.com/${connector.domain}`}
+          src={connector.logo}
           alt={connector.name}
-          width={28}
-          height={28}
+          width={connector.lightBg ? 26 : 22}
+          height={connector.lightBg ? 26 : 22}
           className="object-contain"
-          onError={(e) => {
-            const target = e.currentTarget as HTMLImageElement;
-            target.style.display = "none";
-            (target.nextSibling as HTMLElement).style.display = "flex";
-          }}
         />
-        <div className="w-7 h-7 rounded-lg hidden items-center justify-center text-xs font-bold text-[#8E8E93]"
-          style={{ background: "#2C2C2E" }}>
-          {connector.name[0]}
-        </div>
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-white">{connector.name}</div>

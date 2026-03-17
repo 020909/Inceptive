@@ -15,7 +15,8 @@ const PROVIDERS = [
     id: "anthropic",
     name: "Anthropic",
     description: "Claude models — best for reasoning & writing",
-    logoDomain: "anthropic.com",
+    logo: "/logos/ai/anthropic.png",
+    lightBg: false,
     models: [
       { id: "claude-opus-4-5", name: "Claude Opus 4.5", description: "Most powerful · Best quality" },
       { id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5", description: "Balanced · Recommended" },
@@ -26,7 +27,8 @@ const PROVIDERS = [
     id: "openai",
     name: "OpenAI",
     description: "GPT models — versatile and widely used",
-    logoDomain: "openai.com",
+    logo: "/logos/ai/openai.png",
+    lightBg: false,
     models: [
       { id: "gpt-4o", name: "GPT-4o", description: "Most capable · Multimodal" },
       { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "Fast · Cost-effective" },
@@ -37,7 +39,8 @@ const PROVIDERS = [
     id: "google",
     name: "Google",
     description: "Gemini models — great speed and context",
-    logoDomain: "google.com",
+    logo: "/logos/ai/google.png",
+    lightBg: true,
     models: [
       { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", description: "Fast · Recommended" },
       { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", description: "Long context · Powerful" },
@@ -48,7 +51,8 @@ const PROVIDERS = [
     id: "openrouter",
     name: "OpenRouter",
     description: "Access 100+ models with one API key",
-    logoDomain: "openrouter.ai",
+    logo: "/logos/ai/openrouter.png",
+    lightBg: true,
     models: [
       { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet", description: "Via OpenRouter" },
       { id: "openai/gpt-4o", name: "GPT-4o", description: "Via OpenRouter" },
@@ -59,27 +63,21 @@ const PROVIDERS = [
   },
 ];
 
-function ProviderLogo({ domain, name, size = 28 }: { domain: string; name: string; size?: number }) {
-  const [errored, setErrored] = useState(false);
-  if (errored) {
-    return (
-      <div
-        className="rounded-lg flex items-center justify-center text-xs font-bold text-[#8E8E93] shrink-0"
-        style={{ width: size, height: size, background: "#2C2C2E" }}
-      >
-        {name[0]}
-      </div>
-    );
-  }
+function ProviderLogo({ logo, name, lightBg, size = 28 }: { logo: string; name: string; lightBg: boolean; size?: number }) {
+  const containerSize = size + 8;
   return (
-    <img
-      src={`https://logo.clearbit.com/${domain}`}
-      alt={name}
-      width={size}
-      height={size}
-      className="rounded-lg object-contain shrink-0"
-      onError={() => setErrored(true)}
-    />
+    <div
+      className="rounded-lg flex items-center justify-center shrink-0"
+      style={{ width: containerSize, height: containerSize, background: lightBg ? "#FFFFFF" : "#1C1C1E", border: "1px solid #38383A" }}
+    >
+      <img
+        src={logo}
+        alt={name}
+        width={size}
+        height={size}
+        className="object-contain"
+      />
+    </div>
   );
 }
 
@@ -239,7 +237,7 @@ export default function SettingsPage() {
                           background: selectedProvider === p.id ? "#007AFF12" : "#1C1C1E",
                           borderColor: selectedProvider === p.id ? "#007AFF50" : "#38383A",
                         }}>
-                        <ProviderLogo domain={p.logoDomain} name={p.name} size={28} />
+                        <ProviderLogo logo={p.logo} name={p.name} lightBg={p.lightBg} size={20} />
                         <div className="flex-1">
                           <div className="text-sm font-semibold text-white">{p.name}</div>
                           <div className="text-xs text-[#8E8E93]">{p.description}</div>
@@ -260,7 +258,7 @@ export default function SettingsPage() {
                     <span className="text-sm text-[#8E8E93]">
                       Choose a model from{" "}
                       <span className="inline-flex items-center gap-1.5 text-white">
-                        <ProviderLogo domain={providerData.logoDomain} name={providerData.name} size={14} />
+                        <ProviderLogo logo={providerData.logo} name={providerData.name} lightBg={providerData.lightBg} size={12} />
                         {providerData.name}
                       </span>
                     </span>
@@ -298,7 +296,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "#1C1C1E", border: "1px solid #2C2C2E" }}>
-                    {providerData && <ProviderLogo domain={providerData.logoDomain} name={providerData.name} size={24} />}
+                    {providerData && <ProviderLogo logo={providerData.logo} name={providerData.name} lightBg={providerData.lightBg} size={18} />}
                     <div>
                       <div className="text-xs text-[#8E8E93]">{providerData?.name}</div>
                       <div className="text-sm font-medium text-white">
