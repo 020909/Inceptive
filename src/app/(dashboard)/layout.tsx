@@ -10,10 +10,12 @@ export default function DashboardLayout({
 }) {
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen" style={{ background: "#1C1C1E" }}>
         <Sidebar />
-        <main className="md:pl-[260px]">
-          <div className="p-6 md:p-8 pt-16 md:pt-8">{children}</div>
+        <main className="md:pl-[240px] min-h-screen">
+          <div className="p-6 md:p-8 pt-16 md:pt-8 max-w-[1400px]">
+            {children}
+          </div>
         </main>
       </div>
     </AuthProvider>

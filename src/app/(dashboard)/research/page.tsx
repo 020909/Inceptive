@@ -6,23 +6,15 @@ import { useAuth } from "@/lib/auth-context";
 import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Search, FileText, Loader2, Link as LinkIcon, ExternalLink } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Search, FileText, Loader2, Link as LinkIcon } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { formatTimeAgo } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ResearchReport {
-  id: string;
-  topic: string;
-  content: string;
-  sources_count: number;
-  created_at: string;
+  id: string; topic: string; content: string; sources_count: number; created_at: string;
 }
 
 export default function ResearchPage() {
@@ -32,38 +24,26 @@ export default function ResearchPage() {
   const [researching, setResearching] = useState(false);
   const [topic, setTopic] = useState("");
   const [accessToken, setAccessToken] = useState<string | null>(null);
-
   const [selectedReport, setSelectedReport] = useState<ResearchReport | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchReports = async () => {
     try {
       const supabase = createClient();
       const { data, error } = await supabase
-        .from('research_reports')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-
+        .from("research_reports").select("*").eq("user_id", user?.id)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       setReports(data || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => {
     const init = async () => {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        setAccessToken(session.access_token);
-        if (user) fetchReports();
-      } else {
-        setLoading(false);
-      }
+      if (session?.access_token) { setAccessToken(session.access_token); if (user) fetchReports(); }
+      else setLoading(false);
     };
     init();
   }, [user]);
@@ -71,170 +51,136 @@ export default function ResearchPage() {
   const handleRunResearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!topic.trim() || !accessToken || !user) return;
-
     setResearching(true);
     try {
       const res = await fetch("/api/agent/research", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({ topic: topic.trim(), user_id: user.id })
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ topic: topic.trim(), user_id: user.id }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Research failed");
-
       toast.success("Research complete");
       setTopic("");
       setReports([data.report, ...reports]);
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setResearching(false);
-    }
-  };
-
-  const openReport = (report: ResearchReport) => {
-    setSelectedReport(report);
-    setIsModalOpen(true);
+    } catch (err: any) { toast.error(err.message); }
+    finally { setResearching(false); }
   };
 
   return (
     <PageTransition>
-      <div className="max-w-[1200px] mx-auto">
-        {/* Header & Search */}
-        <div className="mb-10 w-full max-w-3xl">
-          <h1 className="text-2xl font-bold text-white mb-6">Research Engine</h1>
-          <form onSubmit={handleRunResearch} className="flex gap-3 w-full relative">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-[#555555]" />
-              </div>
-              <Input
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="Enter a research topic..."
-                disabled={researching}
-                className="w-full h-14 pl-12 bg-[#0D0D0D] border-[#1F1F1F] text-white text-base placeholder:text-[#555555] rounded-xl focus:border-white focus:ring-0 transition-all duration-200"
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={researching || !topic.trim() || !accessToken}
-              className="h-14 px-8 bg-white text-black hover:bg-white/90 rounded-xl text-base font-medium transition-all duration-200 shrink-0"
-            >
-              {!accessToken ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Syncing session...
-                </>
-              ) : researching ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Researching...
-                </>
-              ) : (
-                "Run Research"
-              )}
-            </Button>
-          </form>
+      <div className="max-w-5xl">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-white mb-1">Research Engine</h1>
+          <p className="text-sm text-[#8E8E93]">Ask anything — get a structured research report powered by live web data.</p>
         </div>
 
-        {/* Content */}
+        {/* Search bar */}
+        <form onSubmit={handleRunResearch} className="flex gap-3 mb-10">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-[#48484A]" />
+            </div>
+            <Input value={topic} onChange={(e) => setTopic(e.target.value)}
+              placeholder="Enter a research topic…" disabled={researching}
+              className="w-full h-13 pl-11 rounded-2xl text-sm text-white placeholder:text-[#48484A]"
+              style={{ height: "52px", background: "#242426", border: "1px solid #38383A" }}
+            />
+          </div>
+          <Button type="submit" disabled={researching || !topic.trim() || !accessToken}
+            className="h-[52px] px-7 rounded-2xl font-semibold text-sm border-0 transition-opacity hover:opacity-90 disabled:opacity-40"
+            style={{ background: "#007AFF", color: "#FFFFFF" }}>
+            {researching ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Researching…</> : "Run Research"}
+          </Button>
+        </form>
+
+        {/* Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-[200px] rounded-xl border border-[#1F1F1F] bg-[#0D0D0D] p-6 skeleton" />
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1,2,3].map(i => <div key={i} className="h-48 rounded-2xl shimmer" />)}
           </div>
         ) : reports.length === 0 && !researching ? (
-          <div className="flex flex-col items-center justify-center py-32 text-center border border-[#1F1F1F] rounded-xl bg-[#0D0D0D]">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#111111] border border-[#333333] mb-6">
-              <FileText className="h-8 w-8 text-white" />
+          <div className="flex flex-col items-center justify-center py-32 text-center rounded-2xl border"
+            style={{ background: "#242426", borderColor: "#38383A" }}>
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: "#007AFF15", border: "1px solid #007AFF30" }}>
+              <FileText className="h-6 w-6 text-[#007AFF]" />
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">No research reports yet</h3>
-            <p className="text-[#888888] mb-6 max-w-sm">
-              Ask Inceptive to research anything overnight, or run a manual query above.
-            </p>
+            <h3 className="text-base font-semibold text-white mb-1.5">No research yet</h3>
+            <p className="text-sm text-[#636366] max-w-xs">Enter a topic above to get a structured report with real web sources.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative">
-            {researching && (
-              <div className="h-[200px] rounded-xl border border-[#1F1F1F] bg-[#111111] p-6 flex flex-col justify-between overflow-hidden relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent shimmer" />
-                <div>
-                  <div className="h-6 w-3/4 bg-[#1F1F1F] rounded mb-3" />
-                  <div className="space-y-2">
-                    <div className="h-4 w-full bg-[#1F1F1F] rounded" />
-                    <div className="h-4 w-5/6 bg-[#1F1F1F] rounded" />
-                    <div className="h-4 w-4/6 bg-[#1F1F1F] rounded" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <AnimatePresence>
+              {researching && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  className="h-48 rounded-2xl border p-5 flex flex-col justify-between relative overflow-hidden"
+                  style={{ background: "#242426", borderColor: "#007AFF30" }}>
+                  <div className="absolute inset-0 shimmer opacity-50" />
+                  <div className="relative space-y-2">
+                    <div className="h-5 w-3/4 rounded-lg shimmer" />
+                    <div className="h-4 w-full rounded shimmer" />
+                    <div className="h-4 w-5/6 rounded shimmer" />
                   </div>
-                </div>
-                <div className="flex justify-between items-center mt-6">
-                  <div className="h-6 w-20 bg-[#1F1F1F] rounded-full" />
-                  <div className="h-4 w-16 bg-[#1F1F1F] rounded" />
-                </div>
-              </div>
-            )}
+                  <div className="relative flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-[#007AFF]" />
+                    <span className="text-xs text-[#007AFF] font-medium">Researching…</span>
+                  </div>
+                </motion.div>
+              )}
 
-            {reports.map((report) => (
-              <div
-                key={report.id}
-                onClick={() => openReport(report)}
-                className="h-[200px] rounded-xl border border-[#1F1F1F] bg-[#0D0D0D] hover:bg-[#111111] p-6 flex flex-col justify-between cursor-pointer transition-all duration-200 group"
-              >
-                <div>
-                  <h3 className="text-lg font-bold text-white mb-2 line-clamp-1 group-hover:text-white transition-colors">
-                    {report.topic}
-                  </h3>
-                  <p className="text-sm text-[#888888] line-clamp-3 leading-relaxed">
-                    {report.content.replace(/[#*]/g, '').trim()}
-                  </p>
-                </div>
-                
-                <div className="flex items-center justify-between mt-4">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#1F1F1F] bg-[#050505]">
-                    <LinkIcon className="h-3 w-3 text-[#555555]" />
-                    <span className="text-xs font-medium text-[#888888]">
-                      {report.sources_count} sources
-                    </span>
+              {reports.map((report, i) => (
+                <motion.div key={report.id}
+                  initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  whileHover={{ y: -2 }}
+                  onClick={() => setSelectedReport(report)}
+                  className="h-48 rounded-2xl border p-5 flex flex-col justify-between cursor-pointer transition-colors duration-150"
+                  style={{ background: "#242426", borderColor: "#38383A" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#48484A"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#38383A"; }}
+                >
+                  <div>
+                    <h3 className="text-sm font-semibold text-white mb-2 line-clamp-1">{report.topic}</h3>
+                    <p className="text-xs text-[#8E8E93] line-clamp-4 leading-relaxed">
+                      {report.content.replace(/[#*]/g, "").trim()}
+                    </p>
                   </div>
-                  <span className="text-xs text-[#555555]">
-                    {formatTimeAgo(new Date(report.created_at))}
-                  </span>
-                </div>
-              </div>
-            ))}
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+                      style={{ background: "#007AFF15", border: "1px solid #007AFF30" }}>
+                      <LinkIcon className="h-3 w-3 text-[#007AFF]" />
+                      <span className="text-[10px] font-semibold text-[#007AFF]">{report.sources_count} sources</span>
+                    </div>
+                    <span className="text-[10px] text-[#636366]">{formatTimeAgo(new Date(report.created_at))}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>
 
-      {/* Full Report Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="bg-[#050505] border-[#1F1F1F] text-white sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+      {/* Report Modal */}
+      <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 border"
+          style={{ background: "#1C1C1E", borderColor: "#38383A" }}>
           {selectedReport && (
-            <div className="flex flex-col h-full">
-              <div className="sticky top-0 z-10 bg-[#050505]/80 backdrop-blur-xl border-b border-[#1F1F1F] px-8 py-6 flex items-start justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-white mb-2">{selectedReport.topic}</h2>
-                  <div className="flex items-center gap-4 text-sm text-[#888888]">
-                    <div className="flex items-center gap-1.5">
-                      <LinkIcon className="h-4 w-4" />
-                      <span>{selectedReport.sources_count} sources analyzed</span>
-                    </div>
-                    <span>•</span>
-                    <span>{new Date(selectedReport.created_at).toLocaleString()}</span>
+            <div>
+              <div className="sticky top-0 z-10 px-8 py-6 border-b"
+                style={{ background: "rgba(28,28,30,0.9)", backdropFilter: "blur(20px)", borderColor: "#38383A" }}>
+                <h2 className="text-xl font-bold text-white mb-1.5">{selectedReport.topic}</h2>
+                <div className="flex items-center gap-3 text-xs text-[#8E8E93]">
+                  <div className="flex items-center gap-1.5">
+                    <LinkIcon className="h-3.5 w-3.5" />
+                    {selectedReport.sources_count} sources
                   </div>
+                  <span>·</span>
+                  <span>{new Date(selectedReport.created_at).toLocaleString()}</span>
                 </div>
               </div>
-              
               <div className="p-8">
-                <div className="prose prose-invert prose-p:text-[#888888] prose-headings:text-white prose-li:text-[#888888] max-w-none">
-                  <ReactMarkdown>
-                    {selectedReport.content}
-                  </ReactMarkdown>
+                <div className="prose-inceptive">
+                  <ReactMarkdown>{selectedReport.content}</ReactMarkdown>
                 </div>
               </div>
             </div>

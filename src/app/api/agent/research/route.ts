@@ -6,10 +6,13 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const maxDuration = 120;
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const getAdmin = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://localhost:3000";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy";
+  return createClient(url, key);
+};
+
+const admin = getAdmin();
 
 export async function POST(request: Request) {
   try {

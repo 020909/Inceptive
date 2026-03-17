@@ -6,38 +6,76 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #000000;
-  --foreground: #ffffff;
-  --card: #0D0D0D;
-  --card-foreground: #ffffff;
-  --popover: #0D0D0D;
-  --popover-foreground: #ffffff;
-  --primary: #ffffff;
-  --primary-foreground: #000000;
-  --secondary: transparent;
-  --secondary-foreground: #ffffff;
-  --muted: #111111;
-  --muted-foreground: #888888;
-  --accent: #111111;
-  --accent-foreground: #ffffff;
-  --destructive: #EF4444;
-  --border: #1F1F1F;
-  --input: #333333;
-  --ring: #ffffff;
-  --chart-1: #ffffff;
-  --chart-2: #888888;
-  --chart-3: #555555;
-  --chart-4: #333333;
-  --chart-5: #1F1F1F;
+  /* === INCEPTIVE DESIGN SYSTEM === */
+  /* Backgrounds — layered dark grey, never pure black */
+  --background: #1C1C1E;
+  --background-deep: #141416;
+  --background-elevated: #242426;
+  --background-overlay: #2A2A2C;
+
+  /* Cards & Surfaces */
+  --card: #242426;
+  --card-foreground: #FFFFFF;
+  --card-hover: #2C2C2E;
+
+  /* Popovers */
+  --popover: #2A2A2C;
+  --popover-foreground: #FFFFFF;
+
+  /* Primary — white for main CTAs */
+  --primary: #FFFFFF;
+  --primary-foreground: #1C1C1E;
+
+  /* Secondary */
+  --secondary: #2A2A2C;
+  --secondary-foreground: #FFFFFF;
+
+  /* Muted */
+  --muted: #2A2A2C;
+  --muted-foreground: #8E8E93;
+
+  /* Accent — Inceptive Blue #007AFF */
+  --accent: #007AFF;
+  --accent-foreground: #FFFFFF;
+  --accent-subtle: rgba(0, 122, 255, 0.12);
+  --accent-glow: rgba(0, 122, 255, 0.25);
+
+  /* Borders */
+  --border: #38383A;
+  --border-subtle: #2C2C2E;
+  --border-strong: #48484A;
+
+  /* Inputs */
+  --input: #2A2A2C;
+  --ring: #007AFF;
+
+  /* Destructive */
+  --destructive: #FF453A;
+
+  /* Charts */
+  --chart-1: #007AFF;
+  --chart-2: #30D158;
+  --chart-3: #FFD60A;
+  --chart-4: #FF9F0A;
+  --chart-5: #BF5AF2;
+
+  /* Radius */
   --radius: 0.75rem;
-  --sidebar: #050505;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent: #111111;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1F1F1F;
-  --sidebar-ring: #ffffff;
+
+  /* Sidebar */
+  --sidebar: #141416;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #007AFF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgba(0, 122, 255, 0.1);
+  --sidebar-accent-foreground: #007AFF;
+  --sidebar-border: #2C2C2E;
+  --sidebar-ring: #007AFF;
+
+  /* Text helpers */
+  --foreground: #FFFFFF;
+  --foreground-secondary: #8E8E93;
+  --foreground-tertiary: #636366;
 }
 
 @theme inline {
@@ -81,10 +119,6 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  --color-card-border: #1F1F1F;
-  --color-input-bg: #111111;
-  --color-text-muted: #888888;
-  --color-text-muted-dark: #555555;
 }
 
 @layer base {
@@ -93,43 +127,162 @@
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01";
   }
   html {
     @apply font-sans;
   }
 }
 
-/* Shimmer loading animation */
+/* ================================
+   SHIMMER LOADING
+================================ */
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 .shimmer {
-  background: linear-gradient(90deg, #0D0D0D 25%, #1A1A1A 50%, #0D0D0D 75%);
+  background: linear-gradient(90deg, #242426 25%, #2C2C2E 50%, #242426 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
-/* Scrollbar styling */
+/* ================================
+   LIVE PULSE DOT
+================================ */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.75); }
+}
+
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ================================
+   BLUE GLOW PULSE
+================================ */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(0, 122, 255, 0.2); }
+  50% { box-shadow: 0 0 32px rgba(0, 122, 255, 0.4); }
+}
+
+.glow-blue {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* ================================
+   SCROLLBAR
+================================ */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #000000;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333333;
-  border-radius: 3px;
+  background: #38383A;
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555555;
+  background: #48484A;
+}
+
+/* ================================
+   GLASS SURFACE
+================================ */
+.glass {
+  background: rgba(36, 36, 38, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(56, 56, 58, 0.8);
+}
+
+/* ================================
+   TEXT SELECTION
+================================ */
+::selection {
+  background: rgba(0, 122, 255, 0.28);
+  color: #FFFFFF;
+}
+
+/* ================================
+   FOCUS RING — Blue
+================================ */
+*:focus-visible {
+  outline: 2px solid rgba(0, 122, 255, 0.6);
+  outline-offset: 2px;
+}
+
+/* ================================
+   PROSE — Dark + Blue links
+================================ */
+.prose-inceptive {
+  color: #8E8E93;
+  line-height: 1.75;
+}
+
+.prose-inceptive h1,
+.prose-inceptive h2,
+.prose-inceptive h3,
+.prose-inceptive h4 {
+  color: #FFFFFF;
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose-inceptive p { margin-bottom: 0.9em; }
+
+.prose-inceptive a {
+  color: #007AFF;
+  text-decoration: none;
+}
+
+.prose-inceptive a:hover {
+  text-decoration: underline;
+}
+
+.prose-inceptive strong {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.prose-inceptive code {
+  background: #2A2A2C;
+  border: 1px solid #38383A;
+  border-radius: 5px;
+  padding: 2px 6px;
+  font-size: 0.875em;
+  color: #FFFFFF;
+}
+
+.prose-inceptive pre {
+  background: #1C1C1E;
+  border: 1px solid #38383A;
+  border-radius: 12px;
+  padding: 16px 20px;
+  overflow-x: auto;
+}
+
+.prose-inceptive ul,
+.prose-inceptive ol {
+  padding-left: 1.4em;
+  margin-bottom: 0.9em;
+}
+
+.prose-inceptive li { margin-bottom: 0.3em; }
+
+.prose-inceptive blockquote {
+  border-left: 3px solid #007AFF;
+  padding-left: 1em;
+  color: #636366;
+  font-style: italic;
 }

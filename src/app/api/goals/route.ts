@@ -1,10 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const getAdmin = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://localhost:3000";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy";
+  return createClient(url, key);
+};
+
+const admin = getAdmin();
 
 async function verifyAuth(request: NextRequest) {
   const authHeader = request.headers.get('authorization')

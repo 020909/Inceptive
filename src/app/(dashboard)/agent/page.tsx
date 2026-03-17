@@ -1,44 +1,53 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Send, User, Bot, Loader2, Info, ChevronDown, Check, X, Shield, Globe, Mail, Twitter, FileText } from "lucide-react";
+import { Send, User, Bot, Loader2, Globe, Mail, FileText, Shield, Check, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { createClient } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { motion, AnimatePresence } from "framer-motion";
 
-// Types
-type Message = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
+type Message = { id: string; role: "user" | "assistant"; content: string };
+type ToolCall = { toolName: string; args: any; toolCallId: string };
+type ToolResult = { toolName: string; result: any; toolCallId: string };
+
+const getSupabase = () => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://localhost:3000";
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "dummy";
+  return createClient(url, key);
+};
+const supabase = getSupabase();
+
+const TOOL_META: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
+  searchWeb: { icon: <Globe className="w-3.5 h-3.5" />, label: "Searching the web", color: "#007AFF" },
+  draftEmail: { icon: <Mail className="w-3.5 h-3.5" />, label: "Drafting email", color: "#30D158" },
+  scheduleSocialPost: { icon: <Zap className="w-3.5 h-3.5" />, label: "Scheduling post", color: "#FFD60A" },
+  saveResearchReport: { icon: <FileText className="w-3.5 h-3.5" />, label: "Saving report", color: "#BF5AF2" },
 };
 
-type ToolCall = {
-  toolName: string;
-  args: any;
-  toolCallId: string;
-};
+const SUGGESTIONS = [
+  "Research the latest trends in AI agents",
+  "Draft an intro email to a potential investor",
+  "What are the top 5 SaaS tools for founders?",
+  "Summarise my current goal status",
+];
 
-type ToolResult = {
-  toolName: string;
-  result: any;
-  toolCallId: string;
-};
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-);
-
-const ToolIcon = ({ name }: { name: string }) => {
-  if (name === 'searchWeb') return <Globe className="w-3 h-3 text-blue-400" />;
-  if (name === 'draftEmail') return <Mail className="w-3 h-3 text-emerald-400" />;
-  if (name === 'scheduleSocialPost') return <Twitter className="w-3 h-3 text-sky-400" />;
-  if (name === 'saveResearchReport') return <FileText className="w-3 h-3 text-purple-400" />;
-  return <Info className="w-3 h-3 text-gray-400" />;
-};
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-1 px-3 py-2">
+      {[0, 1, 2].map(i => (
+        <motion.div
+          key={i}
+          className="w-1.5 h-1.5 rounded-full"
+          style={{ background: "#8E8E93" }}
+          animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
+          transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function AgentPage() {
   const [input, setInput] = useState("");
@@ -46,27 +55,20 @@ export default function AgentPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
-  
-  // Real-time Diagnostics
-  const [lastTrace, setLastTrace] = useState("IDLE");
   const [toolCalls, setToolCalls] = useState<ToolCall[]>([]);
   const [toolResults, setToolResults] = useState<ToolResult[]>([]);
-  
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-      }
+      if (session?.user) setUser(session.user);
       setSessionLoading(false);
     });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setSessionLoading(false);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
@@ -74,16 +76,22 @@ export default function AgentPage() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, toolCalls, toolResults]);
+  }, [messages, toolCalls]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, 160) + "px";
+  }, [input]);
 
   const handleSend = async () => {
     if (!input.trim() || !user || isLoading) return;
-
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
-    setLastTrace("CONNECTING...");
     setToolCalls([]);
     setToolResults([]);
 
@@ -94,10 +102,7 @@ export default function AgentPage() {
       const response = await fetch("/api/agent/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [...messages, userMsg],
-          user_id: user.id
-        }),
+        body: JSON.stringify({ messages: [...messages, userMsg], user_id: user.id }),
       });
 
       if (!response.ok) {
@@ -106,53 +111,33 @@ export default function AgentPage() {
       }
 
       const reader = response.body?.getReader();
-      if (!reader) throw new Error("No reader available");
+      if (!reader) throw new Error("No stream available");
 
       const decoder = new TextDecoder();
       let assistantContent = "";
       let buffer = "";
-      setLastTrace("STREAMING...");
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         buffer += decoder.decode(value, { stream: true });
-        setLastTrace(`RECEIVING: ${buffer.length}b`);
-
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ""; // Keep the incomplete line in buffer
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
           if (!line.trim()) continue;
+          const firstColon = line.indexOf(":");
+          if (firstColon === -1) { assistantContent += line; continue; }
+          const type = line.substring(0, firstColon);
+          const contentJson = line.substring(firstColon + 1);
+          try {
+            const data = JSON.parse(contentJson);
+            if (type === "0") { assistantContent += data; }
+            else if (type === "1") { setToolCalls(prev => [...prev, data]); }
+            else if (type === "2") { setToolResults(prev => [...prev, data]); }
+            else if (type === "3") { toast.error(`Agent Error: ${data}`); }
+          } catch { assistantContent += line; }
 
-          const firstColon = line.indexOf(':');
-          if (firstColon === -1) {
-            // Raw text fallback
-            assistantContent += line;
-          } else {
-            const type = line.substring(0, firstColon);
-            const contentJson = line.substring(firstColon + 1);
-
-            try {
-              const data = JSON.parse(contentJson);
-              if (type === '0') { // Text Delta
-                assistantContent += data;
-              } else if (type === '1') { // Tool Call
-                setToolCalls(prev => [...prev, data]);
-              } else if (type === '2') { // Tool Result
-                setToolResults(prev => [...prev, data]);
-              } else if (type === '3') { // Error
-                setLastTrace(`ERROR: ${data}`);
-                toast.error(`Agent Error: ${data}`);
-              }
-            } catch (e) {
-              // Parse failed, treat as raw text
-              assistantContent += line;
-            }
-          }
-
-          // Update message UI
           setMessages(prev => {
             const next = [...prev];
             const msg = next.find(m => m.id === assistantMsgId);
@@ -161,11 +146,7 @@ export default function AgentPage() {
           });
         }
       }
-
-      setLastTrace("IDLE");
     } catch (err: any) {
-      console.error("[Agent] Request failed:", err);
-      setLastTrace(`ERROR: ${err.message}`);
       toast.error(err.message);
     } finally {
       setIsLoading(false);
@@ -174,155 +155,215 @@ export default function AgentPage() {
 
   if (sessionLoading) {
     return (
-      <div className="flex h-full items-center justify-center bg-black">
-        <Loader2 className="w-8 h-8 animate-spin text-white" />
+      <div className="flex h-[80vh] items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-[#007AFF]" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="flex h-full items-center justify-center bg-black p-4">
-        <div className="text-center space-y-4 max-w-sm">
-          <div className="bg-[#111] p-6 rounded-2xl border border-[#1F1F1F]">
-            <Shield className="w-12 h-12 text-[#444] mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">Authenticated Session Required</h2>
-            <p className="text-sm text-gray-500 mb-6">Please sign in to your Inceptive account to access the autonomous agent engine.</p>
-            <Button className="w-full bg-white text-black hover:bg-gray-200" onClick={() => (window.location.href = "/login")}>
+      <div className="flex h-[80vh] items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center space-y-4 max-w-sm"
+        >
+          <div className="p-6 rounded-2xl border" style={{ background: "#242426", borderColor: "#38383A" }}>
+            <Shield className="w-10 h-10 text-[#48484A] mx-auto mb-4" />
+            <h2 className="text-lg font-bold text-white mb-2">Sign in required</h2>
+            <p className="text-sm text-[#8E8E93] mb-5">
+              Please sign in to access the Inceptive agent.
+            </p>
+            <Button
+              className="w-full font-semibold rounded-xl border-0 hover:opacity-90"
+              style={{ background: "#007AFF", color: "#FFFFFF" }}
+              onClick={() => (window.location.href = "/login")}
+            >
               Go to Login
             </Button>
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-black text-white p-4 lg:p-6 overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-4rem)] max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between pb-4 mb-2 border-b border-[#2C2C2E]"
+      >
         <div>
-          <h1 className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-            Inceptive Autonomous Agent
-          </h1>
-          <p className="text-xs text-[#555] mt-1 tracking-wider uppercase font-semibold flex items-center gap-2">
-            Manus Engine v5.0.0
-            <span className="bg-[#1F1F1F] text-[#888] px-1.5 py-0.5 rounded text-[10px] border border-[#333]">v5.0.0-ULTRA-STABLE</span>
-          </p>
+          <h1 className="text-xl font-bold text-white">Agent</h1>
+          <div className="flex items-center gap-2 mt-0.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#30D158] pulse-dot" />
+            <span className="text-xs text-[#8E8E93]">Inceptive Engine · Ready</span>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 overflow-y-auto space-y-6 px-2 pb-4 scroll-smooth custom-scrollbar" ref={scrollRef}>
-        {messages.length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center text-center space-y-6 py-12">
-            <div className="w-16 h-16 rounded-full bg-[#0D0D0D] border border-[#1F1F1F] flex items-center justify-center">
-              <Bot className="w-8 h-8 text-white" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold">What is your mission today?</h2>
-              <p className="text-sm text-[#888] max-w-sm mx-auto">
-                I can research topics, draft emails, and schedule social posts autonomously.
+      {/* Chat area */}
+      <div className="flex-1 overflow-y-auto py-4 space-y-6 pr-1" ref={scrollRef}>
+        <AnimatePresence initial={false}>
+          {messages.length === 0 && (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center h-full py-16 text-center"
+            >
+              <motion.div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 border"
+                style={{ background: "#007AFF18", borderColor: "#007AFF30" }}
+                animate={{ boxShadow: ["0 0 16px rgba(0,122,255,0.1)", "0 0 32px rgba(0,122,255,0.2)", "0 0 16px rgba(0,122,255,0.1)"] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              >
+                <Bot className="w-6 h-6 text-[#007AFF]" />
+              </motion.div>
+              <h2 className="text-lg font-semibold text-white mb-2">What&apos;s your mission?</h2>
+              <p className="text-sm text-[#8E8E93] mb-8 max-w-xs">
+                I can research topics, draft emails, schedule posts, and more — autonomously.
               </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg w-full">
-              {[
-                "Research the latest news on AI Agents",
-                "Draft an introductory email to a VC",
-                "Suggest 3 tweets about SpaceX Starship",
-                "What is my current goal status?"
-              ].map((suggestion) => (
-                <button
-                  key={suggestion}
-                  onClick={() => setInput(suggestion)}
-                  className="text-left px-4 py-3 rounded-xl border border-[#1F1F1F] bg-[#0A0A0A] hover:bg-[#111] hover:border-[#333] transition-all text-xs text-gray-300"
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {messages.map((m) => (
-          <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`flex gap-3 max-w-[85%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${
-                m.role === "user" ? "bg-white border-white" : "bg-black border-[#1F1F1F]"
-              }`}>
-                {m.role === "user" ? <User className="w-4 h-4 text-black" /> : <Bot className="w-4 h-4 text-white" />}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-lg">
+                {SUGGESTIONS.map((s) => (
+                  <motion.button
+                    key={s}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setInput(s)}
+                    className="text-left px-4 py-3 rounded-xl border text-xs text-[#8E8E93] hover:text-white transition-colors duration-150"
+                    style={{ background: "#242426", borderColor: "#38383A" }}
+                  >
+                    {s}
+                  </motion.button>
+                ))}
               </div>
-              <div className="space-y-3">
-                {m.content && (
-                  <div className={`rounded-2xl px-4 py-3 text-sm prose prose-invert max-w-none leading-relaxed ${
-                    m.role === "user" ? "bg-white text-black font-medium" : "bg-[#0D0D0D] border border-[#1F1F1F] text-gray-100"
-                  }`}>
-                    <ReactMarkdown>{m.content}</ReactMarkdown>
-                  </div>
-                )}
-                
-                {/* Visualizing Autonomous Thoughts/Tools */}
-                {m.role === "assistant" && (toolCalls.length > 0) && (
-                  <div className="flex flex-col gap-2 w-full">
-                    {toolCalls.map((tc, idx) => (
-                      <div key={tc.toolCallId || idx} className="flex items-center gap-3 bg-[#080808] border border-[#111] rounded-lg px-3 py-2 text-[11px] text-[#888]">
-                        <div className="w-5 h-5 rounded bg-[#111] flex items-center justify-center">
-                          <ToolIcon name={tc.toolName} />
+            </motion.div>
+          )}
+
+          {messages.map((m, i) => (
+            <motion.div
+              key={m.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div className={`flex gap-3 max-w-[82%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                {/* Avatar */}
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border mt-0.5 ${
+                  m.role === "user"
+                    ? "border-white/20 bg-white"
+                    : "border-[#007AFF]/30 bg-[#007AFF]/10"
+                }`}>
+                  {m.role === "user"
+                    ? <User className="w-3.5 h-3.5 text-black" />
+                    : <Bot className="w-3.5 h-3.5 text-[#007AFF]" />
+                  }
+                </div>
+
+                <div className="space-y-2">
+                  {/* Message bubble */}
+                  {m.content ? (
+                    <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                      m.role === "user"
+                        ? "text-white"
+                        : "text-[#E5E5EA]"
+                    }`} style={{
+                      background: m.role === "user" ? "#007AFF" : "#242426",
+                      border: m.role === "user" ? "none" : "1px solid #38383A",
+                    }}>
+                      {m.role === "assistant" ? (
+                        <div className="prose-inceptive">
+                          <ReactMarkdown>{m.content}</ReactMarkdown>
                         </div>
-                        <span className="flex-1 truncate">Executing <span className="text-white">{tc.toolName}</span>...</span>
-                        {toolResults.some(r => r.toolCallId === tc.toolCallId) ? (
-                          <div className="flex items-center gap-1.5 text-emerald-500 font-medium">
-                            <Check className="w-3 h-3" /> Done
-                          </div>
-                        ) : (
-                          <Loader2 className="w-3 h-3 animate-spin text-white/50" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ) : m.content}
+                    </div>
+                  ) : isLoading && i === messages.length - 1 ? (
+                    <div className="rounded-2xl border" style={{ background: "#242426", borderColor: "#38383A" }}>
+                      <TypingIndicator />
+                    </div>
+                  ) : null}
+
+                  {/* Tool calls */}
+                  {m.role === "assistant" && toolCalls.length > 0 && i === messages.length - 1 && (
+                    <div className="space-y-1.5">
+                      {toolCalls.map((tc, idx) => {
+                        const meta = TOOL_META[tc.toolName];
+                        const isDone = toolResults.some(r => r.toolCallId === tc.toolCallId);
+                        return (
+                          <motion.div
+                            key={tc.toolCallId || idx}
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl border"
+                            style={{ background: "#1C1C1E", borderColor: isDone ? "#2C2C2E" : `${meta?.color || "#007AFF"}30` }}
+                          >
+                            <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+                              style={{ background: `${meta?.color || "#007AFF"}18`, color: meta?.color || "#007AFF" }}>
+                              {meta?.icon || <Globe className="w-3.5 h-3.5" />}
+                            </div>
+                            <span className="text-xs text-[#8E8E93] flex-1">
+                              {meta?.label || tc.toolName}
+                              {tc.args?.query && <span className="text-white ml-1">"{tc.args.query}"</span>}
+                            </span>
+                            {isDone ? (
+                              <div className="flex items-center gap-1 text-[#30D158]">
+                                <Check className="w-3 h-3" />
+                                <span className="text-[10px] font-medium">Done</span>
+                              </div>
+                            ) : (
+                              <Loader2 className="w-3 h-3 animate-spin text-[#8E8E93]" />
+                            )}
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
-      {/* Diagnostics Panel (Small) */}
-      <div className="mt-4 p-3 rounded-xl border border-[#1F1F1F] bg-[#050505] text-[10px] font-mono text-[#444] flex justify-between items-center h-8">
-        <div className="flex gap-4">
-          <span className="text-[#666]">TRACE: <span className={lastTrace.includes('ERROR') ? 'text-red-500' : 'text-emerald-500'}>{lastTrace}</span></span>
-          <span className="text-[#666]">MSGS: <span className="text-white">{messages.length}</span></span>
-        </div>
-        <div className="flex gap-2">
-          <span className="bg-[#111] px-1.5 rounded border border-[#1F1F1F]">MANUAL_FETCH_MODE</span>
-        </div>
-      </div>
-
-      {/* Input Section */}
-      <div className="mt-4 relative">
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent -top-20 pointer-events-none" />
-        <div className="relative group">
-          <Input
+      {/* Input */}
+      <div className="pt-4 border-t border-[#2C2C2E]">
+        <div className="relative rounded-2xl border transition-colors duration-150"
+          style={{ background: "#242426", borderColor: isLoading ? "#007AFF40" : "#38383A" }}>
+          <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-            placeholder="Type your mission (e.g. 'Update me on the latest news')..."
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            placeholder="Type your mission… (Enter to send, Shift+Enter for new line)"
             disabled={isLoading}
-            className="w-full bg-[#0D0D0D] border-[#1F1F1F] text-white rounded-2xl h-14 pl-5 pr-20 focus-visible:ring-1 focus-visible:ring-white transition-all group-hover:border-[#333] shadow-2xl"
+            rows={1}
+            className="w-full bg-transparent text-white text-sm placeholder:text-[#48484A] resize-none px-4 py-3.5 pr-14 outline-none leading-relaxed"
+            style={{ maxHeight: "160px" }}
           />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            <Button
+          <div className="absolute right-2.5 bottom-2.5">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
               onClick={handleSend}
               disabled={isLoading || !input.trim()}
-              size="icon"
-              className="w-10 h-10 rounded-xl bg-white text-black hover:bg-gray-200"
+              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-40"
+              style={{ background: input.trim() && !isLoading ? "#007AFF" : "#2A2A2C" }}
             >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-            </Button>
+              {isLoading
+                ? <Loader2 className="w-4 h-4 animate-spin text-white" />
+                : <Send className="w-4 h-4 text-white" />
+              }
+            </motion.button>
           </div>
         </div>
-        <p className="text-[10px] text-center text-[#444] mt-3 uppercase tracking-widest font-bold">
-          Powered by Inceptive Autonomous ReAct Engine
+        <p className="text-[10px] text-center text-[#48484A] mt-2 uppercase tracking-widest">
+          Powered by Inceptive Autonomous Engine
         </p>
       </div>
     </div>

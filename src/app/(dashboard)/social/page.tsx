@@ -25,6 +25,7 @@ import {
 import { Share2, Plus, Loader2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { formatTimeAgo } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface SocialPost {
   id: string;
@@ -153,11 +154,11 @@ export default function SocialPage() {
       <PageTransition>
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-white mb-2">Social Media Manager</h1>
-          <Button disabled className="bg-white text-black h-10 px-4">
+          <Button disabled className="bg-[#007AFF] text-white h-10 px-4">
             <Plus className="h-4 w-4 mr-2" /> Create Post
           </Button>
         </div>
-        <div className="rounded-xl border border-[#1F1F1F] bg-[#0D0D0D] p-6 skeleton h-[240px]" />
+        <div className="rounded-xl border border-[#38383A] bg-[#242426] p-6 skeleton h-[240px]" />
       </PageTransition>
     );
   }
@@ -165,70 +166,97 @@ export default function SocialPage() {
   return (
     <PageTransition>
       <div className="max-w-[1200px] mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <motion.div
+          className="flex items-center justify-between mb-8"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
           <h1 className="text-2xl font-bold text-white mb-2">Social Media Manager</h1>
-          <Button 
-            onClick={() => {
-              setPlatform("X");
-              setContent("");
-              setTopic("");
-              setScheduleTime("");
-              setGenerateWithAi(false);
-              setIsModalOpen(true);
-            }} 
-            className="bg-white text-black hover:bg-white/90 rounded-lg h-10 px-4 text-sm font-medium transition-all"
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Post
-          </Button>
-        </div>
+            <Button
+              onClick={() => {
+                setPlatform("X");
+                setContent("");
+                setTopic("");
+                setScheduleTime("");
+                setGenerateWithAi(false);
+                setIsModalOpen(true);
+              }}
+              className="bg-[#007AFF] text-white hover:bg-[#0A84FF] rounded-lg h-10 px-4 text-sm font-medium transition-all"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Post
+            </Button>
+          </motion.div>
+        </motion.div>
 
         {posts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 text-center border border-[#1F1F1F] rounded-xl bg-[#0D0D0D]">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#111111] border border-[#333333] mb-6">
+          <motion.div
+            className="flex flex-col items-center justify-center py-32 text-center border border-[#38383A] rounded-xl bg-[#242426]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#2C2C2E] border border-[#38383A] mb-6">
               <Share2 className="h-8 w-8 text-white" />
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">No posts yet</h3>
-            <p className="text-[#888888] mb-6 max-w-sm">
+            <p className="text-[#8E8E93] mb-6 max-w-sm">
               Schedule your first social media post or let AI generate one for you.
             </p>
-            <Button 
+            <Button
               onClick={() => setIsModalOpen(true)}
-              className="bg-white text-black hover:bg-white/90"
+              className="bg-[#007AFF] text-white hover:bg-[#0A84FF]"
             >
               <Plus className="h-4 w-4 mr-2" /> Create Post
             </Button>
-          </div>
+          </motion.div>
         ) : (
-          <div className="grid gap-4">
-            {posts.map((post) => (
-              <div key={post.id} className="rounded-xl border border-[#1F1F1F] bg-[#0D0D0D] p-5 flex items-start gap-4 hover:bg-[#111111] transition-colors">
+          <motion.div
+            className="grid gap-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+          >
+            {posts.map((post, idx) => (
+              <motion.div
+                key={post.id}
+                className="rounded-xl border border-[#38383A] bg-[#242426] p-5 flex items-start gap-4 hover:border-[#3A3A3C] transition-colors"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: idx * 0.05 }}
+                whileHover={{ backgroundColor: "#2C2C2E" }}
+              >
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="px-3 py-1 bg-[#1F1F1F] text-white text-xs font-semibold rounded-full tracking-wide">
+                    <span className="px-3 py-1 bg-[#38383A] text-white text-xs font-semibold rounded-full tracking-wide">
                       {post.platform}
                     </span>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#111] border border-[#1F1F1F] rounded-full">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#2A2A2C] border border-[#38383A] rounded-full">
                       <div className={`h-2 w-2 rounded-full ${getStatusColor(post.status)}`} />
-                      <span className="text-xs uppercase font-medium tracking-wide text-[#888]">{post.status}</span>
+                      <span className="text-xs uppercase font-medium tracking-wide text-[#8E8E93]">{post.status}</span>
                     </div>
                   </div>
-                  <p className="text-sm text-[#CCCCCC] leading-relaxed line-clamp-2">
+                  <p className="text-sm text-[#FFFFFF] leading-relaxed line-clamp-2">
                     {post.content}
                   </p>
                 </div>
-                <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-[#111111] border border-[#1F1F1F] rounded-lg text-[#888888] shrink-0 text-sm">
+                <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-[#2A2A2C] border border-[#38383A] rounded-lg text-[#8E8E93] shrink-0 text-sm">
                   <Calendar className="h-4 w-4" />
                   {new Date(post.scheduled_for).toLocaleDateString()} at {new Date(post.scheduled_for).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="bg-[#050505] border-[#1F1F1F] text-white sm:max-w-xl">
+        <DialogContent className="bg-[#1C1C1E] border-[#38383A] text-white sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Create Social Post</DialogTitle>
           </DialogHeader>
@@ -237,34 +265,34 @@ export default function SocialPage() {
               <div className="space-y-2">
                 <Label>Platform</Label>
                 <Select value={platform} onValueChange={(v) => v && setPlatform(v)}>
-                  <SelectTrigger className="bg-[#111111] border-[#333333] text-white focus:border-white">
+                  <SelectTrigger className="bg-[#2A2A2C] border-[#38383A] text-white focus:border-[#007AFF]">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0D0D0D] border-[#333333] text-white">
-                    <SelectItem value="X" className="hover:bg-[#111] focus:bg-[#111]">X</SelectItem>
-                    <SelectItem value="LinkedIn" className="hover:bg-[#111] focus:bg-[#111]">LinkedIn</SelectItem>
-                    <SelectItem value="Instagram" className="hover:bg-[#111] focus:bg-[#111]">Instagram</SelectItem>
+                  <SelectContent className="bg-[#1C1C1E] border-[#38383A] text-white">
+                    <SelectItem value="X" className="hover:bg-[#2C2C2E] focus:bg-[#2C2C2E]">X</SelectItem>
+                    <SelectItem value="LinkedIn" className="hover:bg-[#2C2C2E] focus:bg-[#2C2C2E]">LinkedIn</SelectItem>
+                    <SelectItem value="Instagram" className="hover:bg-[#2C2C2E] focus:bg-[#2C2C2E]">Instagram</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Schedule Time</Label>
-                <Input 
-                  type="datetime-local" 
-                  value={scheduleTime} 
-                  onChange={e => setScheduleTime(e.target.value)} 
-                  className="bg-[#111111] border-[#333333] text-white focus:border-white [color-scheme:dark]"
+                <Input
+                  type="datetime-local"
+                  value={scheduleTime}
+                  onChange={e => setScheduleTime(e.target.value)}
+                  className="bg-[#2A2A2C] border-[#38383A] text-white focus:border-[#007AFF] [color-scheme:dark]"
                 />
               </div>
             </div>
 
             <div className="flex items-center gap-2 pt-2">
-              <input 
-                type="checkbox" 
-                id="use-ai" 
-                checked={generateWithAi} 
+              <input
+                type="checkbox"
+                id="use-ai"
+                checked={generateWithAi}
                 onChange={(e) => setGenerateWithAi(e.target.checked)}
-                className="rounded border-[#333333] bg-[#111111] text-white focus:ring-0 w-4 h-4 cursor-pointer accent-white"
+                className="rounded border-[#38383A] bg-[#2A2A2C] text-[#007AFF] focus:ring-0 w-4 h-4 cursor-pointer"
               />
               <Label htmlFor="use-ai" className="cursor-pointer select-none">Generate with AI</Label>
             </div>
@@ -272,30 +300,30 @@ export default function SocialPage() {
             {generateWithAi ? (
               <div className="space-y-2">
                 <Label>Topic</Label>
-                <Input 
-                  value={topic} 
-                  onChange={e => setTopic(e.target.value)} 
+                <Input
+                  value={topic}
+                  onChange={e => setTopic(e.target.value)}
                   placeholder="What should the post be about?"
-                  className="bg-[#111111] border-[#333333] text-white focus:border-white"
+                  className="bg-[#2A2A2C] border-[#38383A] text-white focus:border-[#007AFF]"
                   required
                 />
               </div>
             ) : (
               <div className="space-y-2">
                 <Label>Content</Label>
-                <Textarea 
-                  value={content} 
-                  onChange={e => setContent(e.target.value)} 
+                <Textarea
+                  value={content}
+                  onChange={e => setContent(e.target.value)}
                   placeholder="Write your post here..."
-                  className="bg-[#111111] border-[#333333] text-white focus:border-white min-h-[120px]"
+                  className="bg-[#2A2A2C] border-[#38383A] text-white focus:border-[#007AFF] min-h-[120px]"
                   required
                 />
               </div>
             )}
 
             <DialogFooter className="pt-4">
-              <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} className="hover:bg-[#111] text-white hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={saving} className="bg-white text-black hover:bg-white/90">
+              <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} className="hover:bg-[#2C2C2E] text-white hover:text-white">Cancel</Button>
+              <Button type="submit" disabled={saving} className="bg-[#007AFF] text-white hover:bg-[#0A84FF]">
                 {saving ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {generateWithAi ? "Generating..." : "Saving..."}</>
                 ) : (
