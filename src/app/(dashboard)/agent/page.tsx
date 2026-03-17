@@ -172,8 +172,8 @@ function AgentChatContent({ user }: { user: any }) {
             Inceptive Autonomous Agent
           </h1>
           <p className="text-xs text-[#555] mt-1 tracking-wider uppercase font-semibold flex items-center gap-2">
-            Manus Engine v3.9.0
-            <span className="bg-[#1F1F1F] text-[#888] px-1.5 py-0.5 rounded text-[10px] border border-[#333]">v3.9.0-ULTIMATE</span>
+            Manus Engine v4.0.0
+            <span className="bg-[#1F1F1F] text-[#888] px-1.5 py-0.5 rounded text-[10px] border border-[#333]">v4.0.0-STABLE</span>
           </p>
         </div>
         <Button className="bg-white text-black hover:bg-white/90 rounded-lg h-9 px-4 text-sm font-medium">
