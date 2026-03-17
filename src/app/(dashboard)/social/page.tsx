@@ -260,7 +260,7 @@ export default function SocialPage() {
               <span className="text-xs text-[#30D158] font-medium">{connectedPlatforms.length} connected</span>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {SOCIAL_CONNECTORS.map((c, i) => (
               <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
                 <ConnectorCard
