@@ -15,7 +15,7 @@ const PROVIDERS = [
     id: "anthropic",
     name: "Anthropic",
     description: "Claude models — best for reasoning & writing",
-    icon: "🧠",
+    logoDomain: "anthropic.com",
     models: [
       { id: "claude-opus-4-5", name: "Claude Opus 4.5", description: "Most powerful · Best quality" },
       { id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5", description: "Balanced · Recommended" },
@@ -26,7 +26,7 @@ const PROVIDERS = [
     id: "openai",
     name: "OpenAI",
     description: "GPT models — versatile and widely used",
-    icon: "⚡",
+    logoDomain: "openai.com",
     models: [
       { id: "gpt-4o", name: "GPT-4o", description: "Most capable · Multimodal" },
       { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "Fast · Cost-effective" },
@@ -37,7 +37,7 @@ const PROVIDERS = [
     id: "google",
     name: "Google",
     description: "Gemini models — great speed and context",
-    icon: "✨",
+    logoDomain: "google.com",
     models: [
       { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", description: "Fast · Recommended" },
       { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", description: "Long context · Powerful" },
@@ -48,7 +48,7 @@ const PROVIDERS = [
     id: "openrouter",
     name: "OpenRouter",
     description: "Access 100+ models with one API key",
-    icon: "🔀",
+    logoDomain: "openrouter.ai",
     models: [
       { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet", description: "Via OpenRouter" },
       { id: "openai/gpt-4o", name: "GPT-4o", description: "Via OpenRouter" },
@@ -58,6 +58,30 @@ const PROVIDERS = [
     ],
   },
 ];
+
+function ProviderLogo({ domain, name, size = 28 }: { domain: string; name: string; size?: number }) {
+  const [errored, setErrored] = useState(false);
+  if (errored) {
+    return (
+      <div
+        className="rounded-lg flex items-center justify-center text-xs font-bold text-[#8E8E93] shrink-0"
+        style={{ width: size, height: size, background: "#2C2C2E" }}
+      >
+        {name[0]}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={`https://logo.clearbit.com/${domain}`}
+      alt={name}
+      width={size}
+      height={size}
+      className="rounded-lg object-contain shrink-0"
+      onError={() => setErrored(true)}
+    />
+  );
+}
 
 type Step = "provider" | "model" | "key";
 
@@ -159,10 +183,10 @@ export default function SettingsPage() {
             <span className="text-sm text-[#8E8E93]">
               Active:{" "}
               <span className="text-white font-medium">
-                {currentProviderMeta?.icon} {currentModelMeta?.name || savedModel || savedProvider}
+                {currentModelMeta?.name || savedModel || savedProvider}
               </span>
             </span>
-            <span className="ml-auto text-xs text-[#30D158] font-medium">Connected ✓</span>
+            <span className="ml-auto text-xs text-[#30D158] font-medium">Connected</span>
           </motion.div>
         )}
 
@@ -215,7 +239,7 @@ export default function SettingsPage() {
                           background: selectedProvider === p.id ? "#007AFF12" : "#1C1C1E",
                           borderColor: selectedProvider === p.id ? "#007AFF50" : "#38383A",
                         }}>
-                        <span className="text-2xl">{p.icon}</span>
+                        <ProviderLogo domain={p.logoDomain} name={p.name} size={28} />
                         <div className="flex-1">
                           <div className="text-sm font-semibold text-white">{p.name}</div>
                           <div className="text-xs text-[#8E8E93]">{p.description}</div>
@@ -232,8 +256,14 @@ export default function SettingsPage() {
                   initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
                   transition={{ duration: 0.2 }}>
                   <div className="flex items-center gap-3 mb-4">
-                    <button onClick={() => setStep("provider")} className="text-xs text-[#007AFF] hover:opacity-80 transition-opacity">← Back</button>
-                    <span className="text-sm text-[#8E8E93]">Choose a model from <span className="text-white">{providerData.icon} {providerData.name}</span></span>
+                    <button onClick={() => setStep("provider")} className="text-xs text-[#007AFF] hover:opacity-80 transition-opacity">Back</button>
+                    <span className="text-sm text-[#8E8E93]">
+                      Choose a model from{" "}
+                      <span className="inline-flex items-center gap-1.5 text-white">
+                        <ProviderLogo domain={providerData.logoDomain} name={providerData.name} size={14} />
+                        {providerData.name}
+                      </span>
+                    </span>
                   </div>
                   <div className="space-y-2">
                     {providerData.models.map(m => (
@@ -261,12 +291,14 @@ export default function SettingsPage() {
                   transition={{ duration: 0.2 }}
                   className="space-y-5">
                   <div className="flex items-center gap-3 mb-1">
-                    <button onClick={() => setStep("model")} className="text-xs text-[#007AFF] hover:opacity-80 transition-opacity">← Back</button>
-                    <span className="text-sm text-[#8E8E93]">Enter your <span className="text-white">{providerData?.name}</span> API key</span>
+                    <button onClick={() => setStep("model")} className="text-xs text-[#007AFF] hover:opacity-80 transition-opacity">Back</button>
+                    <span className="text-sm text-[#8E8E93]">
+                      Enter your <span className="text-white">{providerData?.name}</span> API key
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "#1C1C1E", border: "1px solid #2C2C2E" }}>
-                    <span className="text-xl">{providerData?.icon}</span>
+                    {providerData && <ProviderLogo domain={providerData.logoDomain} name={providerData.name} size={24} />}
                     <div>
                       <div className="text-xs text-[#8E8E93]">{providerData?.name}</div>
                       <div className="text-sm font-medium text-white">

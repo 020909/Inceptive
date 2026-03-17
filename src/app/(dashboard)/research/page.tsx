@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Search, FileText, Loader2, Link as LinkIcon } from "lucide-react";
+import { Search, FileText, Loader2, Link as LinkIcon, ChevronDown, Download, Zap, Layers, Rocket } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { formatTimeAgo } from "@/lib/utils";
@@ -17,14 +17,115 @@ interface ResearchReport {
   id: string; topic: string; content: string; sources_count: number; created_at: string;
 }
 
+type Depth = "Fast" | "Deep Research" | "Ultra";
+
+const DEPTH_OPTIONS: { value: Depth; icon: React.ReactNode; description: string }[] = [
+  { value: "Fast", icon: <Zap className="w-3.5 h-3.5" />, description: "Quick overview in seconds" },
+  { value: "Deep Research", icon: <Layers className="w-3.5 h-3.5" />, description: "Thorough multi-source analysis" },
+  { value: "Ultra", icon: <Rocket className="w-3.5 h-3.5" />, description: "Comprehensive deep dive" },
+];
+
+function ThinkingDots() {
+  const [dots, setDots] = useState(1);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots(d => (d >= 3 ? 1 : d + 1));
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+  return (
+    <div className="flex items-center gap-3 py-8 justify-center">
+      <div className="flex gap-1.5">
+        {[0, 1, 2].map(i => (
+          <motion.div
+            key={i}
+            className="w-2 h-2 rounded-full"
+            style={{ background: "#007AFF" }}
+            animate={{ opacity: [0.3, 1, 0.3], y: [0, -5, 0] }}
+            transition={{ duration: 1, repeat: Infinity, delay: i * 0.18 }}
+          />
+        ))}
+      </div>
+      <span className="text-sm text-[#8E8E93]">
+        Thinking{".".repeat(dots)}
+      </span>
+    </div>
+  );
+}
+
+function DepthDropdown({ depth, onChange }: { depth: Depth; onChange: (d: Depth) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = DEPTH_OPTIONS.find(d => d.value === depth)!;
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 h-[52px] px-4 rounded-2xl border text-sm font-medium transition-all duration-150"
+        style={{ background: "#242426", borderColor: open ? "#007AFF50" : "#38383A", color: "#8E8E93" }}
+      >
+        <span className="text-[#007AFF]">{current.icon}</span>
+        <span className="text-white whitespace-nowrap">{depth}</span>
+        <ChevronDown className="w-3.5 h-3.5 ml-0.5 transition-transform duration-150" style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ duration: 0.12 }}
+            className="absolute right-0 bottom-[calc(100%+6px)] z-50 rounded-xl border shadow-xl overflow-hidden"
+            style={{ background: "#242426", borderColor: "#38383A", minWidth: "200px" }}
+          >
+            {DEPTH_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors duration-100"
+                style={{
+                  background: depth === opt.value ? "#007AFF15" : "transparent",
+                  borderLeft: depth === opt.value ? "2px solid #007AFF" : "2px solid transparent",
+                }}
+                onMouseEnter={e => { if (depth !== opt.value) (e.currentTarget as HTMLButtonElement).style.background = "#2C2C2E"; }}
+                onMouseLeave={e => { if (depth !== opt.value) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+              >
+                <span style={{ color: "#007AFF" }}>{opt.icon}</span>
+                <div>
+                  <div className="text-sm font-medium text-white">{opt.value}</div>
+                  <div className="text-xs text-[#8E8E93]">{opt.description}</div>
+                </div>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function ResearchPage() {
   const { user } = useAuth();
   const [reports, setReports] = useState<ResearchReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [researching, setResearching] = useState(false);
   const [topic, setTopic] = useState("");
+  const [depth, setDepth] = useState<Depth>("Deep Research");
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [selectedReport, setSelectedReport] = useState<ResearchReport | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeReport, setActiveReport] = useState<ResearchReport | null>(null);
+  const [isThinking, setIsThinking] = useState(false);
 
   const fetchReports = async () => {
     try {
@@ -51,20 +152,45 @@ export default function ResearchPage() {
   const handleRunResearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!topic.trim() || !accessToken || !user) return;
+
+    // Immediately open modal showing thinking state
+    setActiveReport(null);
+    setIsThinking(true);
+    setModalOpen(true);
     setResearching(true);
+
     try {
       const res = await fetch("/api/agent/research", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ topic: topic.trim(), user_id: user.id }),
+        body: JSON.stringify({ topic: topic.trim(), user_id: user.id, depth }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Research failed");
       toast.success("Research complete");
       setTopic("");
-      setReports([data.report, ...reports]);
-    } catch (err: any) { toast.error(err.message); }
-    finally { setResearching(false); }
+      const newReport = data.report;
+      setReports(prev => [newReport, ...prev]);
+      setActiveReport(newReport);
+      setIsThinking(false);
+    } catch (err: any) {
+      toast.error(err.message);
+      setModalOpen(false);
+      setIsThinking(false);
+    } finally {
+      setResearching(false);
+    }
+  };
+
+  const handleDownload = (report: ResearchReport) => {
+    const content = `# ${report.topic}\n\n*Generated by Inceptive Research Engine — ${new Date(report.created_at).toLocaleString()}*\n*Sources: ${report.sources_count}*\n\n---\n\n${report.content}`;
+    const blob = new Blob([content], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${report.topic.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -83,13 +209,16 @@ export default function ResearchPage() {
             </div>
             <Input value={topic} onChange={(e) => setTopic(e.target.value)}
               placeholder="Enter a research topic…" disabled={researching}
-              className="w-full h-13 pl-11 rounded-2xl text-sm text-white placeholder:text-[#48484A]"
+              className="w-full pl-11 rounded-2xl text-sm text-white placeholder:text-[#48484A]"
               style={{ height: "52px", background: "#242426", border: "1px solid #38383A" }}
             />
           </div>
+
+          <DepthDropdown depth={depth} onChange={setDepth} />
+
           <Button type="submit" disabled={researching || !topic.trim() || !accessToken}
-            className="h-[52px] px-7 rounded-2xl font-semibold text-sm border-0 transition-opacity hover:opacity-90 disabled:opacity-40"
-            style={{ background: "#007AFF", color: "#FFFFFF" }}>
+            className="px-7 rounded-2xl font-semibold text-sm border-0 transition-opacity hover:opacity-90 disabled:opacity-40"
+            style={{ height: "52px", background: "#007AFF", color: "#FFFFFF" }}>
             {researching ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Researching…</> : "Run Research"}
           </Button>
         </form>
@@ -111,29 +240,12 @@ export default function ResearchPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <AnimatePresence>
-              {researching && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  className="h-48 rounded-2xl border p-5 flex flex-col justify-between relative overflow-hidden"
-                  style={{ background: "#242426", borderColor: "#007AFF30" }}>
-                  <div className="absolute inset-0 shimmer opacity-50" />
-                  <div className="relative space-y-2">
-                    <div className="h-5 w-3/4 rounded-lg shimmer" />
-                    <div className="h-4 w-full rounded shimmer" />
-                    <div className="h-4 w-5/6 rounded shimmer" />
-                  </div>
-                  <div className="relative flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-[#007AFF]" />
-                    <span className="text-xs text-[#007AFF] font-medium">Researching…</span>
-                  </div>
-                </motion.div>
-              )}
-
               {reports.map((report, i) => (
                 <motion.div key={report.id}
                   initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                   whileHover={{ y: -2 }}
-                  onClick={() => setSelectedReport(report)}
+                  onClick={() => { setActiveReport(report); setIsThinking(false); setModalOpen(true); }}
                   className="h-48 rounded-2xl border p-5 flex flex-col justify-between cursor-pointer transition-colors duration-150"
                   style={{ background: "#242426", borderColor: "#38383A" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#48484A"; }}
@@ -161,30 +273,56 @@ export default function ResearchPage() {
       </div>
 
       {/* Report Modal */}
-      <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
+      <Dialog open={modalOpen} onOpenChange={(o) => { if (!researching) { setModalOpen(o); if (!o) { setActiveReport(null); setIsThinking(false); } } }}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 border"
           style={{ background: "#1C1C1E", borderColor: "#38383A" }}>
-          {selectedReport && (
+          {isThinking ? (
+            <div className="flex flex-col items-center justify-center py-24 px-8 text-center">
+              <motion.div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border"
+                style={{ background: "#007AFF15", borderColor: "#007AFF30" }}
+                animate={{ boxShadow: ["0 0 20px rgba(0,122,255,0.1)", "0 0 40px rgba(0,122,255,0.25)", "0 0 20px rgba(0,122,255,0.1)"] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Search className="w-7 h-7 text-[#007AFF]" />
+              </motion.div>
+              <h3 className="text-lg font-semibold text-white mb-2">Researching your topic</h3>
+              <p className="text-sm text-[#8E8E93] mb-6 max-w-xs">Searching the web, analysing sources, and generating your report…</p>
+              <ThinkingDots />
+            </div>
+          ) : activeReport ? (
             <div>
-              <div className="sticky top-0 z-10 px-8 py-6 border-b"
-                style={{ background: "rgba(28,28,30,0.9)", backdropFilter: "blur(20px)", borderColor: "#38383A" }}>
-                <h2 className="text-xl font-bold text-white mb-1.5">{selectedReport.topic}</h2>
-                <div className="flex items-center gap-3 text-xs text-[#8E8E93]">
-                  <div className="flex items-center gap-1.5">
-                    <LinkIcon className="h-3.5 w-3.5" />
-                    {selectedReport.sources_count} sources
+              <div className="sticky top-0 z-10 px-8 py-5 border-b flex items-start justify-between gap-4"
+                style={{ background: "rgba(28,28,30,0.92)", backdropFilter: "blur(20px)", borderColor: "#38383A" }}>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-xl font-bold text-white mb-1.5 leading-snug">{activeReport.topic}</h2>
+                  <div className="flex items-center gap-3 text-xs text-[#8E8E93]">
+                    <div className="flex items-center gap-1.5">
+                      <LinkIcon className="h-3.5 w-3.5" />
+                      {activeReport.sources_count} sources
+                    </div>
+                    <span>·</span>
+                    <span>{new Date(activeReport.created_at).toLocaleString()}</span>
                   </div>
-                  <span>·</span>
-                  <span>{new Date(selectedReport.created_at).toLocaleString()}</span>
                 </div>
+                <button
+                  onClick={() => handleDownload(activeReport)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all duration-150 shrink-0"
+                  style={{ background: "#007AFF15", borderColor: "#007AFF30", color: "#007AFF" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#007AFF25"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#007AFF15"; }}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Download
+                </button>
               </div>
               <div className="p-8">
                 <div className="prose-inceptive">
-                  <ReactMarkdown>{selectedReport.content}</ReactMarkdown>
+                  <ReactMarkdown>{activeReport.content}</ReactMarkdown>
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
         </DialogContent>
       </Dialog>
     </PageTransition>
