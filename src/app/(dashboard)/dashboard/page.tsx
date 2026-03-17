@@ -288,8 +288,8 @@ export default function DashboardPage() {
                       whileHover={{ scale: 1.015, borderColor: "rgba(0,122,255,0.3)" }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setInput(s)}
-                      className="text-left px-6 py-5 rounded-2xl border text-sm text-[#8E8E93] hover:text-white transition-colors duration-150 leading-snug"
-                      style={{ background: "#242426", borderColor: "#2C2C2E" }}>
+                      className="text-left px-6 py-5 rounded-2xl border text-sm text-[#8E8E93] hover:text-white leading-snug"
+                      style={{ background: "#2C2C2E", borderColor: "#3A3A3C" }}>
                       {s}
                     </motion.button>
                   ))}
@@ -377,8 +377,8 @@ export default function DashboardPage() {
           ) : (
             <div className="relative rounded-2xl border transition-all duration-200"
               style={{
-                background: "#242426",
-                borderColor: "#2C2C2E",
+                background: "#2C2C2E",
+                borderColor: "#3A3A3C",
               }}>
               <textarea ref={textareaRef} value={input}
                 onChange={(e) => setInput(e.target.value)}
