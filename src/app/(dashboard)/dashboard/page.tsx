@@ -83,22 +83,22 @@ function StatCard({ title, value, icon, href, pulse }: {
   return (
     <Link href={href} className="block group">
       <motion.div
-        whileHover={{ x: 2 }}
+        whileHover={{ y: -1 }}
         transition={{ duration: 0.15 }}
-        className="flex items-center gap-3.5 py-2.5 px-2 rounded-xl transition-colors duration-150"
-        style={{ background: "transparent" }}
-        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+        className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl border transition-colors duration-150"
+        style={{ background: "#242426", borderColor: "#2C2C2E" }}
+        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "#2C2C2E"; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "#242426"; }}
       >
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
           style={{ background: "rgba(0,122,255,0.1)", border: "1px solid rgba(0,122,255,0.15)" }}>
           <div className="text-[#007AFF]">{icon}</div>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-xl font-bold text-white leading-none mb-0.5 tracking-tight">
+          <div className="text-lg font-bold text-white leading-none mb-0.5 tracking-tight">
             <AnimatedNumber value={value} />
           </div>
-          <div className="text-[11px] text-[#636366] leading-tight font-medium uppercase tracking-wide">{title}</div>
+          <div className="text-[11px] text-[#636366] leading-tight font-medium">{title}</div>
         </div>
         <div className="flex items-center gap-1.5">
           {pulse && <div className="w-1.5 h-1.5 rounded-full bg-[#30D158] pulse-dot" />}
@@ -244,7 +244,7 @@ export default function DashboardPage() {
     }}>
 
       {/* ====== CENTER — Agent Chat ====== */}
-      <div className="flex flex-col flex-1 min-w-0 border-r border-[#242426]">
+      <div className="flex flex-col flex-1 min-w-0">
 
         {/* Top bar */}
         <motion.div
@@ -404,17 +404,17 @@ export default function DashboardPage() {
       </div>
 
       {/* ====== RIGHT — Stats panel ====== */}
-      <div className="hidden lg:flex flex-col w-[260px] shrink-0 overflow-y-auto px-5 py-6 gap-6 border-l border-[#1E1E20]">
+      <div className="hidden lg:flex flex-col w-[272px] shrink-0 overflow-y-auto px-4 py-6 gap-6">
 
-        {/* Stats — floating, no card chrome */}
+        {/* Stats */}
         <div>
-          <p className="text-[10px] uppercase tracking-widest text-[#3A3A3C] font-semibold mb-1 px-2">Overview</p>
+          <p className="text-[10px] uppercase tracking-widest text-[#3A3A3C] font-semibold mb-3 px-1">Overview</p>
           {statsLoading ? (
-            <div className="space-y-1">
-              {[1,2,3,4].map(i => <div key={i} className="h-12 rounded-xl shimmer" />)}
+            <div className="space-y-2">
+              {[1,2,3,4].map(i => <div key={i} className="h-[58px] rounded-2xl shimmer" />)}
             </div>
           ) : (
-            <div className="space-y-0.5">
+            <div className="space-y-2">
               <StatCard title="Tasks Completed" value={stats.tasks_completed} icon={<Zap className="h-4 w-4" />} href="/reports" />
               <StatCard title="Research Reports" value={stats.research_reports} icon={<FileText className="h-4 w-4" />} href="/research" />
               <StatCard title="Emails Sent" value={stats.emails_sent} icon={<MailIcon className="h-4 w-4" />} href="/email" />
@@ -422,9 +422,6 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-
-        {/* Divider */}
-        <div className="h-px mx-2" style={{ background: "rgba(255,255,255,0.05)" }} />
 
         {/* Recent Activity */}
         <div>
