@@ -63,21 +63,15 @@ const PROVIDERS = [
   },
 ];
 
-function ProviderLogo({ logo, name, lightBg, size = 28 }: { logo: string; name: string; lightBg: boolean; size?: number }) {
-  const containerSize = size + 8;
+function ProviderLogo({ logo, name, size = 28 }: { logo: string; name: string; lightBg?: boolean; size?: number }) {
   return (
-    <div
-      className="rounded-lg flex items-center justify-center shrink-0"
-      style={{ width: containerSize, height: containerSize, background: lightBg ? "#FFFFFF" : "#1C1C1E", border: "1px solid #38383A" }}
-    >
-      <img
-        src={logo}
-        alt={name}
-        width={size}
-        height={size}
-        className="object-contain"
-      />
-    </div>
+    <img
+      src={logo}
+      alt={name}
+      width={size}
+      height={size}
+      className="object-contain shrink-0"
+    />
   );
 }
 

@@ -55,18 +55,13 @@ function ConnectorCard({ connector, connected, onConnect }: {
       className="flex items-center gap-4 p-4 rounded-2xl border transition-colors duration-150"
       style={{ background: "#242426", borderColor: connected ? "#007AFF40" : "#38383A" }}
     >
-      <div
-        className="w-10 h-10 rounded-xl overflow-hidden border flex items-center justify-center shrink-0"
-        style={{ borderColor: "#38383A", background: connector.lightBg ? "#FFFFFF" : "#1C1C1E" }}
-      >
-        <img
-          src={connector.logo}
-          alt={connector.name}
-          width={connector.lightBg ? 26 : 22}
-          height={connector.lightBg ? 26 : 22}
-          className="object-contain"
-        />
-      </div>
+      <img
+        src={connector.logo}
+        alt={connector.name}
+        width={28}
+        height={28}
+        className="object-contain shrink-0"
+      />
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-white">{connector.name}</div>
         <div className="text-xs text-[#8E8E93]">{connector.description}</div>

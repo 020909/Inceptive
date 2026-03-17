@@ -378,15 +378,14 @@ export default function DashboardPage() {
             <div className="relative rounded-2xl border transition-all duration-200"
               style={{
                 background: "rgba(255,255,255,0.03)",
-                borderColor: isLoading ? "rgba(0,122,255,0.35)" : "rgba(255,255,255,0.08)",
-                boxShadow: isLoading ? "0 0 0 3px rgba(0,122,255,0.06)" : "none",
+                borderColor: "rgba(255,255,255,0.08)",
               }}>
               <textarea ref={textareaRef} value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Type your mission… (Enter to send, Shift+Enter for new line)"
                 disabled={isLoading} rows={1}
-                className="w-full bg-transparent text-white text-sm placeholder:text-[#3A3A3C] resize-none px-4 py-3 pr-12 outline-none leading-relaxed"
+                className="w-full bg-transparent text-white text-sm placeholder:text-[#3A3A3C] resize-none px-4 py-3 pr-12 outline-none ring-0 focus:outline-none focus:ring-0 leading-relaxed"
                 style={{ maxHeight: "140px" }} />
               <div className="absolute right-2.5 bottom-2.5">
                 <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend}
