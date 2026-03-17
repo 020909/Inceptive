@@ -5,7 +5,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { z } from "zod";
 
-export const maxDuration = 120; // 2 minute timeout for autonomous loops
+export const maxDuration = 120;
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,7 +20,6 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Missing messages or user_id" }), { status: 400 });
     }
 
-    // 1. Verify User & Get API Keys
     const { data: userData, error: userError } = await admin
       .from("users")
       .select("api_key_encrypted, api_provider")
@@ -51,7 +50,6 @@ export async function POST(req: Request) {
       model = createGoogleGenerativeAI({ apiKey })("models/gemini-2.0-flash");
     }
 
-    // 3. System Persona
     const systemPrompt = `You are Inceptive, an autonomous AI agent. 
 RULES:
 1. ALWAYS provide a text update before calling a tool.
@@ -59,8 +57,6 @@ RULES:
 3. Use specific tools (\`draftEmail\`, \`scheduleSocialPost\`) to save drafts.
 4. NEVER ask the user to perform actions you can do yourself. Provide a final summary.`;
 
-    // 4. Autonomous Loop
-    // We cast to any to bypass the 'maxSteps' and 'inputSchema' build errors in the v6 SDK
     const result = streamText({
       model,
       system: systemPrompt,
@@ -71,8 +67,8 @@ RULES:
           description: "Search the web for information.",
           inputSchema: z.object({ query: z.string() }),
           execute: async ({ query }: any) => {
-            console.log(`[ManualTool] searching for: ${query}`);
-            return { results: `Recent findings for ${query}: SpaceX Falcon 9 successful, AI agents market growing.` };
+            console.log(`[Tool] searchWeb: ${query}`);
+            return { results: `News for ${query}: SpaceX Starship success, AI trends 2026, tech market growth.` };
           }
         },
         draftEmail: {
@@ -82,28 +78,45 @@ RULES:
             await admin.from("emails").insert({ user_id, ...args, status: "draft" });
             return { message: "Draft saved." };
           }
-        },
-        scheduleSocialPost: {
-          description: "Save social post.",
-          inputSchema: z.object({ platform: z.string(), content: z.string(), topic: z.string() }),
-          execute: async (args: any) => {
-            await admin.from("social_posts").insert({ user_id, ...args, status: "draft" });
-            return { message: "Post saved." };
-          }
         }
       }
     } as any);
 
-    // v3.9-ULTIMATE-RESILIENCE: Bypass toTextStreamResponse and return raw textStream
-    // This fixes the "(...) is not a function" error for good.
-    const textStream = result.textStream;
-    
-    return new Response(textStream, {
+    // v4.0.0: Manual Protocol Pipe for Real-Time UI updates
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = result.fullStream.getReader();
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            let line = "";
+            if (value.type === 'text-delta') {
+              line = `0:${JSON.stringify(value.textDelta)}\n`;
+            } else if (value.type === 'tool-call') {
+              line = `1:${JSON.stringify(value)}\n`;
+            } else if (value.type === 'tool-result') {
+              line = `2:${JSON.stringify(value)}\n`;
+            } else if (value.type === 'error' || value.type === 'finish') {
+              // Finish silently or with meta
+            }
+
+            if (line) controller.enqueue(encoder.encode(line));
+          }
+        } catch (err: any) {
+          controller.enqueue(encoder.encode(`3:${JSON.stringify(err.message)}\n`));
+        } finally {
+          controller.close();
+        }
+      }
+    });
+
+    return new Response(stream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
-        "Transfer-Encoding": "chunked",
-        "X-Agent-Build": "v3.9.0-ULTIMATE",
-        "X-Agent-Strategy": "RAW-TEXT-PIPE"
+        "X-Agent-Build": "v4.0.0-STABLE",
       }
     });
 
