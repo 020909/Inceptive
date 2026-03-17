@@ -237,7 +237,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: "#1C1C1E" }}>
+    <div className="flex h-screen overflow-hidden" style={{
+      background: "#1C1C1E",
+      backgroundImage: "linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px)",
+      backgroundSize: "48px 48px",
+    }}>
 
       {/* ====== CENTER — Agent Chat ====== */}
       <div className="flex flex-col flex-1 min-w-0 border-r border-[#242426]">
@@ -273,11 +277,8 @@ export default function DashboardPage() {
                   transition={{ duration: 3.5, repeat: Infinity }}>
                   <Bot className="w-6 h-6 text-[#007AFF]" />
                 </motion.div>
-                <h2 className="text-base font-semibold text-white mb-1.5 tracking-tight">What&apos;s your mission?</h2>
-                <p className="text-sm text-[#636366] mb-8 max-w-xs leading-relaxed">
-                  Research, draft emails, schedule posts — I handle it autonomously.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
+                <h2 className="text-base font-semibold text-white mb-8 tracking-tight">What&apos;s your mission?</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl">
                   {SUGGESTIONS.map((s, i) => (
                     <motion.button
                       key={s}
@@ -287,7 +288,7 @@ export default function DashboardPage() {
                       whileHover={{ scale: 1.015, borderColor: "rgba(0,122,255,0.3)" }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setInput(s)}
-                      className="text-left px-3.5 py-2.5 rounded-xl border text-xs text-[#8E8E93] hover:text-white transition-colors duration-150"
+                      className="text-left px-6 py-5 rounded-2xl border text-sm text-[#8E8E93] hover:text-white transition-colors duration-150 leading-snug"
                       style={{ background: "rgba(255,255,255,0.03)", borderColor: "#2C2C2E" }}>
                       {s}
                     </motion.button>
