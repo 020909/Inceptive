@@ -7,7 +7,7 @@ import { motion, AnimatePresence, animate } from "framer-motion";
 import {
   Send, User, Bot, Loader2, Globe, Mail as MailIcon,
   FileText, Check, Zap, ArrowUpRight,
-  CheckCircle2, Clock,
+  CheckCircle2, Clock, Plus,
 } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -375,18 +375,25 @@ export default function DashboardPage() {
               </a>
             </div>
           ) : (
-            <div className="relative rounded-2xl border transition-all duration-200"
-              style={{
-                background: "#2C2C2E",
-                borderColor: "#3A3A3C",
-              }}>
+            <div className="relative rounded-2xl border"
+              style={{ background: "#2C2C2E", borderColor: "#3A3A3C" }}>
+              {/* + attach button */}
+              <button
+                type="button"
+                className="absolute left-2.5 bottom-2.5 w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-150"
+                style={{ background: "rgba(255,255,255,0.05)", color: "#636366" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#FFFFFF"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "#636366"; }}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
               <textarea ref={textareaRef} value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="Type your mission… (Enter to send, Shift+Enter for new line)"
+                placeholder=""
                 disabled={isLoading} rows={1}
-                className="w-full bg-transparent text-white text-sm placeholder:text-[#3A3A3C] resize-none px-4 py-3 pr-12 outline-none ring-0 focus:outline-none focus:ring-0 leading-relaxed"
-                style={{ maxHeight: "140px" }} />
+                className="w-full bg-transparent text-white text-sm resize-none pl-12 py-3 pr-12 leading-relaxed"
+                style={{ maxHeight: "140px", outline: "none", boxShadow: "none" }} />
               <div className="absolute right-2.5 bottom-2.5">
                 <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend}
                   disabled={isLoading || !input.trim()}

@@ -82,7 +82,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [savedProvider, setSavedProvider] = useState<string>("google");
+  const [savedProvider, setSavedProvider] = useState<string>("");
   const [savedModel, setSavedModel] = useState<string>("");
   const [hasApiKey, setHasApiKey] = useState(false);
   const [step, setStep] = useState<Step>("provider");
@@ -102,10 +102,10 @@ export default function SettingsPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          setSavedProvider(data.api_provider || "google");
+          setSavedProvider(data.api_provider || "");
           setSavedModel(data.api_model || "");
           setHasApiKey(data.has_api_key);
-          setSelectedProvider(data.api_provider || "google");
+          setSelectedProvider(data.api_provider || "");
           setSelectedModel(data.api_model || "");
         }
       } catch (err) {
@@ -182,39 +182,39 @@ export default function SettingsPage() {
           </motion.div>
         )}
 
-        <div className="rounded-2xl border overflow-hidden" style={{ background: "#242426", borderColor: "#38383A" }}>
-          {/* Step tabs */}
-          <div className="flex border-b" style={{ borderColor: "#38383A" }}>
-            {(["provider", "model", "key"] as Step[]).map((s, i) => {
-              const labels = ["Provider", "Model", "API Key"];
-              const isActive = step === s;
-              const isDone = (s === "provider" && selectedProvider) ||
-                             (s === "model" && selectedModel) ||
-                             (s === "key" && hasApiKey);
-              return (
-                <button
-                  key={s}
-                  onClick={() => { if (s === "model" && !selectedProvider) return; setStep(s); }}
-                  className="flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-medium transition-all duration-150"
-                  style={{
-                    background: isActive ? "#2A2A2C" : "transparent",
-                    color: isActive ? "#FFFFFF" : "#8E8E93",
-                    borderBottom: isActive ? "2px solid #007AFF" : "2px solid transparent",
-                  }}
-                >
-                  {isDone && !isActive
-                    ? <Check className="w-3.5 h-3.5 text-[#30D158]" />
-                    : <span className="text-xs w-4 h-4 rounded-full flex items-center justify-center font-semibold"
-                        style={{ background: isActive ? "#007AFF" : "#38383A", color: "#fff" }}>
-                        {i + 1}
-                      </span>
-                  }
-                  {labels[i]}
-                </button>
-              );
-            })}
-          </div>
+        {/* Step tabs — separate rounded boxes */}
+        <div className="flex gap-2 mb-4">
+          {(["provider", "model", "key"] as Step[]).map((s, i) => {
+            const labels = ["Provider", "Model", "API Key"];
+            const isActive = step === s;
+            const isDone = (s === "provider" && selectedProvider) ||
+                           (s === "model" && selectedModel) ||
+                           (s === "key" && hasApiKey);
+            return (
+              <button
+                key={s}
+                onClick={() => { if (s === "model" && !selectedProvider) return; setStep(s); }}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border text-sm font-medium transition-all duration-150"
+                style={{
+                  background: isActive ? "#2C2C2E" : "#242426",
+                  borderColor: isActive ? "#007AFF50" : "#38383A",
+                  color: isActive ? "#FFFFFF" : "#8E8E93",
+                }}
+              >
+                {isDone && !isActive
+                  ? <Check className="w-3.5 h-3.5 text-[#30D158]" />
+                  : <span className="text-xs w-4 h-4 rounded-full flex items-center justify-center font-semibold"
+                      style={{ background: isActive ? "#007AFF" : "#38383A", color: "#fff" }}>
+                      {i + 1}
+                    </span>
+                }
+                {labels[i]}
+              </button>
+            );
+          })}
+        </div>
 
+        <div className="rounded-2xl border overflow-hidden" style={{ background: "#242426", borderColor: "#38383A" }}>
           <div className="p-6">
             <AnimatePresence mode="wait">
               {step === "provider" && (
