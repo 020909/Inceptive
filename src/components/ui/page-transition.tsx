@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 export function PageTransition({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
+      className="px-8 py-8 md:px-10 md:py-8 max-w-[1400px]"
       initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
       animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
       transition={{

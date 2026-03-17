@@ -81,12 +81,12 @@ function DepthDropdown({ depth, onChange }: { depth: Depth; onChange: (d: Depth)
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            initial={{ opacity: 0, y: 6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.97 }}
-            transition={{ duration: 0.12 }}
-            className="absolute right-0 bottom-[calc(100%+6px)] z-50 rounded-xl border shadow-xl overflow-hidden"
-            style={{ background: "#242426", borderColor: "#38383A", minWidth: "200px" }}
+            exit={{ opacity: 0, y: 6, scale: 0.97 }}
+            transition={{ duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-xl border shadow-2xl overflow-hidden"
+            style={{ background: "#1E1E20", borderColor: "#38383A", minWidth: "210px", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" }}
           >
             {DEPTH_OPTIONS.map(opt => (
               <button

@@ -1,29 +1,18 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { motion, AnimatePresence, animate } from "framer-motion";
 import {
   Send, User, Bot, Loader2, Globe, Mail as MailIcon,
-  FileText, Check, Zap, Target, ArrowUpRight,
+  FileText, Check, Zap, ArrowUpRight,
   CheckCircle2, Clock,
 } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { formatTimeAgo } from "@/lib/utils";
-
-/* ========================
-   SUPABASE for auth check
-======================== */
-const getSupabase = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://localhost:3000";
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "dummy";
-  return createSupabaseClient(url, key);
-};
-const anonSupabase = getSupabase();
 
 /* ========================
    TYPES
@@ -77,7 +66,7 @@ function TypingIndicator() {
   return (
     <div className="flex items-center gap-1 px-3 py-2.5">
       {[0, 1, 2].map(i => (
-        <motion.div key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: "#8E8E93" }}
+        <motion.div key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: "#636366" }}
           animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
           transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }} />
       ))}
@@ -86,29 +75,34 @@ function TypingIndicator() {
 }
 
 /* ========================
-   STAT CARD (right panel)
+   STAT CARD — transparent, floating
 ======================== */
 function StatCard({ title, value, icon, href, pulse }: {
   title: string; value: number; icon: React.ReactNode; href: string; pulse?: boolean;
 }) {
   return (
     <Link href={href} className="block group">
-      <motion.div whileHover={{ x: 2 }} transition={{ duration: 0.15 }}
-        className="flex items-center gap-3 p-3.5 rounded-xl border transition-colors duration-150"
-        style={{ background: "#242426", borderColor: "#38383A" }}>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-          style={{ background: "rgba(0,122,255,0.12)" }}>
+      <motion.div
+        whileHover={{ x: 2 }}
+        transition={{ duration: 0.15 }}
+        className="flex items-center gap-3.5 py-2.5 px-2 rounded-xl transition-colors duration-150"
+        style={{ background: "transparent" }}
+        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+      >
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: "rgba(0,122,255,0.1)", border: "1px solid rgba(0,122,255,0.15)" }}>
           <div className="text-[#007AFF]">{icon}</div>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-lg font-bold text-white leading-none mb-0.5">
+          <div className="text-xl font-bold text-white leading-none mb-0.5 tracking-tight">
             <AnimatedNumber value={value} />
           </div>
-          <div className="text-[11px] text-[#8E8E93] leading-tight">{title}</div>
+          <div className="text-[11px] text-[#636366] leading-tight font-medium uppercase tracking-wide">{title}</div>
         </div>
         <div className="flex items-center gap-1.5">
           {pulse && <div className="w-1.5 h-1.5 rounded-full bg-[#30D158] pulse-dot" />}
-          <ArrowUpRight className="h-3.5 w-3.5 text-[#48484A] group-hover:text-[#8E8E93] transition-colors" />
+          <ArrowUpRight className="h-3.5 w-3.5 text-[#3A3A3C] group-hover:text-[#636366] transition-colors" />
         </div>
       </motion.div>
     </Link>
@@ -119,11 +113,10 @@ function StatCard({ title, value, icon, href, pulse }: {
    MAIN DASHBOARD
 ======================== */
 export default function DashboardPage() {
+  // Single auth source — useAuth() syncs with the SSR client, no duplicate state
   const { user } = useAuth();
 
   /* — chat state — */
-  const [authUser, setAuthUser] = useState<any>(null);
-  const [sessionLoading, setSessionLoading] = useState(true);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -137,35 +130,20 @@ export default function DashboardPage() {
     tasks_completed: 0, research_reports: 0, emails_sent: 0, currently_working: 0,
   });
   const [recentTasks, setRecentTasks] = useState<any[]>([]);
-  const [activeGoals, setActiveGoals] = useState<any[]>([]);
   const [statsLoading, setStatsLoading] = useState(true);
 
-  /* init auth */
+  /* fetch stats — depends only on user */
   useEffect(() => {
-    anonSupabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) setAuthUser(session.user);
-      setSessionLoading(false);
-    });
-    const { data: { subscription } } = anonSupabase.auth.onAuthStateChange((_event, session) => {
-      setAuthUser(session?.user ?? null);
-      setSessionLoading(false);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  /* fetch stats */
-  useEffect(() => {
+    if (!user) { setStatsLoading(false); return; }
     const fetchStats = async () => {
-      if (!user) return;
       const supabase = createClient();
       try {
-        const [tasksRes, researchRes, emailsRes, workingRes, recentTasksRes, goalsRes] = await Promise.all([
+        const [tasksRes, researchRes, emailsRes, workingRes, recentTasksRes] = await Promise.all([
           supabase.from("tasks").select("*", { count: "exact", head: true }).eq("user_id", user.id),
           supabase.from("research_reports").select("*", { count: "exact", head: true }).eq("user_id", user.id),
           supabase.from("emails").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "sent"),
           supabase.from("tasks").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "in_progress"),
           supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
-          supabase.from("goals").select("*").eq("user_id", user.id).eq("status", "active"),
         ]);
         setStats({
           tasks_completed: tasksRes.count || 0,
@@ -174,7 +152,6 @@ export default function DashboardPage() {
           currently_working: workingRes.count || 0,
         });
         setRecentTasks(recentTasksRes.data || []);
-        setActiveGoals(goalsRes.data || []);
       } catch (err) { console.error(err); }
       finally { setStatsLoading(false); }
     };
@@ -195,7 +172,9 @@ export default function DashboardPage() {
   }, [input]);
 
   const handleSend = async () => {
-    if (!input.trim() || !authUser || isLoading) return;
+    // Use user from useAuth() — single source of truth
+    if (!input.trim() || !user || isLoading) return;
+
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
@@ -209,7 +188,7 @@ export default function DashboardPage() {
       const response = await fetch("/api/agent/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [...messages, userMsg], user_id: authUser.id }),
+        body: JSON.stringify({ messages: [...messages, userMsg], user_id: user.id }),
       });
       if (!response.ok) { const err = await response.json(); throw new Error(err.error || "Failed to connect"); }
 
@@ -261,42 +240,55 @@ export default function DashboardPage() {
     <div className="flex h-screen overflow-hidden" style={{ background: "#1C1C1E" }}>
 
       {/* ====== CENTER — Agent Chat ====== */}
-      <div className="flex flex-col flex-1 min-w-0 border-r border-[#2C2C2E]">
+      <div className="flex flex-col flex-1 min-w-0 border-r border-[#242426]">
 
         {/* Top bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2C2C2E] shrink-0">
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="flex items-center justify-between px-6 py-4 border-b border-[#242426] shrink-0"
+        >
           <div>
-            <h1 className="text-base font-semibold text-white">
-              Good {getGreeting()}, {firstName}
+            <h1 className="text-base font-semibold text-white tracking-tight">
+              Good {getGreeting()}{user ? `, ${firstName}` : ""}
             </h1>
             <div className="flex items-center gap-1.5 mt-0.5">
               <div className="w-1.5 h-1.5 rounded-full bg-[#30D158] pulse-dot" />
-              <span className="text-xs text-[#8E8E93]">Agent ready</span>
+              <span className="text-xs text-[#636366]">Agent ready</span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5" ref={scrollRef}>
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5" ref={scrollRef}>
           <AnimatePresence initial={false}>
             {messages.length === 0 && (
               <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="flex flex-col items-center justify-center h-full py-16 text-center">
                 <motion.div
                   className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 border"
-                  style={{ background: "rgba(0,122,255,0.1)", borderColor: "rgba(0,122,255,0.2)" }}
-                  animate={{ boxShadow: ["0 0 16px rgba(0,122,255,0.08)", "0 0 28px rgba(0,122,255,0.2)", "0 0 16px rgba(0,122,255,0.08)"] }}
-                  transition={{ duration: 3, repeat: Infinity }}>
+                  style={{ background: "rgba(0,122,255,0.08)", borderColor: "rgba(0,122,255,0.15)" }}
+                  animate={{ boxShadow: ["0 0 16px rgba(0,122,255,0.06)", "0 0 32px rgba(0,122,255,0.18)", "0 0 16px rgba(0,122,255,0.06)"] }}
+                  transition={{ duration: 3.5, repeat: Infinity }}>
                   <Bot className="w-6 h-6 text-[#007AFF]" />
                 </motion.div>
-                <h2 className="text-base font-semibold text-white mb-1.5">What&apos;s your mission?</h2>
-                <p className="text-sm text-[#8E8E93] mb-7 max-w-xs">Research, draft emails, schedule posts — I handle it autonomously.</p>
+                <h2 className="text-base font-semibold text-white mb-1.5 tracking-tight">What&apos;s your mission?</h2>
+                <p className="text-sm text-[#636366] mb-8 max-w-xs leading-relaxed">
+                  Research, draft emails, schedule posts — I handle it autonomously.
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
-                  {SUGGESTIONS.map((s) => (
-                    <motion.button key={s} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  {SUGGESTIONS.map((s, i) => (
+                    <motion.button
+                      key={s}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.07 + 0.1 }}
+                      whileHover={{ scale: 1.015, borderColor: "rgba(0,122,255,0.3)" }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => setInput(s)}
                       className="text-left px-3.5 py-2.5 rounded-xl border text-xs text-[#8E8E93] hover:text-white transition-colors duration-150"
-                      style={{ background: "#242426", borderColor: "#38383A" }}>
+                      style={{ background: "rgba(255,255,255,0.03)", borderColor: "#2C2C2E" }}>
                       {s}
                     </motion.button>
                   ))}
@@ -306,12 +298,14 @@ export default function DashboardPage() {
 
             {messages.map((m, i) => (
               <motion.div key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
+                transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`flex gap-2.5 max-w-[80%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 border ${
-                    m.role === "user" ? "bg-white border-white/20" : "border-[#007AFF]/30 bg-[#007AFF]/10"
-                  }`}>
+                <div className={`flex gap-2.5 max-w-[82%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                    m.role === "user"
+                      ? "bg-white"
+                      : "border border-[#007AFF]/25 bg-[#007AFF]/08"
+                  }`} style={m.role === "assistant" ? { background: "rgba(0,122,255,0.08)" } : {}}>
                     {m.role === "user"
                       ? <User className="w-3 h-3 text-black" />
                       : <Bot className="w-3 h-3 text-[#007AFF]" />
@@ -320,14 +314,17 @@ export default function DashboardPage() {
                   <div className="space-y-1.5">
                     {m.content ? (
                       <div className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "text-white" : "text-[#E5E5EA]"}`}
-                        style={{ background: m.role === "user" ? "#007AFF" : "#242426", border: m.role === "assistant" ? "1px solid #38383A" : "none" }}>
+                        style={{
+                          background: m.role === "user" ? "#007AFF" : "rgba(255,255,255,0.04)",
+                          border: m.role === "assistant" ? "1px solid rgba(255,255,255,0.07)" : "none",
+                        }}>
                         {m.role === "assistant"
                           ? <div className="prose-inceptive"><ReactMarkdown>{m.content}</ReactMarkdown></div>
                           : m.content
                         }
                       </div>
                     ) : isLoading && i === messages.length - 1 ? (
-                      <div className="rounded-2xl border" style={{ background: "#242426", borderColor: "#38383A" }}>
+                      <div className="rounded-2xl border" style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.07)" }}>
                         <TypingIndicator />
                       </div>
                     ) : null}
@@ -340,18 +337,21 @@ export default function DashboardPage() {
                             <motion.div key={tc.toolCallId || idx} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: idx * 0.08 }}
                               className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border"
-                              style={{ background: "#1C1C1E", borderColor: isDone ? "#2C2C2E" : "rgba(0,122,255,0.25)" }}>
+                              style={{
+                                background: "rgba(0,122,255,0.05)",
+                                borderColor: isDone ? "rgba(255,255,255,0.06)" : "rgba(0,122,255,0.2)",
+                              }}>
                               <div className="w-5 h-5 rounded flex items-center justify-center shrink-0"
-                                style={{ background: "rgba(0,122,255,0.15)", color: "#007AFF" }}>
+                                style={{ background: "rgba(0,122,255,0.12)", color: "#007AFF" }}>
                                 {meta?.icon || <Globe className="w-3 h-3" />}
                               </div>
                               <span className="text-[11px] text-[#8E8E93] flex-1">
                                 {meta?.label || tc.toolName}
-                                {tc.args?.query && <span className="text-white ml-1">"{tc.args.query}"</span>}
+                                {tc.args?.query && <span className="text-white ml-1">&quot;{tc.args.query}&quot;</span>}
                               </span>
                               {isDone
                                 ? <div className="flex items-center gap-1 text-[#30D158]"><Check className="w-3 h-3" /><span className="text-[10px] font-medium">Done</span></div>
-                                : <Loader2 className="w-3 h-3 animate-spin text-[#8E8E93]" />
+                                : <Loader2 className="w-3 h-3 animate-spin text-[#636366]" />
                               }
                             </motion.div>
                           );
@@ -366,51 +366,55 @@ export default function DashboardPage() {
         </div>
 
         {/* Input */}
-        <div className="px-5 pb-5 pt-3 border-t border-[#2C2C2E] shrink-0">
-          {sessionLoading ? (
-            <div className="h-12 rounded-2xl shimmer" />
-          ) : !authUser ? (
-            <div className="text-center">
-              <a href="/login" className="text-sm text-[#007AFF] hover:opacity-80">Sign in to chat with your agent</a>
+        <div className="px-6 pb-6 pt-3 border-t border-[#242426] shrink-0">
+          {!user ? (
+            <div className="text-center py-2">
+              <a href="/login" className="text-sm text-[#007AFF] hover:opacity-75 transition-opacity">
+                Sign in to chat with your agent
+              </a>
             </div>
           ) : (
-            <div className="relative rounded-2xl border transition-colors duration-150"
-              style={{ background: "#242426", borderColor: isLoading ? "rgba(0,122,255,0.4)" : "#38383A" }}>
+            <div className="relative rounded-2xl border transition-all duration-200"
+              style={{
+                background: "rgba(255,255,255,0.03)",
+                borderColor: isLoading ? "rgba(0,122,255,0.35)" : "rgba(255,255,255,0.08)",
+                boxShadow: isLoading ? "0 0 0 3px rgba(0,122,255,0.06)" : "none",
+              }}>
               <textarea ref={textareaRef} value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="Type your mission… (Enter to send)"
+                placeholder="Type your mission… (Enter to send, Shift+Enter for new line)"
                 disabled={isLoading} rows={1}
-                className="w-full bg-transparent text-white text-sm placeholder:text-[#48484A] resize-none px-4 py-3 pr-12 outline-none leading-relaxed"
+                className="w-full bg-transparent text-white text-sm placeholder:text-[#3A3A3C] resize-none px-4 py-3 pr-12 outline-none leading-relaxed"
                 style={{ maxHeight: "140px" }} />
-              <div className="absolute right-2 bottom-2">
+              <div className="absolute right-2.5 bottom-2.5">
                 <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend}
                   disabled={isLoading || !input.trim()}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-40"
-                  style={{ background: input.trim() && !isLoading ? "#007AFF" : "#2A2A2C" }}>
+                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-30"
+                  style={{ background: input.trim() && !isLoading ? "#007AFF" : "rgba(255,255,255,0.06)" }}>
                   {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : <Send className="w-3.5 h-3.5 text-white" />}
                 </motion.button>
               </div>
             </div>
           )}
-          <p className="text-[10px] text-center text-[#48484A] mt-2 uppercase tracking-widest">
-            Powered by Inceptive Autonomous Engine
+          <p className="text-[10px] text-center text-[#3A3A3C] mt-2.5 uppercase tracking-widest font-medium">
+            Inceptive Autonomous Engine
           </p>
         </div>
       </div>
 
       {/* ====== RIGHT — Stats panel ====== */}
-      <div className="hidden lg:flex flex-col w-[272px] shrink-0 overflow-y-auto px-4 py-5 gap-4">
+      <div className="hidden lg:flex flex-col w-[260px] shrink-0 overflow-y-auto px-5 py-6 gap-6 border-l border-[#1E1E20]">
 
-        {/* Stats */}
+        {/* Stats — floating, no card chrome */}
         <div>
-          <p className="text-[10px] uppercase tracking-widest text-[#636366] font-semibold mb-3 px-1">Overview</p>
+          <p className="text-[10px] uppercase tracking-widest text-[#3A3A3C] font-semibold mb-1 px-2">Overview</p>
           {statsLoading ? (
-            <div className="space-y-2">
-              {[1,2,3,4].map(i => <div key={i} className="h-14 rounded-xl shimmer" />)}
+            <div className="space-y-1">
+              {[1,2,3,4].map(i => <div key={i} className="h-12 rounded-xl shimmer" />)}
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-0.5">
               <StatCard title="Tasks Completed" value={stats.tasks_completed} icon={<Zap className="h-4 w-4" />} href="/reports" />
               <StatCard title="Research Reports" value={stats.research_reports} icon={<FileText className="h-4 w-4" />} href="/research" />
               <StatCard title="Emails Sent" value={stats.emails_sent} icon={<MailIcon className="h-4 w-4" />} href="/email" />
@@ -419,65 +423,37 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Goal Progress */}
-        <div>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <p className="text-[10px] uppercase tracking-widest text-[#636366] font-semibold">Goals</p>
-            <Link href="/goals" className="text-[10px] text-[#007AFF] hover:opacity-80 flex items-center gap-0.5">
-              Manage <ArrowUpRight className="h-2.5 w-2.5" />
-            </Link>
-          </div>
-          {statsLoading ? (
-            <div className="space-y-3">{[1,2].map(i => <div key={i} className="h-12 rounded-xl shimmer" />)}</div>
-          ) : activeGoals.length === 0 ? (
-            <div className="text-center py-6 rounded-xl border" style={{ background: "#242426", borderColor: "#38383A" }}>
-              <Target className="h-5 w-5 text-[#48484A] mx-auto mb-2" />
-              <p className="text-xs text-[#636366]">No active goals</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {activeGoals.slice(0, 4).map((goal: any) => (
-                <div key={goal.id} className="space-y-1.5">
-                  <div className="flex justify-between">
-                    <span className="text-xs font-medium text-white truncate max-w-[160px]">{goal.title}</span>
-                    <span className="text-[11px] text-[#007AFF] font-semibold">{goal.progress_percent}%</span>
-                  </div>
-                  <div className="h-1 w-full rounded-full overflow-hidden" style={{ background: "#2A2A2C" }}>
-                    <motion.div className="h-full rounded-full" style={{ background: "#007AFF" }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${goal.progress_percent}%` }}
-                      transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Divider */}
+        <div className="h-px mx-2" style={{ background: "rgba(255,255,255,0.05)" }} />
 
         {/* Recent Activity */}
         <div>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <p className="text-[10px] uppercase tracking-widest text-[#636366] font-semibold">Recent Activity</p>
+          <div className="flex items-center justify-between mb-3 px-2">
+            <p className="text-[10px] uppercase tracking-widest text-[#3A3A3C] font-semibold">Recent Activity</p>
             <div className="w-1.5 h-1.5 rounded-full bg-[#30D158] pulse-dot" />
           </div>
           {statsLoading ? (
-            <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-12 rounded-xl shimmer" />)}</div>
+            <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-11 rounded-xl shimmer" />)}</div>
           ) : recentTasks.length === 0 ? (
-            <div className="text-center py-6 rounded-xl border" style={{ background: "#242426", borderColor: "#38383A" }}>
-              <Clock className="h-5 w-5 text-[#48484A] mx-auto mb-2" />
-              <p className="text-xs text-[#636366]">No recent activity</p>
+            <div className="text-center py-5 rounded-xl" style={{ border: "1px solid rgba(255,255,255,0.06)" }}>
+              <Clock className="h-4 w-4 text-[#3A3A3C] mx-auto mb-1.5" />
+              <p className="text-[11px] text-[#3A3A3C]">No recent activity</p>
             </div>
           ) : (
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {recentTasks.map((task: any, i: number) => (
-                <motion.div key={task.id} initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }}
+                <motion.div key={task.id}
+                  initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  className="flex items-center gap-2.5 p-2.5 rounded-xl border"
-                  style={{ background: "#242426", borderColor: "#38383A" }}>
-                  <CheckCircle2 className="h-3.5 w-3.5 text-[#007AFF] shrink-0" />
+                  className="flex items-start gap-2.5 p-2.5 rounded-xl transition-colors duration-150 group cursor-default"
+                  style={{ background: "transparent" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5 text-[#007AFF] shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-white truncate">{task.title}</p>
-                    <p className="text-[10px] text-[#636366]">{formatTimeAgo(new Date(task.created_at))}</p>
+                    <p className="text-xs font-medium text-[#C7C7CC] truncate leading-tight">{task.title}</p>
+                    <p className="text-[10px] text-[#48484A] mt-0.5">{formatTimeAgo(new Date(task.created_at))}</p>
                   </div>
                 </motion.div>
               ))}
