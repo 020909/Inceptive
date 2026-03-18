@@ -86,7 +86,7 @@ function StatCard({ title, value, icon, href, pulse }: {
         whileHover={{ y: -1 }}
         transition={{ duration: 0.15 }}
         className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl border transition-colors duration-150"
-        style={{ background: "#242426", borderColor: "#2C2C2E" }}
+        style={{ background: "var(--background-elevated)", borderColor: "var(--border-subtle)" }}
         onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "#2C2C2E"; }}
         onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "#242426"; }}
       >
@@ -98,11 +98,11 @@ function StatCard({ title, value, icon, href, pulse }: {
           <div className="text-lg font-bold text-white leading-none mb-0.5 tracking-tight">
             <AnimatedNumber value={value} />
           </div>
-          <div className="text-[11px] text-[#636366] leading-tight font-medium">{title}</div>
+          <div className="text-[11px] text-[var(--foreground-tertiary)] leading-tight font-medium">{title}</div>
         </div>
         <div className="flex items-center gap-1.5">
           {pulse && <div className="w-1.5 h-1.5 rounded-full bg-[#30D158] pulse-dot" />}
-          <ArrowUpRight className="h-3.5 w-3.5 text-[#3A3A3C] group-hover:text-[#636366] transition-colors" />
+          <ArrowUpRight className="h-3.5 w-3.5 text-[var(--foreground-secondary)] group-hover:text-[var(--foreground-tertiary)] transition-colors" />
         </div>
       </motion.div>
     </Link>
@@ -245,7 +245,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-screen overflow-hidden" style={{
-      background: "#1C1C1E",
+      background: "var(--background)",
       backgroundImage: "linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px)",
       backgroundSize: "48px 48px",
     }}>
@@ -266,7 +266,7 @@ export default function DashboardPage() {
             </h1>
             <div className="flex items-center gap-1.5 mt-0.5">
               <div className="w-1.5 h-1.5 rounded-full bg-[#30D158] pulse-dot" />
-              <span className="text-xs text-[#636366]">Agent ready</span>
+              <span className="text-xs text-[var(--foreground-tertiary)]">Agent ready</span>
             </div>
           </div>
         </motion.div>
@@ -294,8 +294,8 @@ export default function DashboardPage() {
                       whileHover={{ scale: 1.015, borderColor: "rgba(0,122,255,0.3)" }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setInput(s)}
-                      className="text-left px-6 py-5 rounded-2xl border text-sm text-[#8E8E93] hover:text-white leading-snug"
-                      style={{ background: "#2C2C2E", borderColor: "#3A3A3C" }}>
+                      className="text-left px-6 py-5 rounded-2xl border text-sm text-[var(--foreground-secondary)] hover:text-white leading-snug"
+                      style={{ background: "var(--card-hover)", borderColor: "var(--border)" }}>
                       {s}
                     </motion.button>
                   ))}
@@ -352,13 +352,13 @@ export default function DashboardPage() {
                                 style={{ background: "rgba(0,122,255,0.12)", color: "#007AFF" }}>
                                 {meta?.icon || <Globe className="w-3 h-3" />}
                               </div>
-                              <span className="text-[11px] text-[#8E8E93] flex-1">
+                              <span className="text-[11px] text-[var(--foreground-secondary)] flex-1">
                                 {meta?.label || tc.toolName}
                                 {tc.args?.query && <span className="text-white ml-1">&quot;{tc.args.query}&quot;</span>}
                               </span>
                               {isDone
                                 ? <div className="flex items-center gap-1 text-[#30D158]"><Check className="w-3 h-3" /><span className="text-[10px] font-medium">Done</span></div>
-                                : <Loader2 className="w-3 h-3 animate-spin text-[#636366]" />
+                                : <Loader2 className="w-3 h-3 animate-spin text-[var(--foreground-tertiary)]" />
                               }
                             </motion.div>
                           );
@@ -382,12 +382,12 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="relative rounded-2xl border"
-              style={{ background: "#2C2C2E", borderColor: "#3A3A3C" }}>
+              style={{ background: "var(--card-hover)", borderColor: "var(--border)" }}>
               {/* + attach button */}
               <button
                 type="button"
                 className="absolute left-2.5 bottom-2.5 w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-150"
-                style={{ background: "rgba(255,255,255,0.05)", color: "#636366" }}
+                style={{ background: "rgba(255,255,255,0.05)", color: "var(--foreground-tertiary)" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#FFFFFF"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "#636366"; }}
               >
@@ -410,7 +410,7 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
-          <p className="text-[10px] text-center text-[#3A3A3C] mt-2.5 uppercase tracking-widest font-medium">
+          <p className="text-[10px] text-center text-[var(--foreground-secondary)] mt-2.5 uppercase tracking-widest font-medium">
             Inceptive Autonomous Engine
           </p>
         </div>
@@ -421,7 +421,7 @@ export default function DashboardPage() {
 
         {/* Stats */}
         <div>
-          <p className="text-[10px] uppercase tracking-widest text-[#3A3A3C] font-semibold mb-3 px-1">Overview</p>
+          <p className="text-[10px] uppercase tracking-widest text-[var(--foreground-secondary)] font-semibold mb-3 px-1">Overview</p>
           {statsLoading ? (
             <div className="space-y-2">
               {[1,2,3,4].map(i => <div key={i} className="h-[58px] rounded-2xl shimmer" />)}
@@ -439,15 +439,15 @@ export default function DashboardPage() {
         {/* Recent Activity */}
         <div>
           <div className="flex items-center justify-between mb-3 px-2">
-            <p className="text-[10px] uppercase tracking-widest text-[#3A3A3C] font-semibold">Recent Activity</p>
+            <p className="text-[10px] uppercase tracking-widest text-[var(--foreground-secondary)] font-semibold">Recent Activity</p>
             <div className="w-1.5 h-1.5 rounded-full bg-[#30D158] pulse-dot" />
           </div>
           {statsLoading ? (
             <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-11 rounded-xl shimmer" />)}</div>
           ) : recentTasks.length === 0 ? (
             <div className="text-center py-5 rounded-xl" style={{ border: "1px solid rgba(255,255,255,0.06)" }}>
-              <Clock className="h-4 w-4 text-[#3A3A3C] mx-auto mb-1.5" />
-              <p className="text-[11px] text-[#3A3A3C]">No recent activity</p>
+              <Clock className="h-4 w-4 text-[var(--foreground-secondary)] mx-auto mb-1.5" />
+              <p className="text-[11px] text-[var(--foreground-secondary)]">No recent activity</p>
             </div>
           ) : (
             <div className="space-y-1">
@@ -468,7 +468,7 @@ export default function DashboardPage() {
                   }
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-[#C7C7CC] truncate leading-tight">{task.title}</p>
-                    <p className="text-[10px] text-[#48484A] mt-0.5">{formatTimeAgo(new Date(task.created_at))}</p>
+                    <p className="text-[10px] text-[var(--border-strong)] mt-0.5">{formatTimeAgo(new Date(task.created_at))}</p>
                   </div>
                 </motion.div>
               ))}

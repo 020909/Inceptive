@@ -213,7 +213,7 @@ export default function GoalsPage() {
         </div>
         <div className="space-y-4">
           {[1,2,3].map(i => (
-             <div key={i} className="rounded-xl border border-[#38383A] bg-[#242426] p-6 skeleton">
+             <div key={i} className="rounded-xl border border-[var(--border)] bg-[#242426] p-6 skeleton">
                <div className="h-6 w-1/3 bg-[#2C2C2E] rounded mb-2"></div>
                <div className="h-4 w-1/2 bg-[#2C2C2E] rounded mb-6"></div>
                <div className="h-2 w-full bg-[#2C2C2E] rounded"></div>
@@ -254,16 +254,16 @@ export default function GoalsPage() {
 
         {goals.length === 0 ? (
           <motion.div
-            className="flex flex-col items-center justify-center py-20 text-center border border-[#38383A] rounded-xl bg-[#242426]"
+            className="flex flex-col items-center justify-center py-20 text-center border border-[var(--border)] rounded-xl bg-[#242426]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#2C2C2E] border border-[#38383A] mb-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#2C2C2E] border border-[var(--border)] mb-6">
               <Target className="h-8 w-8 text-white" />
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">No goals yet</h3>
-            <p className="text-[#8E8E93] mb-6 max-w-sm">
+            <p className="text-[var(--foreground-secondary)] mb-6 max-w-sm">
               Set your first goal and Inceptive will work toward it every night.
             </p>
             <Button
@@ -278,7 +278,7 @@ export default function GoalsPage() {
             {goals.map((goal, idx) => (
               <motion.div
                 key={goal.id}
-                className="rounded-xl border border-[#38383A] bg-[#242426] p-6 relative group hover:border-[#3A3A3C] transition-colors"
+                className="rounded-xl border border-[var(--border)] bg-[#242426] p-6 relative group hover:border-[#3A3A3C] transition-colors"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: idx * 0.05 }}
@@ -290,16 +290,16 @@ export default function GoalsPage() {
                       <h3 className="text-lg font-bold text-white">{goal.title}</h3>
                       {goal.status === 'active' && <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border border-white/20 text-white">Active</span>}
                       {goal.status === 'completed' && <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#30D158]/10 text-[#30D158] border border-[#30D158]/20">Completed</span>}
-                      {goal.status === 'paused' && <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#2C2C2E] text-[#8E8E93] border border-[#38383A]">Paused</span>}
+                      {goal.status === 'paused' && <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#2C2C2E] text-[var(--foreground-secondary)] border border-[var(--border)]">Paused</span>}
                     </div>
-                    {goal.description && <p className="text-sm text-[#8E8E93]">{goal.description}</p>}
+                    {goal.description && <p className="text-sm text-[var(--foreground-secondary)]">{goal.description}</p>}
                   </div>
 
                   <DropdownMenu>
-                    <DropdownMenuTrigger className="h-8 w-8 p-0 text-[#8E8E93] hover:text-white hover:bg-[#2A2A2C] flex items-center justify-center rounded-md transition-colors cursor-pointer outline-none">
+                    <DropdownMenuTrigger className="h-8 w-8 p-0 text-[var(--foreground-secondary)] hover:text-white hover:bg-[#2A2A2C] flex items-center justify-center rounded-md transition-colors cursor-pointer outline-none">
                       <MoreVertical className="h-4 w-4" />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-[#2A2A2C] border-[#38383A] text-white">
+                    <DropdownMenuContent align="end" className="bg-[#2A2A2C] border-[var(--border)] text-white">
                       {goal.status !== 'completed' && (
                         <DropdownMenuItem onClick={() => handleUpdateStatus(goal.id, 'completed', 100)} className="hover:bg-[#38383A] cursor-pointer">
                           <Check className="h-4 w-4 mr-2" /> Mark Complete
@@ -332,7 +332,7 @@ export default function GoalsPage() {
 
       {/* Add Goal Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="bg-[#1C1C1E] border-[#38383A] text-white sm:max-w-[425px]">
+        <DialogContent className="bg-[#1C1C1E] border-[var(--border)] text-white sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Add New Goal</DialogTitle>
           </DialogHeader>
@@ -343,7 +343,7 @@ export default function GoalsPage() {
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 placeholder="E.g. Launch new feature"
-                className="bg-[#2A2A2C] border-[#38383A] text-white focus:border-[#007AFF]"
+                className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[#007AFF]"
                 required
               />
             </div>
@@ -353,7 +353,7 @@ export default function GoalsPage() {
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="What does success look like?"
-                className="bg-[#2A2A2C] border-[#38383A] text-white focus:border-[#007AFF] min-h-[100px]"
+                className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[#007AFF] min-h-[100px]"
               />
             </div>
             <DialogFooter className="pt-4">
@@ -368,7 +368,7 @@ export default function GoalsPage() {
 
       {/* Edit Goal Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="bg-[#1C1C1E] border-[#38383A] text-white sm:max-w-[425px]">
+        <DialogContent className="bg-[#1C1C1E] border-[var(--border)] text-white sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Goal</DialogTitle>
           </DialogHeader>
@@ -378,7 +378,7 @@ export default function GoalsPage() {
               <Input
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                className="bg-[#2A2A2C] border-[#38383A] text-white focus:border-[#007AFF]"
+                className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[#007AFF]"
                 required
               />
             </div>
@@ -387,7 +387,7 @@ export default function GoalsPage() {
               <Textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                className="bg-[#2A2A2C] border-[#38383A] text-white focus:border-[#007AFF] min-h-[100px]"
+                className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[#007AFF] min-h-[100px]"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -399,16 +399,16 @@ export default function GoalsPage() {
                   max="100"
                   value={progress}
                   onChange={e => setProgress(Number(e.target.value))}
-                  className="bg-[#2A2A2C] border-[#38383A] text-white focus:border-[#007AFF]"
+                  className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[#007AFF]"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-                  <SelectTrigger className="bg-[#2A2A2C] border-[#38383A] text-white focus:border-[#007AFF]">
+                  <SelectTrigger className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[#007AFF]">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1C1C1E] border-[#38383A] text-white">
+                  <SelectContent className="bg-[#1C1C1E] border-[var(--border)] text-white">
                     <SelectItem value="active" className="hover:bg-[#2C2C2E] focus:bg-[#2C2C2E] focus:text-white">Active</SelectItem>
                     <SelectItem value="paused" className="hover:bg-[#2C2C2E] focus:bg-[#2C2C2E] focus:text-white">Paused</SelectItem>
                     <SelectItem value="completed" className="hover:bg-[#2C2C2E] focus:bg-[#2C2C2E] focus:text-white">Completed</SelectItem>

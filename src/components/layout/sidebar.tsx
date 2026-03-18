@@ -66,18 +66,18 @@ function NavItem({ item, isActive, collapsed, onClick }: {
   return (
     <Link href={item.href} onClick={onClick} title={collapsed ? item.label : undefined}
       className="relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 group overflow-hidden"
-      style={{ color: isActive ? "var(--sidebar-foreground)" : "var(--foreground-secondary)", background: isActive ? "var(--background-overlay)" : "transparent", justifyContent: collapsed ? "center" : "flex-start" }}>
+      style={{ color: isActive ? "var(--sidebar-foreground)" : "var(--foreground)", background: isActive ? "var(--background-overlay)" : "transparent", justifyContent: collapsed ? "center" : "flex-start" }}>
       {isActive && (
         <motion.div layoutId="sidebar-active-bar"
           className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-[#007AFF]"
           transition={{ type: "spring", stiffness: 400, damping: 35 }} />
       )}
-      <Icon className="shrink-0 transition-colors duration-150" style={{ width: 17, height: 17, color: isActive ? "#007AFF" : "#8E8E93" }} />
+      <Icon className="shrink-0 transition-colors duration-150" style={{ width: 17, height: 17, color: isActive ? "#007AFF" : "var(--foreground)" }} />
       {!collapsed && (
-        <span className="transition-colors duration-150 group-hover:text-white whitespace-nowrap">{item.label}</span>
+        <span className="transition-colors duration-150 whitespace-nowrap" style={{ color: "var(--foreground)" }}>{item.label}</span>
       )}
       {!isActive && (
-        <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 bg-[#242426]" style={{ zIndex: -1 }} />
+        <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150" style={{ background: "var(--background-elevated)", zIndex: -1 }} />
       )}
     </Link>
   );

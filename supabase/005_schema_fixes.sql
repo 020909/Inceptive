@@ -5,10 +5,9 @@
 -- 1. Add api_model to users
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS api_model TEXT;
 
--- 2. Relax api_provider CHECK to include 'anthropic' and 'google'
+-- 2. Remove api_provider constraint entirely — any string is valid now
 ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_api_provider_check;
-ALTER TABLE public.users ADD CONSTRAINT users_api_provider_check
-  CHECK (api_provider IN ('claude', 'anthropic', 'openai', 'google', 'gemini', 'openrouter'));
+-- (no new constraint — providers change over time, no need to restrict at DB level)
 
 -- 3. Add created_at and metadata to emails
 ALTER TABLE public.emails ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();

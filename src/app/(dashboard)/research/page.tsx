@@ -46,7 +46,7 @@ function ThinkingDots() {
           />
         ))}
       </div>
-      <span className="text-sm text-[#8E8E93]">
+      <span className="text-sm text-[var(--foreground-secondary)]">
         Thinking{".".repeat(dots)}
       </span>
     </div>
@@ -72,7 +72,7 @@ function DepthDropdown({ depth, onChange }: { depth: Depth; onChange: (d: Depth)
         type="button"
         onClick={() => setOpen(o => !o)}
         className="flex items-center gap-2 h-[52px] px-4 rounded-2xl border text-sm font-medium transition-all duration-150"
-        style={{ background: "#242426", borderColor: open ? "#007AFF50" : "#38383A", color: "#8E8E93" }}
+        style={{ background: "var(--background-elevated)", borderColor: open ? "#007AFF50" : "#38383A", color: "var(--foreground-secondary)" }}
       >
         <span className="text-[#007AFF]">{current.icon}</span>
         <span className="text-white whitespace-nowrap">{depth}</span>
@@ -86,7 +86,7 @@ function DepthDropdown({ depth, onChange }: { depth: Depth; onChange: (d: Depth)
             exit={{ opacity: 0, y: 6, scale: 0.97 }}
             transition={{ duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-xl border shadow-2xl overflow-hidden"
-            style={{ background: "#1E1E20", borderColor: "#38383A", minWidth: "210px", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" }}
+            style={{ background: "#1E1E20", borderColor: "var(--border)", minWidth: "210px", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" }}
           >
             {DEPTH_OPTIONS.map(opt => (
               <button
@@ -104,7 +104,7 @@ function DepthDropdown({ depth, onChange }: { depth: Depth; onChange: (d: Depth)
                 <span style={{ color: "#007AFF" }}>{opt.icon}</span>
                 <div>
                   <div className="text-sm font-medium text-white">{opt.value}</div>
-                  <div className="text-xs text-[#8E8E93]">{opt.description}</div>
+                  <div className="text-xs text-[var(--foreground-secondary)]">{opt.description}</div>
                 </div>
               </button>
             ))}
@@ -198,19 +198,19 @@ export default function ResearchPage() {
       <div className="max-w-5xl">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-white mb-1">Research Engine</h1>
-          <p className="text-sm text-[#8E8E93]">Ask anything — get a structured research report powered by live web data.</p>
+          <p className="text-sm text-[var(--foreground-secondary)]">Ask anything — get a structured research report powered by live web data.</p>
         </div>
 
         {/* Search bar */}
         <form onSubmit={handleRunResearch} className="flex gap-3 mb-10">
           <div className="relative flex-1">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-[#48484A]" />
+              <Search className="h-4 w-4 text-[var(--border-strong)]" />
             </div>
             <Input value={topic} onChange={(e) => setTopic(e.target.value)}
               placeholder="Enter a research topic…" disabled={researching}
-              className="w-full pl-11 rounded-2xl text-sm text-white placeholder:text-[#48484A]"
-              style={{ height: "52px", background: "#242426", border: "1px solid #38383A" }}
+              className="w-full pl-11 rounded-2xl text-sm text-white placeholder:text-[var(--border-strong)]"
+              style={{ height: "52px", background: "var(--background-elevated)", border: "1px solid var(--border)" }}
             />
           </div>
 
@@ -218,7 +218,7 @@ export default function ResearchPage() {
 
           <Button type="submit" disabled={researching || !topic.trim() || !accessToken}
             className="px-7 rounded-2xl font-semibold text-sm border-0 transition-opacity hover:opacity-90 disabled:opacity-40"
-            style={{ height: "52px", background: "#007AFF", color: "#FFFFFF" }}>
+            style={{ height: "52px", background: "#007AFF", color: "var(--foreground)" }}>
             {researching ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Researching…</> : "Run Research"}
           </Button>
         </form>
@@ -230,12 +230,12 @@ export default function ResearchPage() {
           </div>
         ) : reports.length === 0 && !researching ? (
           <div className="flex flex-col items-center justify-center py-32 text-center rounded-2xl border"
-            style={{ background: "#242426", borderColor: "#38383A" }}>
+            style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: "#007AFF15", border: "1px solid #007AFF30" }}>
               <FileText className="h-6 w-6 text-[#007AFF]" />
             </div>
             <h3 className="text-base font-semibold text-white mb-1.5">No research yet</h3>
-            <p className="text-sm text-[#636366] max-w-xs">Enter a topic above to get a structured report with real web sources.</p>
+            <p className="text-sm text-[var(--foreground-tertiary)] max-w-xs">Enter a topic above to get a structured report with real web sources.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -247,13 +247,13 @@ export default function ResearchPage() {
                   whileHover={{ y: -2 }}
                   onClick={() => { setActiveReport(report); setIsThinking(false); setModalOpen(true); }}
                   className="h-48 rounded-2xl border p-5 flex flex-col justify-between cursor-pointer transition-colors duration-150"
-                  style={{ background: "#242426", borderColor: "#38383A" }}
+                  style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#48484A"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#38383A"; }}
                 >
                   <div>
                     <h3 className="text-sm font-semibold text-white mb-2 line-clamp-1">{report.topic}</h3>
-                    <p className="text-xs text-[#8E8E93] line-clamp-4 leading-relaxed">
+                    <p className="text-xs text-[var(--foreground-secondary)] line-clamp-4 leading-relaxed">
                       {report.content.replace(/[#*]/g, "").trim()}
                     </p>
                   </div>
@@ -263,7 +263,7 @@ export default function ResearchPage() {
                       <LinkIcon className="h-3 w-3 text-[#007AFF]" />
                       <span className="text-[10px] font-semibold text-[#007AFF]">{report.sources_count} sources</span>
                     </div>
-                    <span className="text-[10px] text-[#636366]">{formatTimeAgo(new Date(report.created_at))}</span>
+                    <span className="text-[10px] text-[var(--foreground-tertiary)]">{formatTimeAgo(new Date(report.created_at))}</span>
                   </div>
                 </motion.div>
               ))}
@@ -275,7 +275,7 @@ export default function ResearchPage() {
       {/* Report Modal */}
       <Dialog open={modalOpen} onOpenChange={(o) => { if (!researching) { setModalOpen(o); if (!o) { setActiveReport(null); setIsThinking(false); } } }}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 border"
-          style={{ background: "#1C1C1E", borderColor: "#38383A" }}>
+          style={{ background: "var(--background)", borderColor: "var(--border)" }}>
           {isThinking ? (
             <div className="flex flex-col items-center justify-center py-24 px-8 text-center">
               <motion.div
@@ -287,16 +287,16 @@ export default function ResearchPage() {
                 <Search className="w-7 h-7 text-[#007AFF]" />
               </motion.div>
               <h3 className="text-lg font-semibold text-white mb-2">Researching your topic</h3>
-              <p className="text-sm text-[#8E8E93] mb-6 max-w-xs">Searching the web, analysing sources, and generating your report…</p>
+              <p className="text-sm text-[var(--foreground-secondary)] mb-6 max-w-xs">Searching the web, analysing sources, and generating your report…</p>
               <ThinkingDots />
             </div>
           ) : activeReport ? (
             <div>
               <div className="sticky top-0 z-10 px-8 py-5 border-b flex items-start justify-between gap-4"
-                style={{ background: "rgba(28,28,30,0.92)", backdropFilter: "blur(20px)", borderColor: "#38383A" }}>
+                style={{ background: "rgba(28,28,30,0.92)", backdropFilter: "blur(20px)", borderColor: "var(--border)" }}>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-xl font-bold text-white mb-1.5 leading-snug">{activeReport.topic}</h2>
-                  <div className="flex items-center gap-3 text-xs text-[#8E8E93]">
+                  <div className="flex items-center gap-3 text-xs text-[var(--foreground-secondary)]">
                     <div className="flex items-center gap-1.5">
                       <LinkIcon className="h-3.5 w-3.5" />
                       {activeReport.sources_count} sources
