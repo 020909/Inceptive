@@ -18,8 +18,8 @@ const PROVIDERS = [
     logo: "/logos/ai/anthropic.png",
     lightBg: false,
     models: [
-      { id: "claude-opus-4-5", name: "Claude Opus 4.5", description: "Most powerful · Best quality" },
-      { id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5", description: "Balanced · Recommended" },
+      { id: "claude-opus-4-6", name: "Claude Opus 4.6", description: "Most powerful · Best quality" },
+      { id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", description: "Balanced · Recommended" },
       { id: "claude-haiku-4-5-20251001", name: "Claude Haiku 4.5", description: "Fastest · Lowest cost" },
     ],
   },

@@ -65,7 +65,7 @@ function buildModel(apiKey: string, provider: string, modelName?: string) {
       return createOpenAI({ apiKey })(modelName || "gpt-4o");
     case "claude":
     case "anthropic":
-      return createAnthropic({ apiKey })(modelName || "claude-sonnet-4-5");
+      return createAnthropic({ apiKey })(modelName || "claude-sonnet-4-6");
     case "openrouter":
       return createOpenAI({
         apiKey,

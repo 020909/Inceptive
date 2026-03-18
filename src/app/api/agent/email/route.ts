@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     } else if (api_provider === "anthropic" || api_provider === "claude") {
       const anthropic = new Anthropic({ apiKey });
       const response = await anthropic.messages.create({
-        model: api_model || "claude-sonnet-4-5",
+        model: api_model || "claude-sonnet-4-6",
         max_tokens: 2000,
         system: systemPrompt,
         messages: [{ role: "user", content: userMessage + "\n\nRespond with JSON only." }],

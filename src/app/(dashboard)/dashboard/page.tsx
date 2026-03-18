@@ -138,20 +138,28 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       const supabase = createClient();
       try {
-        const [tasksRes, researchRes, emailsRes, workingRes, recentTasksRes] = await Promise.all([
-          supabase.from("tasks").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+        const [researchRes, emailsRes, socialRes, recentResearchRes, recentEmailsRes, recentSocialRes] = await Promise.all([
           supabase.from("research_reports").select("*", { count: "exact", head: true }).eq("user_id", user.id),
-          supabase.from("emails").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "sent"),
-          supabase.from("tasks").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "in_progress"),
-          supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
+          supabase.from("emails").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+          supabase.from("social_posts").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+          supabase.from("research_reports").select("id, topic, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(3),
+          supabase.from("emails").select("id, subject, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(3),
+          supabase.from("social_posts").select("id, platform, content, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(3),
         ]);
+        const totalTasks = (researchRes.count || 0) + (emailsRes.count || 0) + (socialRes.count || 0);
         setStats({
-          tasks_completed: tasksRes.count || 0,
+          tasks_completed: totalTasks,
           research_reports: researchRes.count || 0,
           emails_sent: emailsRes.count || 0,
-          currently_working: workingRes.count || 0,
+          currently_working: socialRes.count || 0,
         });
-        setRecentTasks(recentTasksRes.data || []);
+        // Merge recent items across all three sources
+        const recentItems = [
+          ...(recentResearchRes.data || []).map((r: any) => ({ id: r.id, title: r.topic, type: "research", created_at: r.created_at })),
+          ...(recentEmailsRes.data || []).map((e: any) => ({ id: e.id, title: e.subject, type: "email", created_at: e.created_at })),
+          ...(recentSocialRes.data || []).map((s: any) => ({ id: s.id, title: `${s.platform}: ${s.content?.slice(0, 40)}…`, type: "social", created_at: s.created_at })),
+        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
+        setRecentTasks(recentItems);
       } catch (err) { console.error(err); }
       finally { setStatsLoading(false); }
     };
@@ -277,7 +285,6 @@ export default function DashboardPage() {
                   transition={{ duration: 3.5, repeat: Infinity }}>
                   <Bot className="w-6 h-6 text-[#007AFF]" />
                 </motion.div>
-                <h2 className="text-base font-semibold text-white mb-8 tracking-tight">What&apos;s your mission?</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl">
                   {SUGGESTIONS.map((s, i) => (
                     <motion.button
@@ -422,10 +429,10 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              <StatCard title="Tasks Completed" value={stats.tasks_completed} icon={<Zap className="h-4 w-4" />} href="/reports" />
+              <StatCard title="Total Actions" value={stats.tasks_completed} icon={<Zap className="h-4 w-4" />} href="/research" />
               <StatCard title="Research Reports" value={stats.research_reports} icon={<FileText className="h-4 w-4" />} href="/research" />
-              <StatCard title="Emails Sent" value={stats.emails_sent} icon={<MailIcon className="h-4 w-4" />} href="/email" />
-              <StatCard title="Currently Working" value={stats.currently_working} icon={<Zap className="h-4 w-4" />} href="/reports" pulse />
+              <StatCard title="Emails Generated" value={stats.emails_sent} icon={<MailIcon className="h-4 w-4" />} href="/email" />
+              <StatCard title="Social Posts" value={stats.currently_working} icon={<Check className="h-4 w-4" />} href="/social" />
             </div>
           )}
         </div>
@@ -454,7 +461,12 @@ export default function DashboardPage() {
                   onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5 text-[#007AFF] shrink-0 mt-0.5" />
+                  {task.type === "research"
+                    ? <FileText className="h-3.5 w-3.5 text-[#007AFF] shrink-0 mt-0.5" />
+                    : task.type === "email"
+                    ? <MailIcon className="h-3.5 w-3.5 text-[#30D158] shrink-0 mt-0.5" />
+                    : <CheckCircle2 className="h-3.5 w-3.5 text-[#FF9F0A] shrink-0 mt-0.5" />
+                  }
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-[#C7C7CC] truncate leading-tight">{task.title}</p>
                     <p className="text-[10px] text-[#48484A] mt-0.5">{formatTimeAgo(new Date(task.created_at))}</p>
