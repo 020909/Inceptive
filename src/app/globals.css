@@ -76,6 +76,9 @@
   --foreground: #FFFFFF;
   --foreground-secondary: #8E8E93;
   --foreground-tertiary: #636366;
+
+  /* Grid line (background dot/line pattern) */
+  --grid-line: rgba(255, 255, 255, 0.05);
 }
 
 @theme inline {
@@ -171,6 +174,9 @@ html.light {
   --foreground: #000000;
   --foreground-secondary: #3A3A3C;
   --foreground-tertiary: #636366;
+
+  /* Grid line — visible on light (#F5F5F7) background */
+  --grid-line: rgba(0, 0, 0, 0.07);
 }
 
 /* Light mode shimmer */

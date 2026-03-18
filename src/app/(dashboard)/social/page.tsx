@@ -442,7 +442,7 @@ export default function SocialPage() {
           </DialogHeader>
           <form onSubmit={handleTelegramConnect} className="space-y-4 pt-4">
             <div className="px-3 py-3 rounded-xl text-xs text-[var(--foreground-secondary)] leading-relaxed"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)" }}>
+              style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }}>
               1. Create a bot via <span className="text-[#007AFF]">@BotFather</span> on Telegram<br/>
               2. Copy the bot token and paste below<br/>
               3. Add your bot to a channel/group and paste the Chat ID
