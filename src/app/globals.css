@@ -121,6 +121,89 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ================================
+   LIGHT MODE VARIABLES
+================================ */
+html.light {
+  --background: #F5F5F7;
+  --background-deep: #FFFFFF;
+  --background-elevated: #FFFFFF;
+  --background-overlay: #F2F2F7;
+
+  --card: #FFFFFF;
+  --card-foreground: #1C1C1E;
+  --card-hover: #F2F2F7;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #1C1C1E;
+
+  --primary: #1C1C1E;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #F2F2F7;
+  --secondary-foreground: #1C1C1E;
+
+  --muted: #F2F2F7;
+  --muted-foreground: #6E6E73;
+
+  --accent: #007AFF;
+  --accent-foreground: #FFFFFF;
+  --accent-subtle: rgba(0, 122, 255, 0.1);
+  --accent-glow: rgba(0, 122, 255, 0.18);
+
+  --border: #D2D2D7;
+  --border-subtle: #E5E5EA;
+  --border-strong: #C7C7CC;
+
+  --input: #FFFFFF;
+  --ring: #007AFF;
+  --destructive: #FF3B30;
+
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1C1C1E;
+  --sidebar-primary: #007AFF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgba(0, 122, 255, 0.08);
+  --sidebar-accent-foreground: #007AFF;
+  --sidebar-border: #E5E5EA;
+  --sidebar-ring: #007AFF;
+
+  --foreground: #1C1C1E;
+  --foreground-secondary: #6E6E73;
+  --foreground-tertiary: #8E8E93;
+}
+
+/* Light mode shimmer */
+html.light .shimmer {
+  background: linear-gradient(90deg, #E5E5EA 25%, #F2F2F7 50%, #E5E5EA 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Light mode scrollbar */
+html.light ::-webkit-scrollbar-thumb {
+  background: #C7C7CC;
+}
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #AEAEB2;
+}
+
+/* Light mode glass */
+html.light .glass {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(210, 210, 215, 0.8);
+}
+
+/* Light mode prose */
+html.light .prose-inceptive { color: #3A3A3C; }
+html.light .prose-inceptive h1,
+html.light .prose-inceptive h2,
+html.light .prose-inceptive h3,
+html.light .prose-inceptive h4 { color: #1C1C1E; }
+html.light .prose-inceptive code { background: #F2F2F7; border-color: #D2D2D7; color: #1C1C1E; }
+html.light .prose-inceptive pre { background: #F5F5F7; border-color: #D2D2D7; }
+html.light .prose-inceptive blockquote { color: #8E8E93; }
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

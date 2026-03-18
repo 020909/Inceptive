@@ -40,14 +40,14 @@ function UserSection({ collapsed }: { collapsed: boolean }) {
   };
 
   return (
-    <div className="px-2 pb-3 pt-2 border-t border-[#2C2C2E]">
-      <div className={`flex items-center gap-2.5 px-2 py-2 rounded-lg group hover:bg-[#242426] transition-colors duration-150 ${collapsed ? "justify-center" : ""}`}>
+    <div className="px-2 pb-3 pt-2 border-t" style={{ borderColor: "var(--sidebar-border)" }}>
+      <div className={`flex items-center gap-2.5 px-2 py-2 rounded-lg group transition-colors duration-150 hover:bg-[var(--background-elevated)] ${collapsed ? "justify-center" : ""}`}>
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-[#007AFF]"
           style={{ background: "rgba(0,122,255,0.15)" }}>
           {initials}
         </div>
         {!collapsed && (
-          <span className="text-xs text-[#8E8E93] truncate flex-1 min-w-0">{email}</span>
+          <span className="text-xs truncate flex-1 min-w-0" style={{ color: "var(--foreground-secondary)" }}>{email}</span>
         )}
         <button onClick={handleLogout}
           className={`transition-all duration-150 p-1 rounded hover:bg-[#38383A] text-[#636366] hover:text-white ${collapsed ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
@@ -66,7 +66,7 @@ function NavItem({ item, isActive, collapsed, onClick }: {
   return (
     <Link href={item.href} onClick={onClick} title={collapsed ? item.label : undefined}
       className="relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 group overflow-hidden"
-      style={{ color: isActive ? "#FFFFFF" : "#8E8E93", background: isActive ? "#2A2A2C" : "transparent", justifyContent: collapsed ? "center" : "flex-start" }}>
+      style={{ color: isActive ? "var(--sidebar-foreground)" : "var(--foreground-secondary)", background: isActive ? "var(--background-overlay)" : "transparent", justifyContent: collapsed ? "center" : "flex-start" }}>
       {isActive && (
         <motion.div layoutId="sidebar-active-bar"
           className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-[#007AFF]"
@@ -89,7 +89,7 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const sidebarContent = (
-    <div className="flex h-full flex-col" style={{ background: "#141416" }}>
+    <div className="flex h-full flex-col" style={{ background: "var(--sidebar)" }}>
       <div className={`flex items-center ${collapsed ? "justify-center px-2 py-[18px]" : "justify-between px-3 py-4"}`}>
         {collapsed ? (
           <Link href="/dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden border border-white/10 shrink-0">
@@ -110,7 +110,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      <div className="mx-2 h-px bg-[#2C2C2E] mb-1.5" />
+      <div className="mx-2 h-px mb-1.5" style={{ background: "var(--sidebar-border)" }} />
 
       <nav className="flex-1 px-2 py-1 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => (
@@ -131,8 +131,8 @@ export function Sidebar() {
   return (
     <>
       <button onClick={() => setMobileOpen(!mobileOpen)}
-        className="fixed top-4 left-4 z-50 md:hidden flex h-9 w-9 items-center justify-center rounded-lg border border-[#38383A] transition-colors duration-150 hover:bg-[#2C2C2E]"
-        style={{ background: "#242426" }} aria-label="Toggle navigation">
+        className="fixed top-4 left-4 z-50 md:hidden flex h-9 w-9 items-center justify-center rounded-lg border transition-colors duration-150"
+        style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }} aria-label="Toggle navigation">
         <AnimatePresence mode="wait" initial={false}>
           {mobileOpen
             ? <motion.div key="x" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }} transition={{ duration: 0.15 }}><X className="h-4 w-4 text-white" /></motion.div>
@@ -160,10 +160,10 @@ export function Sidebar() {
       </AnimatePresence>
 
       <motion.aside
-        className="hidden md:flex md:flex-col md:fixed md:inset-y-0 border-r border-[#2C2C2E] z-30"
+        className="hidden md:flex md:flex-col md:fixed md:inset-y-0 border-r z-30"
+        style={{ borderColor: "var(--sidebar-border)", overflow: "hidden" }}
         animate={{ width: collapsed ? 64 : 240 }}
         transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-        style={{ overflow: "hidden" }}
       >
         {sidebarContent}
       </motion.aside>

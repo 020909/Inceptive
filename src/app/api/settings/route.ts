@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     return NextResponse.json({
-      api_provider: data?.api_provider || 'google',
+      api_provider: data?.api_provider || '',
       api_model: data?.api_model || '',
       has_api_key: !!data?.api_key_encrypted,
     })

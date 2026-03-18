@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/lib/theme-context";
 import "./globals.css";
 
 const inter = Inter({
@@ -23,14 +24,16 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} antialiased font-sans`}>
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
         <Toaster
           position="bottom-right"
           toastOptions={{
             style: {
-              background: "#242426",
-              border: "1px solid #38383A",
-              color: "#ffffff",
+              background: "var(--background-elevated)",
+              border: "1px solid var(--border)",
+              color: "var(--foreground)",
             },
           }}
         />
