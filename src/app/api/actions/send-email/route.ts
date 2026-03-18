@@ -144,11 +144,10 @@ export async function POST(request: Request) {
       }
     }
 
-    // Update email status in DB
-    await admin
-      .from("emails")
-      .update({ status: "sent", metadata: { sent_via: method, sent_at: new Date().toISOString() } })
-      .eq("id", email_id);
+    // Update email status in DB (metadata column added by 005_schema_fixes.sql migration)
+    const updatePayload: Record<string, unknown> = { status: "sent" };
+    try { updatePayload.metadata = { sent_via: method, sent_at: new Date().toISOString() }; } catch {}
+    await admin.from("emails").update(updatePayload).eq("id", email_id);
 
     return NextResponse.json({
       success: true,

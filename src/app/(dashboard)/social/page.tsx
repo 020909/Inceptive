@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { useSearchParams } from "next/navigation";
+
 import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,8 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface SocialPost {
   id: string; platform: string; content: string;
-  status: "scheduled" | "published" | "draft"; scheduled_for: string; created_at: string;
+  status: "scheduled" | "published" | "draft";
+  scheduled_for?: string; scheduled_at?: string; created_at?: string;
 }
 interface ConnectedAccount {
   provider: string; account_email?: string; account_name?: string; account_id?: string;
@@ -96,7 +97,6 @@ function ConnectorCard({ connector, connected, connectedAccount, accessToken, on
 
 export default function SocialPage() {
   const { user } = useAuth();
-  const searchParams = useSearchParams();
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -146,16 +146,16 @@ export default function SocialPage() {
     init();
   }, [user, fetchPosts, fetchConnected]);
 
+  // Handle OAuth callback params (no useSearchParams — avoids Next.js Suspense requirement)
   useEffect(() => {
-    const connected = searchParams.get("connected");
-    const error = searchParams.get("error");
-    if (connected) {
-      toast.success(`${connected} connected!`);
-      if (accessToken) fetchConnected(accessToken);
-      window.history.replaceState({}, "", "/social");
-    }
-    if (error) { toast.error(`Connection failed: ${decodeURIComponent(error)}`); window.history.replaceState({}, "", "/social"); }
-  }, [searchParams, accessToken, fetchConnected]);
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get("connected");
+    const error = params.get("error");
+    if (connected) toast.success(`${connected} connected!`);
+    if (error) toast.error(`Connection failed: ${decodeURIComponent(error)}`);
+    if (connected || error) window.history.replaceState({}, "", "/social");
+  }, []);
 
   const handleDisconnect = async (provider: string) => {
     if (!accessToken) return;
@@ -344,10 +344,12 @@ export default function SocialPage() {
                     <p className="text-sm text-white leading-relaxed line-clamp-2">{post.content}</p>
                   </div>
                   <div className="flex flex-col items-end gap-2 shrink-0">
-                    <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-[#8E8E93] text-sm border" style={{ background: "#2A2A2C", borderColor: "#38383A" }}>
-                      <Calendar className="h-4 w-4" />
-                      {new Date(post.scheduled_for).toLocaleDateString()} at {new Date(post.scheduled_for).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </div>
+                    {(post.scheduled_for || post.scheduled_at) && (
+                      <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-[#8E8E93] text-sm border" style={{ background: "#2A2A2C", borderColor: "#38383A" }}>
+                        <Calendar className="h-4 w-4" />
+                        {new Date(post.scheduled_for || post.scheduled_at!).toLocaleDateString()} at {new Date(post.scheduled_for || post.scheduled_at!).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    )}
                     {post.status !== "published" && (
                       <button
                         onClick={() => handlePublish(post.id)}

@@ -193,14 +193,10 @@ export async function POST(request: Request) {
       }
     }
 
-    await admin.from("social_posts").update({
-      status: "published",
-      metadata: {
-        published_via: method,
-        published_at: new Date().toISOString(),
-        external_id: externalId,
-      },
-    }).eq("id", post_id);
+    // Update status (metadata column added by 005_schema_fixes.sql migration)
+    const updatePayload: Record<string, unknown> = { status: "published" };
+    try { updatePayload.metadata = { published_via: method, published_at: new Date().toISOString(), external_id: externalId }; } catch {}
+    await admin.from("social_posts").update(updatePayload).eq("id", post_id);
 
     return NextResponse.json({
       success: true,

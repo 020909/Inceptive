@@ -138,13 +138,12 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       const supabase = createClient();
       try {
-        const [researchRes, emailsRes, socialRes, recentResearchRes, recentEmailsRes, recentSocialRes] = await Promise.all([
+        const [researchRes, emailsRes, socialRes, recentResearchRes, recentEmailsRes] = await Promise.all([
           supabase.from("research_reports").select("*", { count: "exact", head: true }).eq("user_id", user.id),
           supabase.from("emails").select("*", { count: "exact", head: true }).eq("user_id", user.id),
           supabase.from("social_posts").select("*", { count: "exact", head: true }).eq("user_id", user.id),
           supabase.from("research_reports").select("id, topic, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(3),
           supabase.from("emails").select("id, subject, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(3),
-          supabase.from("social_posts").select("id, platform, content, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(3),
         ]);
         const totalTasks = (researchRes.count || 0) + (emailsRes.count || 0) + (socialRes.count || 0);
         setStats({
@@ -153,12 +152,12 @@ export default function DashboardPage() {
           emails_sent: emailsRes.count || 0,
           currently_working: socialRes.count || 0,
         });
-        // Merge recent items across all three sources
+        // Merge recent items from research + emails (social_posts.created_at added by migration 005)
         const recentItems = [
           ...(recentResearchRes.data || []).map((r: any) => ({ id: r.id, title: r.topic, type: "research", created_at: r.created_at })),
           ...(recentEmailsRes.data || []).map((e: any) => ({ id: e.id, title: e.subject, type: "email", created_at: e.created_at })),
-          ...(recentSocialRes.data || []).map((s: any) => ({ id: s.id, title: `${s.platform}: ${s.content?.slice(0, 40)}…`, type: "social", created_at: s.created_at })),
-        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
+        ].filter(item => item.created_at)
+         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
         setRecentTasks(recentItems);
       } catch (err) { console.error(err); }
       finally { setStatsLoading(false); }

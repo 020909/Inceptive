@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { useSearchParams } from "next/navigation";
+
 import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,7 +86,6 @@ function ConnectorCard({ connector, connected, connectedAccount, accessToken, on
 
 export default function EmailPage() {
   const { user } = useAuth();
-  const searchParams = useSearchParams();
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -133,16 +132,16 @@ export default function EmailPage() {
     init();
   }, [user, fetchEmails, fetchConnected]);
 
+  // Handle OAuth callback params (no useSearchParams — avoids Next.js Suspense requirement)
   useEffect(() => {
-    const connected = searchParams.get("connected");
-    const error = searchParams.get("error");
-    if (connected) {
-      toast.success(`${connected} connected successfully!`);
-      if (accessToken) fetchConnected(accessToken);
-      window.history.replaceState({}, "", "/email");
-    }
-    if (error) { toast.error(`Connection failed: ${decodeURIComponent(error)}`); window.history.replaceState({}, "", "/email"); }
-  }, [searchParams, accessToken, fetchConnected]);
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get("connected");
+    const error = params.get("error");
+    if (connected) toast.success(`${connected} connected successfully!`);
+    if (error) toast.error(`Connection failed: ${decodeURIComponent(error)}`);
+    if (connected || error) window.history.replaceState({}, "", "/email");
+  }, []);
 
   const handleDisconnect = async (id: string) => {
     if (!accessToken) return;
