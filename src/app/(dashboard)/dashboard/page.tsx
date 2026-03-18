@@ -223,7 +223,12 @@ export default function DashboardPage() {
             if (type === "0") content += data;
             else if (type === "1") setToolCalls(prev => [...prev, data]);
             else if (type === "2") setToolResults(prev => [...prev, data]);
-            else if (type === "3") toast.error(`Agent Error: ${data}`);
+            else if (type === "3") {
+              // data may be a string or an object — extract readable message
+              const errMsg = typeof data === "string" ? data
+                : data?.message || data?.error || JSON.stringify(data);
+              toast.error(errMsg, { duration: 8000 });
+            }
           } catch { content += line; }
           setMessages(prev => {
             const next = [...prev];

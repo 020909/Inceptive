@@ -401,12 +401,19 @@ export async function POST(req: Request) {
             } else if (value.type === "tool-result") {
               line = `2:${JSON.stringify(value)}\n`;
             } else if (value.type === "error") {
-              line = `3:${JSON.stringify((value as any).error)}\n`;
+              // Serialize error properly — Error objects JSON.stringify as {} which breaks display
+              const raw = (value as any).error;
+              const msg = typeof raw === "string" ? raw
+                : raw?.message ? raw.message
+                : raw?.toString?.() !== "[object Object]" ? raw?.toString()
+                : JSON.stringify(raw);
+              line = `3:${JSON.stringify(msg ?? "Unknown error from AI provider")}\n`;
             }
             if (line) controller.enqueue(encoder.encode(line));
           }
         } catch (err: any) {
-          controller.enqueue(encoder.encode(`3:${JSON.stringify(err.message)}\n`));
+          const msg = err?.message || err?.toString() || "Stream error";
+          controller.enqueue(encoder.encode(`3:${JSON.stringify(msg)}\n`));
         } finally {
           controller.close();
         }
