@@ -21,6 +21,9 @@ const PROVIDERS = [
     name: "Anthropic",
     description: "Claude models — best for reasoning & writing",
     logo: "/logos/ai/anthropic.png",
+    keyPrefix: "sk-ant-",
+    keyHint: "Starts with sk-ant-",
+    keyUrl: "https://console.anthropic.com/keys",
     models: [
       { id: "claude-opus-4-6", name: "Claude Opus 4.6", description: "Most powerful · Best quality" },
       { id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", description: "Balanced · Recommended" },
@@ -32,6 +35,9 @@ const PROVIDERS = [
     name: "OpenAI",
     description: "GPT models — versatile and widely used",
     logo: "/logos/ai/openai.png",
+    keyPrefix: "sk-",
+    keyHint: "Starts with sk-",
+    keyUrl: "https://platform.openai.com/api-keys",
     models: [
       { id: "gpt-4o", name: "GPT-4o", description: "Most capable · Multimodal" },
       { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "Fast · Cost-effective" },
@@ -43,6 +49,9 @@ const PROVIDERS = [
     name: "Google",
     description: "Gemini models — great speed and context",
     logo: "/logos/ai/google.png",
+    keyPrefix: "AIza",
+    keyHint: "Starts with AIza",
+    keyUrl: "https://aistudio.google.com/app/apikey",
     models: [
       { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", description: "Fast · Recommended" },
       { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", description: "Long context · Powerful" },
@@ -54,11 +63,14 @@ const PROVIDERS = [
     name: "OpenRouter",
     description: "Access 100+ models with one API key",
     logo: "/logos/ai/openrouter.png",
+    keyPrefix: "sk-or-",
+    keyHint: "Starts with sk-or-",
+    keyUrl: "https://openrouter.ai/keys",
     models: [
-      { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet", description: "Via OpenRouter" },
+      { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet", description: "Via OpenRouter · Recommended" },
       { id: "openai/gpt-4o", name: "GPT-4o", description: "Via OpenRouter" },
       { id: "google/gemini-2.0-flash-001", name: "Gemini 2.0 Flash", description: "Via OpenRouter" },
-      { id: "meta-llama/llama-3.1-405b-instruct", name: "Llama 3.1 405B", description: "Open source" },
+      { id: "meta-llama/llama-3.1-405b-instruct", name: "Llama 3.1 405B", description: "Open source · Free tier" },
       { id: "mistralai/mistral-large", name: "Mistral Large", description: "Via OpenRouter" },
     ],
   },
@@ -132,27 +144,42 @@ export default function SettingsPage() {
   const providerData = PROVIDERS.find(p => p.id === selectedProvider);
 
   const handleSave = async () => {
-    if (!accessToken || !selectedProvider || !selectedModel || !apiKeyInput) {
+    if (!accessToken || !selectedProvider || !selectedModel || !apiKeyInput.trim()) {
       toast.error("Please complete all steps before saving");
       return;
     }
+
+    // Warn if the key format doesn't match the selected provider
+    const providerMeta = PROVIDERS.find(p => p.id === selectedProvider);
+    if (providerMeta?.keyPrefix && !apiKeyInput.trim().startsWith(providerMeta.keyPrefix)) {
+      toast.error(
+        `This doesn't look like a ${providerMeta.name} key. ${providerMeta.name} keys ${providerMeta.keyHint}. Check you selected the right provider.`,
+        { duration: 6000 }
+      );
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ api_provider: selectedProvider, api_model: selectedModel, api_key_encrypted: apiKeyInput }),
+        body: JSON.stringify({
+          api_provider: selectedProvider,
+          api_model: selectedModel,
+          api_key_encrypted: apiKeyInput.trim(),
+        }),
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Failed to save");
-      toast.success("Settings saved successfully");
+      toast.success("Settings saved — you're all set!");
       setSavedProvider(selectedProvider);
       setSavedModel(selectedModel);
       setHasApiKey(true);
       setApiKeyInput("");
       setStep("provider");
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message, { duration: 8000 });
     } finally {
       setSaving(false);
     }
@@ -341,13 +368,21 @@ export default function SettingsPage() {
                             </div>
 
                             <div className="space-y-1.5">
-                              <Label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--foreground)" }}>API Key</Label>
+                              <div className="flex items-center justify-between">
+                                <Label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--foreground)" }}>API Key</Label>
+                                {providerData?.keyUrl && (
+                                  <a href={providerData.keyUrl} target="_blank" rel="noreferrer"
+                                    className="text-xs font-medium text-[#007AFF] hover:opacity-75">
+                                    Get your key →
+                                  </a>
+                                )}
+                              </div>
                               <div className="relative">
                                 <Input
                                   type={showApiKey ? "text" : "password"}
                                   value={apiKeyInput}
                                   onChange={e => setApiKeyInput(e.target.value)}
-                                  placeholder={hasApiKey ? "Enter new key to replace existing" : "Paste your API key here"}
+                                  placeholder={providerData?.keyHint ? `${providerData.keyHint}...` : "Paste your API key here"}
                                   className="h-11 rounded-xl text-sm pr-11 focus-visible:ring-[#007AFF]"
                                   style={{ background: "var(--background)", border: "1px solid var(--border)", color: "var(--foreground)" }}
                                 />
@@ -357,7 +392,10 @@ export default function SettingsPage() {
                                   {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 </button>
                               </div>
-                              <p className="text-xs" style={{ color: "var(--foreground-secondary)" }}>Encrypted and stored securely. Never logged or shared.</p>
+                              <p className="text-xs" style={{ color: "var(--foreground-secondary)" }}>
+                                {providerData?.keyHint && <span className="font-medium">{providerData.keyHint} — </span>}
+                                Stored securely. Never logged or shared.
+                              </p>
                             </div>
 
                             <motion.div whileTap={{ scale: 0.98 }}>

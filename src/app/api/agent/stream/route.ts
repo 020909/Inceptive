@@ -110,46 +110,34 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Missing messages or user_id" }), { status: 400 });
     }
 
-    // Fetch user settings — try with api_model first; if that column doesn't exist yet
-    // (migration not run), fall back to selecting without it so the agent still works.
-    type UserSettings = { api_key_encrypted: string; api_provider: string; api_model?: string | null };
-    let userData: UserSettings | null = null;
-    let userFetchError: any = null;
-
-    const result1 = await admin
+    // ── Step 1: fetch guaranteed columns (api_key_encrypted, api_provider always exist)
+    const { data: coreData, error: coreErr } = await admin
       .from("users")
-      .select("api_key_encrypted, api_provider, api_model")
+      .select("api_key_encrypted, api_provider")
       .eq("id", user_id)
       .single();
 
-    if (result1.error) {
-      const msg = (result1.error.message || "").toLowerCase();
-      // If the error is about api_model column not existing, retry without it
-      if (msg.includes("api_model") || (msg.includes("column") && msg.includes("exist"))) {
-        const result2 = await admin
-          .from("users")
-          .select("api_key_encrypted, api_provider")
-          .eq("id", user_id)
-          .single();
-        userData = (result2.data as any) ?? null;
-        userFetchError = result2.error;
-      } else {
-        userFetchError = result1.error;
-      }
-    } else {
-      userData = (result1.data as any) ?? null;
-    }
-
-    if (userFetchError || !userData || !(userData as UserSettings).api_key_encrypted) {
-      const detail = userFetchError ? ` (${userFetchError.message})` : "";
+    if (coreErr || !coreData?.api_key_encrypted) {
+      const detail = coreErr ? ` (DB: ${coreErr.message})` : " (key is empty)";
       return new Response(
-        JSON.stringify({ error: `No API key found. Please add your API key in Settings.${detail}` }),
+        JSON.stringify({ error: `No API key found. Go to Settings → AI Configuration and save your API key.${detail}` }),
         { status: 400 }
       );
     }
 
-    const settings = userData as UserSettings;
-    const model = buildModel(settings.api_key_encrypted, settings.api_provider ?? "", settings.api_model ?? undefined);
+    // ── Step 2: fetch api_model separately — column may not exist if migration not run
+    const { data: modelData } = await admin
+      .from("users")
+      .select("api_model")
+      .eq("id", user_id)
+      .single();
+    // If this errors (e.g. column missing), modelData is null — buildModel uses provider default
+
+    const apiKey = coreData.api_key_encrypted;
+    const apiProvider = coreData.api_provider ?? "";
+    const apiModel = (modelData as any)?.api_model ?? undefined;
+
+    const model = buildModel(apiKey, apiProvider, apiModel);
 
     const systemPrompt = `You are Inceptive — a world-class autonomous AI agent built for entrepreneurs and founders. You think step-by-step, act decisively, and deliver results.
 

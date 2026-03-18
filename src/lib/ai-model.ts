@@ -6,19 +6,24 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com
 
 /**
  * Unified model builder used by all agent routes.
- * Supports: anthropic, openai, google, openrouter.
+ *
+ * DB stores providers as: 'claude', 'openai', 'gemini', 'openrouter'
+ * UI-facing aliases also accepted: 'anthropic' → 'claude', 'google' → 'gemini'
  */
 export function buildModel(apiKey: string, provider: string, modelName?: string) {
-  const p = (provider || "").toLowerCase();
+  const p = (provider || "").toLowerCase().trim();
 
   switch (p) {
-    case "openai":
-      return createOpenAI({ apiKey })(modelName || "gpt-4o");
-
+    // ── Anthropic / Claude ─────────────────────────────────────────────
     case "claude":
     case "anthropic":
       return createAnthropic({ apiKey })(modelName || "claude-sonnet-4-6");
 
+    // ── OpenAI ─────────────────────────────────────────────────────────
+    case "openai":
+      return createOpenAI({ apiKey })(modelName || "gpt-4o");
+
+    // ── OpenRouter (100+ models via single key) ─────────────────────────
     case "openrouter": {
       const client = createOpenAI({
         apiKey,
@@ -28,13 +33,26 @@ export function buildModel(apiKey: string, provider: string, modelName?: string)
           "X-Title": "Inceptive AI",
         },
       });
-      // OpenRouter model IDs look like "anthropic/claude-3.5-sonnet"
       return client(modelName || "anthropic/claude-3.5-sonnet");
     }
 
+    // ── Google Gemini ──────────────────────────────────────────────────
     case "gemini":
     case "google":
-    default:
       return createGoogleGenerativeAI({ apiKey })(modelName || "gemini-2.0-flash");
+
+    // ── Fallback: try OpenRouter (most permissive) ─────────────────────
+    default: {
+      console.warn(`[buildModel] Unknown provider "${p}" — falling back to OpenRouter`);
+      const client = createOpenAI({
+        apiKey,
+        baseURL: "https://openrouter.ai/api/v1",
+        headers: {
+          "HTTP-Referer": APP_URL,
+          "X-Title": "Inceptive AI",
+        },
+      });
+      return client(modelName || "anthropic/claude-3.5-sonnet");
+    }
   }
 }
