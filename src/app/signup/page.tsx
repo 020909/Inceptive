@@ -118,7 +118,7 @@ export default function SignUpPage() {
                   setEmail(e.target.value);
                   setErrors((prev) => ({ ...prev, email: undefined }));
                 }}
-                className="h-11 bg-[#2A2A2C] border-[#38383A] text-white placeholder:text-[#636366] rounded-lg focus:border-[#007AFF] focus:ring-0 transition-colors duration-200"
+                className="h-11 bg-[#2A2A2C] border-[#38383A] text-white placeholder:text-[#636366] rounded-lg focus:border-[var(--foreground)] focus:ring-0 transition-colors duration-200"
               />
               {errors.email && (
                 <p className="text-xs text-[#FF453A]">{errors.email}</p>
@@ -138,7 +138,7 @@ export default function SignUpPage() {
                   setPassword(e.target.value);
                   setErrors((prev) => ({ ...prev, password: undefined }));
                 }}
-                className="h-11 bg-[#2A2A2C] border-[#38383A] text-white placeholder:text-[#636366] rounded-lg focus:border-[#007AFF] focus:ring-0 transition-colors duration-200"
+                className="h-11 bg-[#2A2A2C] border-[#38383A] text-white placeholder:text-[#636366] rounded-lg focus:border-[var(--foreground)] focus:ring-0 transition-colors duration-200"
               />
               {errors.password && (
                 <p className="text-xs text-[#FF453A]">{errors.password}</p>
@@ -158,7 +158,7 @@ export default function SignUpPage() {
                   setConfirmPassword(e.target.value);
                   setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
                 }}
-                className="h-11 bg-[#2A2A2C] border-[#38383A] text-white placeholder:text-[#636366] rounded-lg focus:border-[#007AFF] focus:ring-0 transition-colors duration-200"
+                className="h-11 bg-[#2A2A2C] border-[#38383A] text-white placeholder:text-[#636366] rounded-lg focus:border-[var(--foreground)] focus:ring-0 transition-colors duration-200"
               />
               {errors.confirmPassword && (
                 <p className="text-xs text-[#FF453A]">{errors.confirmPassword}</p>
@@ -172,7 +172,7 @@ export default function SignUpPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 bg-[#007AFF] text-white hover:bg-[#0A84FF] rounded-lg font-medium transition-all duration-200"
+                className="w-full h-11 bg-[var(--foreground)] text-white hover:bg-[#0A84FF] rounded-lg font-medium transition-all duration-200"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

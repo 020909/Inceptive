@@ -42,8 +42,8 @@ function UserSection({ collapsed }: { collapsed: boolean }) {
   return (
     <div className="px-2 pb-3 pt-2 border-t" style={{ borderColor: "var(--sidebar-border)" }}>
       <div className={`flex items-center gap-2.5 px-2 py-2 rounded-lg group transition-colors duration-150 hover:bg-[var(--background-elevated)] ${collapsed ? "justify-center" : ""}`}>
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-[#007AFF]"
-          style={{ background: "rgba(0,122,255,0.15)" }}>
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-[var(--foreground)]"
+          style={{ background: "rgba(255,255,255,0.15)" }}>
           {initials}
         </div>
         {!collapsed && (
@@ -69,10 +69,10 @@ function NavItem({ item, isActive, collapsed, onClick }: {
       style={{ color: isActive ? "var(--sidebar-foreground)" : "var(--foreground)", background: isActive ? "var(--background-overlay)" : "transparent", justifyContent: collapsed ? "center" : "flex-start" }}>
       {isActive && (
         <motion.div layoutId="sidebar-active-bar"
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-[#007AFF]"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-[var(--foreground)]"
           transition={{ type: "spring", stiffness: 400, damping: 35 }} />
       )}
-      <Icon className="shrink-0 transition-colors duration-150" style={{ width: 17, height: 17, color: isActive ? "#007AFF" : "var(--foreground)" }} />
+      <Icon className="shrink-0 transition-colors duration-150" style={{ width: 17, height: 17, color: isActive ? "var(--foreground)" : "var(--foreground)" }} />
       {!collapsed && (
         <span className="transition-colors duration-150 whitespace-nowrap" style={{ color: "var(--foreground)" }}>{item.label}</span>
       )}

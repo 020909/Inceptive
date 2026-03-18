@@ -40,7 +40,7 @@ function ThinkingDots() {
           <motion.div
             key={i}
             className="w-2 h-2 rounded-full"
-            style={{ background: "#007AFF" }}
+            style={{ background: "var(--foreground)" }}
             animate={{ opacity: [0.3, 1, 0.3], y: [0, -5, 0] }}
             transition={{ duration: 1, repeat: Infinity, delay: i * 0.18 }}
           />
@@ -72,9 +72,9 @@ function DepthDropdown({ depth, onChange }: { depth: Depth; onChange: (d: Depth)
         type="button"
         onClick={() => setOpen(o => !o)}
         className="flex items-center gap-2 h-[52px] px-4 rounded-2xl border text-sm font-medium transition-all duration-150"
-        style={{ background: "var(--background-elevated)", borderColor: open ? "#007AFF50" : "#38383A", color: "var(--foreground-secondary)" }}
+        style={{ background: "var(--background-elevated)", borderColor: open ? "rgba(255,255,255,0.3)" : "#38383A", color: "var(--foreground-secondary)" }}
       >
-        <span className="text-[#007AFF]">{current.icon}</span>
+        <span className="text-[var(--foreground)]">{current.icon}</span>
         <span className="text-white whitespace-nowrap">{depth}</span>
         <ChevronDown className="w-3.5 h-3.5 ml-0.5 transition-transform duration-150" style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }} />
       </button>
@@ -95,13 +95,13 @@ function DepthDropdown({ depth, onChange }: { depth: Depth; onChange: (d: Depth)
                 onClick={() => { onChange(opt.value); setOpen(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors duration-100"
                 style={{
-                  background: depth === opt.value ? "#007AFF15" : "transparent",
-                  borderLeft: depth === opt.value ? "2px solid #007AFF" : "2px solid transparent",
+                  background: depth === opt.value ? "rgba(255,255,255,0.08)" : "transparent",
+                  borderLeft: depth === opt.value ? "2px solid var(--foreground)" : "2px solid transparent",
                 }}
                 onMouseEnter={e => { if (depth !== opt.value) (e.currentTarget as HTMLButtonElement).style.background = "#2C2C2E"; }}
                 onMouseLeave={e => { if (depth !== opt.value) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
               >
-                <span style={{ color: "#007AFF" }}>{opt.icon}</span>
+                <span style={{ color: "var(--foreground)" }}>{opt.icon}</span>
                 <div>
                   <div className="text-sm font-medium text-white">{opt.value}</div>
                   <div className="text-xs text-[var(--foreground-secondary)]">{opt.description}</div>
@@ -218,7 +218,7 @@ export default function ResearchPage() {
 
           <Button type="submit" disabled={researching || !topic.trim() || !accessToken}
             className="px-7 rounded-2xl font-semibold text-sm border-0 transition-opacity hover:opacity-90 disabled:opacity-40"
-            style={{ height: "52px", background: "#007AFF", color: "var(--foreground)" }}>
+            style={{ height: "52px", background: "var(--foreground)", color: "var(--foreground)" }}>
             {researching ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Researching…</> : "Run Research"}
           </Button>
         </form>
@@ -231,8 +231,8 @@ export default function ResearchPage() {
         ) : reports.length === 0 && !researching ? (
           <div className="flex flex-col items-center justify-center py-32 text-center rounded-2xl border"
             style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: "#007AFF15", border: "1px solid #007AFF30" }}>
-              <FileText className="h-6 w-6 text-[#007AFF]" />
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)" }}>
+              <FileText className="h-6 w-6 text-[var(--foreground)]" />
             </div>
             <h3 className="text-base font-semibold text-white mb-1.5">No research yet</h3>
             <p className="text-sm text-[var(--foreground-tertiary)] max-w-xs">Enter a topic above to get a structured report with real web sources.</p>
@@ -259,9 +259,9 @@ export default function ResearchPage() {
                   </div>
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-                      style={{ background: "#007AFF15", border: "1px solid #007AFF30" }}>
-                      <LinkIcon className="h-3 w-3 text-[#007AFF]" />
-                      <span className="text-[10px] font-semibold text-[#007AFF]">{report.sources_count} sources</span>
+                      style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)" }}>
+                      <LinkIcon className="h-3 w-3 text-[var(--foreground)]" />
+                      <span className="text-[10px] font-semibold text-[var(--foreground)]">{report.sources_count} sources</span>
                     </div>
                     <span className="text-[10px] text-[var(--foreground-tertiary)]">{formatTimeAgo(new Date(report.created_at))}</span>
                   </div>
@@ -280,11 +280,11 @@ export default function ResearchPage() {
             <div className="flex flex-col items-center justify-center py-24 px-8 text-center">
               <motion.div
                 className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 border"
-                style={{ background: "#007AFF15", borderColor: "#007AFF30" }}
-                animate={{ boxShadow: ["0 0 20px rgba(0,122,255,0.1)", "0 0 40px rgba(0,122,255,0.25)", "0 0 20px rgba(0,122,255,0.1)"] }}
+                style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.18)" }}
+                animate={{ boxShadow: ["0 0 20px rgba(255,255,255,0.1)", "0 0 40px rgba(255,255,255,0.25)", "0 0 20px rgba(255,255,255,0.1)"] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                <Search className="w-7 h-7 text-[#007AFF]" />
+                <Search className="w-7 h-7 text-[var(--foreground)]" />
               </motion.div>
               <h3 className="text-lg font-semibold text-white mb-2">Researching your topic</h3>
               <p className="text-sm text-[var(--foreground-secondary)] mb-6 max-w-xs">Searching the web, analysing sources, and generating your report…</p>
@@ -308,9 +308,9 @@ export default function ResearchPage() {
                 <button
                   onClick={() => handleDownload(activeReport)}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all duration-150 shrink-0"
-                  style={{ background: "#007AFF15", borderColor: "#007AFF30", color: "#007AFF" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#007AFF25"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#007AFF15"; }}
+                  style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.18)", color: "var(--foreground)" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.15)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.08)"; }}
                 >
                   <Download className="w-3.5 h-3.5" />
                   Download

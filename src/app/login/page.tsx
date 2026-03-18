@@ -60,7 +60,7 @@ export default function LoginPage() {
         style={{ background: "#141416" }}
       >
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(0,122,255,0.07) 0%, transparent 70%)" }} />
+          style={{ background: "radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%)" }} />
 
         <div className="flex items-center gap-3 relative z-10">
           <div className="relative flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden border border-white/10">
@@ -70,9 +70,9 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#007AFF]/30 bg-[#007AFF]/10">
-            <Sparkles className="h-3.5 w-3.5 text-[#007AFF]" />
-            <span className="text-xs font-medium text-[#007AFF]">Autonomous AI Platform</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--foreground)]/30 bg-[var(--foreground)]/10">
+            <Sparkles className="h-3.5 w-3.5 text-[var(--foreground)]" />
+            <span className="text-xs font-medium text-[var(--foreground)]">Autonomous AI Platform</span>
           </div>
           <h1 className="text-4xl font-bold text-white leading-tight tracking-tight">
             The AI that works<br />while you sleep.
@@ -114,7 +114,7 @@ export default function LoginPage() {
                 id="email" type="email" placeholder="you@example.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setErrors(p => ({ ...p, email: undefined })); }}
-                className="h-11 rounded-xl text-sm text-white placeholder:text-[#48484A] focus-visible:ring-[#007AFF] transition-all duration-150"
+                className="h-11 rounded-xl text-sm text-white placeholder:text-[#48484A] focus-visible:ring-[var(--foreground)] transition-all duration-150"
                 style={{ background: "#2A2A2C", border: errors.email ? "1px solid #FF453A" : "1px solid #38383A" }}
               />
               {errors.email && <p className="text-xs text-[#FF453A]">{errors.email}</p>}
@@ -126,7 +126,7 @@ export default function LoginPage() {
                 id="password" type="password" placeholder="••••••••"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setErrors(p => ({ ...p, password: undefined })); }}
-                className="h-11 rounded-xl text-sm text-white placeholder:text-[#48484A] focus-visible:ring-[#007AFF] transition-all duration-150"
+                className="h-11 rounded-xl text-sm text-white placeholder:text-[#48484A] focus-visible:ring-[var(--foreground)] transition-all duration-150"
                 style={{ background: "#2A2A2C", border: errors.password ? "1px solid #FF453A" : "1px solid #38383A" }}
               />
               {errors.password && <p className="text-xs text-[#FF453A]">{errors.password}</p>}
@@ -135,7 +135,7 @@ export default function LoginPage() {
             <motion.div whileTap={{ scale: 0.98 }} className="pt-1">
               <Button type="submit" disabled={loading}
                 className="w-full h-11 rounded-xl font-semibold text-sm border-0 transition-all duration-150 hover:opacity-90"
-                style={{ background: "#007AFF", color: "#FFFFFF" }}>
+                style={{ background: "var(--foreground)", color: "#FFFFFF" }}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
               </Button>
             </motion.div>
@@ -160,7 +160,7 @@ export default function LoginPage() {
 
           <p className="mt-8 text-center text-sm text-[#48484A]">
             No account?{" "}
-            <Link href="/signup" className="text-[#007AFF] hover:opacity-80 font-medium transition-opacity duration-150">
+            <Link href="/signup" className="text-[var(--foreground)] hover:opacity-80 font-medium transition-opacity duration-150">
               Sign up free
             </Link>
           </p>

@@ -34,11 +34,11 @@
   --muted: #2A2A2C;
   --muted-foreground: #8E8E93;
 
-  /* Accent — Inceptive Blue #007AFF */
-  --accent: #007AFF;
-  --accent-foreground: #FFFFFF;
-  --accent-subtle: rgba(0, 122, 255, 0.12);
-  --accent-glow: rgba(0, 122, 255, 0.25);
+  /* Accent — White (black-and-white mode) */
+  --accent: #FFFFFF;
+  --accent-foreground: #1C1C1E;
+  --accent-subtle: rgba(255, 255, 255, 0.1);
+  --accent-glow: rgba(255, 255, 255, 0.15);
 
   /* Borders */
   --border: #38383A;
@@ -47,13 +47,13 @@
 
   /* Inputs */
   --input: #2A2A2C;
-  --ring: #007AFF;
+  --ring: #FFFFFF;
 
   /* Destructive */
   --destructive: #FF453A;
 
   /* Charts */
-  --chart-1: #007AFF;
+  --chart-1: #FFFFFF;
   --chart-2: #30D158;
   --chart-3: #FFD60A;
   --chart-4: #FF9F0A;
@@ -65,12 +65,12 @@
   /* Sidebar */
   --sidebar: #141416;
   --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #007AFF;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: rgba(0, 122, 255, 0.1);
-  --sidebar-accent-foreground: #007AFF;
+  --sidebar-primary: #FFFFFF;
+  --sidebar-primary-foreground: #1C1C1E;
+  --sidebar-accent: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #FFFFFF;
   --sidebar-border: #2C2C2E;
-  --sidebar-ring: #007AFF;
+  --sidebar-ring: #FFFFFF;
 
   /* Text helpers */
   --foreground: #FFFFFF;
@@ -149,27 +149,27 @@ html.light {
   --muted: #F2F2F7;
   --muted-foreground: #6E6E73;
 
-  --accent: #007AFF;
+  --accent: #000000;
   --accent-foreground: #FFFFFF;
-  --accent-subtle: rgba(0, 122, 255, 0.1);
-  --accent-glow: rgba(0, 122, 255, 0.18);
+  --accent-subtle: rgba(0, 0, 0, 0.08);
+  --accent-glow: rgba(0, 0, 0, 0.1);
 
   --border: #D2D2D7;
   --border-subtle: #E5E5EA;
   --border-strong: #C7C7CC;
 
   --input: #FFFFFF;
-  --ring: #007AFF;
+  --ring: #000000;
   --destructive: #FF3B30;
 
   --sidebar: #FFFFFF;
   --sidebar-foreground: #1C1C1E;
-  --sidebar-primary: #007AFF;
+  --sidebar-primary: #000000;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: rgba(0, 122, 255, 0.08);
-  --sidebar-accent-foreground: #007AFF;
+  --sidebar-accent: rgba(0, 0, 0, 0.06);
+  --sidebar-accent-foreground: #000000;
   --sidebar-border: #E5E5EA;
-  --sidebar-ring: #007AFF;
+  --sidebar-ring: #000000;
 
   --foreground: #000000;
   --foreground-secondary: #3A3A3C;
@@ -218,23 +218,8 @@ html.light .text-white {
   color: #1C1C1E !important;
 }
 
-/* Restore white text on explicitly coloured backgrounds (buttons, badges, etc.) */
-html.light [style*="background: \"#007AFF\""] .text-white,
-html.light [style*="background: #007AFF"] .text-white,
-html.light [style*="background: rgb(0, 122, 255)"] .text-white,
-html.light [style*="background: rgba(0, 122, 255"] .text-white,
-html.light [style*="background: linear-gradient"] .text-white,
-html.light .bg-\[#007AFF\] .text-white,
-html.light .bg-blue-500 .text-white,
-html.light .bg-blue-600 .text-white { color: #FFFFFF !important; }
-
-/* Tailwind background utility self-applied (the element itself has bg colour) */
-html.light .bg-\[#007AFF\].text-white,
-html.light .bg-blue-500.text-white,
-html.light .bg-blue-600.text-white { color: #FFFFFF !important; }
-
-/* User chat bubbles (blue bg) — keep text white */
-html.light .user-bubble { color: #FFFFFF !important; }
+/* Restore white text on linear-gradient backgrounds */
+html.light [style*="background: linear-gradient"] .text-white { color: #FFFFFF !important; }
 
 /* text-[#E5E5EA] is near-white — override to dark in light mode */
 html.light .text-\[\#E5E5EA\] { color: #3A3A3C !important; }
@@ -283,15 +268,37 @@ html.light .text-\[\#E5E5EA\] { color: #3A3A3C !important; }
 }
 
 /* ================================
-   BLUE GLOW PULSE
+   GLOW PULSE
 ================================ */
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 16px rgba(0, 122, 255, 0.2); }
-  50% { box-shadow: 0 0 32px rgba(0, 122, 255, 0.4); }
+  0%, 100% { box-shadow: 0 0 16px rgba(255, 255, 255, 0.1); }
+  50% { box-shadow: 0 0 32px rgba(255, 255, 255, 0.22); }
 }
 
 .glow-blue {
   animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* ================================
+   LOGO AVATAR (mix-blend removes bg)
+================================ */
+.logo-avatar {
+  mix-blend-mode: screen;
+}
+html.light .logo-avatar {
+  mix-blend-mode: multiply;
+  filter: invert(1);
+}
+
+/* ================================
+   FOREGROUND-BG BUTTONS: auto-invert text
+   Elements with inline background: var(--foreground)
+   get text colour = var(--background) so they're always readable
+================================ */
+[style*="background: var(--foreground)"],
+[style*="background:var(--foreground)"],
+.bg-\[var\(--foreground\)\] {
+  color: var(--background) !important;
 }
 
 /* ================================
@@ -329,16 +336,23 @@ html.light .text-\[\#E5E5EA\] { color: #3A3A3C !important; }
    TEXT SELECTION
 ================================ */
 ::selection {
-  background: rgba(0, 122, 255, 0.28);
+  background: rgba(255, 255, 255, 0.2);
   color: #FFFFFF;
+}
+html.light ::selection {
+  background: rgba(0, 0, 0, 0.15);
+  color: #000000;
 }
 
 /* ================================
-   FOCUS RING — Blue
+   FOCUS RING
 ================================ */
 *:focus-visible {
-  outline: 2px solid rgba(0, 122, 255, 0.6);
+  outline: 2px solid rgba(255, 255, 255, 0.5);
   outline-offset: 2px;
+}
+html.light *:focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.3);
 }
 
 /* ================================
@@ -362,8 +376,10 @@ html.light .text-\[\#E5E5EA\] { color: #3A3A3C !important; }
 .prose-inceptive p { margin-bottom: 0.9em; }
 
 .prose-inceptive a {
-  color: #007AFF;
-  text-decoration: none;
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(255, 255, 255, 0.3);
 }
 
 .prose-inceptive a:hover {
@@ -401,7 +417,7 @@ html.light .text-\[\#E5E5EA\] { color: #3A3A3C !important; }
 .prose-inceptive li { margin-bottom: 0.3em; }
 
 .prose-inceptive blockquote {
-  border-left: 3px solid #007AFF;
+  border-left: 3px solid var(--border-strong);
   padding-left: 1em;
   color: #636366;
   font-style: italic;

@@ -238,7 +238,7 @@ export default function SettingsPage() {
                 <motion.div key="ai" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
 
                   {hasApiKey && (
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border" style={{ background: "rgba(0,122,255,0.08)", borderColor: "rgba(0,122,255,0.25)" }}>
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border" style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.25)" }}>
                       <div className="w-2 h-2 rounded-full bg-[#30D158] shrink-0" />
                       <span className="text-sm" style={{ color: "var(--foreground)" }}>
                         Active: <span className="font-semibold">{currentModelMeta?.name || savedModel || savedProvider}</span>
@@ -267,8 +267,8 @@ export default function SettingsPage() {
                               onClick={() => { if (s === "model" && !selectedProvider) return; setStep(s); }}
                               className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150"
                               style={{
-                                background: isActive ? "#007AFF" : "var(--background)",
-                                border: isActive ? "1px solid #007AFF" : "1px solid var(--border)",
+                                background: isActive ? "var(--foreground)" : "var(--background)",
+                                border: isActive ? "1px solid var(--foreground)" : "1px solid var(--border)",
                                 color: isActive ? "#FFFFFF" : isDone ? "var(--foreground)" : "var(--foreground-secondary)",
                               }}
                             >
@@ -299,8 +299,8 @@ export default function SettingsPage() {
                                   onClick={() => { setSelectedProvider(p.id); setSelectedModel(""); setStep("model"); }}
                                   className="w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-150"
                                   style={{
-                                    background: selectedProvider === p.id ? "rgba(0,122,255,0.08)" : "var(--background)",
-                                    borderColor: selectedProvider === p.id ? "rgba(0,122,255,0.4)" : "var(--border)",
+                                    background: selectedProvider === p.id ? "rgba(255,255,255,0.08)" : "var(--background)",
+                                    borderColor: selectedProvider === p.id ? "rgba(255,255,255,0.4)" : "var(--border)",
                                   }}>
                                   <img src={p.logo} alt={p.name} width={22} height={22} className="object-contain shrink-0" />
                                   <div className="flex-1">
@@ -308,7 +308,7 @@ export default function SettingsPage() {
                                     <div className="text-xs" style={{ color: "var(--foreground-secondary)" }}>{p.description}</div>
                                   </div>
                                   {selectedProvider === p.id
-                                    ? <Check className="w-4 h-4 text-[#007AFF] shrink-0" />
+                                    ? <Check className="w-4 h-4 text-[var(--foreground)] shrink-0" />
                                     : <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--border-strong)" }} />
                                   }
                                 </motion.button>
@@ -321,7 +321,7 @@ export default function SettingsPage() {
                         {step === "model" && providerData && (
                           <motion.div key="model" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.18 }}>
                             <div className="flex items-center gap-3 mb-3">
-                              <button onClick={() => setStep("provider")} className="text-xs text-[#007AFF] hover:opacity-80 font-medium">← Back</button>
+                              <button onClick={() => setStep("provider")} className="text-xs text-[var(--foreground)] hover:opacity-80 font-medium">← Back</button>
                               <span className="text-sm" style={{ color: "var(--foreground-secondary)" }}>
                                 Models from <span className="font-semibold" style={{ color: "var(--foreground)" }}>{providerData.name}</span>
                               </span>
@@ -332,14 +332,14 @@ export default function SettingsPage() {
                                   onClick={() => { setSelectedModel(m.id); setStep("key"); }}
                                   className="w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all duration-150"
                                   style={{
-                                    background: selectedModel === m.id ? "rgba(0,122,255,0.08)" : "var(--background)",
-                                    borderColor: selectedModel === m.id ? "rgba(0,122,255,0.4)" : "var(--border)",
+                                    background: selectedModel === m.id ? "rgba(255,255,255,0.08)" : "var(--background)",
+                                    borderColor: selectedModel === m.id ? "rgba(255,255,255,0.4)" : "var(--border)",
                                   }}>
                                   <div className="flex-1">
                                     <div className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{m.name}</div>
                                     <div className="text-xs" style={{ color: "var(--foreground-secondary)" }}>{m.description}</div>
                                   </div>
-                                  {selectedModel === m.id && <Check className="w-4 h-4 text-[#007AFF] shrink-0" />}
+                                  {selectedModel === m.id && <Check className="w-4 h-4 text-[var(--foreground)] shrink-0" />}
                                 </motion.button>
                               ))}
                             </div>
@@ -350,7 +350,7 @@ export default function SettingsPage() {
                         {step === "key" && (
                           <motion.div key="key" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.18 }} className="space-y-4">
                             <div className="flex items-center gap-3">
-                              <button onClick={() => setStep("model")} className="text-xs text-[#007AFF] hover:opacity-80 font-medium">← Back</button>
+                              <button onClick={() => setStep("model")} className="text-xs text-[var(--foreground)] hover:opacity-80 font-medium">← Back</button>
                               <span className="text-sm" style={{ color: "var(--foreground-secondary)" }}>
                                 Enter your <span className="font-semibold" style={{ color: "var(--foreground)" }}>{providerData?.name}</span> API key
                               </span>
@@ -364,7 +364,7 @@ export default function SettingsPage() {
                                   {providerData?.models.find(m => m.id === selectedModel)?.name || selectedModel}
                                 </div>
                               </div>
-                              <button onClick={() => setStep("provider")} className="ml-auto text-xs font-medium text-[#007AFF] hover:opacity-80">Change</button>
+                              <button onClick={() => setStep("provider")} className="ml-auto text-xs font-medium text-[var(--foreground)] hover:opacity-80">Change</button>
                             </div>
 
                             <div className="space-y-1.5">
@@ -372,7 +372,7 @@ export default function SettingsPage() {
                                 <Label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--foreground)" }}>API Key</Label>
                                 {providerData?.keyUrl && (
                                   <a href={providerData.keyUrl} target="_blank" rel="noreferrer"
-                                    className="text-xs font-medium text-[#007AFF] hover:opacity-75">
+                                    className="text-xs font-medium text-[var(--foreground)] hover:opacity-75">
                                     Get your key →
                                   </a>
                                 )}
@@ -383,7 +383,7 @@ export default function SettingsPage() {
                                   value={apiKeyInput}
                                   onChange={e => setApiKeyInput(e.target.value)}
                                   placeholder={providerData?.keyHint ? `${providerData.keyHint}...` : "Paste your API key here"}
-                                  className="h-11 rounded-xl text-sm pr-11 focus-visible:ring-[#007AFF]"
+                                  className="h-11 rounded-xl text-sm pr-11 focus-visible:ring-[var(--foreground)]"
                                   style={{ background: "var(--background)", border: "1px solid var(--border)", color: "var(--foreground)" }}
                                 />
                                 <button type="button" onClick={() => setShowApiKey(!showApiKey)}
@@ -401,7 +401,7 @@ export default function SettingsPage() {
                             <motion.div whileTap={{ scale: 0.98 }}>
                               <Button onClick={handleSave} disabled={saving || !apiKeyInput.trim()}
                                 className="w-full h-11 rounded-xl font-semibold text-sm border-0 hover:opacity-90 disabled:opacity-40"
-                                style={{ background: "#007AFF", color: "#FFFFFF" }}>
+                                style={{ background: "var(--foreground)", color: "#FFFFFF" }}>
                                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Configuration"}
                               </Button>
                             </motion.div>
@@ -424,7 +424,7 @@ export default function SettingsPage() {
                     <div className="p-5 space-y-5">
                       <div className="flex items-center gap-4">
                         <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white shrink-0"
-                          style={{ background: "linear-gradient(135deg, #007AFF, #5856D6)" }}>
+                          style={{ background: "var(--foreground)" }}>
                           {(displayName || user?.email || "?").charAt(0).toUpperCase()}
                         </div>
                         <div>
@@ -440,11 +440,11 @@ export default function SettingsPage() {
                         <Label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--foreground)" }}>Display Name</Label>
                         <div className="flex gap-2">
                           <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Enter your name"
-                            className="h-10 rounded-xl text-sm flex-1 focus-visible:ring-[#007AFF]"
+                            className="h-10 rounded-xl text-sm flex-1 focus-visible:ring-[var(--foreground)]"
                             style={{ background: "var(--background)", border: "1px solid var(--border)", color: "var(--foreground)" }} />
                           <Button onClick={handleSaveName} disabled={savingName || !displayName.trim()}
                             className="h-10 px-4 rounded-xl text-sm border-0 disabled:opacity-40"
-                            style={{ background: "#007AFF", color: "#FFFFFF" }}>
+                            style={{ background: "var(--foreground)", color: "#FFFFFF" }}>
                             {savingName ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
                           </Button>
                         </div>
@@ -468,7 +468,7 @@ export default function SettingsPage() {
                         className="w-full flex items-center justify-between px-4 py-3 rounded-xl border text-left transition-all duration-150 hover:opacity-75"
                         style={{ background: "var(--background)", borderColor: "var(--border)" }}>
                         <div className="flex items-center gap-3">
-                          <Shield className="w-4 h-4 text-[#007AFF]" />
+                          <Shield className="w-4 h-4 text-[var(--foreground)]" />
                           <div>
                             <div className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Change Password</div>
                             <div className="text-xs" style={{ color: "var(--foreground-secondary)" }}>Send a reset link to your email</div>
@@ -515,7 +515,7 @@ export default function SettingsPage() {
                             <motion.button key={t.id} whileTap={{ scale: 0.97 }}
                               onClick={() => setTheme(t.id)}
                               className="relative flex flex-col overflow-hidden rounded-2xl transition-all duration-200"
-                              style={{ border: `2px solid ${isActive ? "#007AFF" : "var(--border)"}` }}>
+                              style={{ border: `2px solid ${isActive ? "var(--foreground)" : "var(--border)"}` }}>
                               <div className="w-full aspect-[4/3] p-3 flex flex-col gap-2" style={{ background: t.preview }}>
                                 <div className="h-1.5 w-3/4 rounded-full" style={{ background: t.surface, border: `1px solid ${t.border}` }} />
                                 <div className="flex gap-1.5 flex-1">
@@ -523,16 +523,16 @@ export default function SettingsPage() {
                                   <div className="flex-1 flex flex-col gap-1 justify-center">
                                     <div className="h-1.5 w-4/5 rounded-full" style={{ background: t.text, opacity: 0.85 }} />
                                     <div className="h-1.5 w-1/2 rounded-full" style={{ background: t.sub }} />
-                                    <div className="h-5 w-full rounded-lg mt-1" style={{ background: "#007AFF" }} />
+                                    <div className="h-5 w-full rounded-lg mt-1" style={{ background: "var(--foreground)" }} />
                                   </div>
                                 </div>
                               </div>
                               <div className="flex items-center justify-between px-3 py-2.5" style={{ background: "var(--background-elevated)" }}>
                                 <div className="flex items-center gap-2">
-                                  <Icon className="w-3.5 h-3.5" style={{ color: isActive ? "#007AFF" : "var(--foreground-secondary)" }} />
-                                  <span className="text-sm font-semibold" style={{ color: isActive ? "#007AFF" : "var(--foreground)" }}>{t.label}</span>
+                                  <Icon className="w-3.5 h-3.5" style={{ color: isActive ? "var(--foreground)" : "var(--foreground-secondary)" }} />
+                                  <span className="text-sm font-semibold" style={{ color: isActive ? "var(--foreground)" : "var(--foreground)" }}>{t.label}</span>
                                 </div>
-                                {isActive && <Check className="w-3.5 h-3.5 text-[#007AFF]" />}
+                                {isActive && <Check className="w-3.5 h-3.5 text-[var(--foreground)]" />}
                               </div>
                             </motion.button>
                           );
@@ -567,15 +567,15 @@ export default function SettingsPage() {
                     onClick={() => setActiveSection(s.id)}
                     className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all duration-150 ${i !== SECTIONS.length - 1 ? "border-b" : ""}`}
                     style={{
-                      background: isActive ? "rgba(0,122,255,0.1)" : "transparent",
+                      background: isActive ? "rgba(255,255,255,0.1)" : "transparent",
                       borderColor: "var(--border)",
                     }}
                   >
-                    <Icon className="w-4 h-4 shrink-0" style={{ color: isActive ? "#007AFF" : "var(--foreground-secondary)" }} />
-                    <span className="text-sm font-semibold" style={{ color: isActive ? "#007AFF" : "var(--foreground)" }}>
+                    <Icon className="w-4 h-4 shrink-0" style={{ color: isActive ? "var(--foreground)" : "var(--foreground-secondary)" }} />
+                    <span className="text-sm font-semibold" style={{ color: isActive ? "var(--foreground)" : "var(--foreground)" }}>
                       {s.label}
                     </span>
-                    {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#007AFF]" />}
+                    {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--foreground)]" />}
                   </button>
                 );
               })}

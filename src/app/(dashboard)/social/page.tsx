@@ -61,7 +61,7 @@ function ConnectorCard({ connector, connected, connectedAccount, accessToken, on
   return (
     <motion.div whileHover={{ y: -2, boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }} transition={{ duration: 0.18 }}
       className="flex items-center gap-3 p-4 rounded-2xl border transition-colors duration-150"
-      style={{ background: "var(--background-elevated)", borderColor: connected ? "#007AFF40" : "#2C2C2E" }}>
+      style={{ background: "var(--background-elevated)", borderColor: connected ? "rgba(255,255,255,0.25)" : "#2C2C2E" }}>
       <img src={connector.logo} alt={connector.name} width={28} height={28} className="object-contain shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-white leading-tight">{connector.name}</div>
@@ -84,7 +84,7 @@ function ConnectorCard({ connector, connected, connectedAccount, accessToken, on
       ) : (
         <button onClick={handleConnect}
           className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold shrink-0 transition-opacity"
-          style={{ background: (connector.oauthPath || connector.telegramInput) ? "#007AFF" : "#38383A", color: (connector.oauthPath || connector.telegramInput) ? "#FFFFFF" : "#8E8E93" }}
+          style={{ background: (connector.oauthPath || connector.telegramInput) ? "var(--foreground)" : "#38383A", color: (connector.oauthPath || connector.telegramInput) ? "#FFFFFF" : "#8E8E93" }}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.85"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}>
           {connector.telegramInput ? <Bot className="w-3 h-3" /> : connector.oauthPath ? <ExternalLink className="w-3 h-3" /> : null}
@@ -275,7 +275,7 @@ export default function SocialPage() {
           </div>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="self-start sm:self-auto">
             <Button onClick={() => { setPlatform("X"); setContent(""); setTopic(""); setScheduleTime(""); setGenerateWithAi(false); setIsModalOpen(true); }}
-              className="rounded-lg h-10 px-4 text-sm font-medium border-0" style={{ background: "#007AFF", color: "var(--foreground)" }}>
+              className="rounded-lg h-10 px-4 text-sm font-medium border-0" style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
               <Plus className="h-4 w-4 mr-2" />Create Post
             </Button>
           </motion.div>
@@ -311,13 +311,13 @@ export default function SocialPage() {
           <motion.div className="flex flex-col items-center justify-center py-28 text-center border rounded-2xl"
             style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl mb-5"
-              style={{ background: "#007AFF15", border: "1px solid #007AFF30" }}>
-              <Share2 className="h-6 w-6 text-[#007AFF]" />
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)" }}>
+              <Share2 className="h-6 w-6 text-[var(--foreground)]" />
             </div>
             <h3 className="text-base font-semibold text-white mb-1.5">No posts yet</h3>
             <p className="text-sm text-[var(--foreground-secondary)] mb-6 max-w-sm">Connect your accounts, then let AI draft and publish your social posts.</p>
             <Button onClick={() => setIsModalOpen(true)} className="rounded-xl px-5 h-10 text-sm font-semibold border-0"
-              style={{ background: "#007AFF", color: "var(--foreground)" }}>
+              style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
               <Plus className="h-4 w-4 mr-2" />Create Post
             </Button>
           </motion.div>
@@ -355,7 +355,7 @@ export default function SocialPage() {
                         onClick={() => handlePublish(post.id)}
                         disabled={publishing === post.id}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity disabled:opacity-50"
-                        style={{ background: isPlatformConnected(post.platform) ? "#007AFF" : "#38383A", color: "var(--foreground)" }}
+                        style={{ background: isPlatformConnected(post.platform) ? "var(--foreground)" : "#38383A", color: "var(--foreground)" }}
                         title={isPlatformConnected(post.platform) ? `Publish to ${post.platform}` : "Connect account to publish"}>
                         {publishing === post.id
                           ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -394,13 +394,13 @@ export default function SocialPage() {
               <div className="space-y-2">
                 <Label className="text-[var(--foreground-secondary)] text-xs uppercase tracking-wide">Schedule Time</Label>
                 <Input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)}
-                  className="text-white focus-visible:ring-[#007AFF] [color-scheme:dark]"
+                  className="text-white focus-visible:ring-[var(--foreground)] [color-scheme:dark]"
                   style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }} />
               </div>
             </div>
             <div className="flex items-center gap-2 pt-1">
               <input type="checkbox" id="use-ai" checked={generateWithAi} onChange={e => setGenerateWithAi(e.target.checked)}
-                className="rounded w-4 h-4 cursor-pointer accent-[#007AFF]" />
+                className="rounded w-4 h-4 cursor-pointer accent-[var(--foreground)]" />
               <Label htmlFor="use-ai" className="cursor-pointer select-none text-[var(--foreground-secondary)]">Generate with AI</Label>
             </div>
             {generateWithAi ? (
@@ -408,7 +408,7 @@ export default function SocialPage() {
                 <Label className="text-[var(--foreground-secondary)] text-xs uppercase tracking-wide">Topic</Label>
                 <Input value={topic} onChange={e => setTopic(e.target.value)}
                   placeholder="What should the post be about?"
-                  className="text-white placeholder:text-[var(--border-strong)] focus-visible:ring-[#007AFF]"
+                  className="text-white placeholder:text-[var(--border-strong)] focus-visible:ring-[var(--foreground)]"
                   style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }} required />
               </div>
             ) : (
@@ -416,14 +416,14 @@ export default function SocialPage() {
                 <Label className="text-[var(--foreground-secondary)] text-xs uppercase tracking-wide">Content</Label>
                 <Textarea value={content} onChange={e => setContent(e.target.value)}
                   placeholder="Write your post here..."
-                  className="text-white placeholder:text-[var(--border-strong)] focus-visible:ring-[#007AFF] min-h-[120px]"
+                  className="text-white placeholder:text-[var(--border-strong)] focus-visible:ring-[var(--foreground)] min-h-[120px]"
                   style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }} required />
               </div>
             )}
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}
                 className="hover:bg-[#2C2C2E] text-white hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={saving} className="border-0" style={{ background: "#007AFF", color: "var(--foreground)" }}>
+              <Button type="submit" disabled={saving} className="border-0" style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
                 {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{generateWithAi ? "Generating…" : "Saving…"}</> : generateWithAi ? "Generate & Save" : "Schedule Post"}
               </Button>
             </DialogFooter>
@@ -443,7 +443,7 @@ export default function SocialPage() {
           <form onSubmit={handleTelegramConnect} className="space-y-4 pt-4">
             <div className="px-3 py-3 rounded-xl text-xs text-[var(--foreground-secondary)] leading-relaxed"
               style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }}>
-              1. Create a bot via <span className="text-[#007AFF]">@BotFather</span> on Telegram<br/>
+              1. Create a bot via <span className="text-[var(--foreground)]">@BotFather</span> on Telegram<br/>
               2. Copy the bot token and paste below<br/>
               3. Add your bot to a channel/group and paste the Chat ID
             </div>
@@ -451,20 +451,20 @@ export default function SocialPage() {
               <Label className="text-[var(--foreground-secondary)] text-xs uppercase tracking-wide">Bot Token</Label>
               <Input value={botToken} onChange={e => setBotToken(e.target.value)}
                 placeholder="1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ"
-                className="text-white placeholder:text-[var(--border-strong)] font-mono text-xs focus-visible:ring-[#007AFF]"
+                className="text-white placeholder:text-[var(--border-strong)] font-mono text-xs focus-visible:ring-[var(--foreground)]"
                 style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }} required />
             </div>
             <div className="space-y-2">
               <Label className="text-[var(--foreground-secondary)] text-xs uppercase tracking-wide">Chat ID (channel or group)</Label>
               <Input value={chatId} onChange={e => setChatId(e.target.value)}
                 placeholder="-1001234567890 or @channelname"
-                className="text-white placeholder:text-[var(--border-strong)] font-mono text-xs focus-visible:ring-[#007AFF]"
+                className="text-white placeholder:text-[var(--border-strong)] font-mono text-xs focus-visible:ring-[var(--foreground)]"
                 style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }} />
             </div>
             <DialogFooter className="pt-2">
               <Button type="button" variant="ghost" onClick={() => setIsTelegramModalOpen(false)}
                 className="hover:bg-[#2C2C2E] text-white hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={connectingTelegram} className="border-0" style={{ background: "#007AFF", color: "var(--foreground)" }}>
+              <Button type="submit" disabled={connectingTelegram} className="border-0" style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
                 {connectingTelegram ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Connecting…</> : "Connect Bot"}
               </Button>
             </DialogFooter>

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { motion, AnimatePresence, animate } from "framer-motion";
 import {
-  Send, User, Bot, Loader2, Globe, Mail as MailIcon,
+  Send, Loader2, Globe, Mail as MailIcon,
   FileText, Check, Zap, ArrowUpRight,
   CheckCircle2, Clock, Plus,
 } from "lucide-react";
@@ -87,12 +87,12 @@ function StatCard({ title, value, icon, href, pulse }: {
         transition={{ duration: 0.15 }}
         className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl border transition-colors duration-150"
         style={{ background: "var(--background-elevated)", borderColor: "var(--border-subtle)" }}
-        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "#2C2C2E"; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "#242426"; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--background-overlay)"; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--background-elevated)"; }}
       >
         <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: "rgba(0,122,255,0.1)", border: "1px solid rgba(0,122,255,0.15)" }}>
-          <div className="text-[#007AFF]">{icon}</div>
+          style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }}>
+          <div className="text-[var(--foreground)]">{icon}</div>
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-lg font-bold text-white leading-none mb-0.5 tracking-tight">
@@ -263,16 +263,12 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="flex items-center justify-between pl-14 pr-6 py-4 md:pl-6 border-b border-[#242426] shrink-0"
+          className="flex items-center justify-between pl-14 pr-6 py-4 md:pl-6 shrink-0"
         >
           <div>
             <h1 className="text-base font-semibold text-white tracking-tight">
               Good {getGreeting()}{user ? `, ${firstName}` : ""}
             </h1>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#30D158] pulse-dot" />
-              <span className="text-xs text-[var(--foreground-tertiary)]">Agent ready</span>
-            </div>
           </div>
         </motion.div>
 
@@ -283,11 +279,11 @@ export default function DashboardPage() {
               <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="flex flex-col items-center justify-center h-full py-16 text-center">
                 <motion.div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 border"
-                  style={{ background: "rgba(0,122,255,0.08)", borderColor: "rgba(0,122,255,0.15)" }}
-                  animate={{ boxShadow: ["0 0 16px rgba(0,122,255,0.06)", "0 0 32px rgba(0,122,255,0.18)", "0 0 16px rgba(0,122,255,0.06)"] }}
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 border overflow-hidden"
+                  style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}
+                  animate={{ boxShadow: ["0 0 16px rgba(255,255,255,0.04)", "0 0 32px rgba(255,255,255,0.1)", "0 0 16px rgba(255,255,255,0.04)"] }}
                   transition={{ duration: 3.5, repeat: Infinity }}>
-                  <Bot className="w-6 h-6 text-[#007AFF]" />
+                  <img src="/logo.png" alt="" className="logo-avatar w-9 h-9 object-contain" />
                 </motion.div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl">
                   {SUGGESTIONS.map((s, i) => (
@@ -296,7 +292,7 @@ export default function DashboardPage() {
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.07 + 0.1 }}
-                      whileHover={{ scale: 1.015, borderColor: "rgba(0,122,255,0.3)" }}
+                      whileHover={{ scale: 1.015 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setInput(s)}
                       className="text-left px-6 py-5 rounded-2xl border text-sm text-[var(--foreground-secondary)] hover:text-white leading-snug"
@@ -313,21 +309,23 @@ export default function DashboardPage() {
                 transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div className={`flex gap-2.5 max-w-[90%] sm:max-w-[82%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                    m.role === "user"
-                      ? "bg-white"
-                      : "border border-[#007AFF]/25 bg-[#007AFF]/08"
-                  }`} style={m.role === "assistant" ? { background: "rgba(0,122,255,0.08)" } : {}}>
-                    {m.role === "user"
-                      ? <User className="w-3 h-3 text-black" />
-                      : <Bot className="w-3 h-3 text-[#007AFF]" />
-                    }
-                  </div>
+                  {m.role === "user" ? (
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold select-none"
+                      style={{ background: "var(--foreground)", color: "var(--background)" }}>
+                      {user?.email?.[0]?.toUpperCase() || "U"}
+                    </div>
+                  ) : (
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 overflow-hidden"
+                      style={{ background: "var(--background-elevated)", border: "1px solid var(--border)" }}>
+                      <img src="/logo.png" alt="" className="logo-avatar w-4 h-4 object-contain" />
+                    </div>
+                  )}
                   <div className="space-y-1.5">
                     {m.content ? (
-                      <div className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "user-bubble text-white" : "text-[var(--foreground)]"}`}
+                      <div className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "" : "text-[var(--foreground)]"}`}
                         style={{
-                          background: m.role === "user" ? "#007AFF" : "var(--background-elevated)",
+                          background: m.role === "user" ? "var(--foreground)" : "var(--background-elevated)",
+                          color: m.role === "user" ? "var(--background)" : undefined,
                           border: m.role === "assistant" ? "1px solid var(--border)" : "none",
                         }}>
                         {m.role === "assistant"
@@ -350,11 +348,11 @@ export default function DashboardPage() {
                               transition={{ delay: idx * 0.08 }}
                               className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border"
                               style={{
-                                background: "rgba(0,122,255,0.05)",
-                                borderColor: isDone ? "rgba(255,255,255,0.06)" : "rgba(0,122,255,0.2)",
+                                background: "var(--background-elevated)",
+                                borderColor: isDone ? "var(--border-subtle)" : "var(--border)",
                               }}>
                               <div className="w-5 h-5 rounded flex items-center justify-center shrink-0"
-                                style={{ background: "rgba(0,122,255,0.12)", color: "#007AFF" }}>
+                                style={{ background: "var(--background-overlay)", color: "var(--foreground)" }}>
                                 {meta?.icon || <Globe className="w-3 h-3" />}
                               </div>
                               <span className="text-[11px] text-[var(--foreground-secondary)] flex-1">
@@ -378,10 +376,10 @@ export default function DashboardPage() {
         </div>
 
         {/* Input */}
-        <div className="px-4 pb-5 pt-3 sm:px-6 sm:pb-6 border-t border-[#242426] shrink-0">
+        <div className="px-4 pb-5 pt-3 sm:px-6 sm:pb-6 shrink-0">
           {!user ? (
             <div className="text-center py-2">
-              <a href="/login" className="text-sm text-[#007AFF] hover:opacity-75 transition-opacity">
+              <a href="/login" className="text-sm text-[var(--foreground)] hover:opacity-75 transition-opacity">
                 Sign in to chat with your agent
               </a>
             </div>
@@ -409,8 +407,11 @@ export default function DashboardPage() {
                 <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend}
                   disabled={isLoading || !input.trim()}
                   className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-30"
-                  style={{ background: input.trim() && !isLoading ? "#007AFF" : "rgba(255,255,255,0.06)" }}>
-                  {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : <Send className="w-3.5 h-3.5 text-white" />}
+                  style={{ background: input.trim() && !isLoading ? "var(--foreground)" : "rgba(255,255,255,0.06)" }}>
+                  {isLoading
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--background)" }} />
+                    : <Send className="w-3.5 h-3.5" style={{ color: input.trim() && !isLoading ? "var(--background)" : "var(--foreground-tertiary)" }} />
+                  }
                 </motion.button>
               </div>
             </div>
@@ -466,10 +467,10 @@ export default function DashboardPage() {
                   onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
                 >
                   {task.type === "research"
-                    ? <FileText className="h-3.5 w-3.5 text-[#007AFF] shrink-0 mt-0.5" />
+                    ? <FileText className="h-3.5 w-3.5 text-[var(--foreground-secondary)] shrink-0 mt-0.5" />
                     : task.type === "email"
-                    ? <MailIcon className="h-3.5 w-3.5 text-[#30D158] shrink-0 mt-0.5" />
-                    : <CheckCircle2 className="h-3.5 w-3.5 text-[#FF9F0A] shrink-0 mt-0.5" />
+                    ? <MailIcon className="h-3.5 w-3.5 text-[var(--foreground-secondary)] shrink-0 mt-0.5" />
+                    : <CheckCircle2 className="h-3.5 w-3.5 text-[var(--foreground-secondary)] shrink-0 mt-0.5" />
                   }
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-[#C7C7CC] truncate leading-tight">{task.title}</p>

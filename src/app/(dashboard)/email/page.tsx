@@ -50,7 +50,7 @@ function ConnectorCard({ connector, connected, connectedAccount, accessToken, on
   return (
     <motion.div whileHover={{ y: -1 }}
       className="flex items-center gap-4 p-4 rounded-2xl border transition-colors duration-150"
-      style={{ background: "var(--background-elevated)", borderColor: connected ? "#007AFF40" : "#38383A" }}>
+      style={{ background: "var(--background-elevated)", borderColor: connected ? "rgba(255,255,255,0.25)" : "#38383A" }}>
       <img src={connector.logo} alt={connector.name} width={28} height={28} className="object-contain shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-white">{connector.name}</div>
@@ -73,7 +73,7 @@ function ConnectorCard({ connector, connected, connectedAccount, accessToken, on
       ) : (
         <button onClick={handleConnect}
           className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-opacity"
-          style={{ background: connector.oauthPath ? "#007AFF" : "#38383A", color: connector.oauthPath ? "#FFFFFF" : "#8E8E93" }}
+          style={{ background: connector.oauthPath ? "var(--foreground)" : "#38383A", color: connector.oauthPath ? "#FFFFFF" : "#8E8E93" }}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.85"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}>
           {connector.oauthPath && <ExternalLink className="w-3 h-3" />}
@@ -228,7 +228,7 @@ export default function EmailPage() {
           </div>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="self-start sm:self-auto">
             <Button onClick={() => { setTopic(""); setRecipient(""); setTone("Professional"); setGeneratedEmailPreview(null); setIsComposeModalOpen(true); }}
-              className="rounded-lg h-10 px-4 text-sm font-medium border-0" style={{ background: "#007AFF", color: "var(--foreground)" }}>
+              className="rounded-lg h-10 px-4 text-sm font-medium border-0" style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
               <Plus className="h-4 w-4 mr-2" />Compose with AI
             </Button>
           </motion.div>
@@ -262,13 +262,13 @@ export default function EmailPage() {
           <motion.div className="flex flex-col items-center justify-center py-28 text-center border border-[var(--border)] rounded-2xl"
             style={{ background: "var(--background-elevated)" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl mb-5"
-              style={{ background: "#007AFF15", border: "1px solid #007AFF30" }}>
-              <Mail className="h-6 w-6 text-[#007AFF]" />
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)" }}>
+              <Mail className="h-6 w-6 text-[var(--foreground)]" />
             </div>
             <h3 className="text-base font-semibold text-white mb-1.5">No emails yet</h3>
             <p className="text-sm text-[var(--foreground-secondary)] mb-6 max-w-sm">Connect Gmail or Outlook, then let AI draft and send emails on your behalf.</p>
             <Button onClick={() => setIsComposeModalOpen(true)} className="rounded-xl px-5 h-10 text-sm font-semibold border-0"
-              style={{ background: "#007AFF", color: "var(--foreground)" }}>
+              style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
               <Plus className="h-4 w-4 mr-2" />Compose with AI
             </Button>
           </motion.div>
@@ -327,7 +327,7 @@ export default function EmailPage() {
                 <div className="space-y-2">
                   <Label className="text-[var(--foreground-secondary)] text-xs uppercase tracking-wide">Recipient</Label>
                   <Input value={recipient} onChange={e => setRecipient(e.target.value)} placeholder="investors@example.com"
-                    className="text-white placeholder:text-[var(--border-strong)] focus-visible:ring-[#007AFF]"
+                    className="text-white placeholder:text-[var(--border-strong)] focus-visible:ring-[var(--foreground)]"
                     style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }} required />
                 </div>
                 <div className="space-y-2">
@@ -343,7 +343,7 @@ export default function EmailPage() {
               <div className="space-y-2">
                 <Label className="text-[var(--foreground-secondary)] text-xs uppercase tracking-wide">Topic</Label>
                 <Input value={topic} onChange={e => setTopic(e.target.value)} placeholder="What is this email about?"
-                  className="text-white placeholder:text-[var(--border-strong)] focus-visible:ring-[#007AFF]"
+                  className="text-white placeholder:text-[var(--border-strong)] focus-visible:ring-[var(--foreground)]"
                   style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }} required />
               </div>
               {!hasMailConnected && (
@@ -353,7 +353,7 @@ export default function EmailPage() {
                 </div>
               )}
               <DialogFooter className="pt-4">
-                <Button type="submit" disabled={generating} className="w-full font-semibold rounded-xl border-0" style={{ background: "#007AFF", color: "var(--foreground)" }}>
+                <Button type="submit" disabled={generating} className="w-full font-semibold rounded-xl border-0" style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
                   {generating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating…</> : "Generate Email"}
                 </Button>
               </DialogFooter>
@@ -369,7 +369,7 @@ export default function EmailPage() {
               </div>
               <div className="flex gap-3">
                 <Button onClick={() => handleSendDraft(generatedEmailPreview.id)} disabled={sending}
-                  className="flex-1 border-0" style={{ background: "#007AFF", color: "var(--foreground)" }}>
+                  className="flex-1 border-0" style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
                   {sending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                   {hasMailConnected ? "Send via Inbox" : "Mark as Sent"}
                 </Button>
@@ -414,7 +414,7 @@ export default function EmailPage() {
                     <Trash2 className="h-4 w-4 mr-2" />Discard
                   </Button>
                   <Button onClick={() => handleSendDraft(selectedEmail.id)} disabled={sending}
-                    className="border-0" style={{ background: "#007AFF", color: "var(--foreground)" }}>
+                    className="border-0" style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
                     {sending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                     {hasMailConnected ? "Send via Inbox" : "Mark as Sent"}
                   </Button>

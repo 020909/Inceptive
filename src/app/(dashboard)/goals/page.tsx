@@ -207,7 +207,7 @@ export default function GoalsPage() {
       <PageTransition>
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-white">Goals</h1>
-          <Button disabled className="bg-[#007AFF] text-white h-10 px-4">
+          <Button disabled className="bg-[var(--foreground)] text-white h-10 px-4">
             <Plus className="h-4 w-4 mr-2" /> Add Goal
           </Button>
         </div>
@@ -244,7 +244,7 @@ export default function GoalsPage() {
                 setDescription("");
                 setIsAddModalOpen(true);
               }}
-              className="bg-[#007AFF] text-white hover:bg-[#0A84FF] rounded-lg h-10 px-4 text-sm font-medium transition-all"
+              className="bg-[var(--foreground)] text-white hover:bg-[#0A84FF] rounded-lg h-10 px-4 text-sm font-medium transition-all"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Goal
@@ -268,7 +268,7 @@ export default function GoalsPage() {
             </p>
             <Button
               onClick={() => setIsAddModalOpen(true)}
-              className="bg-[#007AFF] text-white hover:bg-[#0A84FF]"
+              className="bg-[var(--foreground)] text-white hover:bg-[#0A84FF]"
             >
               <Plus className="h-4 w-4 mr-2" /> Add Goal
             </Button>
@@ -318,7 +318,7 @@ export default function GoalsPage() {
                 <div className="flex items-center gap-4">
                   <div className="flex-1 h-2 bg-[#2C2C2E] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[#007AFF] rounded-full transition-all duration-500"
+                      className="h-full bg-[var(--foreground)] rounded-full transition-all duration-500"
                       style={{ width: `${goal.progress_percent}%` }}
                     />
                   </div>
@@ -343,7 +343,7 @@ export default function GoalsPage() {
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 placeholder="E.g. Launch new feature"
-                className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[#007AFF]"
+                className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[var(--foreground)]"
                 required
               />
             </div>
@@ -353,12 +353,12 @@ export default function GoalsPage() {
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="What does success look like?"
-                className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[#007AFF] min-h-[100px]"
+                className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[var(--foreground)] min-h-[100px]"
               />
             </div>
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setIsAddModalOpen(false)} className="hover:bg-[#2C2C2E] text-white hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={saving} className="bg-[#007AFF] text-white hover:bg-[#0A84FF]">
+              <Button type="submit" disabled={saving} className="bg-[var(--foreground)] text-white hover:bg-[#0A84FF]">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Goal"}
               </Button>
             </DialogFooter>
@@ -378,7 +378,7 @@ export default function GoalsPage() {
               <Input
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[#007AFF]"
+                className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[var(--foreground)]"
                 required
               />
             </div>
@@ -387,7 +387,7 @@ export default function GoalsPage() {
               <Textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[#007AFF] min-h-[100px]"
+                className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[var(--foreground)] min-h-[100px]"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -399,13 +399,13 @@ export default function GoalsPage() {
                   max="100"
                   value={progress}
                   onChange={e => setProgress(Number(e.target.value))}
-                  className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[#007AFF]"
+                  className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[var(--foreground)]"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-                  <SelectTrigger className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[#007AFF]">
+                  <SelectTrigger className="bg-[#2A2A2C] border-[var(--border)] text-white focus:border-[var(--foreground)]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-[#1C1C1E] border-[var(--border)] text-white">
@@ -418,7 +418,7 @@ export default function GoalsPage() {
             </div>
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)} className="hover:bg-[#2C2C2E] text-white hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={saving} className="bg-[#007AFF] text-white hover:bg-[#0A84FF]">
+              <Button type="submit" disabled={saving} className="bg-[var(--foreground)] text-white hover:bg-[#0A84FF]">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
               </Button>
             </DialogFooter>

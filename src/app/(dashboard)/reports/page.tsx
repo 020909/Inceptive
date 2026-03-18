@@ -155,7 +155,7 @@ export default function ReportsPage() {
             <Button
               onClick={handleGenerateSample}
               disabled={generating}
-              className="bg-[#007AFF] text-white hover:bg-[#0A84FF]"
+              className="bg-[var(--foreground)] text-white hover:bg-[#0A84FF]"
             >
               {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : "Generate Sample Report"}
             </Button>
@@ -226,7 +226,7 @@ export default function ReportsPage() {
                       <div className="flex items-center gap-4">
                         <div className="flex-1 h-1.5 bg-[#38383A] rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-[#007AFF] rounded-full"
+                            className="h-full bg-[var(--foreground)] rounded-full"
                             style={{ width: `${topGoal.progress_percent}%` }}
                           />
                         </div>
@@ -272,7 +272,7 @@ export default function ReportsPage() {
                         />
                         <Bar
                           dataKey="tasks_completed"
-                          fill="#007AFF"
+                          fill="var(--foreground)"
                           radius={[4, 4, 0, 0]}
                           maxBarSize={40}
                         />
