@@ -267,13 +267,13 @@ export default function SocialPage() {
     <PageTransition>
       <div className="max-w-[1200px] mx-auto">
         {/* Header */}
-        <motion.div className="flex items-center justify-between mb-8"
+        <motion.div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8"
           initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           <div>
             <h1 className="text-2xl font-bold text-white mb-1">Social Media Manager</h1>
             <p className="text-sm text-[#8E8E93]">Schedule and publish posts powered by AI</p>
           </div>
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="self-start sm:self-auto">
             <Button onClick={() => { setPlatform("X"); setContent(""); setTopic(""); setScheduleTime(""); setGenerateWithAi(false); setIsModalOpen(true); }}
               className="rounded-lg h-10 px-4 text-sm font-medium border-0" style={{ background: "#007AFF", color: "#FFFFFF" }}>
               <Plus className="h-4 w-4 mr-2" />Create Post
@@ -326,7 +326,7 @@ export default function SocialPage() {
             <AnimatePresence>
               {posts.map((post, idx) => (
                 <motion.div key={post.id}
-                  className="rounded-2xl border p-5 flex items-start gap-4 transition-colors duration-150"
+                  className="rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 transition-colors duration-150"
                   style={{ background: "#242426", borderColor: "#38383A" }}
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: idx * 0.04 }}
                   onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#48484A"; }}
@@ -343,7 +343,7 @@ export default function SocialPage() {
                     </div>
                     <p className="text-sm text-white leading-relaxed line-clamp-2">{post.content}</p>
                   </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
+                  <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0">
                     {(post.scheduled_for || post.scheduled_at) && (
                       <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-[#8E8E93] text-sm border" style={{ background: "#2A2A2C", borderColor: "#38383A" }}>
                         <Calendar className="h-4 w-4" />

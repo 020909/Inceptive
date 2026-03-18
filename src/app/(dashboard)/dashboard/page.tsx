@@ -258,7 +258,7 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="flex items-center justify-between px-6 py-4 border-b border-[#242426] shrink-0"
+          className="flex items-center justify-between pl-14 pr-6 py-4 md:pl-6 border-b border-[#242426] shrink-0"
         >
           <div>
             <h1 className="text-base font-semibold text-white tracking-tight">
@@ -272,7 +272,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5" ref={scrollRef}>
+        <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 space-y-5" ref={scrollRef}>
           <AnimatePresence initial={false}>
             {messages.length === 0 && (
               <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -307,7 +307,7 @@ export default function DashboardPage() {
               <motion.div key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`flex gap-2.5 max-w-[82%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                <div className={`flex gap-2.5 max-w-[90%] sm:max-w-[82%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                     m.role === "user"
                       ? "bg-white"
@@ -373,7 +373,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Input */}
-        <div className="px-6 pb-6 pt-3 border-t border-[#242426] shrink-0">
+        <div className="px-4 pb-5 pt-3 sm:px-6 sm:pb-6 border-t border-[#242426] shrink-0">
           {!user ? (
             <div className="text-center py-2">
               <a href="/login" className="text-sm text-[#007AFF] hover:opacity-75 transition-opacity">

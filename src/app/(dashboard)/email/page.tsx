@@ -218,7 +218,7 @@ export default function EmailPage() {
   return (
     <PageTransition>
       <div className="max-w-[1200px] mx-auto">
-        <motion.div className="flex items-center justify-between mb-8"
+        <motion.div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8"
           initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           <div>
             <h1 className="text-2xl font-bold text-white mb-1">Email Autopilot</h1>
@@ -226,7 +226,7 @@ export default function EmailPage() {
               {hasMailConnected ? "Emails sent directly from your connected inbox" : "Connect Gmail or Outlook to send emails"}
             </p>
           </div>
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="self-start sm:self-auto">
             <Button onClick={() => { setTopic(""); setRecipient(""); setTone("Professional"); setGeneratedEmailPreview(null); setIsComposeModalOpen(true); }}
               className="rounded-lg h-10 px-4 text-sm font-medium border-0" style={{ background: "#007AFF", color: "#FFFFFF" }}>
               <Plus className="h-4 w-4 mr-2" />Compose with AI
