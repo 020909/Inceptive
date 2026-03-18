@@ -325,10 +325,10 @@ export default function DashboardPage() {
                   </div>
                   <div className="space-y-1.5">
                     {m.content ? (
-                      <div className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "text-white" : "text-[#E5E5EA]"}`}
+                      <div className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "user-bubble text-white" : "text-[var(--foreground)]"}`}
                         style={{
-                          background: m.role === "user" ? "#007AFF" : "rgba(255,255,255,0.04)",
-                          border: m.role === "assistant" ? "1px solid rgba(255,255,255,0.07)" : "none",
+                          background: m.role === "user" ? "#007AFF" : "var(--background-elevated)",
+                          border: m.role === "assistant" ? "1px solid var(--border)" : "none",
                         }}>
                         {m.role === "assistant"
                           ? <div className="prose-inceptive"><ReactMarkdown>{m.content}</ReactMarkdown></div>
@@ -336,7 +336,7 @@ export default function DashboardPage() {
                         }
                       </div>
                     ) : isLoading && i === messages.length - 1 ? (
-                      <div className="rounded-2xl border" style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.07)" }}>
+                      <div className="rounded-2xl border" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
                         <TypingIndicator />
                       </div>
                     ) : null}
