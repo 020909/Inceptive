@@ -364,7 +364,7 @@ export default function SocialPage() {
                       </button>
                     )}
                     {post.status === "published" && (
-                      <span className="text-xs text-[#30D158] font-medium">{formatTimeAgo(new Date(post.created_at))}</span>
+                      <span className="text-xs text-[#30D158] font-medium">{post.created_at ? formatTimeAgo(new Date(post.created_at)) : "Published"}</span>
                     )}
                   </div>
                 </motion.div>
