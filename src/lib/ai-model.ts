@@ -20,10 +20,16 @@ export function buildModel(apiKey: string, provider: string, modelName?: string)
       return createAnthropic({ apiKey })(modelName || "claude-sonnet-4-6");
 
     // ── OpenAI ─────────────────────────────────────────────────────────
+    // IMPORTANT: use .chat() to force the Chat Completions API.
+    // createOpenAI()("gpt-4o") auto-routes to OpenAI's Responses API in
+    // @ai-sdk/openai v3, which is stateful and breaks multi-turn when you
+    // re-send history without a previous_response_id.
     case "openai":
-      return createOpenAI({ apiKey })(modelName || "gpt-4o");
+      return createOpenAI({ apiKey }).chat(modelName || "gpt-4o");
 
     // ── OpenRouter (100+ models via single key) ─────────────────────────
+    // Always use .chat() to force Chat Completions API — OpenRouter only
+    // supports Chat Completions, not OpenAI's Responses API.
     case "openrouter": {
       const client = createOpenAI({
         apiKey,
@@ -33,7 +39,7 @@ export function buildModel(apiKey: string, provider: string, modelName?: string)
           "X-Title": "Inceptive AI",
         },
       });
-      return client(modelName || "anthropic/claude-3.5-sonnet");
+      return client.chat(modelName || "anthropic/claude-3.5-sonnet");
     }
 
     // ── Google Gemini ──────────────────────────────────────────────────
@@ -52,7 +58,7 @@ export function buildModel(apiKey: string, provider: string, modelName?: string)
           "X-Title": "Inceptive AI",
         },
       });
-      return client(modelName || "anthropic/claude-3.5-sonnet");
+      return client.chat(modelName || "anthropic/claude-3.5-sonnet");
     }
   }
 }
