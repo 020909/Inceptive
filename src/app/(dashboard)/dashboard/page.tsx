@@ -242,7 +242,13 @@ export default function DashboardPage() {
           } else if (type === "3") {
             const errMsg = typeof data === "string" ? data
               : data?.message || data?.error || JSON.stringify(data);
-            toast.error(errMsg, { duration: 8000 });
+            // Write error into the chat bubble so it can't be missed
+            setMessages(prev => {
+              const next = [...prev];
+              const msg = next.find(m => m.id === assistantMsgId);
+              if (msg) msg.content = `⚠️ ${errMsg}`;
+              return next;
+            });
           }
         } catch {
           // ignore parse errors on individual lines
