@@ -176,14 +176,66 @@ export async function POST(req: Request) {
 - Concise summaries after tool results
 - Always tell the user what you did and where to find saved content`;
 
+    // ── Build valid message history ──────────────────────────────────────────
+    // Rules:
+    //  1. Messages must strictly alternate user / assistant
+    //  2. Never send an assistant message with empty content (Anthropic rejects it)
+    //  3. If an assistant message was empty (e.g. tool-only first turn with no text),
+    //     drop that exchange entirely so we don't end up with consecutive user msgs
+    //  4. Trim trailing whitespace from assistant content (Anthropic requirement)
+    const rawHistory = (messages as any[])
+      .slice(-20) // keep a bit more than we need before pruning
+      .map((m: any) => ({
+        role: m.role as "user" | "assistant",
+        content: typeof m.content === "string" ? m.content.trim() : "",
+      }));
+
+    const validHistory: { role: "user" | "assistant"; content: string }[] = [];
+    let idx = 0;
+    while (idx < rawHistory.length) {
+      const cur = rawHistory[idx];
+      // If this is a user message followed by an empty assistant message, skip the pair
+      if (
+        cur.role === "user" &&
+        idx + 1 < rawHistory.length &&
+        rawHistory[idx + 1].role === "assistant" &&
+        !rawHistory[idx + 1].content
+      ) {
+        idx += 2; // skip both
+        continue;
+      }
+      // Skip any orphaned empty message
+      if (!cur.content) { idx++; continue; }
+      // Prevent two consecutive same-role messages (merge them)
+      if (validHistory.length > 0 && validHistory[validHistory.length - 1].role === cur.role) {
+        validHistory[validHistory.length - 1].content += "\n\n" + cur.content;
+        idx++;
+        continue;
+      }
+      validHistory.push(cur);
+      idx++;
+    }
+
+    // Ensure the history ends with a user message (the current turn is always appended
+    // by the client, so this should already be true — but guard just in case)
+    while (validHistory.length > 0 && validHistory[validHistory.length - 1].role === "assistant") {
+      validHistory.pop();
+    }
+
+    // Cap at 16 messages to keep context reasonable
+    const finalHistory = validHistory.slice(-16);
+
     const result = streamText({
       model,
       system: systemPrompt,
-      messages: (messages as any[])
-        .slice(-16)
-        .map((m: any) => ({ role: m.role, content: typeof m.content === "string" ? m.content : "" }))
-        .filter((m: any) => m.content),
+      messages: finalHistory,
       maxSteps: 20,
+      // Disable sending reasoning/thinking blocks back in history —
+      // they're stripped from client-side state anyway, so including them
+      // would cause a mismatch and trigger "Invalid Responses API request"
+      providerOptions: {
+        anthropic: { sendReasoning: false },
+      },
       tools: {
 
         /* ── SEARCH ── */
