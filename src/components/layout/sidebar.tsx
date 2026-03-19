@@ -210,7 +210,7 @@ function NewTaskButton({ collapsed, onMobileClose }: { collapsed: boolean; onMob
     <button
       onClick={handleNewTask}
       disabled={loading}
-      className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 hover:opacity-85"
+      className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-150 hover:opacity-85"
       style={{ background: "var(--foreground)", color: "var(--background)" }}
     >
       <Plus style={{ width: 15, height: 15, flexShrink: 0 }} />
@@ -247,10 +247,8 @@ export function Sidebar() {
         </button>
       </div>
 
-      <div className="mx-2 h-px mb-2" style={{ background: "var(--sidebar-border)" }} />
-
       {/* New Task button — above Dashboard */}
-      <div className="px-2 mb-2">
+      <div className="px-4 mb-2">
         <NewTaskButton collapsed={collapsed} onMobileClose={() => setMobileOpen(false)} />
       </div>
 
