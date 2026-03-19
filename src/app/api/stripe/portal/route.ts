@@ -11,7 +11,7 @@ const admin = createAdmin(
 // Redirects user to Stripe Billing Portal to manage / cancel subscription
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createSupabaseSSR();
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

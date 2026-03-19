@@ -39,7 +39,10 @@ export async function POST(req: NextRequest) {
 
         const planId = (sub.metadata?.plan as PlanId) || "free";
         const status = sub.status; // 'active' | 'trialing' | 'past_due' | etc.
-        const periodEnd = new Date(sub.current_period_end * 1000).toISOString();
+        // billing_cycle_anchor is the next renewal date in Stripe v20+
+        const periodEnd = sub.billing_cycle_anchor
+          ? new Date(sub.billing_cycle_anchor * 1000).toISOString()
+          : null;
 
         await admin.from("users").update({
           plan: planId,
@@ -93,7 +96,7 @@ export async function POST(req: NextRequest) {
 
       // ── Checkout completed ────────────────────────────────────────────────
       case "checkout.session.completed": {
-        const session = event.data.object as Stripe.CheckoutSession;
+        const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.supabase_user_id;
         const planId = session.metadata?.plan as PlanId;
         if (!userId || !planId) break;
@@ -111,15 +114,19 @@ export async function POST(req: NextRequest) {
       // ── Monthly credits reset (invoice paid = new billing period) ─────────
       case "invoice.paid": {
         const invoice = event.data.object as Stripe.Invoice;
-        if (!invoice.subscription) break;
+        // In Stripe v20+, subscription info is in invoice.parent
+        const subscriptionId = (invoice as any).parent?.subscription_details?.subscription
+          ?? (invoice as any).subscription;
+        if (!subscriptionId) break;
 
-        const sub = await getStripe().subscriptions.retrieve(invoice.subscription as string);
+        const sub = await getStripe().subscriptions.retrieve(subscriptionId as string);
         const userId = sub.metadata?.supabase_user_id;
         const planId = sub.metadata?.plan as PlanId;
         if (!userId || !planId) break;
 
         // Only reset on renewal (not on first payment — subscription.created handles that)
-        if ((invoice as any).billing_reason === "subscription_cycle") {
+        const billingReason = (invoice as any).billing_reason ?? "";
+        if (billingReason === "subscription_cycle") {
           await resetCredits(userId, planId);
         }
         break;
