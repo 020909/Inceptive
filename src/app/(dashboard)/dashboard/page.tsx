@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
+import { useChat } from "@/lib/chat-context";
 import { motion, AnimatePresence, animate } from "framer-motion";
 import {
   Send, Loader2, Globe, Mail as MailIcon,
@@ -116,9 +117,9 @@ export default function DashboardPage() {
   // Single auth source — useAuth() syncs with the SSR client, no duplicate state
   const { user } = useAuth();
 
-  /* — chat state — */
+  /* — chat state (messages persist via ChatContext across navigation) — */
+  const { messages, setMessages } = useChat();
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toolCalls, setToolCalls] = useState<ToolCall[]>([]);
   const [toolResults, setToolResults] = useState<ToolResult[]>([]);

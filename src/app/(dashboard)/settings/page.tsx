@@ -10,8 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Eye, EyeOff, Loader2, Check, ChevronRight,
-  Sun, Moon, User, Shield, Bell, Cpu,
+  Sun, Moon, User, Shield, Bell, Cpu, Brain,
 } from "lucide-react";
+import { useChat } from "@/lib/chat-context";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -77,17 +78,20 @@ const PROVIDERS = [
 ];
 
 type Step = "provider" | "model" | "key";
-type Section = "ai" | "account" | "appearance";
+type Section = "ai" | "account" | "appearance" | "memory";
 
 const SECTIONS: { id: Section; label: string; icon: typeof Cpu }[] = [
   { id: "ai", label: "AI Configuration", icon: Cpu },
   { id: "account", label: "My Account", icon: User },
   { id: "appearance", label: "Appearance", icon: Sun },
+  { id: "memory", label: "Memory", icon: Brain },
 ];
 
 export default function SettingsPage() {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { memoryEnabled, setMemoryEnabled } = useChat();
+  const [savingMemory, setSavingMemory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -226,10 +230,37 @@ export default function SettingsPage() {
       <div className="max-w-4xl">
         <h1 className="text-2xl font-bold mb-6" style={{ color: "var(--foreground)" }}>Settings</h1>
 
-        {/* Two-column layout: Content (left) + Nav (right) */}
+        {/* Two-column layout: Nav (left) + Content (right) */}
         <div className="flex gap-6 items-start">
 
-          {/* ─── Left: Content Panel ─── */}
+          {/* ─── Left: Vertical Nav ─── */}
+          <div className="w-52 shrink-0 sticky top-6">
+            <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
+              {SECTIONS.map((s, i) => {
+                const Icon = s.icon;
+                const isActive = activeSection === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setActiveSection(s.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all duration-150 ${i !== SECTIONS.length - 1 ? "border-b" : ""}`}
+                    style={{
+                      background: isActive ? "rgba(255,255,255,0.1)" : "transparent",
+                      borderColor: "var(--border)",
+                    }}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" style={{ color: isActive ? "var(--foreground)" : "var(--foreground-secondary)" }} />
+                    <span className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+                      {s.label}
+                    </span>
+                    {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--foreground)]" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ─── Right: Content Panel ─── */}
           <div className="flex-1 min-w-0">
             <AnimatePresence mode="wait">
 
@@ -552,35 +583,64 @@ export default function SettingsPage() {
                   </div>
                 </motion.div>
               )}
+
+              {/* ── Memory ── */}
+              {activeSection === "memory" && (
+                <motion.div key="memory" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
+                  <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
+                    <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
+                      <h2 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Memory</h2>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>
+                        Save chat history so you can pick up where you left off
+                      </p>
+                    </div>
+                    <div className="p-5 space-y-5">
+                      {/* Toggle row */}
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Enable Memory</p>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>
+                            Your recent chats will be saved and appear in the Recents section of the sidebar. You can turn this off at any time.
+                          </p>
+                        </div>
+                        {/* Toggle switch */}
+                        <button
+                          onClick={async () => {
+                            setSavingMemory(true);
+                            await setMemoryEnabled(!memoryEnabled);
+                            setSavingMemory(false);
+                          }}
+                          disabled={savingMemory}
+                          className="relative shrink-0 h-7 w-12 rounded-full transition-colors duration-200 disabled:opacity-50"
+                          style={{ background: memoryEnabled ? "var(--foreground)" : "var(--background-overlay)", border: "1px solid var(--border)" }}
+                          aria-label="Toggle memory"
+                        >
+                          <motion.div
+                            className="absolute top-0.5 h-6 w-6 rounded-full"
+                            style={{ background: memoryEnabled ? "var(--background)" : "var(--foreground-secondary)" }}
+                            animate={{ left: memoryEnabled ? "calc(100% - 26px)" : "2px" }}
+                            transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                          />
+                        </button>
+                      </div>
+
+                      {/* Status indicator */}
+                      <div className="flex items-center gap-2 px-4 py-3 rounded-xl" style={{ background: "var(--background)", border: "1px solid var(--border)" }}>
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${memoryEnabled ? "bg-[#30D158]" : "bg-[var(--foreground-secondary)]"}`} />
+                        <p className="text-xs" style={{ color: "var(--foreground-secondary)" }}>
+                          {memoryEnabled
+                            ? "Memory is ON — chats are being saved and will appear in Recents"
+                            : "Memory is OFF — chats are only kept for the current browser session"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
             </AnimatePresence>
           </div>
 
-          {/* ─── Right: Vertical Nav ─── */}
-          <div className="w-52 shrink-0 sticky top-6">
-            <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
-              {SECTIONS.map((s, i) => {
-                const Icon = s.icon;
-                const isActive = activeSection === s.id;
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => setActiveSection(s.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all duration-150 ${i !== SECTIONS.length - 1 ? "border-b" : ""}`}
-                    style={{
-                      background: isActive ? "rgba(255,255,255,0.1)" : "transparent",
-                      borderColor: "var(--border)",
-                    }}
-                  >
-                    <Icon className="w-4 h-4 shrink-0" style={{ color: isActive ? "var(--foreground)" : "var(--foreground-secondary)" }} />
-                    <span className="text-sm font-semibold" style={{ color: isActive ? "var(--foreground)" : "var(--foreground)" }}>
-                      {s.label}
-                    </span>
-                    {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--foreground)]" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
       </div>
     </PageTransition>
