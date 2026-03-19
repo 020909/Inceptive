@@ -441,7 +441,8 @@ export async function POST(req: Request) {
           for await (const value of result.fullStream) {
             switch ((value as any).type) {
               case "text-delta": {
-                const text = (value as any).textDelta ?? "";
+                // ai@6 uses .text (not .textDelta like older versions)
+                const text = (value as any).text ?? (value as any).textDelta ?? "";
                 if (text) enqueue(`0:${JSON.stringify(text)}\n`);
                 break;
               }
