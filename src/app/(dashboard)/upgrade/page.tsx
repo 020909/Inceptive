@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Check, Zap, Crown, Rocket, Loader2, Star } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -28,7 +28,7 @@ const PLAN_BORDER = {
   unlimited: "rgba(191,90,242,0.4)",
 };
 
-export default function UpgradePage() {
+function UpgradePageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [currentPlan, setCurrentPlan] = useState<string>("free");
@@ -240,5 +240,13 @@ export default function UpgradePage() {
         </p>
       </motion.div>
     </div>
+  );
+}
+
+export default function UpgradePage() {
+  return (
+    <Suspense>
+      <UpgradePageInner />
+    </Suspense>
   );
 }
