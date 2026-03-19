@@ -207,58 +207,59 @@ export default function DashboardPage() {
       let content = "";
       let buffer = "";
 
+      const processLine = (line: string) => {
+        if (!line.trim()) return;
+        const firstColon = line.indexOf(":");
+        if (firstColon === -1) return;
+        const type = line.substring(0, firstColon);
+        const json = line.substring(firstColon + 1);
+        try {
+          const data = JSON.parse(json);
+          if (type === "0") {
+            content += data;
+            setMessages(prev => {
+              const next = [...prev];
+              const msg = next.find(m => m.id === assistantMsgId);
+              if (msg) msg.content = content;
+              return next;
+            });
+          } else if (type === "1") {
+            setToolCalls(prev => [...prev, data]);
+            setMessages(prev => {
+              const next = [...prev];
+              const msg = next.find(m => m.id === assistantMsgId);
+              if (msg) msg.toolCalls = [...(msg.toolCalls || []), data];
+              return next;
+            });
+          } else if (type === "2") {
+            setToolResults(prev => [...prev, data]);
+            setMessages(prev => {
+              const next = [...prev];
+              const msg = next.find(m => m.id === assistantMsgId);
+              if (msg) msg.toolResults = [...(msg.toolResults || []), data];
+              return next;
+            });
+          } else if (type === "3") {
+            const errMsg = typeof data === "string" ? data
+              : data?.message || data?.error || JSON.stringify(data);
+            toast.error(errMsg, { duration: 8000 });
+          }
+        } catch {
+          // ignore parse errors on individual lines
+        }
+      };
+
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          // Flush any remaining buffered data
+          if (buffer.trim()) processLine(buffer);
+          break;
+        }
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          const firstColon = line.indexOf(":");
-          if (firstColon === -1) continue;
-          const type = line.substring(0, firstColon);
-          const json = line.substring(firstColon + 1);
-
-          try {
-            const data = JSON.parse(json);
-            if (type === "0") {
-              content += data;
-              // Update content immediately on every token
-              setMessages(prev => {
-                const next = [...prev];
-                const msg = next.find(m => m.id === assistantMsgId);
-                if (msg) msg.content = content;
-                return next;
-              });
-            } else if (type === "1") {
-              // Tool call — store on the message itself so it persists
-              setToolCalls(prev => [...prev, data]);
-              setMessages(prev => {
-                const next = [...prev];
-                const msg = next.find(m => m.id === assistantMsgId);
-                if (msg) msg.toolCalls = [...(msg.toolCalls || []), data];
-                return next;
-              });
-            } else if (type === "2") {
-              // Tool result
-              setToolResults(prev => [...prev, data]);
-              setMessages(prev => {
-                const next = [...prev];
-                const msg = next.find(m => m.id === assistantMsgId);
-                if (msg) msg.toolResults = [...(msg.toolResults || []), data];
-                return next;
-              });
-            } else if (type === "3") {
-              const errMsg = typeof data === "string" ? data
-                : data?.message || data?.error || JSON.stringify(data);
-              toast.error(errMsg, { duration: 8000 });
-            }
-          } catch {
-            // ignore parse errors on individual lines
-          }
-        }
+        for (const line of lines) processLine(line);
       }
     } catch (err: any) {
       toast.error(err.message || "Something went wrong. Please try again.");

@@ -428,54 +428,49 @@ export async function POST(req: Request) {
       },
     } as any);
 
-    // Use TransformStream — more reliable than ReadableStream constructor in
-    // serverless/edge environments. We fire-and-forget the async pipeline and
-    // return the readable end immediately so the client starts receiving data.
+    // ReadableStream with async start() — the async work is tied to the stream
+    // lifetime so it runs to completion even in serverless environments.
     const encoder = new TextEncoder();
-    const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
-    const writer = writable.getWriter();
 
-    const send = (line: string) => {
-      try { writer.write(encoder.encode(line)); } catch {}
-    };
-
-    // Run the stream pipeline in the background — do NOT await here
-    (async () => {
-      try {
-        for await (const value of result.fullStream) {
-          switch ((value as any).type) {
-            case "text-delta": {
-              const text = (value as any).textDelta ?? "";
-              if (text) send(`0:${JSON.stringify(text)}\n`);
-              break;
+    const stream = new ReadableStream({
+      async start(controller) {
+        const enqueue = (line: string) => {
+          try { controller.enqueue(encoder.encode(line)); } catch {}
+        };
+        try {
+          for await (const value of result.fullStream) {
+            switch ((value as any).type) {
+              case "text-delta": {
+                const text = (value as any).textDelta ?? "";
+                if (text) enqueue(`0:${JSON.stringify(text)}\n`);
+                break;
+              }
+              case "tool-call":
+                enqueue(`1:${JSON.stringify(value)}\n`);
+                break;
+              case "tool-result":
+                enqueue(`2:${JSON.stringify(value)}\n`);
+                break;
+              case "error": {
+                const raw = (value as any).error;
+                const msg =
+                  typeof raw === "string" ? raw
+                  : raw?.message ? raw.message
+                  : raw?.toString?.() !== "[object Object]" ? raw?.toString()
+                  : JSON.stringify(raw);
+                enqueue(`3:${JSON.stringify(msg ?? "Unknown error from AI provider")}\n`);
+                break;
+              }
+              // step-start / step-finish / finish — no-op
             }
-            case "tool-call":
-              send(`1:${JSON.stringify(value)}\n`);
-              break;
-            case "tool-result":
-              send(`2:${JSON.stringify(value)}\n`);
-              break;
-            case "error": {
-              const raw = (value as any).error;
-              const msg =
-                typeof raw === "string" ? raw
-                : raw?.message ? raw.message
-                : raw?.toString?.() !== "[object Object]" ? raw?.toString()
-                : JSON.stringify(raw);
-              send(`3:${JSON.stringify(msg ?? "Unknown error from AI provider")}\n`);
-              break;
-            }
-            // step-start / step-finish / finish — no-op
           }
+        } catch (err: any) {
+          enqueue(`3:${JSON.stringify(err?.message || "Stream error")}\n`);
+        } finally {
+          controller.close();
         }
-      } catch (err: any) {
-        send(`3:${JSON.stringify(err?.message || "Stream error")}\n`);
-      } finally {
-        writer.close().catch(() => {});
-      }
-    })();
-
-    const stream = readable;
+      },
+    });
 
     return new Response(stream, {
       headers: {
