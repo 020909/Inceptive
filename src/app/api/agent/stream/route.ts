@@ -435,31 +435,41 @@ export async function POST(req: Request) {
       },
     } as any);
 
-    // Stream back to client
+    // Stream back to client.
+    // IMPORTANT: use `for await...of result.fullStream` — NOT .getReader().
+    // In AI SDK v6, fullStream is an AsyncIterable that emits events across
+    // ALL steps (including step 2 text after a tool call). Using .getReader()
+    // can miss events between steps, causing silent empty responses after
+    // tool use (e.g. searchWeb shows "Done" but never renders the reply).
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        const reader = result.fullStream.getReader();
         try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+          for await (const value of result.fullStream) {
             let line = "";
-            if (value.type === "text-delta") {
-              const text = (value as any).text || (value as any).textDelta || "";
-              if (text) line = `0:${JSON.stringify(text)}\n`;
-            } else if (value.type === "tool-call") {
-              line = `1:${JSON.stringify(value)}\n`;
-            } else if (value.type === "tool-result") {
-              line = `2:${JSON.stringify(value)}\n`;
-            } else if (value.type === "error") {
-              // Serialize error properly — Error objects JSON.stringify as {} which breaks display
-              const raw = (value as any).error;
-              const msg = typeof raw === "string" ? raw
-                : raw?.message ? raw.message
-                : raw?.toString?.() !== "[object Object]" ? raw?.toString()
-                : JSON.stringify(raw);
-              line = `3:${JSON.stringify(msg ?? "Unknown error from AI provider")}\n`;
+            switch ((value as any).type) {
+              case "text-delta": {
+                const text = (value as any).textDelta ?? "";
+                if (text) line = `0:${JSON.stringify(text)}\n`;
+                break;
+              }
+              case "tool-call":
+                line = `1:${JSON.stringify(value)}\n`;
+                break;
+              case "tool-result":
+                line = `2:${JSON.stringify(value)}\n`;
+                break;
+              case "error": {
+                const raw = (value as any).error;
+                const msg =
+                  typeof raw === "string" ? raw
+                  : raw?.message ? raw.message
+                  : raw?.toString?.() !== "[object Object]" ? raw?.toString()
+                  : JSON.stringify(raw);
+                line = `3:${JSON.stringify(msg ?? "Unknown error from AI provider")}\n`;
+                break;
+              }
+              // step-start / step-finish / finish — no-op, client doesn't need them
             }
             if (line) controller.enqueue(encoder.encode(line));
           }
