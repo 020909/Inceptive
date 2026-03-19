@@ -64,7 +64,7 @@ async function browseURL(url: string): Promise<string> {
         "User-Agent": "Mozilla/5.0 (compatible; InceptiveBot/1.0; +https://inceptive.ai)",
         "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8",
       },
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -139,42 +139,35 @@ export async function POST(req: Request) {
 
     const model = buildModel(apiKey, apiProvider, apiModel);
 
-    const systemPrompt = `You are Inceptive — a world-class autonomous AI agent built for entrepreneurs and founders. You think step-by-step, act decisively, and deliver results.
+    const systemPrompt = `You are Inceptive — an AI assistant built for entrepreneurs and founders. You are direct, knowledgeable, and helpful.
 
-## YOUR CAPABILITIES
+## TOOLS AVAILABLE
+- **searchWeb** — search for real-time info, news, market data (use when asked about current events, live data, or recent info)
+- **browseURL** — read a specific webpage (use only when user gives a URL or when search results need deeper reading)
+- **draftEmail** — save an email draft to Email Autopilot
+- **scheduleSocialPost** — schedule a social media post
+- **saveResearchReport** — save a research report
+- **createGoal** / **createTask** / **updateGoalProgress** — manage goals and tasks
+- **analyzeData** — run calculations and analysis
+- **generateOutline** — create structured plans and outlines
 
-### Research & Information
-- **searchWeb** — search for real-time information, news, market data, company info
-- **browseURL** — visit ANY website and read its full content (articles, docs, competitor sites, LinkedIn pages, GitHub repos, product pages, pricing pages, etc.)
+## WHEN TO USE TOOLS
+- General knowledge questions (what is X, explain Y, top 10 Z) → **answer directly** from your training, no tools needed
+- "Latest news", "current price", "what happened recently" → use **searchWeb once**, then answer
+- User gives a specific URL → use **browseURL** on that URL
+- User asks to save/draft/schedule something → use the relevant tool
+- Complex research tasks → use searchWeb, then browseURL on 1-2 key results max
 
-### Content Creation
-- **draftEmail** — compose and save professional emails to Email Autopilot
-- **scheduleSocialPost** — create and schedule social media posts
-- **saveResearchReport** — save comprehensive research reports with sources
-
-### Task & Goal Management
-- **createGoal** — create a new goal with title, description, and target date
-- **createTask** — add a task/sub-task under a goal
-- **updateGoalProgress** — update the progress percentage of a goal
-
-### Intelligence
-- **analyzeData** — perform calculations, comparisons, and analysis on any data
-- **generateOutline** — create a detailed outline or plan for any project/content
-
-## BEHAVIOR RULES
-
-1. **Always use tools** — don't just answer from memory when you can verify with searchWeb or browseURL
-2. **Multi-step by default** — break complex tasks into steps, use multiple tools in sequence
-3. **Browse, don't guess** — if user mentions a company, product, or URL, browseURL it before commenting
-4. **Save important outputs** — after research, save with saveResearchReport; after writing emails, use draftEmail
-5. **Be an operator** — when asked to "do" something, actually do it using tools, don't just explain how
-6. **Startup mindset** — think like a seasoned founder: practical, data-driven, ROI-focused
-7. **Format responses** — use markdown: headers, bold, bullets, code blocks as appropriate
+## CRITICAL RULES
+1. **Answer immediately** — after 1-2 tool calls, always write your response. Never chain more than 2 tool calls before responding.
+2. **Don't over-tool** — most questions can be answered from training knowledge. Only search when the answer genuinely requires current/live data.
+3. **One search is enough** — never call searchWeb more than once per response unless the user explicitly asks for more research.
+4. **Always respond with text** — every response must end with a text answer, even if brief.
 
 ## RESPONSE STYLE
-- Direct and confident. No filler like "Great question!" or "Certainly!"
-- Concise summaries after tool results
-- Always tell the user what you did and where to find saved content`;
+- Direct and confident. No filler phrases.
+- Use markdown: headers, bold, bullets, code blocks when helpful.
+- Format responses clearly — the user should be able to read and act on them immediately.`;
 
     // ── Build valid message history ──────────────────────────────────────────
     // Rules:
@@ -229,7 +222,7 @@ export async function POST(req: Request) {
       model,
       system: systemPrompt,
       messages: finalHistory,
-      maxSteps: 20,
+      maxSteps: 5,
       // Disable sending reasoning/thinking blocks back in history —
       // they're stripped from client-side state anyway, so including them
       // would cause a mismatch and trigger "Invalid Responses API request"
@@ -435,52 +428,54 @@ export async function POST(req: Request) {
       },
     } as any);
 
-    // Stream back to client.
-    // IMPORTANT: use `for await...of result.fullStream` — NOT .getReader().
-    // In AI SDK v6, fullStream is an AsyncIterable that emits events across
-    // ALL steps (including step 2 text after a tool call). Using .getReader()
-    // can miss events between steps, causing silent empty responses after
-    // tool use (e.g. searchWeb shows "Done" but never renders the reply).
+    // Use TransformStream — more reliable than ReadableStream constructor in
+    // serverless/edge environments. We fire-and-forget the async pipeline and
+    // return the readable end immediately so the client starts receiving data.
     const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const value of result.fullStream) {
-            let line = "";
-            switch ((value as any).type) {
-              case "text-delta": {
-                const text = (value as any).textDelta ?? "";
-                if (text) line = `0:${JSON.stringify(text)}\n`;
-                break;
-              }
-              case "tool-call":
-                line = `1:${JSON.stringify(value)}\n`;
-                break;
-              case "tool-result":
-                line = `2:${JSON.stringify(value)}\n`;
-                break;
-              case "error": {
-                const raw = (value as any).error;
-                const msg =
-                  typeof raw === "string" ? raw
-                  : raw?.message ? raw.message
-                  : raw?.toString?.() !== "[object Object]" ? raw?.toString()
-                  : JSON.stringify(raw);
-                line = `3:${JSON.stringify(msg ?? "Unknown error from AI provider")}\n`;
-                break;
-              }
-              // step-start / step-finish / finish — no-op, client doesn't need them
+    const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+    const writer = writable.getWriter();
+
+    const send = (line: string) => {
+      try { writer.write(encoder.encode(line)); } catch {}
+    };
+
+    // Run the stream pipeline in the background — do NOT await here
+    (async () => {
+      try {
+        for await (const value of result.fullStream) {
+          switch ((value as any).type) {
+            case "text-delta": {
+              const text = (value as any).textDelta ?? "";
+              if (text) send(`0:${JSON.stringify(text)}\n`);
+              break;
             }
-            if (line) controller.enqueue(encoder.encode(line));
+            case "tool-call":
+              send(`1:${JSON.stringify(value)}\n`);
+              break;
+            case "tool-result":
+              send(`2:${JSON.stringify(value)}\n`);
+              break;
+            case "error": {
+              const raw = (value as any).error;
+              const msg =
+                typeof raw === "string" ? raw
+                : raw?.message ? raw.message
+                : raw?.toString?.() !== "[object Object]" ? raw?.toString()
+                : JSON.stringify(raw);
+              send(`3:${JSON.stringify(msg ?? "Unknown error from AI provider")}\n`);
+              break;
+            }
+            // step-start / step-finish / finish — no-op
           }
-        } catch (err: any) {
-          const msg = err?.message || err?.toString() || "Stream error";
-          controller.enqueue(encoder.encode(`3:${JSON.stringify(msg)}\n`));
-        } finally {
-          controller.close();
         }
-      },
-    });
+      } catch (err: any) {
+        send(`3:${JSON.stringify(err?.message || "Stream error")}\n`);
+      } finally {
+        writer.close().catch(() => {});
+      }
+    })();
+
+    const stream = readable;
 
     return new Response(stream, {
       headers: {

@@ -25,10 +25,15 @@ import React, {
 import { createClient } from "@/lib/supabase";
 
 /* ─── types ─── */
+export type ToolCall = { toolName: string; args: any; toolCallId: string };
+export type ToolResult = { toolName: string; result: any; toolCallId: string };
+
 export type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  toolCalls?: ToolCall[];
+  toolResults?: ToolResult[];
 };
 
 export type ChatSession = {

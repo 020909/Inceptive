@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { useChat } from "@/lib/chat-context";
+import { useChat, type Message, type ToolCall, type ToolResult } from "@/lib/chat-context";
 import { motion, AnimatePresence, animate } from "framer-motion";
 import {
   Send, Loader2, Globe, Mail as MailIcon,
@@ -18,9 +18,7 @@ import { formatTimeAgo } from "@/lib/utils";
 /* ========================
    TYPES
 ======================== */
-type Message = { id: string; role: "user" | "assistant"; content: string };
-type ToolCall = { toolName: string; args: any; toolCallId: string };
-type ToolResult = { toolName: string; result: any; toolCallId: string };
+// Message, ToolCall, ToolResult are imported from chat-context
 
 interface DashboardStats {
   tasks_completed: number;
@@ -180,7 +178,6 @@ export default function DashboardPage() {
   }, [input]);
 
   const handleSend = async () => {
-    // Use user from useAuth() — single source of truth
     if (!input.trim() || !user || isLoading) return;
 
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: input };
@@ -190,7 +187,7 @@ export default function DashboardPage() {
     setToolCalls([]);
     setToolResults([]);
     const assistantMsgId = (Date.now() + 1).toString();
-    setMessages(prev => [...prev, { id: assistantMsgId, role: "assistant", content: "" }]);
+    setMessages(prev => [...prev, { id: assistantMsgId, role: "assistant", content: "", toolCalls: [], toolResults: [] }]);
 
     try {
       const response = await fetch("/api/agent/stream", {
@@ -198,7 +195,10 @@ export default function DashboardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: [...messages, userMsg], user_id: user.id }),
       });
-      if (!response.ok) { const err = await response.json(); throw new Error(err.error || "Failed to connect"); }
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || `Server error ${response.status}`);
+      }
 
       const reader = response.body?.getReader();
       if (!reader) throw new Error("No stream");
@@ -213,34 +213,58 @@ export default function DashboardPage() {
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
+
         for (const line of lines) {
           if (!line.trim()) continue;
           const firstColon = line.indexOf(":");
-          if (firstColon === -1) { content += line; continue; }
+          if (firstColon === -1) continue;
           const type = line.substring(0, firstColon);
           const json = line.substring(firstColon + 1);
+
           try {
             const data = JSON.parse(json);
-            if (type === "0") content += data;
-            else if (type === "1") setToolCalls(prev => [...prev, data]);
-            else if (type === "2") setToolResults(prev => [...prev, data]);
-            else if (type === "3") {
-              // data may be a string or an object — extract readable message
+            if (type === "0") {
+              content += data;
+              // Update content immediately on every token
+              setMessages(prev => {
+                const next = [...prev];
+                const msg = next.find(m => m.id === assistantMsgId);
+                if (msg) msg.content = content;
+                return next;
+              });
+            } else if (type === "1") {
+              // Tool call — store on the message itself so it persists
+              setToolCalls(prev => [...prev, data]);
+              setMessages(prev => {
+                const next = [...prev];
+                const msg = next.find(m => m.id === assistantMsgId);
+                if (msg) msg.toolCalls = [...(msg.toolCalls || []), data];
+                return next;
+              });
+            } else if (type === "2") {
+              // Tool result
+              setToolResults(prev => [...prev, data]);
+              setMessages(prev => {
+                const next = [...prev];
+                const msg = next.find(m => m.id === assistantMsgId);
+                if (msg) msg.toolResults = [...(msg.toolResults || []), data];
+                return next;
+              });
+            } else if (type === "3") {
               const errMsg = typeof data === "string" ? data
                 : data?.message || data?.error || JSON.stringify(data);
               toast.error(errMsg, { duration: 8000 });
             }
-          } catch { content += line; }
-          setMessages(prev => {
-            const next = [...prev];
-            const msg = next.find(m => m.id === assistantMsgId);
-            if (msg) msg.content = content;
-            return next;
-          });
+          } catch {
+            // ignore parse errors on individual lines
+          }
         }
       }
-    } catch (err: any) { toast.error(err.message); }
-    finally { setIsLoading(false); }
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const firstName = user?.email?.split("@")[0] || "there";
@@ -322,7 +346,13 @@ export default function DashboardPage() {
                     </div>
                   )}
                   <div className="space-y-1.5">
-                    {m.content ? (
+                    {m.role === "assistant" && !m.content && isLoading && i === messages.length - 1 ? (
+                      /* Typing indicator while waiting for first text token */
+                      <div className="rounded-2xl border" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
+                        <TypingIndicator />
+                      </div>
+                    ) : m.content ? (
+                      /* Render message content */
                       <div className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "" : "text-[var(--foreground)]"}`}
                         style={{
                           background: m.role === "user" ? "var(--foreground)" : "var(--background-elevated)",
@@ -334,16 +364,13 @@ export default function DashboardPage() {
                           : m.content
                         }
                       </div>
-                    ) : isLoading && i === messages.length - 1 ? (
-                      <div className="rounded-2xl border" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
-                        <TypingIndicator />
-                      </div>
                     ) : null}
-                    {m.role === "assistant" && toolCalls.length > 0 && i === messages.length - 1 && (
+                    {m.role === "assistant" && (m.toolCalls?.length ?? 0) > 0 && (
                       <div className="space-y-1">
-                        {toolCalls.map((tc, idx) => {
+                        {(m.toolCalls || []).map((tc, idx) => {
                           const meta = TOOL_META[tc.toolName];
-                          const isDone = toolResults.some(r => r.toolCallId === tc.toolCallId);
+                          const isDone = (m.toolResults || []).some(r => r.toolCallId === tc.toolCallId) ||
+                            (!isLoading && i !== messages.length - 1);
                           return (
                             <motion.div key={tc.toolCallId || idx} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: idx * 0.08 }}
