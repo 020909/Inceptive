@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient as createSupabaseSSR } from "@/lib/supabase-server";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { createClient as createAdmin } from "@supabase/supabase-js";
 import { getStripe, PLANS, type PlanId } from "@/lib/stripe";
 
@@ -10,7 +10,7 @@ const admin = createAdmin(
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createSupabaseSSR();
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient as createSupabaseSSR } from "@/lib/supabase-server";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { createClient as createAdmin } from "@supabase/supabase-js";
 import { getOrInitCredits } from "@/lib/credits";
 
@@ -11,7 +11,7 @@ const admin = createAdmin(
 // GET /api/credits — returns current credits + plan for the logged-in user
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createSupabaseSSR();
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
