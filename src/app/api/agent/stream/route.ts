@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { streamText } from "ai";
 import { buildModel } from "@/lib/ai-model";
+import { checkCredits, deductCredits, getUserPlan } from "@/lib/credits";
 import { z } from "zod";
 
 export const maxDuration = 120;
@@ -108,6 +109,19 @@ export async function POST(req: Request) {
 
     if (!messages || !user_id) {
       return new Response(JSON.stringify({ error: "Missing messages or user_id" }), { status: 400 });
+    }
+
+    // ── Credit check (before hitting the AI provider) ─────────────────────
+    const plan = await getUserPlan(user_id);
+    // Basic plan = BYOK, no credit check. Free/Pro/Unlimited check credits.
+    if (plan !== "basic") {
+      const creditCheck = await checkCredits(user_id, "chat_message");
+      if (!creditCheck.allowed) {
+        return new Response(
+          JSON.stringify({ error: creditCheck.reason }),
+          { status: 402 } // Payment Required
+        );
+      }
     }
 
     // ── Step 1: fetch guaranteed columns (api_key_encrypted, api_provider always exist)
@@ -437,16 +451,19 @@ export async function POST(req: Request) {
         const enqueue = (line: string) => {
           try { controller.enqueue(encoder.encode(line)); } catch {}
         };
+        let toolCallCount = 0;
+        let producedText = false;
         try {
           for await (const value of result.fullStream) {
             switch ((value as any).type) {
               case "text-delta": {
                 // ai@6 uses .text (not .textDelta like older versions)
                 const text = (value as any).text ?? (value as any).textDelta ?? "";
-                if (text) enqueue(`0:${JSON.stringify(text)}\n`);
+                if (text) { enqueue(`0:${JSON.stringify(text)}\n`); producedText = true; }
                 break;
               }
               case "tool-call":
+                toolCallCount++;
                 enqueue(`1:${JSON.stringify(value)}\n`);
                 break;
               case "tool-result":
@@ -463,6 +480,15 @@ export async function POST(req: Request) {
                 break;
               }
               // step-start / step-finish / finish — no-op
+            }
+          }
+          // ── Deduct credits after successful response ────────────────────
+          if (plan !== "basic" && producedText) {
+            // Deduct base chat cost + extra for tool calls
+            const searchCalls = Math.min(toolCallCount, 3); // cap at 3 search debits
+            await deductCredits(user_id, "chat_message");
+            for (let i = 0; i < searchCalls; i++) {
+              await deductCredits(user_id, "web_search").catch(() => {});
             }
           }
         } catch (err: any) {

@@ -11,7 +11,7 @@ import {
   LayoutDashboard, Mail, Search, Share2, Target,
   FileBarChart, Settings, Menu, X, LogOut,
   PanelLeftClose, PanelLeftOpen,
-  Plus, ChevronDown, Clock, MessageSquare,
+  Plus, ChevronDown, Clock, MessageSquare, Zap,
 } from "lucide-react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase";
@@ -26,6 +26,7 @@ const navItems = [
 ];
 
 const bottomItems = [
+  { label: "Upgrade", href: "/upgrade", icon: Zap },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -219,6 +220,46 @@ function NewTaskButton({ collapsed, onMobileClose }: { collapsed: boolean; onMob
   );
 }
 
+/* ── Credits widget (shown in sidebar when expanded) ── */
+function CreditsWidget() {
+  const [info, setInfo] = useState<{ remaining: number; total: number; plan: string } | null>(null);
+
+  React.useEffect(() => {
+    fetch("/api/credits")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d) setInfo({ remaining: d.credits?.remaining ?? 0, total: d.credits?.total ?? 100, plan: d.plan ?? "free" });
+      })
+      .catch(() => {});
+  }, []);
+
+  if (!info || info.plan === "basic") return null; // basic = BYOK, no credit tracking
+
+  const pct = info.total > 0 ? Math.round((info.remaining / info.total) * 100) : 0;
+  const color = pct > 50 ? "#30D158" : pct > 20 ? "#FF9F0A" : "#FF453A";
+
+  return (
+    <Link href="/upgrade" className="block mx-0.5 mb-1 px-3 py-2.5 rounded-xl border group transition-colors duration-150"
+      style={{ background: "var(--background-elevated)", borderColor: "var(--border-subtle)" }}
+      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--border)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--border-subtle)"; }}
+    >
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[10px] text-[var(--foreground-secondary)] font-medium uppercase tracking-wider">Credits</span>
+        <span className="text-[10px] font-semibold" style={{ color }}>{info.remaining.toLocaleString()}</span>
+      </div>
+      <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "var(--background-overlay)" }}>
+        <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: color }} />
+      </div>
+      <p className="text-[9px] text-[var(--foreground-tertiary)] mt-1.5">
+        {info.plan === "free" ? "Free · resets daily" : `${info.plan} plan`}
+        {" · "}
+        <span className="text-[var(--foreground-secondary)] group-hover:text-white transition-colors">Upgrade →</span>
+      </p>
+    </Link>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
@@ -270,8 +311,9 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Bottom: Settings */}
+      {/* Bottom: Upgrade + Settings */}
       <div className="px-2 py-1 space-y-0.5 mb-1">
+        {!collapsed && <CreditsWidget />}
         {bottomItems.map((item) => (
           <NavItem key={item.href} item={item} isActive={pathname === item.href} collapsed={collapsed} onClick={() => setMobileOpen(false)} />
         ))}
