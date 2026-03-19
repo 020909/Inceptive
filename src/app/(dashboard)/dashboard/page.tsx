@@ -262,7 +262,14 @@ export default function DashboardPage() {
         for (const line of lines) processLine(line);
       }
     } catch (err: any) {
-      toast.error(err.message || "Something went wrong. Please try again.");
+      // Show error inline in the chat bubble so it can't be missed
+      const errText = err.message || "Something went wrong. Please try again.";
+      setMessages(prev => {
+        const next = [...prev];
+        const msg = next.find(m => m.id === assistantMsgId);
+        if (msg) msg.content = `⚠️ ${errText}`;
+        return next;
+      });
     } finally {
       setIsLoading(false);
     }
@@ -352,18 +359,19 @@ export default function DashboardPage() {
                       <div className="rounded-2xl border" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
                         <TypingIndicator />
                       </div>
-                    ) : m.content ? (
-                      /* Render message content */
+                    ) : (m.content || (m.role === "assistant" && !isLoading)) ? (
+                      /* Render message content — or a retry prompt if empty */
                       <div className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "" : "text-[var(--foreground)]"}`}
                         style={{
                           background: m.role === "user" ? "var(--foreground)" : "var(--background-elevated)",
                           color: m.role === "user" ? "var(--background)" : undefined,
                           border: m.role === "assistant" ? "1px solid var(--border)" : "none",
                         }}>
-                        {m.role === "assistant"
-                          ? <div className="prose-inceptive"><ReactMarkdown>{m.content}</ReactMarkdown></div>
-                          : m.content
-                        }
+                        {m.role === "assistant" ? (
+                          m.content
+                            ? <div className="prose-inceptive"><ReactMarkdown>{m.content}</ReactMarkdown></div>
+                            : <span className="text-[var(--foreground-tertiary)] text-xs italic">No response — check your API key in Settings and try again.</span>
+                        ) : m.content}
                       </div>
                     ) : null}
                     {m.role === "assistant" && (m.toolCalls?.length ?? 0) > 0 && (

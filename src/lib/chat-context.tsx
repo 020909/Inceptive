@@ -80,7 +80,11 @@ function loadFromSession(): Message[] {
     const raw = sessionStorage.getItem(SESSION_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    // Strip ghost assistant messages (empty content from old broken sessions)
+    return parsed.filter(
+      (m: Message) => m.role === "user" || (m.role === "assistant" && m.content?.trim())
+    );
   } catch {
     return [];
   }
