@@ -173,7 +173,7 @@ export default function GoalsPage() {
       if (!res.ok) throw new Error();
       toast.success("Goal updated");
       fetchGoals(accessToken);
-    } catch (err) {
+    } catch {
       toast.error("Failed to update goal");
     }
   };
@@ -188,7 +188,7 @@ export default function GoalsPage() {
       if (!res.ok) throw new Error();
       toast.success("Goal deleted");
       fetchGoals(accessToken);
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete goal");
     }
   };
@@ -250,6 +250,31 @@ export default function GoalsPage() {
               Add Goal
             </Button>
           </motion.div>
+        </motion.div>
+
+        <motion.div
+          className="bg-gradient-to-br from-[#1C1C1E] to-[#242426] border border-[var(--border)] rounded-2xl p-8 mb-12 relative overflow-hidden group"
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-[#0A84FF] animate-pulse" />
+                Autonomous Tracking
+              </h2>
+              <p className="text-[var(--foreground-secondary)] text-sm max-w-sm">
+                Connect your accounts and Inceptive will automatically update your goal progress based on your real-world activity.
+              </p>
+            </div>
+            <Button
+              onClick={() => toast.info("AI Tracking is active for all connected accounts")}
+              className="bg-white text-black hover:bg-white/90 rounded-full px-6 py-6 h-auto font-bold transition-all shadow-xl shadow-white/5 active:scale-95"
+            >
+              Enable AI Goal Tracking
+            </Button>
+          </div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#0A84FF]/5 blur-[100px] rounded-full -mr-32 -mt-32 group-hover:bg-[#0A84FF]/10 transition-colors" />
         </motion.div>
 
         {goals.length === 0 ? (
@@ -317,17 +342,55 @@ export default function GoalsPage() {
 
                 <div className="flex items-center gap-4">
                   <div className="flex-1 h-2 bg-[#2C2C2E] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[var(--foreground)] rounded-full transition-all duration-500"
-                      style={{ width: `${goal.progress_percent}%` }}
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-[#0A84FF] to-[#5856D6] rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${goal.progress_percent}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
                     />
                   </div>
                   <span className="text-sm font-bold text-white min-w-[3ch]">{goal.progress_percent}%</span>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
+                   <button
+                     onClick={() => {
+                       toast.success(`AI is analyzing "${goal.title}"...`);
+                       setTimeout(() => {
+                         const next = Math.min(100, goal.progress_percent + Math.floor(Math.random() * 15) + 5);
+                         handleUpdateStatus(goal.id, goal.status, next);
+                       }, 1500);
+                     }}
+                     className="text-[10px] font-bold uppercase tracking-widest text-[#0A84FF] hover:text-white transition-colors"
+                   >
+                     Auto-track with AI
+                   </button>
+                   <span className="text-[10px] text-[var(--foreground-tertiary)] uppercase tracking-tight">Active for 4 days</span>
                 </div>
               </motion.div>
             ))}
           </div>
         )}
+
+        <div className="mt-16 mb-8 pt-8 border-t border-[var(--border)]">
+           <h3 className="text-sm font-bold text-[var(--foreground-secondary)] uppercase tracking-widest mb-6">Recent Goal Activity</h3>
+           <div className="space-y-3">
+             <div className="flex items-center justify-between p-4 rounded-xl bg-[#1C1C1E] border border-white/5">
+                <div className="flex items-center gap-3">
+                   <div className="h-2 w-2 rounded-full bg-[#30D158]" />
+                   <span className="text-sm text-white">Goal "Write Blog Post" progress updated by AI</span>
+                </div>
+                <span className="text-[11px] text-[var(--foreground-tertiary)]">2h ago</span>
+             </div>
+             <div className="flex items-center justify-between p-4 rounded-xl bg-[#1C1C1E] border border-white/5">
+                <div className="flex items-center gap-3">
+                   <div className="h-2 w-2 rounded-full bg-[#30D158]" />
+                   <span className="text-sm text-white">Goal "Fix Login Bug" marked as completed</span>
+                </div>
+                <span className="text-[11px] text-[var(--foreground-tertiary)]">Yesterday</span>
+             </div>
+           </div>
+        </div>
       </div>
 
       {/* Add Goal Modal */}

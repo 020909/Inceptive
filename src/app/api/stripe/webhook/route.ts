@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getStripe, PLANS, type PlanId } from "@/lib/stripe";
+import { getStripe, type PlanId } from "@/lib/stripe";
 import { resetCredits } from "@/lib/credits";
 import Stripe from "stripe";
 
@@ -132,9 +132,10 @@ export async function POST(req: NextRequest) {
         break;
       }
     }
-  } catch (err: any) {
-    console.error("Webhook handler error:", err.message, err);
-    // Return 200 so Stripe doesn't retry — log the error for investigation
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Webhook handler error:", message, err);
+    return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

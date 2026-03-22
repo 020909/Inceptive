@@ -23,6 +23,8 @@ import React, {
   useCallback,
 } from "react";
 import { createClient } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth-context";
+import type { Session } from "@supabase/supabase-js";
 
 /* ─── types ─── */
 export type ToolCall = { toolName: string; args: any; toolCallId: string };
@@ -120,11 +122,11 @@ function saveLocalRecent(session: ChatSession) {
 
 /* ─── provider ─── */
 export function ChatProvider({ children }: { children: React.ReactNode }) {
+  const { session, refresh: refreshAuth } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [recentChats, setRecentChats] = useState<ChatSession[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
   const [memoryEnabled, setMemoryEnabledState] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const initRef = useRef(false);
 
   /* ── on mount: restore current chat + fetch memory setting ── */
@@ -139,12 +141,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     // Get access token + memory setting from Supabase
     const init = async () => {
       try {
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) return;
-        setAccessToken(session.access_token);
 
         // Fetch memory setting
+        const supabase = createClient();
         const { data } = await supabase
           .from("users")
           .select("memory_enabled")
@@ -166,9 +166,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const refreshRecents = useCallback(async () => {
     setRecentLoading(true);
     try {
-      if (memoryEnabled && accessToken) {
+      if (memoryEnabled && session?.access_token) {
         const res = await fetch("/api/chat", {
-          headers: { Authorization: `Bearer ${accessToken}` },
+          headers: { Authorization: `Bearer ${session.access_token}` },
         });
         if (res.ok) {
           const { sessions } = await res.json();
@@ -190,12 +190,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setRecentLoading(false);
     }
-  }, [memoryEnabled, accessToken]);
+  }, [memoryEnabled, session]);
 
   /* load recents once auth + memory setting are known */
   useEffect(() => {
-    if (accessToken !== null) refreshRecents();
-  }, [accessToken, memoryEnabled, refreshRecents]);
+    if (session?.access_token) refreshRecents();
+  }, [session, memoryEnabled, refreshRecents]);
 
   /* ── archive current chat and start fresh ── */
   const startNewChat = useCallback(async () => {
@@ -204,43 +204,43 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const hasContent = currentMsgs.some((m) => m.role === "user" && m.content.trim());
 
     if (hasContent) {
-      const session: ChatSession = {
+      const chatSession: ChatSession = {
         id: `local_${Date.now()}`,
         title: makeTitle(currentMsgs),
         messages: currentMsgs,
         createdAt: Date.now(),
       };
 
-      if (memoryEnabled && accessToken) {
+      if (memoryEnabled && session?.access_token) {
         // Save to Supabase
         try {
           const res = await fetch("/api/chat", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${accessToken}`,
+              Authorization: `Bearer ${session.access_token}`,
             },
             body: JSON.stringify({
-              title: session.title,
+              title: chatSession.title,
               messages: currentMsgs,
             }),
           });
           if (res.ok) {
             const { id } = await res.json();
-            session.id = id;
+            chatSession.id = id;
           }
         } catch {}
       }
 
       // Always save locally too so Recents is available immediately
-      saveLocalRecent(session);
+      saveLocalRecent(chatSession);
     }
 
     // Clear current chat
     setMessages([]);
     sessionStorage.removeItem(SESSION_KEY);
     await refreshRecents();
-  }, [messages, memoryEnabled, accessToken, refreshRecents]);
+  }, [messages, memoryEnabled, session, refreshRecents]);
 
   /* ── load a past chat ── */
   const loadChat = useCallback((session: ChatSession) => {
@@ -251,18 +251,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   /* ── toggle memory setting ── */
   const setMemoryEnabled = useCallback(async (enabled: boolean) => {
     setMemoryEnabledState(enabled);
-    if (!accessToken) return;
+    if (!session?.access_token) return;
     try {
       await fetch("/api/chat", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ memory_enabled: enabled }),
       });
     } catch {}
-  }, [accessToken]);
+  }, [session]);
 
   return (
     <ChatContext.Provider

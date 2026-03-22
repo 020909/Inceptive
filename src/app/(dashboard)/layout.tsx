@@ -12,7 +12,7 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen" style={{ background: "var(--background)" }}>
       <Sidebar />
       <main
-        className="min-h-screen transition-all duration-300 ease-in-out md:[margin-left:var(--sidebar-w)]"
+        className="min-h-screen transition-all duration-300 ease-in-out md:pl-[var(--sidebar-w)]"
         style={{ "--sidebar-w": collapsed ? "64px" : "240px" } as React.CSSProperties}
       >
         {children}

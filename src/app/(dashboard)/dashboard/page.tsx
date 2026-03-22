@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, Suspense } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { useChat, type Message, type ToolCall, type ToolResult } from "@/lib/chat-context";
@@ -11,6 +11,7 @@ import {
   CheckCircle2, Clock, Plus,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { formatTimeAgo } from "@/lib/utils";
@@ -111,6 +112,26 @@ function StatCard({ title, value, icon, href, pulse }: {
 /* ========================
    MAIN DASHBOARD
 ======================== */
+function WelcomeToast() {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("welcome") === "true") {
+      toast.success("Welcome to Inceptive — your AI just woke up 🚀", {
+        duration: 6000,
+        description: "You've been given 500 free credits to get started.",
+      });
+      // Remove the query param without a full reload
+      window.history.replaceState({}, "", "/dashboard");
+    }
+  }, [searchParams]);
+
+  return null;
+}
+
+/* ========================
+   MAIN DASHBOARD
+======================== */
 export default function DashboardPage() {
   // Single auth source — useAuth() syncs with the SSR client, no duplicate state
   const { user } = useAuth();
@@ -120,7 +141,7 @@ export default function DashboardPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [toolCalls, setToolCalls] = useState<ToolCall[]>([]);
-  const [toolResults, setToolResults] = useState<ToolResult[]>([]);
+  const [, setToolResults] = useState<ToolResult[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -193,7 +214,7 @@ export default function DashboardPage() {
       const response = await fetch("/api/agent/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [...messages, userMsg], user_id: user.id }),
+        body: JSON.stringify({ messages: [...messages, userMsg] }),
       });
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
@@ -293,6 +314,9 @@ export default function DashboardPage() {
       backgroundImage: "linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)",
       backgroundSize: "48px 48px",
     }}>
+      <Suspense fallback={null}>
+        <WelcomeToast />
+      </Suspense>
 
       {/* ====== CENTER — Agent Chat ====== */}
       <div className="flex flex-col flex-1 min-w-0">

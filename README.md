@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Inceptive
 
-## Getting Started
+Founder-focused **Next.js + Supabase** app with BYOK AI, OAuth connectors (Gmail, Outlook, social), Stripe billing, and an **async agent job** layer for 24/7-style workloads.
 
-First, run the development server:
+## Quick start
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Apply SQL in `supabase/` (in order) in the Supabase SQL editor — including **`009_agent_autonomy.sql`** for background jobs.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Architecture & roadmap
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+See **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** for the full system map and autonomy plan.
 
-## Learn More
+## Autonomous worker (self-hosted)
 
-To learn more about Next.js, take a look at the following resources:
+1. Set **`CRON_SECRET`** in `.env` (same value everywhere).
+2. Run the web app (`npm start` or Docker).
+3. Run **`npm run worker`** (or the `agent-worker` service in `docker-compose.yml`) so it POSTs to `/api/internal/agent-tick` on an interval.
+4. Use the **Agent** page in the dashboard to enqueue jobs, or `POST /api/agent/jobs` with a Bearer token.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Example shell flow: [`scripts/e2e-inbox-monitor-example.sh`](./scripts/e2e-inbox-monitor-example.sh).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Docker
 
-## Deploy on Vercel
+```bash
+docker compose up --build
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Requires `.env` with Supabase, Stripe (if used), `CRON_SECRET`, and optional `SLACK_BOT_TOKEN` / `SLACK_DEFAULT_CHANNEL` for Slack jobs.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Connectors (code)
+
+Typed modules live under [`src/lib/connectors/`](./src/lib/connectors/) (browser, Gmail link-check, Slack bot stub, computer-use stub).
+
+---
+
+Bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).

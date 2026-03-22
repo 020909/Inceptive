@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/internal/agent-tick",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/daily-report",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-report",
+      "schedule": "0 9 * * 0"
+    }
+  ]
+}

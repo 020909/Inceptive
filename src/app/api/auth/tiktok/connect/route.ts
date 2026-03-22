@@ -1,26 +1,29 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { createOAuthState } from "@/lib/oauth-state";
+import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
+import { sanitizeOAuthRedirectPath } from "@/lib/safe-redirect";
 import crypto from "crypto";
 
 const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY!;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com";
-const REDIRECT_URI = `${APP_URL}/api/auth/tiktok/callback`;
 const SCOPES = "user.info.basic,video.publish,video.upload";
 
 export async function GET(request: Request) {
-  if (!CLIENT_KEY) {
-    return NextResponse.json({ error: "TikTok OAuth not configured. Add TIKTOK_CLIENT_KEY to .env" }, { status: 503 });
-  }
-  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
   const url = new URL(request.url);
-  const token = url.searchParams.get("token") || request.headers.get("authorization")?.replace("Bearer ", "") || "";
-  const redirectTo = url.searchParams.get("redirect_to") || "/social";
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || url.origin;
+  const REDIRECT_URI = `${APP_URL}/api/auth/tiktok/callback`;
 
-  const { data: { user }, error } = await admin.auth.getUser(token);
-  if (error || !user) return NextResponse.redirect(`${APP_URL}${redirectTo}?error=unauthorized`);
+  const redirectTo = sanitizeOAuthRedirectPath(url.searchParams.get("redirect_to"), "/social");
 
-  const state = createOAuthState(user.id, redirectTo);
+  const userId = await getAuthenticatedUserIdFromRequest(request, true);
+  if (!userId) return NextResponse.redirect(`${APP_URL}${redirectTo}?error=unauthorized`);
+
+  if (!CLIENT_KEY) {
+    console.error(`[OAuth] TIKTOK_CLIENT_KEY missing in production.`);
+    return NextResponse.redirect(`${APP_URL}${redirectTo}?error=config_missing&provider=tiktok`);
+  }
+
+  const state = createOAuthState(userId, redirectTo);
   const csrfState = crypto.randomBytes(16).toString("hex");
 
   const params = new URLSearchParams({

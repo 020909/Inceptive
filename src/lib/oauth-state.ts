@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { sanitizeOAuthRedirectPath } from "@/lib/safe-redirect";
 
 function getSecret(): string {
   const raw = process.env.TOKEN_ENCRYPTION_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -10,8 +11,9 @@ function getSecret(): string {
  * Encodes: userId | timestamp | redirectTo | hmac
  */
 export function createOAuthState(userId: string, redirectTo = "/dashboard"): string {
+  const safeRedirect = sanitizeOAuthRedirectPath(redirectTo, "/dashboard");
   const timestamp = Date.now().toString();
-  const payload = `${userId}|${timestamp}|${redirectTo}`;
+  const payload = `${userId}|${timestamp}|${safeRedirect}`;
   const hmac = crypto
     .createHmac("sha256", getSecret())
     .update(payload)
@@ -44,7 +46,9 @@ export function verifyOAuthState(state: string): { userId: string; redirectTo: s
       .digest("hex")
       .slice(0, 20);
     if (hmac !== expectedHmac) return null;
-    return { userId, redirectTo };
+    const safeRedirect = sanitizeOAuthRedirectPath(redirectTo, "/dashboard");
+    if (safeRedirect !== redirectTo) return null;
+    return { userId, redirectTo: safeRedirect };
   } catch {
     return null;
   }

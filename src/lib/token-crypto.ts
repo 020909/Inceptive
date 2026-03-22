@@ -1,9 +1,12 @@
 import crypto from "crypto";
 
-// Derive a 32-byte key from env (use TOKEN_ENCRYPTION_KEY or fall back to service role key prefix)
+// Derive a 32-byte AES key via SHA-256 (use TOKEN_ENCRYPTION_KEY; never truncate secrets)
 function getKey(): Buffer {
   const raw = process.env.TOKEN_ENCRYPTION_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  return Buffer.from(raw.slice(0, 32).padEnd(32, "0"));
+  if (!raw) {
+    throw new Error("TOKEN_ENCRYPTION_KEY or SUPABASE_SERVICE_ROLE_KEY must be set for token encryption");
+  }
+  return crypto.createHash("sha256").update(raw, "utf8").digest();
 }
 
 /** Encrypt a string token using AES-256-GCM */
@@ -30,6 +33,13 @@ export function decryptToken(encrypted: string): string {
     const decrypted = Buffer.concat([decipher.update(encryptedBuffer), decipher.final()]);
     return decrypted.toString("utf8");
   } catch {
-    return encrypted; // Fallback: return raw (handles unencrypted legacy tokens)
+    const segments = encrypted.split(":");
+    const looksEncrypted =
+      segments.length === 3 &&
+      segments.every((s) => /^[0-9a-f]+$/i.test(s) && s.length > 0);
+    if (looksEncrypted) {
+      throw new Error("Failed to decrypt token");
+    }
+    return encrypted;
   }
 }

@@ -1,10 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { createOAuthState } from "@/lib/oauth-state";
+import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
+import { sanitizeOAuthRedirectPath } from "@/lib/safe-redirect";
 
 const APP_ID = process.env.META_APP_ID!;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com";
-const REDIRECT_URI = `${APP_URL}/api/auth/meta/callback`;
 
 // Scopes for Instagram + Facebook posting
 const SCOPES = [
@@ -19,18 +19,21 @@ const SCOPES = [
 ].join(",");
 
 export async function GET(request: Request) {
-  if (!APP_ID) {
-    return NextResponse.json({ error: "Meta OAuth not configured. Add META_APP_ID to .env" }, { status: 503 });
-  }
-  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
   const url = new URL(request.url);
-  const token = url.searchParams.get("token") || request.headers.get("authorization")?.replace("Bearer ", "") || "";
-  const redirectTo = url.searchParams.get("redirect_to") || "/social";
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || url.origin;
+  const REDIRECT_URI = `${APP_URL}/api/auth/meta/callback`;
 
-  const { data: { user }, error } = await admin.auth.getUser(token);
-  if (error || !user) return NextResponse.redirect(`${APP_URL}${redirectTo}?error=unauthorized`);
+  const redirectTo = sanitizeOAuthRedirectPath(url.searchParams.get("redirect_to"), "/social");
 
-  const state = createOAuthState(user.id, redirectTo);
+  const userId = await getAuthenticatedUserIdFromRequest(request, true);
+  if (!userId) return NextResponse.redirect(`${APP_URL}${redirectTo}?error=unauthorized`);
+
+  if (!APP_ID) {
+    console.error(`[OAuth] META_APP_ID missing in production.`);
+    return NextResponse.redirect(`${APP_URL}${redirectTo}?error=config_missing&provider=meta`);
+  }
+
+  const state = createOAuthState(userId, redirectTo);
   const params = new URLSearchParams({
     client_id: APP_ID,
     redirect_uri: REDIRECT_URI,

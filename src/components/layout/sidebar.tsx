@@ -18,9 +18,10 @@ import { createClient } from "@/lib/supabase";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Agent", href: "/agent", icon: Zap },
   { label: "Email Autopilot", href: "/email", icon: Mail },
   { label: "Research", href: "/research", icon: Search },
-  { label: "Social Media", href: "/social", icon: Share2 },
+  { label: "Connectors", href: "/social", icon: Share2 },
   { label: "Goals", href: "/goals", icon: Target },
   { label: "Reports", href: "/reports", icon: FileBarChart },
 ];

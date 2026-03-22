@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { createClient as createAdmin } from "@supabase/supabase-js";
 import { getStripe } from "@/lib/stripe";
@@ -9,7 +9,7 @@ const admin = createAdmin(
 );
 
 // Redirects user to Stripe Billing Portal to manage / cancel subscription
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();

@@ -5,11 +5,11 @@ import { encryptToken } from "@/lib/token-crypto";
 
 const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY!;
 const CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET!;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com";
-const REDIRECT_URI = `${APP_URL}/api/auth/tiktok/callback`;
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || url.origin;
+  const REDIRECT_URI = `${APP_URL}/api/auth/tiktok/callback`;
   const code = url.searchParams.get("code");
   const stateRaw = url.searchParams.get("state") || "";
   const errorParam = url.searchParams.get("error");

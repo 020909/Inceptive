@@ -127,7 +127,6 @@ function UpgradePageInner() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 max-w-5xl mx-auto">
         {plans.map((plan, i) => {
           const isCurrent = plan.id === currentPlan;
-          const isPaid = plan.id !== "free";
 
           return (
             <motion.div

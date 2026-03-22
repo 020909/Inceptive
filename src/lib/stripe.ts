@@ -81,20 +81,26 @@ export const PLANS = {
 
 export type PlanId = keyof typeof PLANS;
 
-// ── Credit costs per action ───────────────────────────────────────────────────
-// Basic ($9) plan users have BYOK — 0 credits for everything.
-// Free/Pro/Unlimited use these rates.
+// ── Credit costs per action (1 = chat/small tool, 5 = search/email, 10 = computer+vision, 50 = long job) ──
+// Basic ($9) = BYOK: Inceptive credits not charged (see credits.ts).
+// Pro/Unlimited with active subscription: unlimited (see is_unlimited_bucket in credits.ts).
 export const CREDIT_COSTS = {
-  chat_message:      10,   // simple chat reply
-  web_search:        25,   // searchWeb tool call
-  browse_url:        15,   // browseURL tool call
-  email_draft:       50,   // draft email via agent
-  research_fast:    100,   // fast depth research
-  research_deep:    300,   // deep research
-  research_ultra:   600,   // ultra depth
-  social_post:       75,   // schedule social post
-  goal_create:       20,   // create a goal
-  task_create:       10,   // create a task
+  chat_message: 1,
+  tool_small: 1,
+  web_search: 5,
+  browse_url: 5,
+  email_draft: 5,
+  email_read: 5,
+  research_fast: 5,
+  research_deep: 10,
+  research_ultra: 20,
+  social_post: 5,
+  goal_create: 1,
+  task_create: 1,
+  goal_update: 1,
+  computer_use_action: 10,
+  autonomous_job_hour: 50,
+  ai_chat_gemini: 1, // Dynamic cost — actual deduction is token-based in proxy.ts
 } as const;
 
 export type CreditAction = keyof typeof CREDIT_COSTS;

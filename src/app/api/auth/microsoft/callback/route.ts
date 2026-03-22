@@ -6,11 +6,11 @@ import { encryptToken } from "@/lib/token-crypto";
 const CLIENT_ID = process.env.MICROSOFT_CLIENT_ID!;
 const CLIENT_SECRET = process.env.MICROSOFT_CLIENT_SECRET!;
 const TENANT = process.env.MICROSOFT_TENANT_ID || "common";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com";
-const REDIRECT_URI = `${APP_URL}/api/auth/microsoft/callback`;
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || url.origin;
+  const REDIRECT_URI = `${APP_URL}/api/auth/microsoft/callback`;
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const errorParam = url.searchParams.get("error");

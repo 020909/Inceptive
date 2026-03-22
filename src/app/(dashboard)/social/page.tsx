@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
+import type { Session } from "@supabase/supabase-js";
 
 import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
@@ -31,75 +32,87 @@ interface ConnectedAccount {
 }
 
 const SOCIAL_CONNECTORS = [
-  { id: "x",         provider: "twitter",   name: "X (Twitter)", logo: "/logos/social/x.png",         users: "600M+",  oauthPath: "/api/auth/twitter/connect",  telegramInput: false },
-  { id: "linkedin",  provider: "linkedin",  name: "LinkedIn",    logo: "/logos/social/linkedin.png",  users: "950M+",  oauthPath: "/api/auth/linkedin/connect", telegramInput: false },
-  { id: "facebook",  provider: "facebook",  name: "Facebook",    logo: "/logos/social/facebook.png",  users: "3B+",    oauthPath: "/api/auth/meta/connect",     telegramInput: false },
-  { id: "instagram", provider: "instagram", name: "Instagram",   logo: "/logos/social/instagram.png", users: "2B+",    oauthPath: "/api/auth/meta/connect",     telegramInput: false },
-  { id: "telegram",  provider: "telegram",  name: "Telegram",    logo: "/logos/social/telegram.png",  users: "900M+",  oauthPath: null,                         telegramInput: true  },
-  { id: "tiktok",    provider: "tiktok",    name: "TikTok",      logo: "/logos/social/tiktok.png",    users: "1.5B+",  oauthPath: "/api/auth/tiktok/connect",   telegramInput: false },
-  { id: "youtube",   provider: "youtube",   name: "YouTube",     logo: "/logos/social/youtube.png",   users: "2.5B+",  oauthPath: "/api/auth/google/connect",   telegramInput: false },
-  { id: "whatsapp",  provider: "whatsapp",  name: "WhatsApp",    logo: "/logos/social/whatsapp.png",  users: "2B+",    oauthPath: null,                         telegramInput: false },
-  { id: "wechat",    provider: "wechat",    name: "WeChat",      logo: "/logos/social/wechat.png",    users: "1.3B+",  oauthPath: null,                         telegramInput: false },
-  { id: "snapchat",  provider: "snapchat",  name: "Snapchat",    logo: "/logos/social/snapchat.png",  users: "750M+",  oauthPath: null,                         telegramInput: false },
+  // Email Providers
+  { id: "gmail",     provider: "gmail",     name: "Gmail",       logo: "/logos/email/gmail.png",   users: "1.8B+",  telegramInput: false, type: "email" },
+  { id: "outlook",   provider: "outlook",   name: "Outlook",     logo: "/logos/email/outlook.png", users: "400M+",  telegramInput: false, type: "email" },
+  // Social Providers
+  { id: "x",         provider: "twitter",   name: "X (Twitter)", logo: "/logos/social/x.png",         users: "600M+",  telegramInput: false, type: "social" },
+  { id: "linkedin",  provider: "linkedin",  name: "LinkedIn",    logo: "/logos/social/linkedin.png",  users: "950M+",  telegramInput: false, type: "social" },
+  { id: "facebook",  provider: "facebook",  name: "Facebook",    logo: "/logos/social/facebook.png",  users: "3B+",    telegramInput: false, type: "social" },
+  { id: "instagram", provider: "instagram", name: "Instagram",   logo: "/logos/social/instagram.png", users: "2B+",    telegramInput: false, type: "social" },
+  { id: "telegram",  provider: "telegram",  name: "Telegram",    logo: "/logos/social/telegram.png",  users: "900M+",  telegramInput: true,  type: "social" },
+  { id: "tiktok",    provider: "tiktok",    name: "TikTok",      logo: "/logos/social/tiktok.png",    users: "1.5B+",  telegramInput: false, type: "social" },
+  { id: "youtube",   provider: "youtube",   name: "YouTube",     logo: "/logos/social/youtube.png",   users: "2.5B+",  telegramInput: false, type: "social" },
 ];
 
-function ConnectorCard({ connector, connected, connectedAccount, accessToken, onDisconnect, onTelegramConnect }: {
+function ConnectorCard({ connector, connected, connectedAccount, session, onDisconnect, onTelegramConnect }: {
   connector: typeof SOCIAL_CONNECTORS[0];
   connected: boolean;
   connectedAccount?: ConnectedAccount;
-  accessToken: string | null;
+  session: Session | null;
   onDisconnect: (provider: string) => void;
   onTelegramConnect: () => void;
 }) {
   const handleConnect = () => {
+    if (!session?.access_token) { toast.error("Please sign in first"); return; }
     if (connector.telegramInput) { onTelegramConnect(); return; }
-    if (!connector.oauthPath) { toast.info(`${connector.name} — coming soon`); return; }
-    if (!accessToken) { toast.error("Please sign in first"); return; }
-    window.location.href = `${connector.oauthPath}?token=${encodeURIComponent(accessToken)}&redirect_to=/social`;
+    
+    const base = connector.type === "email" ? `/api/auth/${connector.provider}/connect` : `/api/connectors/${connector.provider}/auth`;
+    const url = `${base}?token=${encodeURIComponent(session.access_token)}&redirect_to=/social`;
+    window.location.href = url;
   };
+  
   const displayName = connectedAccount?.account_name || connectedAccount?.metadata?.username;
+  
   return (
     <motion.div whileHover={{ y: -2, boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }} transition={{ duration: 0.18 }}
-      className="flex items-center gap-3 p-4 rounded-2xl border transition-colors duration-150"
+      className="flex flex-col gap-3 p-4 rounded-2xl border transition-colors duration-150"
       style={{ background: "var(--background-elevated)", borderColor: connected ? "rgba(255,255,255,0.25)" : "#2C2C2E" }}>
-      <img src={connector.logo} alt={connector.name} width={28} height={28} className="object-contain shrink-0" />
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-white leading-tight">{connector.name}</div>
-        <div className="text-xs text-[var(--foreground-tertiary)] truncate">
-          {connected && displayName ? displayName : connector.users + " users"}
+      
+      <div className="flex items-center gap-3">
+        <img src={connector.logo} alt={connector.name} width={28} height={28} className="object-contain shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-white leading-tight">{connector.name}</div>
+          <div className="text-xs text-[var(--foreground-tertiary)] truncate">
+            {connected && displayName ? displayName : connector.users + " users"}
+          </div>
         </div>
       </div>
-      {connected ? (
-        <div className="flex items-center gap-1.5 shrink-0">
-          <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium"
-            style={{ background: "#30D15820", color: "#30D158", border: "1px solid #30D15830" }}>
-            <Check className="w-3 h-3" /><span>On</span>
+      
+      <div className="flex items-center justify-end gap-2 mt-1">
+        {connected ? (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium"
+              style={{ background: "#30D15820", color: "#30D158", border: "1px solid #30D15830" }}>
+              <Check className="w-3 h-3" /><span>Connected</span>
+            </div>
+            <button onClick={() => onDisconnect(connector.provider)}
+              className="px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
+              style={{ background: "rgba(255,59,48,0.1)", color: "#FF3B30", border: "1px solid rgba(255,59,48,0.2)" }}>
+              Disconnect
+            </button>
           </div>
-          <button onClick={() => onDisconnect(connector.provider)}
-            className="w-6 h-6 rounded-lg flex items-center justify-center"
-            style={{ background: "rgba(255,59,48,0.1)", color: "#FF3B30" }} title="Disconnect">
-            <Unlink className="w-3 h-3" />
-          </button>
-        </div>
-      ) : (
-        <button onClick={handleConnect}
-          className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold shrink-0 transition-opacity"
-          style={{ background: (connector.oauthPath || connector.telegramInput) ? "var(--foreground)" : "#38383A", color: (connector.oauthPath || connector.telegramInput) ? "#FFFFFF" : "#8E8E93" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.85"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}>
-          {connector.telegramInput ? <Bot className="w-3 h-3" /> : connector.oauthPath ? <ExternalLink className="w-3 h-3" /> : null}
-          {(connector.oauthPath || connector.telegramInput) ? "Connect" : "Soon"}
-        </button>
-      )}
+        ) : (
+          <div className="flex items-center gap-2 w-full mt-2">
+            <button onClick={() => handleConnect()}
+              className="flex-1 items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold transition-opacity flex"
+              style={{ background: "var(--foreground)", color: "var(--background)" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.85"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}>
+              {connector.telegramInput ? <Bot className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
+              Connect Account
+            </button>
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 }
 
 export default function SocialPage() {
-  const { user } = useAuth();
+  const { user, session, refresh: refreshAuth } = useAuth();
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
@@ -119,10 +132,10 @@ export default function SocialPage() {
     try {
       const supabase = createClient();
       const { data, error } = await supabase.from("social_posts").select("*")
-        .eq("user_id", user?.id).order("created_at", { ascending: false });
+        .eq("user_id", user?.id).order("id", { ascending: false });
       if (error) throw error;
       setPosts(data || []);
-    } catch (err) { console.error(err); }
+    } catch (err: any) { toast.error("Posts Error: " + err.message); }
     finally { setLoading(false); }
   }, [user]);
 
@@ -134,17 +147,21 @@ export default function SocialPage() {
     } catch (err) { console.error(err); }
   }, []);
 
+  const init = useCallback(async () => {
+    if (!session?.access_token) {
+      if (loading) setLoading(false);
+      return;
+    }
+    const token = session.access_token;
+    if (user) {
+      fetchPosts();
+      fetchConnected(token);
+    }
+  }, [session, user, fetchPosts, fetchConnected, loading]);
+
   useEffect(() => {
-    const init = async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        setAccessToken(session.access_token);
-        if (user) { fetchPosts(); fetchConnected(session.access_token); }
-      } else { setLoading(false); }
-    };
     init();
-  }, [user, fetchPosts, fetchConnected]);
+  }, [init]);
 
   // Handle OAuth callback params (no useSearchParams — avoids Next.js Suspense requirement)
   useEffect(() => {
@@ -152,15 +169,25 @@ export default function SocialPage() {
     const params = new URLSearchParams(window.location.search);
     const connected = params.get("connected");
     const error = params.get("error");
-    if (connected) toast.success(`${connected} connected!`);
-    if (error) toast.error(`Connection failed: ${decodeURIComponent(error)}`);
+    if (connected) {
+      toast.success(`${connected} connected!`);
+      refreshAuth().then(() => init());
+    }
+    if (error) {
+      if (error === "config_missing") {
+        const provider = params.get("provider") || "this provider";
+        toast.error(`Configuration missing: Please set ${provider.toUpperCase()}_CLIENT_ID & SECRET in your Vercel env.`, { duration: 6000 });
+      } else {
+        toast.error(`Connection failed: ${decodeURIComponent(error)}`);
+      }
+    }
     if (connected || error) window.history.replaceState({}, "", "/social");
-  }, []);
+  }, [init, refreshAuth]);
 
   const handleDisconnect = async (provider: string) => {
-    if (!accessToken) return;
+    if (!session?.access_token) return;
     try {
-      await fetch(`/api/connectors?provider=${provider}`, { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } });
+      await fetch(`/api/connectors?provider=${provider}`, { method: "DELETE", headers: { Authorization: `Bearer ${session.access_token}` } });
       setConnectedAccounts(prev => prev.filter(a => a.provider !== provider));
       toast.success(`${provider} disconnected`);
     } catch { toast.error("Failed to disconnect"); }
@@ -168,12 +195,12 @@ export default function SocialPage() {
 
   const handleTelegramConnect = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!botToken || !accessToken) return;
+    if (!botToken || !session?.access_token) return;
     setConnectingTelegram(true);
     try {
       const res = await fetch("/api/auth/telegram/connect", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ bot_token: botToken, chat_id: chatId }),
       });
       const data = await res.json();
@@ -181,21 +208,21 @@ export default function SocialPage() {
       toast.success(`Telegram bot @${data.bot.username} connected!`);
       setIsTelegramModalOpen(false);
       setBotToken(""); setChatId("");
-      fetchConnected(accessToken);
+      fetchConnected(session?.access_token || "");
     } catch (err: any) { toast.error(err.message); }
     finally { setConnectingTelegram(false); }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!accessToken || !user) return;
+    if (!session?.access_token || !user) return;
     setSaving(true);
     try {
       if (generateWithAi) {
         if (!topic) { toast.error("Please provide a topic for AI"); setSaving(false); return; }
         const res = await fetch("/api/agent/social", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
           body: JSON.stringify({ platform, topic }),
         });
         const data = await res.json();
@@ -223,12 +250,12 @@ export default function SocialPage() {
   };
 
   const handlePublish = async (postId: string) => {
-    if (!accessToken) return;
+    if (!session?.access_token) return;
     setPublishing(postId);
     try {
       const res = await fetch("/api/actions/publish-post", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ post_id: postId }),
       });
       const data = await res.json();
@@ -270,8 +297,8 @@ export default function SocialPage() {
         <motion.div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8"
           initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           <div>
-            <h1 className="text-2xl font-bold text-white mb-1">Social Media Manager</h1>
-            <p className="text-sm text-[var(--foreground-secondary)]">Schedule and publish posts powered by AI</p>
+            <h1 className="text-2xl font-bold text-white mb-1">Connectors</h1>
+            <p className="text-sm text-[var(--foreground-secondary)]">Manage your social media and platform connections</p>
           </div>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="self-start sm:self-auto">
             <Button onClick={() => { setPlatform("X"); setContent(""); setTopic(""); setScheduleTime(""); setGenerateWithAi(false); setIsModalOpen(true); }}
@@ -282,29 +309,47 @@ export default function SocialPage() {
         </motion.div>
 
         {/* Connectors */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
-          className="rounded-2xl border p-5 mb-8" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-sm font-semibold text-white">Connect Social Accounts</h2>
-              <p className="text-xs text-[var(--foreground-secondary)] mt-0.5">Link accounts so Inceptive can post on your behalf</p>
+        <div className="space-y-8 mb-8">
+          {/* Email Connectors */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
+            className="rounded-2xl border p-5" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-semibold text-white">Email & Messaging</h2>
+                <p className="text-xs text-[var(--foreground-secondary)] mt-0.5">Link your primary communication channels</p>
+              </div>
             </div>
-            {connectedAccounts.length > 0 && (
-              <span className="text-xs text-[#30D158] font-medium">{connectedAccounts.length} connected</span>
-            )}
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {SOCIAL_CONNECTORS.map((c, i) => (
-              <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                <ConnectorCard connector={c}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {SOCIAL_CONNECTORS.filter(c => c.type === "email").map((c, i) => (
+                <ConnectorCard key={c.id} connector={c}
                   connected={connectedAccounts.some(a => a.provider === c.provider)}
                   connectedAccount={connectedAccounts.find(a => a.provider === c.provider)}
-                  accessToken={accessToken} onDisconnect={handleDisconnect}
+                  session={session} onDisconnect={handleDisconnect}
                   onTelegramConnect={() => setIsTelegramModalOpen(true)} />
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Social Connectors */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}
+            className="rounded-2xl border p-5" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-semibold text-white">Social Media Profiles</h2>
+                <p className="text-xs text-[var(--foreground-secondary)] mt-0.5">Link accounts for AI content publishing</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {SOCIAL_CONNECTORS.filter(c => c.type === "social").map((c, i) => (
+                <ConnectorCard key={c.id} connector={c}
+                  connected={connectedAccounts.some(a => a.provider === c.provider)}
+                  connectedAccount={connectedAccounts.find(a => a.provider === c.provider)}
+                  session={session} onDisconnect={handleDisconnect}
+                  onTelegramConnect={() => setIsTelegramModalOpen(true)} />
+              ))}
+            </div>
+          </motion.div>
+        </div>
 
         {/* Posts list */}
         {posts.length === 0 ? (

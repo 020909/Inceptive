@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
+import type { Session } from "@supabase/supabase-js";
 import { useTheme } from "@/lib/theme-context";
 import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
@@ -10,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Eye, EyeOff, Loader2, Check, ChevronRight,
-  Sun, Moon, User, Shield, Bell, Cpu, Brain,
+  Sun, Moon, User, Shield, Bell, Cpu, Brain, Mail,
 } from "lucide-react";
 import { useChat } from "@/lib/chat-context";
 import { toast } from "sonner";
@@ -78,24 +80,24 @@ const PROVIDERS = [
 ];
 
 type Step = "provider" | "model" | "key";
-type Section = "ai" | "account" | "appearance" | "memory";
+type Section = "ai" | "account" | "mail" | "appearance" | "memory";
 
 const SECTIONS: { id: Section; label: string; icon: typeof Cpu }[] = [
   { id: "ai", label: "AI Configuration", icon: Cpu },
   { id: "account", label: "My Account", icon: User },
+  { id: "mail", label: "Email connectors", icon: Mail },
   { id: "appearance", label: "Appearance", icon: Sun },
   { id: "memory", label: "Memory", icon: Brain },
 ];
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, session, refresh: refreshAuth } = useAuth();
   const { theme, setTheme } = useTheme();
   const { memoryEnabled, setMemoryEnabled } = useChat();
   const [savingMemory, setSavingMemory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [savedProvider, setSavedProvider] = useState<string>("");
   const [savedModel, setSavedModel] = useState<string>("");
   const [hasApiKey, setHasApiKey] = useState(false);
@@ -104,6 +106,12 @@ export default function SettingsPage() {
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [activeSection, setActiveSection] = useState<Section>("ai");
+  const [forceGemini, setForceGemini] = useState(true);
+  const [savingGemini, setSavingGemini] = useState(false);
+
+  const [yahooEmail, setYahooEmail] = useState("");
+  const [yahooPassword, setYahooPassword] = useState("");
+  const [yahooSaving, setYahooSaving] = useState(false);
 
   // My Account
   const [displayName, setDisplayName] = useState("");
@@ -113,16 +121,16 @@ export default function SettingsPage() {
   useEffect(() => {
     const init = async () => {
       try {
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) { setLoading(false); return; }
-        setAccessToken(session.access_token);
-
-        if (session.user?.created_at) {
-          setMemberSince(new Date(session.user.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }));
+        if (!session?.access_token) {
+          if (!loading) setLoading(false);
+          return;
         }
-        if (session.user?.user_metadata?.display_name) {
-          setDisplayName(session.user.user_metadata.display_name);
+
+        if (user?.created_at) {
+          setMemberSince(new Date(user.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }));
+        }
+        if (user?.user_metadata?.display_name) {
+          setDisplayName(user.user_metadata.display_name);
         }
 
         const res = await fetch("/api/settings", {
@@ -143,12 +151,12 @@ export default function SettingsPage() {
       }
     };
     init();
-  }, []);
+  }, [session, user]);
 
   const providerData = PROVIDERS.find(p => p.id === selectedProvider);
 
   const handleSave = async () => {
-    if (!accessToken || !selectedProvider || !selectedModel || !apiKeyInput.trim()) {
+    if (!session?.access_token || !selectedProvider || !selectedModel || !apiKeyInput.trim()) {
       toast.error("Please complete all steps before saving");
       return;
     }
@@ -167,7 +175,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch("/api/settings", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
         body: JSON.stringify({
           api_provider: selectedProvider,
           api_model: selectedModel,
@@ -189,8 +197,34 @@ export default function SettingsPage() {
     }
   };
 
+  const handleYahooConnect = async () => {
+    if (!session?.access_token || !yahooEmail.trim() || !yahooPassword.trim()) {
+      toast.error("Enter Yahoo address and app password");
+      return;
+    }
+    setYahooSaving(true);
+    try {
+      const res = await fetch("/api/connectors/yahoo", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ email: yahooEmail.trim(), app_password: yahooPassword.trim() }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Failed");
+      toast.success("Yahoo Mail connected");
+      setYahooPassword("");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setYahooSaving(false);
+    }
+  };
+
   const handleSaveName = async () => {
-    if (!accessToken) return;
+    if (!session?.access_token) return;
     setSavingName(true);
     try {
       const supabase = createClient();
@@ -441,6 +475,61 @@ export default function SettingsPage() {
                       </AnimatePresence>
                     </div>
                   </div>
+
+                  {/* Gemini 2.0 Force Toggle */}
+                  <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
+                    <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
+                      <h2 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Credit-Powered AI</h2>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>Use Inceptive credits with Gemini 2.0 Flash — no API key needed</p>
+                    </div>
+                    <div className="p-5">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Force Gemini 2.0 Flash</p>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase" style={{ background: "rgba(48,209,88,0.15)", color: "#30D158" }}>Cheapest</span>
+                          </div>
+                          <p className="text-xs" style={{ color: "var(--foreground-secondary)" }}>
+                            $0.10 / $0.40 per M tokens via OpenRouter. Fastest Gemini model. Uses your Inceptive credits — no API key required.
+                          </p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            setSavingGemini(true);
+                            try {
+                              if (session?.access_token) {
+                                await fetch("/api/settings", {
+                                  method: "PATCH",
+                                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+                                  body: JSON.stringify({ force_gemini: !forceGemini }),
+                                });
+                              }
+                              setForceGemini(!forceGemini);
+                              toast.success(forceGemini ? "Gemini 2.0 mode disabled" : "Gemini 2.0 mode enabled — cheapest & fastest! ⚡");
+                            } catch { /* ignore */ }
+                            setSavingGemini(false);
+                          }}
+                          disabled={savingGemini}
+                          className="relative shrink-0 h-7 w-12 rounded-full transition-colors duration-200 disabled:opacity-50"
+                          style={{ background: forceGemini ? "#30D158" : "var(--background-overlay)", border: "1px solid var(--border)" }}
+                          aria-label="Toggle Gemini 2.0"
+                        >
+                          <motion.div
+                            className="absolute top-0.5 h-6 w-6 rounded-full"
+                            style={{ background: forceGemini ? "#fff" : "var(--foreground-secondary)" }}
+                            animate={{ left: forceGemini ? "calc(100% - 26px)" : "2px" }}
+                            transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                          />
+                        </button>
+                      </div>
+                      {forceGemini && (
+                        <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl" style={{ background: "rgba(48,209,88,0.08)", border: "1px solid rgba(48,209,88,0.2)" }}>
+                          <div className="h-2 w-2 rounded-full bg-[#30D158] shrink-0" />
+                          <span className="text-xs font-medium text-[#30D158]">Credits loaded — powered by Gemini 2.0 Flash via OpenRouter</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </motion.div>
               )}
 
@@ -527,6 +616,47 @@ export default function SettingsPage() {
               )}
 
               {/* ── Appearance ── */}
+              {activeSection === "mail" && (
+                <motion.div key="mail" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
+                  <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
+                    <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
+                      <h2 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Gmail</h2>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>
+                        OAuth (same as Email Autopilot). Stores refresh token in Supabase.
+                      </p>
+                    </div>
+                    <div className="p-5">
+                      <Link href="/email">
+                        <Button className="rounded-xl" style={{ background: "var(--foreground)", color: "#fff" }}>
+                          Connect Gmail
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
+                    <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
+                      <h2 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Yahoo Mail</h2>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>
+                        Use a Yahoo <strong>app password</strong> (Account security → generate app password). Stored encrypted.
+                      </p>
+                    </div>
+                    <div className="p-5 space-y-3 max-w-md">
+                      <div>
+                        <Label className="text-xs text-[var(--foreground-secondary)]">Yahoo email</Label>
+                        <Input value={yahooEmail} onChange={(e) => setYahooEmail(e.target.value)} placeholder="you@yahoo.com" className="mt-1 rounded-xl" />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-[var(--foreground-secondary)]">App password</Label>
+                        <Input type="password" value={yahooPassword} onChange={(e) => setYahooPassword(e.target.value)} className="mt-1 rounded-xl" />
+                      </div>
+                      <Button onClick={handleYahooConnect} disabled={yahooSaving} className="rounded-xl" style={{ background: "var(--foreground)", color: "#fff" }}>
+                        {yahooSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Connect Yahoo"}
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {activeSection === "appearance" && (
                 <motion.div key="appearance" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
                   <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>

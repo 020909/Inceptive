@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 
 export const maxDuration = 120;
 
@@ -68,11 +69,16 @@ Be specific, factual, and professional.`,
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { topic, user_id, depth = "Deep Research" } = body;
+    const user_id = await getAuthenticatedUserIdFromRequest(request);
+    if (!user_id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    if (!topic || !user_id) {
-      return NextResponse.json({ error: "Missing topic or user_id" }, { status: 400 });
+    const body = await request.json();
+    const { topic, depth = "Deep Research" } = body;
+
+    if (!topic) {
+      return NextResponse.json({ error: "Missing topic" }, { status: 400 });
     }
 
     // Ensure user row exists

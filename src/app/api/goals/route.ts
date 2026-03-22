@@ -55,6 +55,8 @@ export async function POST(request: NextRequest) {
         description,
         progress_percent: progress_percent || 0,
         status: status || 'active',
+        source: 'manual',
+        last_updated: new Date().toISOString(),
         created_at: new Date().toISOString()
       })
       .select()
@@ -77,7 +79,9 @@ export async function PATCH(request: NextRequest) {
 
     if (!id) return NextResponse.json({ error: 'Missing goal id' }, { status: 400 })
 
-    const updateData: any = {}
+    const updateData: Record<string, unknown> = {
+      last_updated: new Date().toISOString(),
+    }
     if (progress_percent !== undefined) updateData.progress_percent = progress_percent
     if (status !== undefined) updateData.status = status
     if (title !== undefined) updateData.title = title

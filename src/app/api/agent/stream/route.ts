@@ -2,9 +2,21 @@ import { createClient } from "@supabase/supabase-js";
 import { streamText } from "ai";
 import { buildModel } from "@/lib/ai-model";
 import { checkCredits, deductCredits, getUserPlan } from "@/lib/credits";
+import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
+import { assertUrlSafeForServerFetch } from "@/lib/url-safety";
+import {
+  computerClick,
+  computerGoto,
+  computerScreenshot,
+  computerScroll,
+  computerType,
+  computerMoveMouse,
+} from "@/lib/computer-use/session";
+import { describeScreenshotBase64 } from "@/lib/vision/describe-screenshot";
 import { z } from "zod";
 
 export const maxDuration = 120;
+export const runtime = "nodejs";
 
 const getAdmin = () => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://localhost:3000";
@@ -60,6 +72,7 @@ async function duckDuckGoSearch(query: string): Promise<string> {
 ───────────────────────────────────────── */
 async function browseURL(url: string): Promise<string> {
   try {
+    assertUrlSafeForServerFetch(url);
     const res = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; InceptiveBot/1.0; +https://inceptive.ai)",
@@ -105,10 +118,15 @@ async function browseURL(url: string): Promise<string> {
 ───────────────────────────────────────── */
 export async function POST(req: Request) {
   try {
-    const { messages, user_id } = await req.json();
+    const user_id = await getAuthenticatedUserIdFromRequest(req);
+    if (!user_id) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
 
-    if (!messages || !user_id) {
-      return new Response(JSON.stringify({ error: "Missing messages or user_id" }), { status: 400 });
+    const { messages, systemOverride } = await req.json();
+
+    if (!messages) {
+      return new Response(JSON.stringify({ error: "Missing messages" }), { status: 400 });
     }
 
     // ── Credit check (before hitting the AI provider) ─────────────────────
@@ -116,7 +134,7 @@ export async function POST(req: Request) {
     // Basic plan = BYOK, no credit check. Free/Pro/Unlimited check credits.
     if (plan !== "basic") {
       const creditCheck = await checkCredits(user_id, "chat_message");
-      if (!creditCheck.allowed) {
+      if (!creditCheck.allowed && !creditCheck.unlimited) {
         return new Response(
           JSON.stringify({ error: creditCheck.reason }),
           { status: 402 } // Payment Required
@@ -158,6 +176,7 @@ export async function POST(req: Request) {
 ## TOOLS AVAILABLE
 - **searchWeb** — search for real-time info, news, market data (use when asked about current events, live data, or recent info)
 - **browseURL** — read a specific webpage (use only when user gives a URL or when search results need deeper reading)
+- **computerUse** — control a real headless browser: screenshot, open URL, click, type, scroll, optional vision summary (costs more credits)
 - **draftEmail** — save an email draft to Email Autopilot
 - **scheduleSocialPost** — schedule a social media post
 - **saveResearchReport** — save a research report
@@ -234,7 +253,7 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model,
-      system: systemPrompt,
+      system: systemOverride || systemPrompt,
       messages: finalHistory,
       maxSteps: 5,
       // Disable sending reasoning/thinking blocks back in history —
@@ -253,6 +272,7 @@ export async function POST(req: Request) {
           }),
           execute: async ({ query }: { query: string }) => {
             console.log(`[Agent:search] ${query}`);
+            await deductCredits(user_id, "web_search").catch(() => {});
             return { query, results: await duckDuckGoSearch(query) };
           },
         },
@@ -266,8 +286,90 @@ export async function POST(req: Request) {
           }),
           execute: async ({ url, reason }: { url: string; reason?: string }) => {
             console.log(`[Agent:browse] ${url}${reason ? ` — ${reason}` : ""}`);
+            await deductCredits(user_id, "browse_url").catch(() => {});
             const content = await browseURL(url);
             return { url, content };
+          },
+        },
+
+        /* ── COMPUTER USE (Playwright) ── */
+        computerUse: {
+          description:
+            "Control a headless browser: take screenshots, navigate to URLs (http/https only), click at x,y, type text, scroll, move mouse, or analyze the current view with vision. Use for 'open this site', 'click the login button', etc. Coordinates are viewport pixels (1280x720).",
+          parameters: z.object({
+            sessionId: z.string().optional().describe("Session id to keep the same browser tab; default 'default'"),
+            action: z
+              .enum(["screenshot", "goto", "click", "type", "scroll", "moveMouse", "analyze"])
+              .describe("What to do"),
+            url: z.string().optional().describe("For goto — full URL"),
+            x: z.number().optional(),
+            y: z.number().optional(),
+            text: z.string().optional().describe("For type — text to type"),
+            deltaY: z.number().optional().describe("For scroll — vertical pixels"),
+            analyze: z.boolean().optional().describe("If true with screenshot/goto/click, run vision summary"),
+          }),
+          execute: async (args: {
+            sessionId?: string;
+            action: "screenshot" | "goto" | "click" | "type" | "scroll" | "moveMouse" | "analyze";
+            url?: string;
+            x?: number;
+            y?: number;
+            text?: string;
+            deltaY?: number;
+            analyze?: boolean;
+          }) => {
+            const sid = args.sessionId || "default";
+            const pre = await checkCredits(user_id, "computer_use_action");
+            if (!pre.allowed && !pre.unlimited) {
+              return { status: "error", message: pre.reason };
+            }
+            await deductCredits(user_id, "computer_use_action").catch(() => {});
+
+            let visionNote = "";
+            const runVision = async (b64: string) => {
+              if (args.analyze || args.action === "analyze") {
+                visionNote = await describeScreenshotBase64(apiKey, apiProvider, b64).catch(
+                  () => ""
+                );
+              }
+            };
+
+            if (args.action === "goto" && args.url) {
+              await computerGoto(user_id, sid, args.url);
+              const b64 = await computerScreenshot(user_id, sid);
+              await runVision(b64);
+              return { status: "success", url: args.url, screenshot: true, vision: visionNote || undefined };
+            }
+            if (args.action === "click" && args.x != null && args.y != null) {
+              await computerClick(user_id, sid, args.x, args.y);
+              const b64 = await computerScreenshot(user_id, sid);
+              await runVision(b64);
+              return { status: "success", clicked: [args.x, args.y], vision: visionNote || undefined };
+            }
+            if (args.action === "type" && args.text) {
+              await computerType(user_id, sid, args.text);
+              const b64 = await computerScreenshot(user_id, sid);
+              await runVision(b64);
+              return { status: "success", typed: args.text.length, vision: visionNote || undefined };
+            }
+            if (args.action === "scroll") {
+              await computerScroll(user_id, sid, args.deltaY ?? 400);
+              const b64 = await computerScreenshot(user_id, sid);
+              await runVision(b64);
+              return { status: "success", scrolled: args.deltaY ?? 400, vision: visionNote || undefined };
+            }
+            if (args.action === "moveMouse" && args.x != null && args.y != null) {
+              await computerMoveMouse(user_id, sid, args.x, args.y);
+              return { status: "success", at: [args.x, args.y] };
+            }
+            if (args.action === "analyze") {
+              const b64 = await computerScreenshot(user_id, sid);
+              visionNote = await describeScreenshotBase64(apiKey, apiProvider, b64).catch(() => "");
+              return { status: "success", vision: visionNote };
+            }
+            const b64 = await computerScreenshot(user_id, sid);
+            await runVision(b64);
+            return { status: "success", screenshot: true, vision: visionNote || undefined };
           },
         },
 
@@ -280,6 +382,7 @@ export async function POST(req: Request) {
             body: z.string().describe("Full email body in plain text or light markdown"),
           }),
           execute: async (args: { recipient: string; subject: string; body: string }) => {
+            await deductCredits(user_id, "email_draft").catch(() => {});
             const { error } = await admin.from("emails").insert({
               user_id,
               ...args,
@@ -300,6 +403,7 @@ export async function POST(req: Request) {
             sources_count: z.number().optional().describe("Number of sources referenced"),
           }),
           execute: async (args: { topic: string; content: string; sources_count?: number }) => {
+            await deductCredits(user_id, "research_deep").catch(() => {});
             const urlRegex = /https?:\/\/[^\s/$.?#].[^\s]*/gi;
             const urls = args.content.match(urlRegex) || [];
             const { error } = await admin.from("research_reports").insert({
@@ -323,6 +427,7 @@ export async function POST(req: Request) {
             scheduled_for: z.string().optional().describe("ISO timestamp (optional, defaults to tomorrow)"),
           }),
           execute: async (args: { platform: string; content: string; scheduled_for?: string }) => {
+            await deductCredits(user_id, "social_post").catch(() => {});
             const { error } = await admin.from("social_posts").insert({
               user_id,
               platform: args.platform,
@@ -345,12 +450,15 @@ export async function POST(req: Request) {
             status: z.enum(["active", "paused"]).default("active"),
           }),
           execute: async (args: { title: string; description: string; status: "active" | "paused" }) => {
+            await deductCredits(user_id, "goal_create").catch(() => {});
             const { data, error } = await admin.from("goals").insert({
               user_id,
               title: args.title,
               description: args.description,
               status: args.status || "active",
               progress_percent: 0,
+              source: "agent",
+              last_updated: new Date().toISOString(),
               created_at: new Date().toISOString(),
             }).select().single();
             if (error) return { status: "error", message: "Failed to create goal: " + error.message };
@@ -368,6 +476,18 @@ export async function POST(req: Request) {
             due_date: z.string().optional().describe("ISO date string for due date"),
           }),
           execute: async (args: { goal_id?: string; title: string; description?: string; due_date?: string }) => {
+            await deductCredits(user_id, "task_create").catch(() => {});
+            if (args.goal_id) {
+              const { data: goalRow, error: goalErr } = await admin
+                .from("goals")
+                .select("id")
+                .eq("id", args.goal_id)
+                .eq("user_id", user_id)
+                .maybeSingle();
+              if (goalErr || !goalRow) {
+                return { status: "error", message: "Goal not found or access denied." };
+              }
+            }
             const insertData: Record<string, unknown> = {
               user_id,
               title: args.title,
@@ -394,7 +514,12 @@ export async function POST(req: Request) {
             status: z.enum(["active", "completed", "paused"]).optional(),
           }),
           execute: async (args: { goal_id: string; progress_percent: number; status?: "active" | "completed" | "paused" }) => {
-            const updateData: Record<string, unknown> = { progress_percent: args.progress_percent };
+            await deductCredits(user_id, "goal_update").catch(() => {});
+            const updateData: Record<string, unknown> = {
+              progress_percent: args.progress_percent,
+              last_updated: new Date().toISOString(),
+              source: "agent",
+            };
             if (args.status) updateData.status = args.status;
             const { error } = await admin.from("goals").update(updateData).eq("id", args.goal_id).eq("user_id", user_id);
             if (error) return { status: "error", message: "Failed to update: " + error.message };
@@ -482,14 +607,9 @@ export async function POST(req: Request) {
               // step-start / step-finish / finish — no-op
             }
           }
-          // ── Deduct credits after successful response ────────────────────
+          // ── Deduct base chat credit when the model produced visible text (tools bill separately) ──
           if (plan !== "basic" && producedText) {
-            // Deduct base chat cost + extra for tool calls
-            const searchCalls = Math.min(toolCallCount, 3); // cap at 3 search debits
-            await deductCredits(user_id, "chat_message");
-            for (let i = 0; i < searchCalls; i++) {
-              await deductCredits(user_id, "web_search").catch(() => {});
-            }
+            await deductCredits(user_id, "chat_message").catch(() => {});
           }
         } catch (err: any) {
           enqueue(`3:${JSON.stringify(err?.message || "Stream error")}\n`);

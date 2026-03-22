@@ -163,7 +163,7 @@ export default function ResearchPage() {
       const res = await fetch("/api/agent/research", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ topic: topic.trim(), user_id: user.id, depth }),
+        body: JSON.stringify({ topic: topic.trim(), depth }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Research failed");

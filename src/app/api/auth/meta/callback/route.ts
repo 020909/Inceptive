@@ -5,11 +5,11 @@ import { encryptToken } from "@/lib/token-crypto";
 
 const APP_ID = process.env.META_APP_ID!;
 const APP_SECRET = process.env.META_APP_SECRET!;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com";
-const REDIRECT_URI = `${APP_URL}/api/auth/meta/callback`;
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || url.origin;
+  const REDIRECT_URI = `${APP_URL}/api/auth/meta/callback`;
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const errorParam = url.searchParams.get("error");

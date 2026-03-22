@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { createClient as createAdmin } from "@supabase/supabase-js";
 import { getOrInitCredits } from "@/lib/credits";
@@ -9,7 +9,7 @@ const admin = createAdmin(
 );
 
 // GET /api/credits — returns current credits + plan for the logged-in user
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -27,12 +27,21 @@ export async function GET(req: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(20);
 
+    const unlimited =
+      (userData.data?.plan === "basic") ||
+      ((userData.data?.plan === "pro" || userData.data?.plan === "unlimited") &&
+        (userData.data?.subscription_status === "active" ||
+          userData.data?.subscription_status === "trialing"));
+
     return NextResponse.json({
       credits: {
         remaining: credits?.credits_remaining ?? 0,
         total: credits?.credits_total ?? 0,
         period_end: credits?.period_end,
+        daily_reset_at: (credits as { daily_reset_at?: string })?.daily_reset_at ?? credits?.period_end,
+        is_subscriber: (credits as { is_subscriber?: boolean })?.is_subscriber ?? false,
       },
+      unlimited,
       plan: userData.data?.plan ?? "free",
       subscription_status: userData.data?.subscription_status ?? "inactive",
       subscription_period_end: userData.data?.subscription_period_end,

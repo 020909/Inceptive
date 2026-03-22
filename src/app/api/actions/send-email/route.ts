@@ -1,66 +1,12 @@
-/**
- * POST /api/actions/send-email
- * Sends an email draft using Gmail API (if connected) or Outlook Graph API (if connected).
- * Falls back to marking as "sent" in the DB if no mail provider is connected.
- */
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { decryptToken } from "@/lib/token-crypto";
+import { getGmailClientForUser } from "@/lib/email/gmail-api";
 
 export const maxDuration = 30;
 
 const getAdmin = () =>
   createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-
-/** Refresh a Gmail access token using the refresh_token */
-async function refreshGmailToken(refreshToken: string): Promise<string | null> {
-  try {
-    const res = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: process.env.GOOGLE_CLIENT_ID!,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-        refresh_token: refreshToken,
-        grant_type: "refresh_token",
-      }),
-    });
-    const data = await res.json();
-    return data.access_token || null;
-  } catch { return null; }
-}
-
-/** Build a base64url-encoded RFC 2822 email */
-function buildGmailRaw(from: string, to: string, subject: string, body: string): string {
-  const message = [
-    `From: ${from}`,
-    `To: ${to}`,
-    `Subject: ${subject}`,
-    `MIME-Version: 1.0`,
-    `Content-Type: text/plain; charset=UTF-8`,
-    ``,
-    body,
-  ].join("\r\n");
-  return Buffer.from(message).toString("base64url");
-}
-
-/** Send via Gmail API */
-async function sendViaGmail(accessToken: string, email: { recipient: string; subject: string; body: string; }, fromEmail: string): Promise<boolean> {
-  const raw = buildGmailRaw(fromEmail, email.recipient, email.subject, email.body);
-  const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ raw }),
-  });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(`Gmail API error: ${err.error?.message || JSON.stringify(err)}`);
-  }
-  return true;
-}
 
 /** Send via Microsoft Graph API */
 async function sendViaOutlook(accessToken: string, email: { recipient: string; subject: string; body: string; }): Promise<boolean> {
@@ -98,7 +44,6 @@ export async function POST(request: Request) {
     const { email_id } = await request.json();
     if (!email_id) return NextResponse.json({ error: "Missing email_id" }, { status: 400 });
 
-    // Fetch the email record
     const { data: emailRecord, error: emailError } = await admin
       .from("emails")
       .select("*")
@@ -107,7 +52,7 @@ export async function POST(request: Request) {
       .single();
     if (emailError || !emailRecord) return NextResponse.json({ error: "Email not found" }, { status: 404 });
 
-    // Check for connected mail providers (prefer Gmail, then Outlook)
+    // Check for connected mail providers
     const { data: accounts } = await admin
       .from("connected_accounts")
       .select("provider, access_token, refresh_token, token_expiry, account_email")
@@ -118,35 +63,34 @@ export async function POST(request: Request) {
     let method = "manual";
 
     if (accounts && accounts.length > 0) {
-      const gmail = accounts.find((a: any) => a.provider === "gmail");
-      const outlook = accounts.find((a: any) => a.provider === "outlook");
-      const account = gmail || outlook;
+      const gmailAccount = accounts.find((a: any) => a.provider === "gmail");
+      const outlookAccount = accounts.find((a: any) => a.provider === "outlook");
 
-      if (account) {
-        let accessToken = decryptToken(account.access_token);
-
-        // Refresh token if expired
-        if (account.token_expiry && new Date(account.token_expiry) < new Date()) {
-          if (account.refresh_token && account.provider === "gmail") {
-            const newToken = await refreshGmailToken(decryptToken(account.refresh_token));
-            if (newToken) accessToken = newToken;
-          }
-        }
-
-        if (account.provider === "gmail") {
-          await sendViaGmail(accessToken, emailRecord, account.account_email);
+      if (gmailAccount) {
+        const client = await getGmailClientForUser(user.id);
+        if (client) {
+          const { buildGmailRaw } = await import("@/lib/email/gmail-api");
+          const { raw } = buildGmailRaw(emailRecord.recipient, emailRecord.subject, emailRecord.body, gmailAccount.account_email);
+          
+          await client.gmail.users.messages.send({
+            userId: "me",
+            requestBody: { raw }
+          });
           method = "gmail";
-        } else if (account.provider === "outlook") {
-          await sendViaOutlook(accessToken, emailRecord);
-          method = "outlook";
+          sent = true;
         }
+      } 
+      
+      if (!sent && outlookAccount) {
+        const accessToken = decryptToken(outlookAccount.access_token);
+        await sendViaOutlook(accessToken, emailRecord);
+        method = "outlook";
         sent = true;
       }
     }
 
-    // Update email status in DB (metadata column added by 005_schema_fixes.sql migration)
-    const updatePayload: Record<string, unknown> = { status: "sent" };
-    try { updatePayload.metadata = { sent_via: method, sent_at: new Date().toISOString() }; } catch {}
+    const updatePayload: Record<string, unknown> = { status: "sent", updated_at: new Date().toISOString() };
+    updatePayload.metadata = { sent_via: method, sent_at: new Date().toISOString() };
     await admin.from("emails").update(updatePayload).eq("id", email_id);
 
     return NextResponse.json({

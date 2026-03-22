@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
+import type { Session } from "@supabase/supabase-js";
 
 import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
@@ -35,17 +36,17 @@ const EMAIL_CONNECTORS = [
   { id: "protonmail", name: "ProtonMail",  logo: "/logos/email/proton.png",  description: "ProtonMail — coming soon",    oauthPath: null                           },
 ];
 
-function ConnectorCard({ connector, connected, connectedAccount, accessToken, onDisconnect }: {
+function ConnectorCard({ connector, connected, connectedAccount, session, onDisconnect }: {
   connector: typeof EMAIL_CONNECTORS[0];
   connected: boolean;
   connectedAccount?: ConnectedAccount;
-  accessToken: string | null;
+  session: Session | null;
   onDisconnect: (id: string) => void;
 }) {
   const handleConnect = () => {
     if (!connector.oauthPath) { toast.info(`${connector.name} — coming soon`); return; }
-    if (!accessToken) { toast.error("Please sign in first"); return; }
-    window.location.href = `${connector.oauthPath}?token=${encodeURIComponent(accessToken)}&redirect_to=/email`;
+    if (!session?.access_token) { toast.error("Please sign in first"); return; }
+    window.location.href = `${connector.oauthPath}?token=${encodeURIComponent(session.access_token)}&redirect_to=/email`;
   };
   return (
     <motion.div whileHover={{ y: -1 }}
@@ -85,10 +86,12 @@ function ConnectorCard({ connector, connected, connectedAccount, accessToken, on
 }
 
 export default function EmailPage() {
-  const { user } = useAuth();
+  const { user, session, refresh: refreshAuth } = useAuth();
   const [emails, setEmails] = useState<Email[]>([]);
+  const [inbox, setInbox] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"inbox" | "sent">("inbox");
   const [loading, setLoading] = useState(true);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [loadingInbox, setLoadingInbox] = useState(false);
   const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
   const [isComposeModalOpen, setIsComposeModalOpen] = useState(false);
   const [isEmailViewModalOpen, setIsEmailViewModalOpen] = useState(false);
@@ -108,8 +111,22 @@ export default function EmailPage() {
       if (error) throw error;
       setEmails(data || []);
     } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  }, [user]);
+    finally { if (activeTab === "sent") setLoading(false); }
+  }, [user, activeTab]);
+
+  const fetchInbox = useCallback(async (token: string) => {
+    setLoadingInbox(true);
+    try {
+      const res = await fetch("/api/emails/inbox", { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (res.ok) {
+        setInbox(data.messages || []);
+      } else if (data.code === "NOT_CONNECTED") {
+        setInbox([]);
+      }
+    } catch (err) { console.error(err); }
+    finally { setLoadingInbox(false); setLoading(false); }
+  }, []);
 
   const fetchConnected = useCallback(async (token: string) => {
     try {
@@ -120,33 +137,48 @@ export default function EmailPage() {
     } catch (err) { console.error(err); }
   }, []);
 
-  useEffect(() => {
-    const init = async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        setAccessToken(session.access_token);
-        if (user) { fetchEmails(); fetchConnected(session.access_token); }
-      } else { setLoading(false); }
-    };
-    init();
-  }, [user, fetchEmails, fetchConnected]);
+  const init = useCallback(async () => {
+    if (!session?.access_token) {
+      if (loading) setLoading(false);
+      return;
+    }
+    const token = session.access_token;
+    if (user) {
+      fetchEmails();
+      fetchConnected(token);
+      fetchInbox(token);
+    }
+  }, [session, user, fetchEmails, fetchConnected, fetchInbox, loading]);
 
-  // Handle OAuth callback params (no useSearchParams — avoids Next.js Suspense requirement)
+  useEffect(() => {
+    init();
+  }, [init]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const connected = params.get("connected");
     const error = params.get("error");
-    if (connected) toast.success(`${connected} connected successfully!`);
-    if (error) toast.error(`Connection failed: ${decodeURIComponent(error)}`);
+
+    if (connected) {
+      toast.success(`${connected} connected successfully!`);
+      refreshAuth().then(() => init());
+    }
+    if (error) {
+      if (error === "config_missing") {
+        const provider = params.get("provider") || "this provider";
+        toast.error(`Configuration missing: Please set ${provider.toUpperCase()}_CLIENT_ID & SECRET in your Vercel env.`, { duration: 6000 });
+      } else {
+        toast.error(`Connection failed: ${decodeURIComponent(error)}`);
+      }
+    }
     if (connected || error) window.history.replaceState({}, "", "/email");
-  }, []);
+  }, [init, refreshAuth]);
 
   const handleDisconnect = async (id: string) => {
-    if (!accessToken) return;
+    if (!session?.access_token) return;
     try {
-      await fetch(`/api/connectors?provider=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } });
+      await fetch(`/api/connectors?provider=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${session.access_token}` } });
       setConnectedAccounts(prev => prev.filter(a => a.provider !== id));
       toast.success(`${id} disconnected`);
     } catch { toast.error("Failed to disconnect"); }
@@ -154,12 +186,12 @@ export default function EmailPage() {
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!topic || !recipient || !accessToken || !user) return;
+    if (!topic || !recipient || !session?.access_token || !user) return;
     setGenerating(true); setGeneratedEmailPreview(null);
     try {
       const res = await fetch("/api/agent/email", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ topic, recipient, tone, user_id: user.id }),
       });
       const data = await res.json();
@@ -172,12 +204,12 @@ export default function EmailPage() {
   };
 
   const handleSendDraft = async (id: string) => {
-    if (!accessToken) return;
+    if (!session?.access_token) return;
     setSending(true);
     try {
       const res = await fetch("/api/actions/send-email", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ email_id: id }),
       });
       const data = await res.json();
@@ -190,7 +222,7 @@ export default function EmailPage() {
   };
 
   const handleDiscardDraft = async (id: string) => {
-    if (!accessToken) return;
+    if (!session?.access_token) return;
     try {
       const supabase = createClient();
       await supabase.from("emails").delete().eq("id", id);
@@ -208,16 +240,19 @@ export default function EmailPage() {
   };
 
   if (loading) return (
-    <PageTransition><div>
-      <div className="h-7 w-48 shimmer rounded-lg mb-2" />
-      <div className="h-4 w-64 shimmer rounded mb-8" />
-      <div className="h-[240px] rounded-2xl shimmer" />
-    </div></PageTransition>
+    <PageTransition>
+      <div className="max-w-[1200px] mx-auto p-6">
+        <div className="h-7 w-48 shimmer rounded-lg mb-2" />
+        <div className="h-4 w-64 shimmer rounded mb-8" />
+        <div className="h-[240px] rounded-2xl shimmer" />
+      </div>
+    </PageTransition>
   );
 
   return (
     <PageTransition>
-      <div className="max-w-[1200px] mx-auto">
+      <div className="max-w-[1200px] mx-auto p-6 md:p-8">
+        {/* Header */}
         <motion.div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8"
           initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           <div>
@@ -234,86 +269,150 @@ export default function EmailPage() {
           </motion.div>
         </motion.div>
 
-        {/* Connectors */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
-          className="rounded-2xl border p-5 mb-8" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-sm font-semibold text-white">Connect Email Accounts</h2>
-              <p className="text-xs text-[var(--foreground-secondary)] mt-0.5">Link your inbox — Inceptive sends emails directly from it</p>
-            </div>
-            {connectedAccounts.length > 0 && (
-              <span className="text-xs text-[#30D158] font-medium">{connectedAccounts.length} connected</span>
+        {/* Connectors Section */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {EMAIL_CONNECTORS.map((connector) => {
+            const connectedAccount = connectedAccounts.find(a => a.provider === connector.id);
+            return (
+              <ConnectorCard
+                key={connector.id}
+                connector={connector}
+                connected={!!connectedAccount}
+                connectedAccount={connectedAccount}
+                session={session}
+                onDisconnect={handleDisconnect}
+              />
+            );
+          })}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex items-center gap-6 mb-6 border-b border-[var(--border)]">
+          <button
+            onClick={() => setActiveTab("inbox")}
+            className={`pb-4 px-2 text-sm font-semibold transition-all relative ${
+              activeTab === "inbox" ? "text-white" : "text-[var(--foreground-secondary)] hover:text-white"
+            }`}
+          >
+            Live Inbox
+            {activeTab === "inbox" && (
+              <motion.div layoutId="tab-active" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
             )}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {EMAIL_CONNECTORS.map((c, i) => (
-              <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
-                <ConnectorCard connector={c} connected={connectedAccounts.some(a => a.provider === c.id)}
-                  connectedAccount={connectedAccounts.find(a => a.provider === c.id)}
-                  accessToken={accessToken} onDisconnect={handleDisconnect} />
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+          </button>
+          <button
+            onClick={() => setActiveTab("sent")}
+            className={`pb-4 px-2 text-sm font-semibold transition-all relative ${
+              activeTab === "sent" ? "text-white" : "text-[var(--foreground-secondary)] hover:text-white"
+            }`}
+          >
+            Sent & Drafts
+            {activeTab === "sent" && (
+              <motion.div layoutId="tab-active" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
+            )}
+          </button>
+        </div>
 
         {/* Email list */}
-        {emails.length === 0 ? (
-          <motion.div className="flex flex-col items-center justify-center py-28 text-center border border-[var(--border)] rounded-2xl"
-            style={{ background: "var(--background-elevated)" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl mb-5"
-              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)" }}>
-              <Mail className="h-6 w-6 text-[var(--foreground)]" />
+        {activeTab === "inbox" ? (
+          loadingInbox ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-[#1C1C1E] border border-[var(--border)] rounded-2xl">
+              <Loader2 className="h-8 w-8 animate-spin text-[var(--foreground-secondary)] mb-4" />
+              <p className="text-sm text-[var(--foreground-secondary)]">Syncing with Gmail...</p>
             </div>
-            <h3 className="text-base font-semibold text-white mb-1.5">No emails yet</h3>
-            <p className="text-sm text-[var(--foreground-secondary)] mb-6 max-w-sm">Connect Gmail or Outlook, then let AI draft and send emails on your behalf.</p>
-            <Button onClick={() => setIsComposeModalOpen(true)} className="rounded-xl px-5 h-10 text-sm font-semibold border-0"
-              style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
-              <Plus className="h-4 w-4 mr-2" />Compose with AI
-            </Button>
-          </motion.div>
+          ) : inbox.length === 0 ? (
+            <motion.div className="flex flex-col items-center justify-center py-28 text-center border border-[var(--border)] rounded-2xl"
+              style={{ background: "var(--background-elevated)" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <Mail className="h-10 w-10 text-[var(--border-strong)] mb-4" />
+              <h3 className="text-base font-semibold text-white mb-1.5">No unread emails</h3>
+              <p className="text-sm text-[var(--foreground-secondary)] mb-6 max-w-sm">
+                {!connectedAccounts.some(a => a.provider === "gmail")
+                  ? "Connect Gmail to see your live messages here."
+                  : "You're all caught up! No unread messages in your inbox."}
+              </p>
+            </motion.div>
+          ) : (
+            <div className="space-y-3">
+              {inbox.map((msg, i) => (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                  className="p-4 rounded-xl border border-[var(--border)] bg-[#242426] hover:bg-[#2C2C2E] transition-all cursor-pointer group"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                         <span className="text-xs font-bold text-[#0A84FF] uppercase tracking-tighter">New from {msg.from.split("<")[0].trim()}</span>
+                      </div>
+                      <h3 className="text-sm font-bold text-white mb-1">{msg.subject}</h3>
+                      <p className="text-xs text-[var(--foreground-secondary)] line-clamp-1">{msg.snippet}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                       <span className="text-[10px] text-[var(--foreground-tertiary)] font-medium">GMAIL LIVE</span>
+                       <Button size="sm" className="h-7 text-[10px] bg-[#2C2C2E] text-white hover:bg-white hover:text-black border border-white/5">Reply with AI</Button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )
         ) : (
-          <motion.div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b text-xs font-semibold text-[var(--foreground-secondary)] uppercase tracking-wider" style={{ borderColor: "var(--border)" }}>
-                    <th className="px-6 py-4 font-medium">Recipient</th>
-                    <th className="px-6 py-4 font-medium">Subject</th>
-                    <th className="px-6 py-4 font-medium">Status</th>
-                    <th className="px-6 py-4 font-medium">Time</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border)]">
-                  <AnimatePresence>
-                    {emails.map((email) => (
-                      <tr key={email.id} onClick={() => openEmail(email)} className="group cursor-pointer transition-colors"
-                        style={{ background: "transparent" }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = "#2C2C2E"; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium text-white"
-                              style={{ background: "var(--border)" }}>{email.recipient.charAt(0).toUpperCase()}</div>
-                            <span className="text-sm font-medium text-white truncate max-w-[200px]">{email.recipient}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4"><span className="text-sm text-[var(--foreground-secondary)] truncate max-w-[400px] block">{email.subject}</span></td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <StatusBadge status={email.status} />
-                            <span className="text-xs capitalize text-[var(--foreground-secondary)]">{email.status}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-[var(--foreground-tertiary)] whitespace-nowrap">{formatTimeAgo(new Date(email.created_at))}</td>
-                      </tr>
-                    ))}
-                  </AnimatePresence>
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
+          emails.length === 0 ? (
+            <motion.div className="flex flex-col items-center justify-center py-28 text-center border border-[var(--border)] rounded-2xl"
+              style={{ background: "var(--background-elevated)" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl mb-5"
+                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)" }}>
+                <Mail className="h-6 w-6 text-[var(--foreground)]" />
+              </div>
+              <h3 className="text-base font-semibold text-white mb-1.5">No emails yet</h3>
+              <p className="text-sm text-[var(--foreground-secondary)] mb-6 max-w-sm">Connect Gmail or Outlook, then let AI draft and send emails on your behalf.</p>
+              <Button onClick={() => setIsComposeModalOpen(true)} className="rounded-xl px-5 h-10 text-sm font-semibold border-0"
+                style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
+                <Plus className="h-4 w-4 mr-2" />Compose with AI
+              </Button>
+            </motion.div>
+          ) : (
+            <motion.div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b text-xs font-semibold text-[var(--foreground-secondary)] uppercase tracking-wider" style={{ borderColor: "var(--border)" }}>
+                      <th className="px-6 py-4 font-medium">Recipient</th>
+                      <th className="px-6 py-4 font-medium">Subject</th>
+                      <th className="px-6 py-4 font-medium">Status</th>
+                      <th className="px-6 py-4 font-medium">Time</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border)]">
+                    <AnimatePresence>
+                      {emails.map((email) => (
+                        <tr key={email.id} onClick={() => openEmail(email)} className="group cursor-pointer transition-colors"
+                          style={{ background: "transparent" }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = "#2C2C2E"; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium text-white"
+                                style={{ background: "var(--border)" }}>{email.recipient.charAt(0).toUpperCase()}</div>
+                              <span className="text-sm font-medium text-white truncate max-w-[200px]">{email.recipient}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4"><span className="text-sm text-[var(--foreground-secondary)] truncate max-w-[400px] block">{email.subject}</span></td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <StatusBadge status={email.status} />
+                              <span className="text-xs capitalize text-[var(--foreground-secondary)]">{email.status}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-[var(--foreground-tertiary)] whitespace-nowrap">{formatTimeAgo(new Date(email.created_at))}</td>
+                        </tr>
+                      ))}
+                    </AnimatePresence>
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )
         )}
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 type Theme = "dark" | "light";
 
@@ -19,18 +19,18 @@ const ThemeContext = createContext<ThemeContextValue>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark");
 
+  const applyTheme = useCallback((t: Theme) => {
+    const root = document.documentElement;
+    root.classList.remove("dark", "light");
+    root.classList.add(t);
+  }, []);
+
   useEffect(() => {
     const stored = localStorage.getItem("inceptive-theme") as Theme | null;
     const initial = stored || "dark";
     setThemeState(initial);
     applyTheme(initial);
-  }, []);
-
-  const applyTheme = (t: Theme) => {
-    const root = document.documentElement;
-    root.classList.remove("dark", "light");
-    root.classList.add(t);
-  };
+  }, [applyTheme]);
 
   const setTheme = (t: Theme) => {
     setThemeState(t);
