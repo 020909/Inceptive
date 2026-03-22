@@ -58,6 +58,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = "/login";
   };
 
+  // Force refresh on OAuth redirect
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("connected") || params.has("error")) {
+        refresh();
+      }
+    }
+  }, [refresh]);
+
   return (
     <AuthContext.Provider value={{ user, session, loading, signOut, refresh }}>
       {children}

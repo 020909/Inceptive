@@ -42,6 +42,7 @@ export interface ProxyChatRequest {
   max_tokens?: number;
   tools?: unknown[];
   stream?: boolean;
+  apiKey?: string; // Optional custom API key
 }
 
 export interface CreditBalanceResult {
@@ -63,12 +64,22 @@ export async function checkCreditBalance(userId: string): Promise<CreditBalanceR
     .eq("id", userId)
     .single();
 
+  // BYOK users (api_key_encrypted exists) get a pass as long as they have >0 credits or are pro
+  const { data: userKeys } = await admin
+    .from("users")
+    .select("api_key_encrypted")
+    .eq("id", userId)
+    .single();
+  
+  const hasUserKey = !!userKeys?.api_key_encrypted;
+
   if (userData) {
     const isUnlimited =
       userData.plan === "basic" ||
       ((userData.plan === "pro" || userData.plan === "unlimited") &&
         (userData.subscription_status === "active" || userData.subscription_status === "trialing"));
-    if (isUnlimited) {
+    
+    if (isUnlimited || hasUserKey) {
       return { allowed: true, remaining: 999_999 };
     }
   }
@@ -165,9 +176,10 @@ export async function storeConversationMemory(
 export async function proxyToOpenRouter(
   request: ProxyChatRequest
 ): Promise<Response> {
-  const apiKey = process.env.OPENROUTER_KEY;
+  // Use provided apiKey or fallback to default
+  const apiKey = request.apiKey || process.env.OPENROUTER_DEFAULT_KEY || process.env.OPENROUTER_KEY;
   if (!apiKey) {
-    throw new Error("OPENROUTER_KEY is not configured");
+    throw new Error("OPENROUTER_DEFAULT_KEY is not configured");
   }
 
   const model = request.model || DEFAULT_MODEL;

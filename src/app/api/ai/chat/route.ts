@@ -54,7 +54,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No messages provided" }, { status: 400 });
     }
 
-    // 3. Check credit balance
+    // 3. Get user settings (API key, credits)
+    const admin = getAdmin();
+    const { data: userData, error: userErr } = await admin
+      .from("users")
+      .select("api_key_encrypted, api_provider, api_model")
+      .eq("id", userId)
+      .single();
+
+    if (userErr && userErr.code !== "PGRST116") {
+      throw new Error(`Failed to fetch user settings: ${userErr.message}`);
+    }
+
+    // 4. Check credit balance
     const balanceCheck = await checkCreditBalance(userId);
     if (!balanceCheck.allowed) {
       return NextResponse.json(
@@ -67,16 +79,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Forward to OpenRouter
+    // 5. Determine API Key and Model
+    let apiKey: string | undefined;
+    let isFallback = false;
+    let usedModel = model;
+
+    if (userData?.api_key_encrypted) {
+      const { decryptToken } = await import("@/lib/token-crypto");
+      apiKey = decryptToken(userData.api_key_encrypted);
+    } else {
+      isFallback = true;
+      usedModel = "google/gemini-2.0-flash-001"; // Force Gemini 2.0 Flash for fallback
+    }
+
+    // 6. Log fallback usage if applicable
+    if (isFallback) {
+      await admin.from("usage_logs").insert({
+        user_id: userId,
+        model: usedModel,
+        usage_type: "fallback",
+        metadata: { stream, message_count: messages.length },
+      });
+    }
+
+    // 7. Forward to OpenRouter
     if (stream) {
       // Streaming mode
       const openRouterResponse = await proxyToOpenRouter({
         messages,
-        model,
+        model: usedModel,
         temperature,
         max_tokens: maxTokens,
         tools,
         stream: true,
+        apiKey,
       });
 
       // Create a transform stream that collects tokens for credit deduction
@@ -130,8 +166,7 @@ export async function POST(req: NextRequest) {
 
           // Deduct credits
           const cost = calculateCreditCost(estimatedInputTokens, estimatedOutputTokens);
-          const admin = getAdmin();
-
+          
           try {
             await admin.rpc("decrement_credits", {
               p_user_id: userId,
@@ -142,7 +177,7 @@ export async function POST(req: NextRequest) {
               user_id: userId,
               amount: -cost,
               action: "ai_chat_gemini",
-              description: `AI chat (${model}) — ${estimatedInputTokens} in / ${estimatedOutputTokens} out`,
+              description: `AI chat (${usedModel}) — ${estimatedInputTokens} in / ${estimatedOutputTokens} out`,
             });
           } catch (e) {
             console.error("[ai/chat] Credit deduction failed:", e);
@@ -154,7 +189,7 @@ export async function POST(req: NextRequest) {
               userId,
               messages,
               fullContent,
-              model,
+              usedModel,
               toolCalls.length > 0 ? toolCalls : undefined
             );
           } catch (e) {
@@ -182,11 +217,12 @@ export async function POST(req: NextRequest) {
       // Non-streaming mode
       const openRouterResponse = await proxyToOpenRouter({
         messages,
-        model,
+        model: usedModel,
         temperature,
         max_tokens: maxTokens,
         tools,
         stream: false,
+        apiKey,
       });
 
       const data = await openRouterResponse.json();
@@ -197,7 +233,6 @@ export async function POST(req: NextRequest) {
 
       // Deduct credits
       const cost = calculateCreditCost(usage.prompt_tokens, usage.completion_tokens);
-      const admin = getAdmin();
 
       await admin.rpc("decrement_credits", {
         p_user_id: userId,
@@ -208,17 +243,18 @@ export async function POST(req: NextRequest) {
         user_id: userId,
         amount: -cost,
         action: "ai_chat_gemini",
-        description: `AI chat (${model}) — ${usage.prompt_tokens} in / ${usage.completion_tokens} out`,
+        description: `AI chat (${usedModel}) — ${usage.prompt_tokens} in / ${usage.completion_tokens} out`,
       });
 
       // Store memory
-      await storeConversationMemory(
-        userId,
-        messages,
-        content,
-        model,
-        responseTool
-      );
+      await admin.from("user_memory").insert({
+        user_id: userId,
+        messages: JSON.stringify(messages),
+        assistant_response: content,
+        model: usedModel,
+        tool_calls: responseTool ? JSON.stringify(responseTool) : null,
+        created_at: new Date().toISOString(),
+      });
 
       // Get updated balance
       const { data: updated } = await admin

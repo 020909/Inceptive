@@ -302,232 +302,29 @@ export default function SettingsPage() {
               {activeSection === "ai" && (
                 <motion.div key="ai" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
 
-                  {hasApiKey && (
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border" style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.25)" }}>
-                      <div className="w-2 h-2 rounded-full bg-[#30D158] shrink-0" />
-                      <span className="text-sm" style={{ color: "var(--foreground)" }}>
-                        Active: <span className="font-semibold">{currentModelMeta?.name || savedModel || savedProvider}</span>
-                      </span>
-                      <span className="ml-auto text-xs text-[#30D158] font-semibold">Connected</span>
-                    </div>
-                  )}
-
                   <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
                     <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
-                      <h2 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>AI Provider & Model</h2>
-                      <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>Your API key is stored securely and only used to run your agents</p>
+                      <h2 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>AI Configuration</h2>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>Powered by Inceptive's optimized Gemini 2.0 Flash model</p>
                     </div>
                     <div className="p-5">
-                      {/* Step progress tabs */}
-                      <div className="flex gap-2 mb-5">
-                        {(["provider", "model", "key"] as Step[]).map((s, i) => {
-                          const labels = ["Provider", "Model", "API Key"];
-                          const isActive = step === s;
-                          const isDone = (s === "provider" && selectedProvider) ||
-                                         (s === "model" && selectedModel) ||
-                                         (s === "key" && hasApiKey);
-                          return (
-                            <button
-                              key={s}
-                              onClick={() => { if (s === "model" && !selectedProvider) return; setStep(s); }}
-                              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150"
-                              style={{
-                                background: isActive ? "var(--foreground)" : "var(--background)",
-                                border: isActive ? "1px solid var(--foreground)" : "1px solid var(--border)",
-                                color: isActive ? "#FFFFFF" : isDone ? "var(--foreground)" : "var(--foreground-secondary)",
-                              }}
-                            >
-                              {isDone && !isActive
-                                ? <Check className="w-3.5 h-3.5 text-[#30D158]" />
-                                : <span className="text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold"
-                                    style={{
-                                      background: isActive ? "rgba(255,255,255,0.25)" : "var(--border)",
-                                      color: isActive ? "#fff" : "var(--foreground-secondary)",
-                                    }}>
-                                    {i + 1}
-                                  </span>
-                              }
-                              {labels[i]}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <AnimatePresence mode="wait">
-                        {/* Step: Provider */}
-                        {step === "provider" && (
-                          <motion.div key="provider" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.18 }}>
-                            <p className="text-sm mb-3" style={{ color: "var(--foreground-secondary)" }}>Choose your AI provider</p>
-                            <div className="space-y-2">
-                              {PROVIDERS.map(p => (
-                                <motion.button key={p.id} whileTap={{ scale: 0.99 }}
-                                  onClick={() => { setSelectedProvider(p.id); setSelectedModel(""); setStep("model"); }}
-                                  className="w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-150"
-                                  style={{
-                                    background: selectedProvider === p.id ? "rgba(255,255,255,0.08)" : "var(--background)",
-                                    borderColor: selectedProvider === p.id ? "rgba(255,255,255,0.4)" : "var(--border)",
-                                  }}>
-                                  <img src={p.logo} alt={p.name} width={22} height={22} className="object-contain shrink-0" />
-                                  <div className="flex-1">
-                                    <div className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{p.name}</div>
-                                    <div className="text-xs" style={{ color: "var(--foreground-secondary)" }}>{p.description}</div>
-                                  </div>
-                                  {selectedProvider === p.id
-                                    ? <Check className="w-4 h-4 text-[var(--foreground)] shrink-0" />
-                                    : <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--border-strong)" }} />
-                                  }
-                                </motion.button>
-                              ))}
-                            </div>
-                          </motion.div>
-                        )}
-
-                        {/* Step: Model */}
-                        {step === "model" && providerData && (
-                          <motion.div key="model" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.18 }}>
-                            <div className="flex items-center gap-3 mb-3">
-                              <button onClick={() => setStep("provider")} className="text-xs text-[var(--foreground)] hover:opacity-80 font-medium">← Back</button>
-                              <span className="text-sm" style={{ color: "var(--foreground-secondary)" }}>
-                                Models from <span className="font-semibold" style={{ color: "var(--foreground)" }}>{providerData.name}</span>
-                              </span>
-                            </div>
-                            <div className="space-y-2">
-                              {providerData.models.map(m => (
-                                <motion.button key={m.id} whileTap={{ scale: 0.99 }}
-                                  onClick={() => { setSelectedModel(m.id); setStep("key"); }}
-                                  className="w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all duration-150"
-                                  style={{
-                                    background: selectedModel === m.id ? "rgba(255,255,255,0.08)" : "var(--background)",
-                                    borderColor: selectedModel === m.id ? "rgba(255,255,255,0.4)" : "var(--border)",
-                                  }}>
-                                  <div className="flex-1">
-                                    <div className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{m.name}</div>
-                                    <div className="text-xs" style={{ color: "var(--foreground-secondary)" }}>{m.description}</div>
-                                  </div>
-                                  {selectedModel === m.id && <Check className="w-4 h-4 text-[var(--foreground)] shrink-0" />}
-                                </motion.button>
-                              ))}
-                            </div>
-                          </motion.div>
-                        )}
-
-                        {/* Step: API Key */}
-                        {step === "key" && (
-                          <motion.div key="key" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.18 }} className="space-y-4">
-                            <div className="flex items-center gap-3">
-                              <button onClick={() => setStep("model")} className="text-xs text-[var(--foreground)] hover:opacity-80 font-medium">← Back</button>
-                              <span className="text-sm" style={{ color: "var(--foreground-secondary)" }}>
-                                Enter your <span className="font-semibold" style={{ color: "var(--foreground)" }}>{providerData?.name}</span> API key
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--background)", border: "1px solid var(--border)" }}>
-                              {providerData && <img src={providerData.logo} alt={providerData.name} width={18} height={18} className="object-contain shrink-0" />}
-                              <div>
-                                <div className="text-xs" style={{ color: "var(--foreground-secondary)" }}>{providerData?.name}</div>
-                                <div className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-                                  {providerData?.models.find(m => m.id === selectedModel)?.name || selectedModel}
-                                </div>
-                              </div>
-                              <button onClick={() => setStep("provider")} className="ml-auto text-xs font-medium text-[var(--foreground)] hover:opacity-80">Change</button>
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <div className="flex items-center justify-between">
-                                <Label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--foreground)" }}>API Key</Label>
-                                {providerData?.keyUrl && (
-                                  <a href={providerData.keyUrl} target="_blank" rel="noreferrer"
-                                    className="text-xs font-medium text-[var(--foreground)] hover:opacity-75">
-                                    Get your key →
-                                  </a>
-                                )}
-                              </div>
-                              <div className="relative">
-                                <Input
-                                  type={showApiKey ? "text" : "password"}
-                                  value={apiKeyInput}
-                                  onChange={e => setApiKeyInput(e.target.value)}
-                                  placeholder={providerData?.keyHint ? `${providerData.keyHint}...` : "Paste your API key here"}
-                                  className="h-11 rounded-xl text-sm pr-11 focus-visible:ring-[var(--foreground)]"
-                                  style={{ background: "var(--background)", border: "1px solid var(--border)", color: "var(--foreground)" }}
-                                />
-                                <button type="button" onClick={() => setShowApiKey(!showApiKey)}
-                                  className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors duration-150"
-                                  style={{ color: "var(--foreground-secondary)" }}>
-                                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                </button>
-                              </div>
-                              <p className="text-xs" style={{ color: "var(--foreground-secondary)" }}>
-                                {providerData?.keyHint && <span className="font-medium">{providerData.keyHint} — </span>}
-                                Stored securely. Never logged or shared.
-                              </p>
-                            </div>
-
-                            <motion.div whileTap={{ scale: 0.98 }}>
-                              <Button onClick={handleSave} disabled={saving || !apiKeyInput.trim()}
-                                className="w-full h-11 rounded-xl font-semibold text-sm border-0 hover:opacity-90 disabled:opacity-40"
-                                style={{ background: "var(--foreground)", color: "#FFFFFF" }}>
-                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Configuration"}
-                              </Button>
-                            </motion.div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-
-                  {/* Gemini 2.0 Force Toggle */}
-                  <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
-                    <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
-                      <h2 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Credit-Powered AI</h2>
-                      <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>Use Inceptive credits with Gemini 2.0 Flash — no API key needed</p>
-                    </div>
-                    <div className="p-5">
-                      <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 p-4 rounded-xl border" style={{ background: "rgba(48,209,88,0.08)", borderColor: "rgba(48,209,88,0.2)" }}>
+                        <div className="h-10 w-10 flex items-center justify-center rounded-xl shrink-0" style={{ background: "#30D15820" }}>
+                          <Cpu className="w-6 h-6 text-[#30D158]" />
+                        </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Force Gemini 2.0 Flash</p>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase" style={{ background: "rgba(48,209,88,0.15)", color: "#30D158" }}>Cheapest</span>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-sm font-bold text-white">Gemini 2.0 Flash</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase" style={{ background: "#30D15830", color: "#30D158" }}>Active</span>
                           </div>
-                          <p className="text-xs" style={{ color: "var(--foreground-secondary)" }}>
-                            $0.10 / $0.40 per M tokens via OpenRouter. Fastest Gemini model. Uses your Inceptive credits — no API key required.
-                          </p>
+                          <p className="text-xs text-[var(--foreground-secondary)]">Optimized for speed and intelligence. Uses your Inceptive credits.</p>
                         </div>
-                        <button
-                          onClick={async () => {
-                            setSavingGemini(true);
-                            try {
-                              if (session?.access_token) {
-                                await fetch("/api/settings", {
-                                  method: "PATCH",
-                                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-                                  body: JSON.stringify({ force_gemini: !forceGemini }),
-                                });
-                              }
-                              setForceGemini(!forceGemini);
-                              toast.success(forceGemini ? "Gemini 2.0 mode disabled" : "Gemini 2.0 mode enabled — cheapest & fastest! ⚡");
-                            } catch { /* ignore */ }
-                            setSavingGemini(false);
-                          }}
-                          disabled={savingGemini}
-                          className="relative shrink-0 h-7 w-12 rounded-full transition-colors duration-200 disabled:opacity-50"
-                          style={{ background: forceGemini ? "#30D158" : "var(--background-overlay)", border: "1px solid var(--border)" }}
-                          aria-label="Toggle Gemini 2.0"
-                        >
-                          <motion.div
-                            className="absolute top-0.5 h-6 w-6 rounded-full"
-                            style={{ background: forceGemini ? "#fff" : "var(--foreground-secondary)" }}
-                            animate={{ left: forceGemini ? "calc(100% - 26px)" : "2px" }}
-                            transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                          />
-                        </button>
                       </div>
-                      {forceGemini && (
-                        <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl" style={{ background: "rgba(48,209,88,0.08)", border: "1px solid rgba(48,209,88,0.2)" }}>
-                          <div className="h-2 w-2 rounded-full bg-[#30D158] shrink-0" />
-                          <span className="text-xs font-medium text-[#30D158]">Credits loaded — powered by Gemini 2.0 Flash via OpenRouter</span>
-                        </div>
-                      )}
+                      
+                      <div className="mt-6 flex flex-col gap-2">
+                        <p className="text-[10px] text-[var(--foreground-tertiary)] uppercase font-semibold tracking-wider">Advanced</p>
+                        <p className="text-xs text-[var(--foreground-secondary)]">Custom API keys are currently disabled to ensure maximum platform stability. All agents are automatically utilizing the high-performance Gemini 2.0 backbone.</p>
+                      </div>
                     </div>
                   </div>
                 </motion.div>

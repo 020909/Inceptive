@@ -46,7 +46,7 @@ function ConnectorCard({ connector, connected, connectedAccount, session, onDisc
   const handleConnect = () => {
     if (!connector.oauthPath) { toast.info(`${connector.name} — coming soon`); return; }
     if (!session?.access_token) { toast.error("Please sign in first"); return; }
-    window.location.href = `${connector.oauthPath}?token=${encodeURIComponent(session.access_token)}&redirect_to=/email`;
+    window.location.href = `${connector.oauthPath}?token=${encodeURIComponent(session.access_token)}&redirect_to=/social`;
   };
   return (
     <motion.div whileHover={{ y: -1 }}
