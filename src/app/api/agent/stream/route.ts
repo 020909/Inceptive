@@ -1,3 +1,4 @@
+import { listUnreadGmail, sendGmailReply, getGmailClientForUser } from '@/lib/email/gmail-api';
 import { createClient } from "@supabase/supabase-js";
 import { streamText } from "ai";
 import { buildModel } from "@/lib/ai-model";
@@ -438,6 +439,49 @@ export async function POST(req: Request) {
           },
         },
 
+        /* -- READ GMAIL -- */
+        readGmail: {
+          description: "Read the user real Gmail inbox. Use when asked about emails, inbox, messages, or what emails they have.",
+          parameters: z.object({ max_results: z.number().optional().describe("Max emails to return, default 10") }),
+          execute: async (args: { max_results?: number }) => {
+            await deductCredits(user_id, "web_search").catch(() => {});
+            const result = await listUnreadGmail(user_id, args.max_results || 10);
+            if (result.error) return { status: "error", message: "Gmail not connected. User should connect Gmail in the Email section." };
+            return { status: "success", emails: result.messages, count: result.messages.length };
+          },
+        },
+        /* -- SUMMARIZE EMAIL -- */
+        summarizeEmail: {
+          description: "Get the full body of a specific Gmail message by ID. Use after readGmail to read the full content.",
+          parameters: z.object({ email_id: z.string().describe("Message ID from readGmail"), subject: z.string(), from: z.string() }),
+          execute: async (args: { email_id: string; subject: string; from: string }) => {
+            try {
+              const client = await getGmailClientForUser(user_id);
+              if (!client) return { status: "error", message: "Gmail not connected" };
+              const full = await client.gmail.users.messages.get({ userId: "me", id: args.email_id, format: "full" });
+              const extractBody = (part: any): string => {
+                if (!part) return "";
+                if (part.mimeType === "text/plain" && part.body && part.body.data)
+                  return Buffer.from(part.body.data, "base64").toString("utf8");
+                if (part.parts) { for (const p of part.parts) { const t = extractBody(p); if (t) return t; } }
+                return "";
+              };
+              const body = (full.data.payload ? extractBody(full.data.payload) : "") || full.data.snippet || "";
+              return { status: "success", subject: args.subject, from: args.from, body: body.slice(0, 4000) };
+            } catch (e: any) { return { status: "error", message: e.message }; }
+          },
+        },
+        /* -- SEND GMAIL -- */
+        sendGmail: {
+          description: "Send a real email via the connected Gmail account. Use when user asks to send or reply to an email.",
+          parameters: z.object({ to: z.string().describe("Recipient email address"), subject: z.string(), body: z.string().describe("Email body plain text"), thread_id: z.string().optional() }),
+          execute: async (args: { to: string; subject: string; body: string; thread_id?: string }) => {
+            await deductCredits(user_id, "email_send").catch(() => {});
+            const result = await sendGmailReply(user_id, { to: args.to, subject: args.subject, body: args.body, threadId: args.thread_id });
+            if (!result.ok) return { status: "error", message: result.error || "Failed to send" };
+            return { status: "success", message: "Email sent via Gmail to " + args.to };
+          },
+        },
         /* ── CREATE GOAL ── */
         createGoal: {
           description: "Create a new goal for the user in the Goals section.",
