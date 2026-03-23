@@ -107,12 +107,7 @@ export default function EmailPage() {
       const r = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-        body: JSON.stringify({ messages: [{ role: "user", content: "Summarize this email in 3 concise bullet points:
-
-From: " + selected.from + "
-Subject: " + selected.subject + "
-
-" + emailBody }], stream: false }),
+        body: JSON.stringify({ messages: [{ role: "user", content: "Summarize this email in 3 bullet points. From: " + selected.from + " Subject: " + selected.subject + " Body: " + emailBody }], stream: false }),
       });
       const d = await r.json();
       setSummary(d.choices?.[0]?.message?.content || "Could not summarize.");
@@ -410,7 +405,7 @@ Subject: " + selected.subject + "
               </div>
               <div>
                 <Label className="text-xs uppercase tracking-wide mb-1.5 block" style={{ color: "var(--foreground-secondary)" }}>Tone</Label>
-                <Select value={tone} onValueChange={setTone}>
+                <Select value={tone} onValueChange={(v) => { if (v) setTone(v); }}>
                   <SelectTrigger style={{ background: "var(--background-elevated)", border: "1px solid var(--border)", color: "white" }}><SelectValue /></SelectTrigger>
                   <SelectContent style={{ background: "var(--background)", border: "1px solid var(--border)", color: "white" }}>
                     {["Professional","Friendly","Formal","Persuasive","Casual"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}

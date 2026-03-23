@@ -25,10 +25,14 @@ export async function GET(request: Request) {
         return Buffer.from(part.body.data, "base64").toString("utf8");
       if (part.mimeType === "text/html" && part.body && part.body.data) {
         const html = Buffer.from(part.body.data, "base64").toString("utf8");
-        return html.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, "
-").trim();
+        return html.replace(/<[^>]+>/g, " ").replace(/[ 	]{2,}/g, " ").trim();
       }
-      if (part.parts) { for (const p of part.parts) { const t = extractBody(p); if (t) return t; } }
+      if (part.parts) {
+        for (const p of part.parts) {
+          const t = extractBody(p);
+          if (t) return t;
+        }
+      }
       return "";
     };
 
