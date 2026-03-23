@@ -32,11 +32,16 @@ export async function POST(request: Request) {
       .eq("id", user.id)
       .single();
 
-    if (!userData?.api_key_encrypted) {
-      return NextResponse.json({ error: "No API key found. Please add your API key in Settings." }, { status: 400 });
+        const resolvedKey = userData?.api_key_encrypted
+      || process.env.OPENROUTER_KEY
+      || process.env.OPENROUTER_DEFAULT_KEY
+      || '';
+    if (!resolvedKey) {
+      return NextResponse.json({ error: 'AI not configured. Contact support.' }, { status: 400 });
     }
-
-    const { api_key_encrypted: apiKey, api_provider, api_model } = userData;
+    const apiKey = resolvedKey;
+    const api_provider = userData?.api_key_encrypted ? (userData?.api_provider || 'openrouter') : 'openrouter';
+    const api_model = userData?.api_key_encrypted ? (userData?.api_model || null) : 'google/gemini-2.0-flash-001';
 
     const systemPrompt = `You are a professional email writer. Write a concise, effective email based on the topic and tone provided. Return ONLY a JSON object with exactly two fields: "subject" (string) and "body" (string). No markdown, no extra text.`;
     const userMessage = `Topic: ${topic}\nRecipient: ${recipient}\nTone: ${tone}`;
