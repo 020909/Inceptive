@@ -100,6 +100,7 @@ export const CREDIT_COSTS = {
   goal_update: 1,
   computer_use_action: 10,
   autonomous_job_hour: 50,
+  email_send: 5,
   ai_chat_gemini: 1, // Dynamic cost — actual deduction is token-based in proxy.ts
 } as const;
 
