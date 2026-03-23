@@ -321,7 +321,7 @@ export async function POST(req: Request) {
             let visionNote = "";
             const runVision = async (b64: string) => {
               if (args.analyze || args.action === "analyze") {
-                visionNote = await describeScreenshotBase64(apiKey, apiProvider, b64).catch(
+                visionNote = await describeScreenshotBase64(process.env.OPENROUTER_KEY || "", "openrouter", b64).catch(
                   () => ""
                 );
               }
@@ -357,7 +357,7 @@ export async function POST(req: Request) {
             }
             if (args.action === "analyze") {
               const b64 = await computerScreenshot(user_id, sid);
-              visionNote = await describeScreenshotBase64(apiKey, apiProvider, b64).catch(() => "");
+              visionNote = await describeScreenshotBase64(process.env.OPENROUTER_KEY || "", "openrouter", b64).catch(() => "");
               return { status: "success", vision: visionNote };
             }
             const b64 = await computerScreenshot(user_id, sid);
