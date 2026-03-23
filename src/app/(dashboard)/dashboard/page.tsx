@@ -206,7 +206,7 @@ export default function DashboardPage() {
 
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
-    setInput("");
+    setInput(""); setAttachedFiles([]);
     setIsLoading(true);
     setToolCalls([]);
     setToolResults([]);
@@ -217,7 +217,13 @@ export default function DashboardPage() {
       const response = await fetch("/api/agent/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [...messages, userMsg] }),
+        body: JSON.stringify({
+          messages: [...messages, userMsg],
+          attachedFiles: await Promise.all(attachedFiles.map(async (file) => {
+            const text = await file.text().catch(() => '');
+            return { name: file.name, type: file.type, content: text.slice(0, 8000) };
+          }))
+        }),
       });
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));

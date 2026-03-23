@@ -173,7 +173,7 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
-    const { messages, systemOverride } = await req.json();
+    const { messages, systemOverride, attachedFiles } = await req.json();
 
     if (!messages) {
       return new Response(JSON.stringify({ error: "Missing messages" }), { status: 400 });
@@ -332,7 +332,24 @@ export async function POST(req: Request) {
     // Cap at 16 messages to keep context reasonable
     const finalHistory = validHistory.slice(-16);
 
-    const result = streamText({
+    // Inject file contents into last user message if files attached
+    if (attachedFiles && (attachedFiles as any[]).length > 0 && validHistory.length > 0) {
+      const lastMsg = validHistory[validHistory.length - 1];
+      if (lastMsg.role === 'user') {
+        const fileCtx = (attachedFiles as any[])
+          .map((f: any) => '[File: ' + f.name + ']
+' + f.content)
+          .join('
+---
+');
+        lastMsg.content = lastMsg.content + '
+
+## Attached Files:
+' + fileCtx;
+      }
+    }
+
+        const result = streamText({
       model,
       system: systemOverride || systemPrompt,
       messages: finalHistory,
