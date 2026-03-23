@@ -28,6 +28,55 @@ const getAdmin = () => {
 const admin = getAdmin();
 
 /* ─────────────────────────────────────────
+   TOOL DISPLAY MAP — human-readable actions for Live Task Feed
+───────────────────────────────────────── */
+const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string }> = {
+  searchWeb:           { icon: "", label: (a) => `Searching "${a.query}"` },
+  browseURL:           { icon: "", label: (a) => `Reading ${new URL(a.url).hostname}` },
+  computerUse:         { icon: "", label: (a) => `Browser: ${a.action}${a.url ? ` → ${a.url}` : ""}` },
+  readGmail:           { icon: "", label: () => `Scanning Gmail inbox` },
+  summarizeEmail:      { icon: "", label: (a) => `Reading email: "${a.subject}"` },
+  sendGmail:           { icon: "", label: (a) => `Sending email to ${a.to}` },
+  draftEmail:          { icon: "", label: (a) => `Drafting email: "${a.subject}"` },
+  saveResearchReport:  { icon: "", label: (a) => `Saving report: "${a.topic}"` },
+  scheduleSocialPost:  { icon: "", label: (a) => `Scheduling ${a.platform} post` },
+  createGoal:          { icon: "", label: (a) => `Creating goal: "${a.title}"` },
+  createTask:          { icon: "", label: (a) => `Adding task: "${a.title}"` },
+  updateGoalProgress:  { icon: "", label: (a) => `Updating goal to ${a.progress_percent}%` },
+  analyzeData:         { icon: "", label: (a) => `Analyzing: ${a.question?.slice(0, 50)}` },
+  generateOutline:     { icon: "", label: (a) => `Generating ${a.type} outline` },
+};
+
+/**
+ * Log a task action to Supabase + return a stream event line.
+ * Fire-and-forget DB insert so it never blocks the stream.
+ */
+async function logTask(
+  userId: string,
+  action: string,
+  status: "running" | "done" | "error",
+  icon: string,
+  agentMode: string | undefined,
+  details: Record<string, unknown> = {},
+  existingLogId?: string
+): Promise<{ id: string; streamLine: string }> {
+  const id = existingLogId || crypto.randomUUID();
+  const now = new Date().toISOString();
+
+  const logEntry = { id, action, status, icon, agent_mode: agentMode || null, details, created_at: now, updated_at: now };
+  const streamLine = `4:${JSON.stringify(logEntry)}\n`;
+
+  // Fire-and-forget — don't await, don't block
+  if (existingLogId) {
+    Promise.resolve(admin.from("task_logs").update({ status, details, updated_at: now }).eq("id", existingLogId)).catch(() => {});
+  } else {
+    Promise.resolve(admin.from("task_logs").insert({ ...logEntry, user_id: userId })).catch(() => {});
+  }
+
+  return { id, streamLine };
+}
+
+/* ─────────────────────────────────────────
    WEB SEARCH — DuckDuckGo (free, no key)
 ───────────────────────────────────────── */
 async function duckDuckGoSearch(query: string): Promise<string> {
@@ -612,6 +661,14 @@ export async function POST(req: Request) {
     // lifetime so it runs to completion even in serverless environments.
     const encoder = new TextEncoder();
 
+    // Extract agent mode name from systemOverride (if present)
+    const agentMode = systemOverride
+      ? (systemOverride.match(/You are the (\w+) Agent/i)?.[1] || undefined)
+      : undefined;
+
+    // Track tool-call → log-id mapping for updating status on tool-result
+    const toolLogIds = new Map<string, string>();
+
     const stream = new ReadableStream({
       async start(controller) {
         const enqueue = (line: string) => {
@@ -619,22 +676,61 @@ export async function POST(req: Request) {
         };
         let toolCallCount = 0;
         let producedText = false;
+        let thinkingLogId: string | undefined;
+
         try {
+          // Log immediately so every message has multiple lines
+          const { streamLine: initLine } = await logTask(user_id, "Processing input...", "done", "", agentMode);
+          enqueue(initLine);
+
           for await (const value of result.fullStream) {
             switch ((value as any).type) {
               case "text-delta": {
-                // ai@6 uses .text (not .textDelta like older versions)
                 const text = (value as any).text ?? (value as any).textDelta ?? "";
-                if (text) { enqueue(`0:${JSON.stringify(text)}\n`); producedText = true; }
+                if (text) {
+                  // Log "Thinking..." once when first text appears, save its ID
+                  if (!thinkingLogId) {
+                    const { id, streamLine } = await logTask(user_id, "Composing response...", "running", "", agentMode);
+                    thinkingLogId = id;
+                    enqueue(streamLine);
+                  }
+                  enqueue(`0:${JSON.stringify(text)}\n`);
+                  producedText = true;
+                }
                 break;
               }
-              case "tool-call":
+              case "tool-call": {
                 toolCallCount++;
                 enqueue(`1:${JSON.stringify(value)}\n`);
+                // Log the tool call with a human-readable label
+                const tc = value as any;
+                const display = TOOL_DISPLAY[tc.toolName];
+                const action = display ? display.label(tc.args || {}) : tc.toolName;
+                const icon = display?.icon || "⚡";
+                const { id: logId, streamLine } = await logTask(
+                  user_id, action, "running", icon, agentMode,
+                  { toolName: tc.toolName, args: tc.args }
+                );
+                toolLogIds.set(tc.toolCallId, logId);
+                enqueue(streamLine);
                 break;
-              case "tool-result":
+              }
+              case "tool-result": {
                 enqueue(`2:${JSON.stringify(value)}\n`);
+                // Update the matching log to "done"
+                const tr = value as any;
+                const existingId = toolLogIds.get(tr.toolCallId);
+                if (existingId) {
+                  const resultStatus = (tr.result as any)?.status === "error" ? "error" : "done";
+                  const { streamLine } = await logTask(
+                    user_id, "", resultStatus, "", agentMode,
+                    { result: typeof tr.result === "string" ? tr.result : tr.result },
+                    existingId
+                  );
+                  enqueue(streamLine);
+                }
                 break;
+              }
               case "error": {
                 const raw = (value as any).error;
                 const msg =
@@ -643,17 +739,29 @@ export async function POST(req: Request) {
                   : raw?.toString?.() !== "[object Object]" ? raw?.toString()
                   : JSON.stringify(raw);
                 enqueue(`3:${JSON.stringify(msg ?? "Unknown error from AI provider")}\n`);
+                // Log error
+                const { streamLine } = await logTask(user_id, `Error: ${msg}`, "error", "", agentMode);
+                enqueue(streamLine);
                 break;
               }
-              // step-start / step-finish / finish — no-op
             }
           }
           // ── Deduct base chat credit when the model produced visible text (tools bill separately) ──
           if (plan !== "basic" && producedText) {
             await deductCredits(user_id, "chat_message").catch(() => {});
           }
+
+          // ── Final completion updates ──
+          if (thinkingLogId) {
+            const { streamLine } = await logTask(user_id, "Composing response...", "done", "", agentMode, {}, thinkingLogId);
+            enqueue(streamLine);
+          }
+          const { streamLine: completeLine } = await logTask(user_id, "Task completed - replied to user", "done", "", agentMode);
+          enqueue(completeLine);
         } catch (err: any) {
           enqueue(`3:${JSON.stringify(err?.message || "Stream error")}\n`);
+          const { streamLine: errLine } = await logTask(user_id, "Task failed", "error", "", agentMode);
+          enqueue(errLine);
         } finally {
           controller.close();
         }

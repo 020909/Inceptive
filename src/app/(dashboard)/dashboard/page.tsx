@@ -8,13 +8,14 @@ import { motion, AnimatePresence, animate } from "framer-motion";
 import {
   Send, Loader2, Globe, Mail as MailIcon,
   FileText, Check, Zap, ArrowUpRight,
-  CheckCircle2, Clock, Plus,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
-import { formatTimeAgo } from "@/lib/utils";
+import LiveTaskFeed from "@/components/LiveTaskFeed";
+import MorningBriefing from "@/components/MorningBriefing";
 
 /* ========================
    TYPES
@@ -144,6 +145,8 @@ export default function DashboardPage() {
   const [, setToolResults] = useState<ToolResult[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
 
   /* — stats state — */
   const [stats, setStats] = useState<DashboardStats>({
@@ -337,6 +340,7 @@ export default function DashboardPage() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 space-y-5" ref={scrollRef}>
+          <MorningBriefing />
           <AnimatePresence initial={false}>
             {messages.length === 0 && (
               <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -451,35 +455,78 @@ export default function DashboardPage() {
               </a>
             </div>
           ) : (
-            <div className="relative rounded-2xl border"
-              style={{ background: "var(--card-hover)", borderColor: "var(--border)" }}>
-              {/* + attach button */}
-              <button
-                type="button"
-                className="absolute left-2.5 bottom-2.5 w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-150"
-                style={{ background: "rgba(255,255,255,0.05)", color: "var(--foreground-tertiary)" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#FFFFFF"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "#555555"; }}
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-              <textarea ref={textareaRef} value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder=""
-                disabled={isLoading} rows={1}
-                className="w-full bg-transparent text-white text-sm resize-none pl-12 py-3 pr-12 leading-relaxed"
-                style={{ maxHeight: "140px", outline: "none", boxShadow: "none" }} />
-              <div className="absolute right-2.5 bottom-2.5">
-                <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend}
-                  disabled={isLoading || !input.trim()}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-30"
-                  style={{ background: input.trim() && !isLoading ? "var(--foreground)" : "rgba(255,255,255,0.06)" }}>
-                  {isLoading
-                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--background)" }} />
-                    : <Send className="w-3.5 h-3.5" style={{ color: input.trim() && !isLoading ? "var(--background)" : "var(--foreground-tertiary)" }} />
+            <div>
+              {/* Attached files list */}
+              {attachedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 px-1 pb-2">
+                  {attachedFiles.map((file, i) => (
+                    <div key={i}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-[var(--foreground-secondary)] border"
+                      style={{ background: "var(--background)", borderColor: "var(--border)" }}
+                    >
+                      <FileText className="w-3 h-3 shrink-0" />
+                      <span className="max-w-[140px] truncate">{file.name}</span>
+                      <button
+                        onClick={() => setAttachedFiles(f => f.filter((_, j) => j !== i))}
+                        className="ml-0.5 hover:text-white transition-colors"
+                      >×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={e => {
+                  const files = Array.from(e.target.files || []);
+                  if (files.length) {
+                    setAttachedFiles(prev => [...prev, ...files]);
+                    toast.success(`${files.length} file${files.length > 1 ? 's' : ''} attached`);
                   }
-                </motion.button>
+                  // Reset so same file can be re-selected
+                  e.target.value = "";
+                }}
+              />
+
+              {/* Input box — matches the background perfectly with subtle border */}
+              <div
+                className="relative rounded-2xl border"
+                style={{ background: "var(--background)", borderColor: "var(--border)" }}
+              >
+                {/* + attach button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute left-2.5 bottom-2.5 w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-150"
+                  style={{ background: "rgba(255,255,255,0.05)", color: "var(--foreground-tertiary)" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--foreground)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--foreground-tertiary)"; }}
+                  title="Attach files"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+                <textarea ref={textareaRef} value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                  placeholder="Ask your agent anything..."
+                  disabled={isLoading} rows={1}
+                  className="w-full bg-transparent text-white text-sm resize-none pl-12 py-3 pr-12 leading-relaxed"
+                  style={{ maxHeight: "140px", outline: "none", boxShadow: "none", color: "var(--foreground)" }} />
+                <div className="absolute right-2.5 bottom-2.5">
+                  <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend}
+                    disabled={isLoading || !input.trim()}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-30"
+                    style={{ background: input.trim() && !isLoading ? "var(--foreground)" : "rgba(255,255,255,0.06)" }}>
+                    {isLoading
+                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--background)" }} />
+                      : <Send className="w-3.5 h-3.5" style={{ color: input.trim() && !isLoading ? "var(--background)" : "var(--foreground-tertiary)" }} />
+                    }
+                  </motion.button>
+                </div>
               </div>
             </div>
           )}
@@ -509,45 +556,8 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Recent Activity */}
-        <div>
-          <div className="flex items-center justify-between mb-3 px-2">
-            <p className="text-[10px] uppercase tracking-widest text-[var(--foreground-secondary)] font-semibold">Recent Activity</p>
-            <div className="w-1.5 h-1.5 rounded-full bg-[#FFFFFF] pulse-dot" />
-          </div>
-          {statsLoading ? (
-            <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-11 rounded-xl shimmer" />)}</div>
-          ) : recentTasks.length === 0 ? (
-            <div className="text-center py-5 rounded-xl" style={{ border: "1px solid rgba(255,255,255,0.06)" }}>
-              <Clock className="h-4 w-4 text-[var(--foreground-secondary)] mx-auto mb-1.5" />
-              <p className="text-[11px] text-[var(--foreground-secondary)]">No recent activity</p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {recentTasks.map((task: any, i: number) => (
-                <motion.div key={task.id}
-                  initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                  className="flex items-start gap-2.5 p-2.5 rounded-xl transition-colors duration-150 group cursor-default"
-                  style={{ background: "transparent" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--background-overlay)"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
-                >
-                  {task.type === "research"
-                    ? <FileText className="h-3.5 w-3.5 text-[var(--foreground-secondary)] shrink-0 mt-0.5" />
-                    : task.type === "email"
-                    ? <MailIcon className="h-3.5 w-3.5 text-[var(--foreground-secondary)] shrink-0 mt-0.5" />
-                    : <CheckCircle2 className="h-3.5 w-3.5 text-[var(--foreground-secondary)] shrink-0 mt-0.5" />
-                  }
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-[#C7C7CC] truncate leading-tight">{task.title}</p>
-                    <p className="text-[10px] text-[var(--border-strong)] mt-0.5">{formatTimeAgo(new Date(task.created_at))}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Live Task Feed */}
+        <LiveTaskFeed />
       </div>
     </div>
   );
