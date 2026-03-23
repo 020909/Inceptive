@@ -170,6 +170,9 @@ export async function POST(req: Request) {
 - **searchWeb** — search for real-time info, news, market data (use when asked about current events, live data, or recent info)
 - **browseURL** — read a specific webpage (use only when user gives a URL or when search results need deeper reading)
 - **computerUse** — control a real headless browser: screenshot, open URL, click, type, scroll, optional vision summary (costs more credits)
+- **readGmail** — read the user real Gmail inbox (unread emails, subjects, senders)
+- **summarizeEmail** — get full body of a specific email by ID
+- **sendGmail** — send a real email via connected Gmail
 - **draftEmail** — save an email draft to Email Autopilot
 - **scheduleSocialPost** — schedule a social media post
 - **saveResearchReport** — save a research report
@@ -189,6 +192,7 @@ export async function POST(req: Request) {
 2. **Don't over-tool** — most questions can be answered from training knowledge. Only search when the answer genuinely requires current/live data.
 3. **One search is enough** — never call searchWeb more than once per response unless the user explicitly asks for more research.
 4. **Always respond with text** — every response must end with a text answer, even if brief.
+5. **Gmail is connected** — if the user asks about their inbox, emails, or wants to send/reply, use readGmail/sendGmail tools directly. Never say you cannot access email.
 
 ## RESPONSE STYLE
 - Direct and confident. No filler phrases.
