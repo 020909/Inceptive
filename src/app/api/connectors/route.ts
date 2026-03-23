@@ -18,12 +18,28 @@ export async function GET(request: Request) {
 
   const { data, error: fetchError } = await admin
     .from("connected_accounts")
-    .select("provider, account_email, account_name, account_id, created_at, metadata")
+    .select("provider, account_email, account_name, account_id, created_at, metadata, access_token")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 });
-  return NextResponse.json({ accounts: data || [] });
+
+  const { decryptToken } = await import("@/lib/token-crypto");
+  const accountsWithHealth = (data || []).map((acc: any) => {
+    let decrypted = false;
+    try {
+      if (acc.access_token) {
+        decryptToken(acc.access_token);
+        decrypted = true;
+      }
+    } catch {
+      decrypted = false;
+    }
+    const { access_token, ...rest } = acc;
+    return { ...rest, decrypted };
+  });
+
+  return NextResponse.json({ accounts: accountsWithHealth });
 }
 
 /** DELETE /api/connectors?provider=gmail — disconnect a provider */

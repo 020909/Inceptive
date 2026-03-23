@@ -26,6 +26,7 @@ interface Email {
 }
 interface ConnectedAccount {
   provider: string; account_email?: string; account_name?: string; created_at: string;
+  decrypted?: boolean;
 }
 
 const EMAIL_CONNECTORS = [
@@ -46,7 +47,7 @@ function ConnectorCard({ connector, connected, connectedAccount, session, onDisc
   const handleConnect = () => {
     if (!connector.oauthPath) { toast.info(`${connector.name} — coming soon`); return; }
     if (!session?.access_token) { toast.error("Please sign in first"); return; }
-    window.location.href = `${connector.oauthPath}?token=${encodeURIComponent(session.access_token)}&redirect_to=/social`;
+    window.location.href = `${connector.oauthPath}?token=${encodeURIComponent(session.access_token)}&redirect_to=/email`;
   };
   return (
     <motion.div whileHover={{ y: -1 }}
@@ -61,10 +62,18 @@ function ConnectorCard({ connector, connected, connectedAccount, session, onDisc
       </div>
       {connected ? (
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
-            style={{ background: "#30D15820", color: "#30D158", border: "1px solid #30D15830" }}>
-            <Check className="w-3 h-3" />Connected
-          </div>
+          {connectedAccount?.decrypted === false ? (
+            <button onClick={handleConnect}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium animate-pulse"
+              style={{ background: "rgba(255,159,10,0.15)", color: "#FF9F0A", border: "1px solid rgba(255,159,10,0.3)" }}>
+              <ExternalLink className="w-3 h-3" />Reconnect
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+              style={{ background: "#30D15820", color: "#30D158", border: "1px solid #30D15830" }}>
+              <Check className="w-3 h-3" />Connected
+            </div>
+          )}
           <button onClick={() => onDisconnect(connector.id)}
             className="w-7 h-7 rounded-lg flex items-center justify-center"
             style={{ background: "rgba(255,59,48,0.1)", color: "#FF3B30" }} title="Disconnect">

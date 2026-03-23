@@ -141,35 +141,28 @@ export async function POST(req: Request) {
         );
       }
     }
-
-    // ── Step 1: fetch guaranteed columns (api_key_encrypted, api_provider always exist)
-    const { data: coreData, error: coreErr } = await admin
+    // Fetch user API settings - fallback to default OpenRouter key if user has no personal key
+    const { data: coreData } = await admin
       .from("users")
-      .select("api_key_encrypted, api_provider")
+      .select("api_key_encrypted, api_provider, api_model")
       .eq("id", user_id)
       .single();
 
-    if (coreErr || !coreData?.api_key_encrypted) {
-      const detail = coreErr ? ` (DB: ${coreErr.message})` : " (key is empty)";
-      return new Response(
-        JSON.stringify({ error: `No API key found. Go to Settings → AI Configuration and save your API key.${detail}` }),
-        { status: 400 }
-      );
+    let model: ReturnType<typeof buildModel>;
+    if (coreData?.api_key_encrypted) {
+      const apiProvider = coreData.api_provider ?? "openrouter";
+      const apiModel = (coreData as any)?.api_model ?? undefined;
+      model = buildModel(coreData.api_key_encrypted, apiProvider, apiModel);
+    } else {
+      const defaultKey = process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY || "";
+      if (!defaultKey) {
+        return new Response(
+          JSON.stringify({ error: "AI not configured. Add your API key in Settings." }),
+          { status: 400 }
+        );
+      }
+      model = buildModel(defaultKey, "openrouter", "google/gemini-2.0-flash-001");
     }
-
-    // ── Step 2: fetch api_model separately — column may not exist if migration not run
-    const { data: modelData } = await admin
-      .from("users")
-      .select("api_model")
-      .eq("id", user_id)
-      .single();
-    // If this errors (e.g. column missing), modelData is null — buildModel uses provider default
-
-    const apiKey = coreData.api_key_encrypted;
-    const apiProvider = coreData.api_provider ?? "";
-    const apiModel = (modelData as any)?.api_model ?? undefined;
-
-    const model = buildModel(apiKey, apiProvider, apiModel);
 
     const systemPrompt = `You are Inceptive — an AI assistant built for entrepreneurs and founders. You are direct, knowledgeable, and helpful.
 

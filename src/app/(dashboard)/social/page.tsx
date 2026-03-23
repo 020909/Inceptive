@@ -29,11 +29,12 @@ interface SocialPost {
 interface ConnectedAccount {
   provider: string; account_email?: string; account_name?: string; account_id?: string;
   metadata?: Record<string, string>; created_at: string;
+  decrypted?: boolean;
 }
 
 const SOCIAL_CONNECTORS = [
   // Email Providers
-  { id: "gmail",     provider: "gmail",     name: "Gmail",       logo: "/logos/email/gmail.png",   users: "1.8B+",  telegramInput: false, type: "email" },
+  { id: "gmail",     provider: "google",    name: "Gmail",       logo: "/logos/email/gmail.png",   users: "1.8B+",  telegramInput: false, type: "email" },
   { id: "outlook",   provider: "outlook",   name: "Outlook",     logo: "/logos/email/outlook.png", users: "400M+",  telegramInput: false, type: "email" },
   // Social Providers
   { id: "x",         provider: "twitter",   name: "X (Twitter)", logo: "/logos/social/x.png",         users: "600M+",  telegramInput: false, type: "social" },
@@ -82,10 +83,18 @@ function ConnectorCard({ connector, connected, connectedAccount, session, onDisc
       <div className="flex items-center justify-end gap-2 mt-1">
         {connected ? (
           <div className="flex items-center gap-1.5 shrink-0">
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium"
-              style={{ background: "#30D15820", color: "#30D158", border: "1px solid #30D15830" }}>
-              <Check className="w-3 h-3" /><span>Connected</span>
-            </div>
+            {connectedAccount?.decrypted === false ? (
+              <button onClick={handleConnect}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium animate-pulse transition-opacity hover:opacity-80"
+                style={{ background: "rgba(255,159,10,0.15)", color: "#FF9F0A", border: "1px solid rgba(255,159,10,0.3)" }}>
+                <ExternalLink className="w-3 h-3" />Reconnect
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
+                style={{ background: "#30D15820", color: "#30D158", border: "1px solid #30D15830" }}>
+                <Check className="w-3 h-3" /><span>Connected</span>
+              </div>
+            )}
             <button onClick={() => onDisconnect(connector.provider)}
               className="px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
               style={{ background: "rgba(255,59,48,0.1)", color: "#FF3B30", border: "1px solid rgba(255,59,48,0.2)" }}>

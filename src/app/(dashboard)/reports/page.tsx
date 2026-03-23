@@ -83,8 +83,8 @@ export default function ReportsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to generate");
-      toast.success("Sample report generated");
-      fetchReports(accessToken);
+      toast.success("✅ Report generated!");
+      if (data.report) setReports(prev => [data.report, ...prev]);
     } catch (err: any) {
       toast.error(err.message);
     } finally {
