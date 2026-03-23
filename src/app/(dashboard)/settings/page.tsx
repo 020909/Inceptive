@@ -308,14 +308,14 @@ export default function SettingsPage() {
                       <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>Powered by Inceptive's optimized Gemini 2.0 Flash model</p>
                     </div>
                     <div className="p-5">
-                      <div className="flex items-center gap-4 p-4 rounded-xl border" style={{ background: "rgba(48,209,88,0.08)", borderColor: "rgba(48,209,88,0.2)" }}>
-                        <div className="h-10 w-10 flex items-center justify-center rounded-xl shrink-0" style={{ background: "#30D15820" }}>
-                          <Cpu className="w-6 h-6 text-[#30D158]" />
+                      <div className="flex items-center gap-4 p-4 rounded-xl border" style={{ background: "rgba(48,209,88,0.08)", borderColor: "rgba(255,255,255,0.1)" }}>
+                        <div className="h-10 w-10 flex items-center justify-center rounded-xl shrink-0" style={{ background: "#FFFFFF20" }}>
+                          <Cpu className="w-6 h-6 text-[#FFFFFF]" />
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-0.5">
                             <span className="text-sm font-bold text-white">Gemini 2.0 Flash</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase" style={{ background: "#30D15830", color: "#30D158" }}>Active</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase" style={{ background: "#FFFFFF30", color: "#FFFFFF" }}>Active</span>
                           </div>
                           <p className="text-xs text-[var(--foreground-secondary)]">Optimized for speed and intelligence. Uses your Inceptive credits.</p>
                         </div>
@@ -464,8 +464,8 @@ export default function SettingsPage() {
                     <div className="p-5">
                       <div className="grid grid-cols-2 gap-3">
                         {[
-                          { id: "dark" as const, label: "Dark", icon: Moon, preview: "#1C1C1E", surface: "#242426", border: "#38383A", text: "#FFFFFF", sub: "#8E8E93" },
-                          { id: "light" as const, label: "Light", icon: Sun, preview: "#F5F5F7", surface: "#FFFFFF", border: "#D2D2D7", text: "#1C1C1E", sub: "#6E6E73" },
+                          { id: "dark" as const, label: "Dark", icon: Moon, preview: "#0A0A0A", surface: "#111111", border: "#222222", text: "#FFFFFF", sub: "#888888" },
+                          { id: "light" as const, label: "Light", icon: Sun, preview: "#F5F5F7", surface: "#FFFFFF", border: "#D2D2D7", text: "#0A0A0A", sub: "#6E6E73" },
                         ].map(t => {
                           const Icon = t.icon;
                           const isActive = theme === t.id;
@@ -553,7 +553,7 @@ export default function SettingsPage() {
 
                       {/* Status indicator */}
                       <div className="flex items-center gap-2 px-4 py-3 rounded-xl" style={{ background: "var(--background)", border: "1px solid var(--border)" }}>
-                        <div className={`w-2 h-2 rounded-full shrink-0 ${memoryEnabled ? "bg-[#30D158]" : "bg-[var(--foreground-secondary)]"}`} />
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${memoryEnabled ? "bg-[#FFFFFF]" : "bg-[var(--foreground-secondary)]"}`} />
                         <p className="text-xs" style={{ color: "var(--foreground-secondary)" }}>
                           {memoryEnabled
                             ? "Memory is ON — chats are being saved and will appear in Recents"

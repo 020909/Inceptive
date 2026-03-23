@@ -16,7 +16,7 @@ const PLAN_ICONS = {
 
 const PLAN_ACCENT = {
   free:      "rgba(255,255,255,0.1)",
-  basic:     "rgba(48,209,88,0.15)",
+  basic:     "rgba(255,255,255,0.08)",
   pro:       "rgba(0,122,255,0.2)",
   unlimited: "rgba(191,90,242,0.2)",
 };
@@ -189,7 +189,7 @@ function UpgradePageInner() {
               <ul className="flex-1 space-y-2 mb-6">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-xs text-[var(--foreground-secondary)]">
-                    <Check className="w-3.5 h-3.5 text-[#30D158] shrink-0 mt-0.5" />
+                    <Check className="w-3.5 h-3.5 text-[#FFFFFF] shrink-0 mt-0.5" />
                     {f}
                   </li>
                 ))}

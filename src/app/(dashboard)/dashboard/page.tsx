@@ -35,10 +35,10 @@ const TOOL_META: Record<string, { icon: React.ReactNode; label: string }> = {
 };
 
 const SUGGESTIONS = [
-  "Research the latest AI agent frameworks",
-  "Draft an email to a potential investor",
-  "What are the top 5 tools for startup founders?",
-  "Show me my goal progress",
+  "Read my Gmail inbox and summarize what needs attention",
+  "Research top AI investors and draft cold outreach",
+  "Send a follow-up email to my last Gmail thread",
+  "Create a goal: 100 paid users by end of month",
 ];
 
 /* ========================
@@ -66,7 +66,7 @@ function TypingIndicator() {
   return (
     <div className="flex items-center gap-1 px-3 py-2.5">
       {[0, 1, 2].map(i => (
-        <motion.div key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: "#636366" }}
+        <motion.div key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: "#555555" }}
           animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
           transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }} />
       ))}
@@ -101,7 +101,7 @@ function StatCard({ title, value, icon, href, pulse }: {
           <div className="text-[11px] text-[var(--foreground-tertiary)] leading-tight font-medium">{title}</div>
         </div>
         <div className="flex items-center gap-1.5">
-          {pulse && <div className="w-1.5 h-1.5 rounded-full bg-[#30D158] pulse-dot" />}
+          {pulse && <div className="w-1.5 h-1.5 rounded-full bg-[#FFFFFF] pulse-dot" />}
           <ArrowUpRight className="h-3.5 w-3.5 text-[var(--foreground-secondary)] group-hover:text-[var(--foreground-tertiary)] transition-colors" />
         </div>
       </motion.div>
@@ -427,7 +427,7 @@ export default function DashboardPage() {
                                 {tc.args?.query && <span className="text-white ml-1">&quot;{tc.args.query}&quot;</span>}
                               </span>
                               {isDone
-                                ? <div className="flex items-center gap-1 text-[#30D158]"><Check className="w-3 h-3" /><span className="text-[10px] font-medium">Done</span></div>
+                                ? <div className="flex items-center gap-1 text-[#FFFFFF]"><Check className="w-3 h-3" /><span className="text-[10px] font-medium">Done</span></div>
                                 : <Loader2 className="w-3 h-3 animate-spin text-[var(--foreground-tertiary)]" />
                               }
                             </motion.div>
@@ -459,7 +459,7 @@ export default function DashboardPage() {
                 className="absolute left-2.5 bottom-2.5 w-8 h-8 rounded-xl flex items-center justify-center transition-colors duration-150"
                 style={{ background: "rgba(255,255,255,0.05)", color: "var(--foreground-tertiary)" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#FFFFFF"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "#636366"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "#555555"; }}
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -513,7 +513,7 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center justify-between mb-3 px-2">
             <p className="text-[10px] uppercase tracking-widest text-[var(--foreground-secondary)] font-semibold">Recent Activity</p>
-            <div className="w-1.5 h-1.5 rounded-full bg-[#30D158] pulse-dot" />
+            <div className="w-1.5 h-1.5 rounded-full bg-[#FFFFFF] pulse-dot" />
           </div>
           {statsLoading ? (
             <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-11 rounded-xl shimmer" />)}</div>

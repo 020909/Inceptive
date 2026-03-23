@@ -54,7 +54,7 @@ function UserSection({ collapsed }: { collapsed: boolean }) {
           <span className="text-xs truncate flex-1 min-w-0" style={{ color: "var(--foreground-secondary)" }}>{email}</span>
         )}
         <button onClick={handleLogout}
-          className={`transition-all duration-150 p-1 rounded hover:bg-[#38383A] text-[#636366] hover:text-white ${collapsed ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+          className={`transition-all duration-150 p-1 rounded hover:bg-[#222222] text-[#555555] hover:text-white ${collapsed ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
           title="Sign out">
           <LogOut className="h-3.5 w-3.5" />
         </button>
@@ -237,7 +237,7 @@ function CreditsWidget() {
   if (!info || info.plan === "basic") return null; // basic = BYOK, no credit tracking
 
   const pct = info.total > 0 ? Math.round((info.remaining / info.total) * 100) : 0;
-  const color = pct > 50 ? "#30D158" : pct > 20 ? "#FF9F0A" : "#FF453A";
+  const color = pct > 50 ? "#FFFFFF" : pct > 20 ? "#FFFFFF" : "#FF453A";
 
   return (
     <Link href="/upgrade" className="block mx-0.5 mb-1 px-3 py-2.5 rounded-xl border group transition-colors duration-150"
@@ -283,7 +283,7 @@ export function Sidebar() {
           </Link>
         )}
         <button onClick={toggle}
-          className="hidden md:flex h-7 w-7 items-center justify-center rounded-lg text-[#636366] hover:text-white hover:bg-[#242426] transition-all duration-150"
+          className="hidden md:flex h-7 w-7 items-center justify-center rounded-lg text-[#555555] hover:text-white hover:bg-[#111111] transition-all duration-150"
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
           {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
         </button>

@@ -63,14 +63,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: "#1C1C1E" }}>
+    <div className="min-h-screen flex" style={{ background: "#0A0A0A" }}>
       {/* Left branding panel */}
       <motion.div
         initial={{ opacity: 0, x: -24 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-        className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 border-r border-[#2C2C2E] relative overflow-hidden"
-        style={{ background: "#141416" }}
+        className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 border-r border-[#1A1A1A] relative overflow-hidden"
+        style={{ background: "#050505" }}
       >
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full pointer-events-none"
           style={{ background: "radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%)" }} />
@@ -90,12 +90,12 @@ export default function LoginPage() {
           <h1 className="text-4xl font-bold text-white leading-tight tracking-tight">
             The AI that works<br />while you sleep.
           </h1>
-          <p className="text-[#8E8E93] text-base leading-relaxed max-w-sm">
+          <p className="text-[#888888] text-base leading-relaxed max-w-sm">
             Research, email, social media — all running autonomously 24 hours a day.
           </p>
         </div>
 
-        <p className="text-xs text-[#48484A] relative z-10">
+        <p className="text-xs text-[#333333] relative z-10">
           © {new Date().getFullYear()} Inceptive AI. All rights reserved.
         </p>
       </motion.div>
@@ -117,7 +117,7 @@ export default function LoginPage() {
 
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-1.5">Welcome back</h2>
-            <p className="text-sm text-[#8E8E93]">Sign in to your Inceptive account</p>
+            <p className="text-sm text-[#888888]">Sign in to your Inceptive account</p>
           </div>
 
           <div className="space-y-3 mb-6">
@@ -126,7 +126,7 @@ export default function LoginPage() {
                 type="button"
                 disabled={!!oauthLoading}
                 onClick={() => handleOAuth("google")}
-                className="w-full h-12 rounded-xl font-semibold text-sm text-black border border-[#38383A] relative overflow-hidden group transition-all duration-200 bg-white hover:bg-white/90"
+                className="w-full h-12 rounded-xl font-semibold text-sm text-black border border-[#222222] relative overflow-hidden group transition-all duration-200 bg-white hover:bg-white/90"
                 style={{
                    boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
                 }}
@@ -150,25 +150,25 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-medium text-[#8E8E93] uppercase tracking-wide">Email</Label>
+              <Label htmlFor="email" className="text-xs font-medium text-[#888888] uppercase tracking-wide">Email</Label>
               <Input
                 id="email" type="email" placeholder="you@example.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setErrors(p => ({ ...p, email: undefined })); }}
-                className="h-11 rounded-xl text-sm text-white placeholder:text-[#48484A] focus-visible:ring-[var(--foreground)] transition-all duration-150"
-                style={{ background: "#2A2A2C", border: errors.email ? "1px solid #FF453A" : "1px solid #38383A" }}
+                className="h-11 rounded-xl text-sm text-white placeholder:text-[#333333] focus-visible:ring-[var(--foreground)] transition-all duration-150"
+                style={{ background: "#1A1A1A", border: errors.email ? "1px solid #FF453A" : "1px solid #222222" }}
               />
               {errors.email && <p className="text-xs text-[#FF453A]">{errors.email}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs font-medium text-[#8E8E93] uppercase tracking-wide">Password</Label>
+              <Label htmlFor="password" className="text-xs font-medium text-[#888888] uppercase tracking-wide">Password</Label>
               <Input
                 id="password" type="password" placeholder="••••••••"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setErrors(p => ({ ...p, password: undefined })); }}
-                className="h-11 rounded-xl text-sm text-white placeholder:text-[#48484A] focus-visible:ring-[var(--foreground)] transition-all duration-150"
-                style={{ background: "#2A2A2C", border: errors.password ? "1px solid #FF453A" : "1px solid #38383A" }}
+                className="h-11 rounded-xl text-sm text-white placeholder:text-[#333333] focus-visible:ring-[var(--foreground)] transition-all duration-150"
+                style={{ background: "#1A1A1A", border: errors.password ? "1px solid #FF453A" : "1px solid #222222" }}
               />
               {errors.password && <p className="text-xs text-[#FF453A]">{errors.password}</p>}
             </div>
@@ -184,22 +184,22 @@ export default function LoginPage() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#2C2C2E]" />
+              <div className="w-full border-t border-[#1A1A1A]" />
             </div>
             <div className="relative flex justify-center">
-              <span className="px-3 text-xs text-[#48484A]" style={{ background: "#1C1C1E" }}>or</span>
+              <span className="px-3 text-xs text-[#333333]" style={{ background: "#0A0A0A" }}>or</span>
             </div>
           </div>
 
           <motion.div whileTap={{ scale: 0.98 }}>
             <Button onClick={handleMagicLink} disabled={magicLinkLoading} variant="outline"
-              className="w-full h-11 rounded-xl font-medium text-sm text-white transition-all duration-150 hover:bg-[#2C2C2E]"
-              style={{ background: "#242426", border: "1px solid #38383A" }}>
+              className="w-full h-11 rounded-xl font-medium text-sm text-white transition-all duration-150 hover:bg-[#1A1A1A]"
+              style={{ background: "#111111", border: "1px solid #222222" }}>
               {magicLinkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "✉  Send magic link"}
             </Button>
           </motion.div>
 
-          <p className="mt-8 text-center text-sm text-[#48484A]">
+          <p className="mt-8 text-center text-sm text-[#333333]">
             No account?{" "}
             <Link href="/signup" className="text-[var(--foreground)] hover:opacity-80 font-medium transition-opacity duration-150">
               Sign up free

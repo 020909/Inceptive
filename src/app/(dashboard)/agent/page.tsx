@@ -30,7 +30,7 @@ function TypingIndicator() {
   return (
     <div className="flex items-center gap-1 px-3 py-2.5">
       {[0, 1, 2].map(i => (
-        <motion.div key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: "#636366" }}
+        <motion.div key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: "#555555" }}
           animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
           transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }} />
       ))}
@@ -368,7 +368,7 @@ export default function AgentLivePage() {
                                 {meta?.label || tc.toolName}
                               </span>
                               {isDone
-                                ? <div className="flex items-center gap-1 text-[#30D158] ml-2"><Check className="w-3.5 h-3.5" /></div>
+                                ? <div className="flex items-center gap-1 text-[#FFFFFF] ml-2"><Check className="w-3.5 h-3.5" /></div>
                                 : <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--foreground-tertiary)] ml-2" />
                               }
                             </motion.div>

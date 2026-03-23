@@ -207,8 +207,8 @@ export default function EmailPage() {
             const acc = accounts.find(a => a.provider === c.id);
             const connected = !!acc;
             return (
-              <div key={c.id} className="flex items-center gap-3 px-4 py-3 rounded-2xl border" style={{ background: "var(--background-elevated)", borderColor: connected ? "rgba(48,209,88,0.35)" : "var(--border)" }}>
-                <div className="w-2 h-2 rounded-full shrink-0" style={{ background: connected ? "#30D158" : "#48484A" }} />
+              <div key={c.id} className="flex items-center gap-3 px-4 py-3 rounded-2xl border" style={{ background: "var(--background-elevated)", borderColor: connected ? "rgba(255,255,255,0.15)" : "var(--border)" }}>
+                <div className="w-2 h-2 rounded-full shrink-0" style={{ background: connected ? "#FFFFFF" : "#333333" }} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold text-white">{c.name}</div>
                   <div className="text-xs truncate" style={{ color: "var(--foreground-secondary)" }}>{connected ? acc?.account_email : c.description}</div>
@@ -266,7 +266,7 @@ export default function EmailPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-xs font-semibold text-white truncate">{msg.from.split("<")[0].trim()}</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#0A84FF] shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFFFFF] shrink-0" />
                     </div>
                     <p className="text-sm font-medium text-white truncate">{msg.subject}</p>
                     <p className="text-xs truncate mt-0.5" style={{ color: "var(--foreground-secondary)" }}>{msg.snippet}</p>
@@ -298,7 +298,7 @@ export default function EmailPage() {
                   <p className="text-xs truncate" style={{ color: "var(--foreground-secondary)" }}>To: {email.recipient}</p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: email.status === "sent" ? "#30D158" : "#FF9F0A" }} />
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: email.status === "sent" ? "#FFFFFF" : "#FFFFFF" }} />
                   <span className="text-xs capitalize" style={{ color: "var(--foreground-secondary)" }}>{email.status}</span>
                   <span className="text-xs" style={{ color: "var(--foreground-tertiary)" }}>{formatTimeAgo(new Date(email.created_at))}</span>
                   {email.status === "draft" && (
@@ -335,7 +335,7 @@ export default function EmailPage() {
                 <div className="flex items-center gap-2 shrink-0">
                   <button onClick={summarizeEmail} disabled={summarizing || loadingBody}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
-                    style={{ background: "rgba(10,132,255,0.12)", color: "#0A84FF", border: "1px solid rgba(10,132,255,0.25)" }}>
+                    style={{ background: "rgba(255,255,255,0.06)", color: "#FFFFFF", border: "1px solid rgba(255,255,255,0.12)" }}>
                     {summarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                     AI Summary
                   </button>
@@ -349,10 +349,10 @@ export default function EmailPage() {
               <AnimatePresence>
                 {summary && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                    className="px-6 py-4 border-b overflow-hidden" style={{ background: "rgba(10,132,255,0.07)", borderColor: "rgba(10,132,255,0.18)" }}>
+                    className="px-6 py-4 border-b overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)" }}>
                     <div className="flex items-center gap-1.5 mb-2">
-                      <Sparkles className="w-3.5 h-3.5" style={{ color: "#0A84FF" }} />
-                      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "#0A84FF" }}>AI Summary</span>
+                      <Sparkles className="w-3.5 h-3.5" style={{ color: "#FFFFFF" }} />
+                      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "#FFFFFF" }}>AI Summary</span>
                     </div>
                     <p className="text-sm text-white leading-relaxed whitespace-pre-wrap">{summary}</p>
                   </motion.div>

@@ -68,7 +68,7 @@ function ConnectorCard({ connector, connected, connectedAccount, session, onDisc
   return (
     <motion.div whileHover={{ y: -2, boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }} transition={{ duration: 0.18 }}
       className="flex flex-col gap-3 p-4 rounded-2xl border transition-colors duration-150"
-      style={{ background: "var(--background-elevated)", borderColor: connected ? "rgba(255,255,255,0.25)" : "#2C2C2E" }}>
+      style={{ background: "var(--background-elevated)", borderColor: connected ? "rgba(255,255,255,0.25)" : "#1A1A1A" }}>
       
       <div className="flex items-center gap-3">
         <img src={connector.logo} alt={connector.name} width={28} height={28} className="object-contain shrink-0" />
@@ -86,12 +86,12 @@ function ConnectorCard({ connector, connected, connectedAccount, session, onDisc
             {connectedAccount?.decrypted === false ? (
               <button onClick={handleConnect}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium animate-pulse transition-opacity hover:opacity-80"
-                style={{ background: "rgba(255,159,10,0.15)", color: "#FF9F0A", border: "1px solid rgba(255,159,10,0.3)" }}>
+                style={{ background: "rgba(255,159,10,0.15)", color: "#FFFFFF", border: "1px solid rgba(255,159,10,0.3)" }}>
                 <ExternalLink className="w-3 h-3" />Reconnect
               </button>
             ) : (
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
-                style={{ background: "#30D15820", color: "#30D158", border: "1px solid #30D15830" }}>
+                style={{ background: "#FFFFFF20", color: "#FFFFFF", border: "1px solid #FFFFFF30" }}>
                 <Check className="w-3 h-3" /><span>Connected</span>
               </div>
             )}
@@ -383,8 +383,8 @@ export default function SocialPage() {
                   className="rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 transition-colors duration-150"
                   style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: idx * 0.04 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#48484A"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#38383A"; }}>
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#333333"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#222222"; }}>
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
                       <span className="px-3 py-1 text-white text-xs font-semibold rounded-full tracking-wide" style={{ background: "var(--border)" }}>
@@ -409,7 +409,7 @@ export default function SocialPage() {
                         onClick={() => handlePublish(post.id)}
                         disabled={publishing === post.id}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity disabled:opacity-50"
-                        style={{ background: isPlatformConnected(post.platform) ? "var(--foreground)" : "#38383A", color: "var(--foreground)" }}
+                        style={{ background: isPlatformConnected(post.platform) ? "var(--foreground)" : "#222222", color: "var(--foreground)" }}
                         title={isPlatformConnected(post.platform) ? `Publish to ${post.platform}` : "Connect account to publish"}>
                         {publishing === post.id
                           ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -418,7 +418,7 @@ export default function SocialPage() {
                       </button>
                     )}
                     {post.status === "published" && (
-                      <span className="text-xs text-[#30D158] font-medium">{post.created_at ? formatTimeAgo(new Date(post.created_at)) : "Published"}</span>
+                      <span className="text-xs text-[#FFFFFF] font-medium">{post.created_at ? formatTimeAgo(new Date(post.created_at)) : "Published"}</span>
                     )}
                   </div>
                 </motion.div>
@@ -476,7 +476,7 @@ export default function SocialPage() {
             )}
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}
-                className="hover:bg-[#2C2C2E] text-white hover:text-white">Cancel</Button>
+                className="hover:bg-[#1A1A1A] text-white hover:text-white">Cancel</Button>
               <Button type="submit" disabled={saving} className="border-0" style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
                 {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{generateWithAi ? "Generating…" : "Saving…"}</> : generateWithAi ? "Generate & Save" : "Schedule Post"}
               </Button>
@@ -517,7 +517,7 @@ export default function SocialPage() {
             </div>
             <DialogFooter className="pt-2">
               <Button type="button" variant="ghost" onClick={() => setIsTelegramModalOpen(false)}
-                className="hover:bg-[#2C2C2E] text-white hover:text-white">Cancel</Button>
+                className="hover:bg-[#1A1A1A] text-white hover:text-white">Cancel</Button>
               <Button type="submit" disabled={connectingTelegram} className="border-0" style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
                 {connectingTelegram ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Connecting…</> : "Connect Bot"}
               </Button>

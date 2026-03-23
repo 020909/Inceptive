@@ -97,11 +97,11 @@ export default function ReportsPage() {
       <PageTransition>
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-white mb-2">Weekly Reports</h1>
-          <Button disabled className="bg-[#2C2C2E] text-[var(--foreground-secondary)] h-10 px-4">
+          <Button disabled className="bg-[#1A1A1A] text-[var(--foreground-secondary)] h-10 px-4">
             <TrendingUp className="h-4 w-4 mr-2" /> Generate Report
           </Button>
         </div>
-        <div className="rounded-xl border border-[var(--border)] bg-[#242426] p-10 skeleton h-[400px]" />
+        <div className="rounded-xl border border-[var(--border)] bg-[#111111] p-10 skeleton h-[400px]" />
       </PageTransition>
     );
   }
@@ -129,7 +129,7 @@ export default function ReportsPage() {
               <Button
                 onClick={handleGenerateSample}
                 disabled={generating}
-                className="bg-[#2A2A2C] border border-[var(--border)] text-white hover:bg-[#38383A] rounded-lg h-10 px-4 text-sm font-medium transition-all"
+                className="bg-[#1A1A1A] border border-[var(--border)] text-white hover:bg-[#222222] rounded-lg h-10 px-4 text-sm font-medium transition-all"
               >
                 {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <TrendingUp className="h-4 w-4 mr-2" />}
                 Generate Latest
@@ -140,12 +140,12 @@ export default function ReportsPage() {
 
         {reports.length === 0 ? (
           <motion.div
-            className="flex flex-col items-center justify-center py-32 text-center border border-[var(--border)] rounded-xl bg-[#242426]"
+            className="flex flex-col items-center justify-center py-32 text-center border border-[var(--border)] rounded-xl bg-[#111111]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#2C2C2E] border border-[var(--border)] mb-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1A1A1A] border border-[var(--border)] mb-6">
               <BarChart3 className="h-8 w-8 text-white" />
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">No reports generated</h3>
@@ -155,7 +155,7 @@ export default function ReportsPage() {
             <Button
               onClick={handleGenerateSample}
               disabled={generating}
-              className="bg-[var(--foreground)] text-white hover:bg-[#0A84FF]"
+              className="bg-[var(--foreground)] text-white hover:bg-[#FFFFFF]"
             >
               {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : "Generate Sample Report"}
             </Button>
@@ -169,7 +169,7 @@ export default function ReportsPage() {
               transition={{ duration: 0.4 }}
             >
               {/* Main Report Card */}
-              <div className="rounded-2xl border border-[var(--border)] bg-[#1C1C1E] overflow-hidden relative">
+              <div className="rounded-2xl border border-[var(--border)] bg-[#0A0A0A] overflow-hidden relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
 
                 <div className="p-8 md:p-12 relative z-10">
@@ -178,9 +178,9 @@ export default function ReportsPage() {
                       <h2 className="text-[11px] font-bold text-[var(--foreground-secondary)] uppercase tracking-[0.2em] mb-3">Inceptive Weekly Report</h2>
                       <p className="text-2xl md:text-3xl font-light text-white">{latestReport.date_range_str}</p>
                     </div>
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#30D158]/20 bg-[#30D158]/10 w-fit">
-                      <div className="h-2 w-2 rounded-full bg-[#30D158] animate-pulse" />
-                      <span className="text-xs font-semibold tracking-wide text-[#30D158] uppercase">All systems running</span>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#FFFFFF]/20 bg-[#FFFFFF]/10 w-fit">
+                      <div className="h-2 w-2 rounded-full bg-[#FFFFFF] animate-pulse" />
+                      <span className="text-xs font-semibold tracking-wide text-[#FFFFFF] uppercase">All systems running</span>
                     </div>
                   </div>
 
@@ -217,14 +217,14 @@ export default function ReportsPage() {
                   </div>
 
                   {topGoal && (
-                    <div className="bg-[#242426] border border-[var(--border)] rounded-xl p-6 mb-12">
+                    <div className="bg-[#111111] border border-[var(--border)] rounded-xl p-6 mb-12">
                       <div className="flex items-center gap-3 mb-4">
                         <Target className="h-5 w-5 text-white" />
                         <h3 className="text-sm font-semibold text-white">Current Priority Focus</h3>
                       </div>
                       <p className="text-white mb-4 text-lg">{topGoal.title}</p>
                       <div className="flex items-center gap-4">
-                        <div className="flex-1 h-1.5 bg-[#38383A] rounded-full overflow-hidden">
+                        <div className="flex-1 h-1.5 bg-[#222222] rounded-full overflow-hidden">
                           <div
                             className="h-full bg-[var(--foreground)] rounded-full"
                             style={{ width: `${topGoal.progress_percent}%` }}
@@ -244,30 +244,30 @@ export default function ReportsPage() {
 
               {/* Chart Section */}
               {latestReport.chart_data && latestReport.chart_data.length > 0 && (
-                <div className="rounded-2xl border border-[var(--border)] bg-[#1C1C1E] p-8">
+                <div className="rounded-2xl border border-[var(--border)] bg-[#0A0A0A] p-8">
                   <h3 className="text-sm font-bold text-white mb-8">Tasks Completed (Past 8 Weeks)</h3>
                   <div className="h-[250px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={latestReport.chart_data}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#38383A" vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#222222" vertical={false} />
                         <XAxis
                           dataKey="week"
-                          stroke="#636366"
+                          stroke="#555555"
                           fontSize={12}
                           tickLine={false}
                           axisLine={false}
                           dy={10}
                         />
                         <YAxis
-                          stroke="#636366"
+                          stroke="#555555"
                           fontSize={12}
                           tickLine={false}
                           axisLine={false}
                           dx={-10}
                         />
                         <Tooltip
-                          cursor={{ fill: '#2C2C2E' }}
-                          contentStyle={{ backgroundColor: '#242426', border: '1px solid #38383A', borderRadius: '8px', color: '#FFF' }}
+                          cursor={{ fill: '#1A1A1A' }}
+                          contentStyle={{ backgroundColor: '#111111', border: '1px solid #222222', borderRadius: '8px', color: '#FFF' }}
                           itemStyle={{ color: '#FFF' }}
                         />
                         <Bar

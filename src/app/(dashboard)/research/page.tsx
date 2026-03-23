@@ -72,7 +72,7 @@ function DepthDropdown({ depth, onChange }: { depth: Depth; onChange: (d: Depth)
         type="button"
         onClick={() => setOpen(o => !o)}
         className="flex items-center gap-2 h-[52px] px-4 rounded-2xl border text-sm font-medium transition-all duration-150"
-        style={{ background: "var(--background-elevated)", borderColor: open ? "rgba(255,255,255,0.3)" : "#38383A", color: "var(--foreground-secondary)" }}
+        style={{ background: "var(--background-elevated)", borderColor: open ? "rgba(255,255,255,0.3)" : "#222222", color: "var(--foreground-secondary)" }}
       >
         <span className="text-[var(--foreground)]">{current.icon}</span>
         <span className="text-white whitespace-nowrap">{depth}</span>
@@ -98,7 +98,7 @@ function DepthDropdown({ depth, onChange }: { depth: Depth; onChange: (d: Depth)
                   background: depth === opt.value ? "rgba(255,255,255,0.08)" : "transparent",
                   borderLeft: depth === opt.value ? "2px solid var(--foreground)" : "2px solid transparent",
                 }}
-                onMouseEnter={e => { if (depth !== opt.value) (e.currentTarget as HTMLButtonElement).style.background = "#2C2C2E"; }}
+                onMouseEnter={e => { if (depth !== opt.value) (e.currentTarget as HTMLButtonElement).style.background = "#1A1A1A"; }}
                 onMouseLeave={e => { if (depth !== opt.value) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
               >
                 <span style={{ color: "var(--foreground)" }}>{opt.icon}</span>
@@ -248,8 +248,8 @@ export default function ResearchPage() {
                   onClick={() => { setActiveReport(report); setIsThinking(false); setModalOpen(true); }}
                   className="h-48 rounded-2xl border p-5 flex flex-col justify-between cursor-pointer transition-colors duration-150"
                   style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#48484A"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#38383A"; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#333333"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#222222"; }}
                 >
                   <div>
                     <h3 className="text-sm font-semibold text-white mb-2 line-clamp-1">{report.topic}</h3>

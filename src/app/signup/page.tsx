@@ -71,13 +71,13 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#1C1C1E]">
+    <div className="min-h-screen flex bg-[#0A0A0A]">
       {/* Left side — branding */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-12 bg-[#141416]"
+        className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-12 bg-[#050505]"
       >
         <div className="flex items-center gap-4 mb-8">
           <div className="relative flex h-14 w-14 items-center justify-center rounded-xl overflow-hidden border border-white/20 shrink-0">
@@ -87,7 +87,7 @@ export default function SignUpPage() {
             Inceptive
           </span>
         </div>
-        <p className="text-xl text-[#8E8E93] text-center max-w-md leading-relaxed">
+        <p className="text-xl text-[#888888] text-center max-w-md leading-relaxed">
           The first AI that works while you sleep.
           <br />
           Not when you ask.
@@ -113,7 +113,7 @@ export default function SignUpPage() {
           <h1 className="text-2xl font-bold text-white mb-2">
             Create your account
           </h1>
-          <p className="text-[#8E8E93] text-sm mb-8">
+          <p className="text-[#888888] text-sm mb-8">
             Get started with your 24/7 AI employee
           </p>
 
@@ -123,7 +123,7 @@ export default function SignUpPage() {
                 type="button"
                 disabled={!!oauthLoading}
                 onClick={() => handleOAuth("google")}
-                className="w-full h-12 rounded-xl font-semibold text-sm text-black border border-[#38383A] relative overflow-hidden group transition-all duration-200 bg-white hover:bg-white/90"
+                className="w-full h-12 rounded-xl font-semibold text-sm text-black border border-[#222222] relative overflow-hidden group transition-all duration-200 bg-white hover:bg-white/90"
                 style={{
                   boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                 }}
@@ -147,7 +147,7 @@ export default function SignUpPage() {
 
           <form onSubmit={handleSignUp} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm text-[#8E8E93]">
+              <Label htmlFor="email" className="text-sm text-[#888888]">
                 Email
               </Label>
               <Input
@@ -159,7 +159,7 @@ export default function SignUpPage() {
                   setEmail(e.target.value);
                   setErrors((prev) => ({ ...prev, email: undefined }));
                 }}
-                className="h-11 bg-[#2A2A2C] border-[#38383A] text-white placeholder:text-[#636366] rounded-lg focus:border-[var(--foreground)] focus:ring-0 transition-colors duration-200"
+                className="h-11 bg-[#1A1A1A] border-[#222222] text-white placeholder:text-[#555555] rounded-lg focus:border-[var(--foreground)] focus:ring-0 transition-colors duration-200"
               />
               {errors.email && (
                 <p className="text-xs text-[#FF453A]">{errors.email}</p>
@@ -167,7 +167,7 @@ export default function SignUpPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm text-[#8E8E93]">
+              <Label htmlFor="password" className="text-sm text-[#888888]">
                 Password
               </Label>
               <Input
@@ -179,7 +179,7 @@ export default function SignUpPage() {
                   setPassword(e.target.value);
                   setErrors((prev) => ({ ...prev, password: undefined }));
                 }}
-                className="h-11 bg-[#2A2A2C] border-[#38383A] text-white placeholder:text-[#636366] rounded-lg focus:border-[var(--foreground)] focus:ring-0 transition-colors duration-200"
+                className="h-11 bg-[#1A1A1A] border-[#222222] text-white placeholder:text-[#555555] rounded-lg focus:border-[var(--foreground)] focus:ring-0 transition-colors duration-200"
               />
               {errors.password && (
                 <p className="text-xs text-[#FF453A]">{errors.password}</p>
@@ -187,7 +187,7 @@ export default function SignUpPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-sm text-[#8E8E93]">
+              <Label htmlFor="confirmPassword" className="text-sm text-[#888888]">
                 Confirm Password
               </Label>
               <Input
@@ -199,7 +199,7 @@ export default function SignUpPage() {
                   setConfirmPassword(e.target.value);
                   setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
                 }}
-                className="h-11 bg-[#2A2A2C] border-[#38383A] text-white placeholder:text-[#636366] rounded-lg focus:border-[var(--foreground)] focus:ring-0 transition-colors duration-200"
+                className="h-11 bg-[#1A1A1A] border-[#222222] text-white placeholder:text-[#555555] rounded-lg focus:border-[var(--foreground)] focus:ring-0 transition-colors duration-200"
               />
               {errors.confirmPassword && (
                 <p className="text-xs text-[#FF453A]">{errors.confirmPassword}</p>
@@ -213,7 +213,7 @@ export default function SignUpPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 bg-[var(--foreground)] text-white hover:bg-[#0A84FF] rounded-lg font-medium transition-all duration-200"
+                className="w-full h-11 bg-[var(--foreground)] text-white hover:bg-[#FFFFFF] rounded-lg font-medium transition-all duration-200"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -224,7 +224,7 @@ export default function SignUpPage() {
             </motion.div>
           </form>
 
-          <p className="mt-6 text-center text-sm text-[#636366]">
+          <p className="mt-6 text-center text-sm text-[#555555]">
             Already have an account?{" "}
             <Link
               href="/login"
