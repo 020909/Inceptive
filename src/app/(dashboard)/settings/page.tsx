@@ -13,8 +13,10 @@ import { Label } from "@/components/ui/label";
 import {
   Eye, EyeOff, Loader2, Check, ChevronRight,
   Sun, Moon, User, Shield, Bell, Cpu, Brain, Mail,
+  Activity, PauseCircle, Clock,
 } from "lucide-react";
 import { useChat } from "@/lib/chat-context";
+import { useAgent } from "@/lib/agent-context";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -80,10 +82,11 @@ const PROVIDERS = [
 ];
 
 type Step = "provider" | "model" | "key";
-type Section = "ai" | "account" | "mail" | "appearance" | "memory";
+type Section = "ai" | "account" | "mail" | "appearance" | "memory" | "agent";
 
 const SECTIONS: { id: Section; label: string; icon: typeof Cpu }[] = [
   { id: "ai", label: "AI Configuration", icon: Cpu },
+  { id: "agent", label: "Agent", icon: Activity },
   { id: "account", label: "My Account", icon: User },
   { id: "mail", label: "Email connectors", icon: Mail },
   { id: "appearance", label: "Appearance", icon: Sun },
@@ -94,6 +97,7 @@ export default function SettingsPage() {
   const { user, session, refresh: refreshAuth } = useAuth();
   const { theme, setTheme } = useTheme();
   const { memoryEnabled, setMemoryEnabled } = useChat();
+  const { is24_7Mode, toggle24_7Mode, requiresApproval, setRequiresApproval, sleepAfterMinutes, setSleepAfterMinutes } = useAgent();
   const [savingMemory, setSavingMemory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -320,10 +324,146 @@ export default function SettingsPage() {
                           <p className="text-xs text-[var(--foreground-secondary)]">Optimized for speed and intelligence. Uses your Inceptive credits.</p>
                         </div>
                       </div>
-                      
+
                       <div className="mt-6 flex flex-col gap-2">
                         <p className="text-[10px] text-[var(--foreground-tertiary)] uppercase font-semibold tracking-wider">Advanced</p>
                         <p className="text-xs text-[var(--foreground-secondary)]">Custom API keys are currently disabled to ensure maximum platform stability. All agents are automatically utilizing the high-performance Gemini 2.0 backbone.</p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── Agent Settings ── */}
+              {activeSection === "agent" && (
+                <motion.div key="agent" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
+                  {/* 24/7 Mode */}
+                  <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
+                    <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
+                      <h2 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>24/7 Autonomous Mode</h2>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>Keep your agent working around the clock</p>
+                    </div>
+                    <div className="p-5 space-y-5">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Enable 24/7 Mode</p>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>
+                            Agent stays active and enters sleep mode when idle. Automatically wakes when new tasks arrive.
+                          </p>
+                        </div>
+                        <button
+                          onClick={toggle24_7Mode}
+                          className="relative shrink-0 h-7 w-12 rounded-full transition-colors duration-200"
+                          style={{ background: is24_7Mode ? "var(--foreground)" : "var(--background-overlay)", border: "1px solid var(--border)" }}
+                          aria-label="Toggle 24/7 mode"
+                        >
+                          <motion.div
+                            className="absolute top-0.5 h-6 w-6 rounded-full"
+                            style={{ background: is24_7Mode ? "var(--background)" : "var(--foreground-secondary)" }}
+                            animate={{ left: is24_7Mode ? "calc(100% - 26px)" : "2px" }}
+                            transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                          />
+                        </button>
+                      </div>
+
+                      {is24_7Mode && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          className="space-y-3"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-[var(--foreground-secondary)]" />
+                              <span className="text-xs" style={{ color: "var(--foreground)" }}>Sleep after</span>
+                            </div>
+                            <select
+                              value={sleepAfterMinutes}
+                              onChange={(e) => setSleepAfterMinutes(Number(e.target.value))}
+                              className="bg-[var(--background)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-xs"
+                              style={{ color: "var(--foreground)" }}
+                            >
+                              <option value={1}>1 minute</option>
+                              <option value={5}>5 minutes</option>
+                              <option value={15}>15 minutes</option>
+                              <option value={30}>30 minutes</option>
+                              <option value={60}>1 hour</option>
+                            </select>
+                          </div>
+                          <p className="text-[10px] text-[var(--foreground-muted)]">
+                            Agent will enter sleep mode after this period of inactivity to save credits.
+                          </p>
+                        </motion.div>
+                      )}
+
+                      <div className="flex items-center gap-2 px-4 py-3 rounded-xl" style={{ background: "var(--background)", border: "1px solid var(--border)" }}>
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${is24_7Mode ? "bg-[var(--success)]" : "bg-[var(--foreground-muted)]"}`} />
+                        <p className="text-xs" style={{ color: "var(--foreground-secondary)" }}>
+                          {is24_7Mode
+                            ? "24/7 mode is ON — Agent will work continuously and auto-sleep when idle"
+                            : "24/7 mode is OFF — Agent runs only when you're actively using the dashboard"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Approval Settings */}
+                  <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
+                    <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
+                      <h2 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Approval Control</h2>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>Control when the agent requires your approval</p>
+                    </div>
+                    <div className="p-5 space-y-5">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Require Approval</p>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>
+                            Agent pauses before executing each task and waits for your approval. Recommended for critical operations.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setRequiresApproval(!requiresApproval)}
+                          className="relative shrink-0 h-7 w-12 rounded-full transition-colors duration-200"
+                          style={{ background: requiresApproval ? "var(--warning)" : "var(--background-overlay)", border: "1px solid var(--border)" }}
+                          aria-label="Toggle approval requirement"
+                        >
+                          <motion.div
+                            className="absolute top-0.5 h-6 w-6 rounded-full"
+                            style={{ background: requiresApproval ? "var(--background)" : "var(--foreground-secondary)" }}
+                            animate={{ left: requiresApproval ? "calc(100% - 26px)" : "2px" }}
+                            transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                          />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2 px-4 py-3 rounded-xl" style={{ background: "var(--background)", border: "1px solid var(--border)" }}>
+                        <PauseCircle className={`w-4 h-4 shrink-0 ${requiresApproval ? "text-[var(--warning)]" : "text-[var(--foreground-muted)]"}`} />
+                        <p className="text-xs" style={{ color: "var(--foreground-secondary)" }}>
+                          {requiresApproval
+                            ? "Agent will pause before each task — you'll need to approve actions"
+                            : "Agent runs autonomously without pausing for approval"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cost Optimization Tip */}
+                  <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
+                    <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
+                      <h2 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Cost Optimization</h2>
+                    </div>
+                    <div className="p-5">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--accent-subtle)" }}>
+                          <Moon className="w-4 h-4 text-[var(--accent)]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>Smart Sleep Mode</p>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--foreground-secondary)" }}>
+                            When enabled, the agent automatically sleeps during inactivity to minimize credit usage.
+                            This is our key advantage over competitors — you only pay for actual work done.
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>

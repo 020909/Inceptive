@@ -230,57 +230,36 @@ export async function POST(req: Request) {
       _tw ? 'Twitter/X CONNECTED - can post' : 'Twitter/X not connected',
       _li ? 'LinkedIn CONNECTED - can post' : 'LinkedIn not connected',
       _ig ? 'Instagram CONNECTED' : 'Instagram not connected',
-    ].join('
-');
+    ].join('\n');
     const { data: _gl } = await getAdmin()
       .from('goals').select('title,progress_percent').eq('user_id',user_id).eq('status','active').limit(3);
     const _gs = (_gl||[]).map((g:any)=>g.title+'('+g.progress_percent+'%)').join(', ') || 'none';
-    const systemPrompt = 'You are Inceptive - a powerful AI agent for entrepreneurs and founders.
+    const systemPrompt = `You are Inceptive - a powerful AI agent for entrepreneurs and founders.
 
-' +
-      '## CONNECTED ACCOUNTS (LIVE)
-' + _cs + '
+## CONNECTED ACCOUNTS (LIVE)
+${_cs}
 
-' +
-      '## ACTIVE GOALS: ' + _gs + '
+## ACTIVE GOALS: ${_gs}
 
-' +
-      '## TOOLS
-' +
-      '- searchWeb: real-time search
-' +
-      '- browseURL: read any webpage
-' +
-      '- readGmail: read Gmail inbox (only if Gmail CONNECTED above)
-' +
-      '- summarizeEmail: get full email body by ID
-' +
-      '- sendGmail: send email via Gmail (only if Gmail CONNECTED)
-' +
-      '- draftEmail: save email draft
-' +
-      '- scheduleSocialPost: post to social media
-' +
-      '- saveResearchReport: save research report
-' +
-      '- createGoal/createTask/updateGoalProgress: manage goals
-' +
-      '- analyzeData: calculations
-' +
-      '- generateOutline: plans and roadmaps
+## TOOLS
+- searchWeb: real-time search
+- browseURL: read any webpage
+- readGmail: read Gmail inbox (only if Gmail CONNECTED above)
+- summarizeEmail: get full email body by ID
+- sendGmail: send email via Gmail (only if Gmail CONNECTED)
+- draftEmail: save email draft
+- scheduleSocialPost: post to social media
+- saveResearchReport: save research report
+- createGoal/createTask/updateGoalProgress: manage goals
+- analyzeData: calculations
+- generateOutline: plans and roadmaps
 
-' +
-      '## RULES
-' +
-      '1. CHECK CONNECTED ACCOUNTS above - if Gmail shows CONNECTED, use readGmail immediately when asked about email. Never say you cannot access email if Gmail is connected.
-' +
-      '2. ALWAYS USE TOOLS for real actions. When user says read my email -> call readGmail. When user says send email -> call sendGmail.
-' +
-      '3. Be direct - no filler. Lead with action.
-' +
-      '4. After tool calls, clearly summarize results.
-' +
-      '5. If connector not connected, tell user exactly: go to Email section and click Connect.';
+## RULES
+1. CHECK CONNECTED ACCOUNTS above - if Gmail shows CONNECTED, use readGmail immediately when asked about email. Never say you cannot access email if Gmail is connected.
+2. ALWAYS USE TOOLS for real actions. When user says read my email -> call readGmail. When user says send email -> call sendGmail.
+3. Be direct - no filler. Lead with action.
+4. After tool calls, clearly summarize results.
+5. If connector not connected, tell user exactly: go to Email section and click Connect.`;
 
 
     // ── Build valid message history ──────────────────────────────────────────
@@ -337,15 +316,9 @@ export async function POST(req: Request) {
       const lastMsg = validHistory[validHistory.length - 1];
       if (lastMsg.role === 'user') {
         const fileCtx = (attachedFiles as any[])
-          .map((f: any) => '[File: ' + f.name + ']
-' + f.content)
-          .join('
----
-');
-        lastMsg.content = lastMsg.content + '
-
-## Attached Files:
-' + fileCtx;
+          .map((f: any) => `[File: ${f.name}]\n${f.content}`)
+          .join('\n---\n');
+        lastMsg.content = lastMsg.content + `\n\n## Attached Files:\n${fileCtx}`;
       }
     }
 

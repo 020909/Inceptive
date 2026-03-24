@@ -4,6 +4,7 @@ import React from "react";
 import { AuthProvider } from "@/lib/auth-context";
 import { SidebarProvider, useSidebar } from "@/lib/sidebar-context";
 import { ChatProvider } from "@/lib/chat-context";
+import { AgentProvider } from "@/lib/agent-context";
 import { Sidebar } from "@/components/layout/sidebar";
 
 function LayoutInner({ children }: { children: React.ReactNode }) {
@@ -25,9 +26,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <SidebarProvider>
       <AuthProvider>
-        <ChatProvider>
-          <LayoutInner>{children}</LayoutInner>
-        </ChatProvider>
+        <AgentProvider>
+          <ChatProvider>
+            <LayoutInner>{children}</LayoutInner>
+          </ChatProvider>
+        </AgentProvider>
       </AuthProvider>
     </SidebarProvider>
   );
