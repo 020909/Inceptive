@@ -107,11 +107,25 @@ export default function EmailPage() {
       const r = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-        body: JSON.stringify({ messages: [{ role: "user", content: "Summarize this email in 3 bullet points. From: " + selected.from + " Subject: " + selected.subject + " Body: " + emailBody }], stream: false }),
+        body: JSON.stringify({ 
+          messages: [{ 
+            role: "user", 
+            content: `Summarize this email in 3 bullet points:\n\nFrom: ${selected.from}\nSubject: ${selected.subject}\n\n${emailBody}` 
+          }], 
+          stream: false 
+        }),
       });
       const d = await r.json();
-      setSummary(d.choices?.[0]?.message?.content || "Could not summarize.");
-    } catch { setSummary("Summarization failed."); }
+      // Handle different response formats
+      setSummary(
+        d.choices?.[0]?.message?.content || 
+        d.content || 
+        "Could not summarize."
+      );
+    } catch (e: any) {
+      console.error("Summarization error:", e);
+      setSummary("Summarization failed: " + (e.message || "Unknown error"));
+    }
     finally { setSummarizing(false); }
   };
 

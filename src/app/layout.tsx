@@ -1,37 +1,26 @@
-import type { Metadata } from "next";
-import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "@/lib/theme-context";
-import { Analytics } from "@vercel/analytics/next";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { cn } from '@/lib/utils';
+import { MotionConfig } from 'framer-motion';
+
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
-  title: "Inceptive — Your 24/7 AI Employee",
-  description:
-    "Inceptive handles your emails, research, and social media overnight. Wake up to a full productivity report every morning.",
+  title: 'Inceptive AI - Your 24/7 AI Employee',
+  description: 'Autonomous AI Platform for Research, Email, Social Media, and more.',
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
-      <body className="antialiased font-sans">
-        <ThemeProvider>
+    <html lang="en" className={cn("dark h-full", inter.variable)}>
+      <body className="h-full bg-[#1A1A1A] text-white antialiased font-sans">
+        <MotionConfig transition={{ type: "spring", stiffness: 100, damping: 20 }}>
           {children}
-        </ThemeProvider>
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            style: {
-              background: "var(--background-elevated)",
-              border: "1px solid var(--border)",
-              color: "var(--foreground)",
-            },
-          }}
-        />
-        <Analytics />
+        </MotionConfig>
       </body>
     </html>
   );

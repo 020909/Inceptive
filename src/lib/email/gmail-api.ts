@@ -13,7 +13,7 @@ export async function getGmailClientForUser(userId: string) {
   const supabase = admin();
   const { data: row, error } = await supabase
     .from("connected_accounts")
-    .select("access_token, refresh_token, account_email")
+    .select("access_token, refresh_token, account_email, encrypted_tokens")
     .eq("user_id", userId)
     .eq("provider", "gmail")
     .maybeSingle();
@@ -22,10 +22,23 @@ export async function getGmailClientForUser(userId: string) {
 
   let access: string;
   let refresh: string | undefined;
+  let tokens: { access_token?: string; refresh_token?: string } | null = null;
+  
   try {
-    access = decryptToken(row.access_token);
-    refresh = row.refresh_token ? decryptToken(row.refresh_token) : undefined;
-  } catch {
+    // Try encrypted_tokens first (newer format)
+    if (row.encrypted_tokens) {
+      tokens = typeof row.encrypted_tokens === "string" 
+        ? JSON.parse(decryptToken(row.encrypted_tokens))
+        : row.encrypted_tokens;
+      access = decryptToken(tokens?.access_token || row.access_token);
+      refresh = tokens?.refresh_token ? decryptToken(tokens.refresh_token) : undefined;
+    } else {
+      // Fallback to old format
+      access = decryptToken(row.access_token);
+      refresh = row.refresh_token ? decryptToken(row.refresh_token) : undefined;
+    }
+  } catch (e) {
+    console.error("[getGmailClientForUser] Token decryption failed:", e);
     return null;
   }
 
@@ -43,10 +56,11 @@ export async function getGmailClientForUser(userId: string) {
   oauth2.on("tokens", async (tokens) => {
     if (tokens.access_token) {
       const { encryptToken } = await import("@/lib/token-crypto");
+      const newEncrypted = encryptToken(tokens.access_token);
       await supabase
         .from("connected_accounts")
         .update({
-          access_token: encryptToken(tokens.access_token),
+          access_token: newEncrypted,
           updated_at: new Date().toISOString(),
         })
         .eq("user_id", userId)
@@ -54,7 +68,11 @@ export async function getGmailClientForUser(userId: string) {
     }
   });
 
-  return { gmail: google.gmail({ version: "v1", auth: oauth2 }), accountEmail: row.account_email };
+  return { 
+    gmail: google.gmail({ version: "v1", auth: oauth2 }), 
+    accountEmail: row.account_email,
+    accessToken: access 
+  };
 }
 
 export async function listUnreadGmail(userId: string, maxResults = 10) {
@@ -75,11 +93,72 @@ export async function listUnreadGmail(userId: string, maxResults = 10) {
       const subject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || "";
       const from = headers.find((h) => h.name?.toLowerCase() === "from")?.value || "";
       const snippet = full.data.snippet || "";
-      return { id, subject, from, snippet };
+      const threadId = full.data.threadId || "";
+      return { id, subject, from, snippet, threadId };
     })
   );
 
   return { error: null, messages: details };
+}
+
+/**
+ * Get full email body content by ID
+ */
+export async function getGmailFullBody(userId: string, messageId: string): Promise<{ body: string; subject: string; from: string; threadId?: string } | null> {
+  const client = await getGmailClientForUser(userId);
+  if (!client) return null;
+
+  try {
+    const full = await client.gmail.users.messages.get({
+      userId: "me",
+      id: messageId,
+      format: "full",
+    });
+
+    const headers = full.data.payload?.headers || [];
+    const subject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || "";
+    const from = headers.find((h) => h.name?.toLowerCase() === "from")?.value || "";
+    const threadId = full.data.threadId || "";
+
+    // Extract body from payload
+    let body = "";
+    const payload = full.data.payload;
+    
+    if (payload?.body?.data) {
+      body = Buffer.from(payload.body.data, "base64").toString("utf-8");
+    } else if (payload?.parts && payload.parts.length > 0) {
+      // Multipart message - find HTML or plain text part
+      const htmlPart = payload.parts.find((p) => p.mimeType === "text/html");
+      const textPart = payload.parts.find((p) => p.mimeType === "text/plain");
+      const part = htmlPart || textPart;
+      
+      if (part?.body?.data) {
+        body = Buffer.from(part.body.data, "base64").toString("utf-8");
+      } else if (part?.parts && part.parts.length > 0) {
+        // Nested parts
+        const nestedPart = part.parts.find((p) => p.mimeType === "text/html" || p.mimeType === "text/plain");
+        if (nestedPart?.body?.data) {
+          body = Buffer.from(nestedPart.body.data, "base64").toString("utf-8");
+        }
+      }
+    }
+
+    // Clean up the body - remove excessive whitespace and encoded characters
+    body = body
+      .replace(/=\r\n/g, "") // Remove MIME line breaks
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .trim();
+
+    return { body, subject, from, threadId };
+  } catch (error) {
+    console.error("[getGmailFullBody] Error:", error);
+    return null;
+  }
 }
 
 export function buildGmailRaw(to: string, subject: string, body: string, from?: string) {

@@ -6,10 +6,13 @@ import { sanitizeOAuthRedirectPath } from "@/lib/safe-redirect";
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 
-// Gmail send + read, YouTube upload, user profile
+// Full Gmail access (read, send, compose, modify), YouTube, profile
 const SCOPES = [
+  "https://www.googleapis.com/auth/gmail.compose",
   "https://www.googleapis.com/auth/gmail.send",
   "https://www.googleapis.com/auth/gmail.readonly",
+  "https://www.googleapis.com/auth/gmail.modify",
+  "https://www.googleapis.com/auth/gmail.labels",
   "https://www.googleapis.com/auth/userinfo.email",
   "https://www.googleapis.com/auth/userinfo.profile",
   "https://www.googleapis.com/auth/youtube.upload",

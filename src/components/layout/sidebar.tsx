@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -10,16 +10,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Mail, Search, Share2, Target,
   FileBarChart, Settings, Menu, X, LogOut,
-  PanelLeftClose, PanelLeftOpen,
-  Plus, ChevronDown, Clock, MessageSquare, Zap,
+  PanelLeftClose, PanelLeftOpen, Zap,
 } from "lucide-react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase";
 
+// ═══════════════════════════════════════════════════════════
+// BILLION-DOLLAR SIDEBAR - Pure White on Warm Grey
+// ═══════════════════════════════════════════════════════════
+
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Agent", href: "/agent", icon: Zap },
-  { label: "Email Autopilot", href: "/email", icon: Mail },
+  { label: "Email", href: "/email", icon: Mail },
   { label: "Research", href: "/research", icon: Search },
   { label: "Connectors", href: "/social", icon: Share2 },
   { label: "Goals", href: "/goals", icon: Target },
@@ -31,6 +34,229 @@ const bottomItems = [
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
+// ─── Manus-Style Breathing Dot (AI Alive Indicator) ───────
+function AliveIndicator() {
+  return (
+    <motion.div
+      className="absolute top-2 right-2 w-2 h-2 rounded-full"
+      style={{ background: "#FFFFFF" }}
+      animate={{
+        opacity: [0.6, 1, 0.6],
+        scale: [1, 1.2, 1],
+        boxShadow: [
+          "0 0 8px rgba(255, 255, 255, 0.4)",
+          "0 0 16px rgba(255, 255, 255, 0.8)",
+          "0 0 8px rgba(255, 255, 255, 0.4)",
+        ],
+      }}
+      transition={{
+        duration: 2,
+        repeat: Infinity,
+        ease: "easeInOut",
+      }}
+    />
+  );
+}
+
+// ─── Power Meter (Energy Bar with Pulse) ───────────────────
+function PowerMeter() {
+  const [credits, setCredits] = useState<{ remaining: number; total: number } | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    const fetchCredits = async () => {
+      try {
+        const r = await fetch("/api/credits");
+        if (r.ok) {
+          const d = await r.json();
+          if (d?.credits) {
+            setCredits({ remaining: d.credits.remaining ?? 0, total: d.credits.total ?? 100 });
+          }
+        }
+      } catch {}
+    };
+    fetchCredits();
+    
+    // Poll for credit changes
+    const interval = setInterval(fetchCredits, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (credits?.remaining) {
+      setIsAnimating(true);
+      const timer = setTimeout(() => setIsAnimating(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [credits?.remaining]);
+
+  if (!credits) return null;
+
+  const pct = credits.total > 0 ? Math.round((credits.remaining / credits.total) * 100) : 0;
+
+  return (
+    <div className="w-full px-4 py-4">
+      {/* Credits Display */}
+      <div className="flex items-end justify-between mb-2">
+        <div>
+          <span className="text-[10px] font-medium uppercase tracking-widest" style={{ color: "rgba(255, 255, 255, 0.5)" }}>
+            Energy
+          </span>
+          <div className="text-lg font-semibold" style={{ color: "#FFFFFF" }}>
+            {credits.remaining.toLocaleString()}
+          </div>
+        </div>
+        <span className="text-xs" style={{ color: "rgba(255, 255, 255, 0.4)" }}>
+          {pct}%
+        </span>
+      </div>
+
+      {/* Energy Bar */}
+      <div className="relative h-0.5 w-full" style={{ background: "rgba(255, 255, 255, 0.1)" }}>
+        <motion.div
+          className="absolute left-0 top-0 h-full"
+          style={{ background: "#FFFFFF" }}
+          initial={{ width: 0 }}
+          animate={{ 
+            width: `${pct}%`,
+            boxShadow: isAnimating 
+              ? ["0 0 8px rgba(255, 255, 255, 0.4)", "0 0 16px rgba(255, 255, 255, 0.8)", "0 0 8px rgba(255, 255, 255, 0.4)"]
+              : "none"
+          }}
+          transition={{ 
+            width: { duration: 0.5, ease: "easeOut" },
+            boxShadow: { duration: 1.5, repeat: isAnimating ? Infinity : 0 }
+          }}
+        />
+      </div>
+
+      {/* Reset Info */}
+      <p className="text-[9px] mt-2" style={{ color: "rgba(255, 255, 255, 0.3)" }}>
+        resets daily
+      </p>
+    </div>
+  );
+}
+
+// ─── Navigation Item with Active Border ────────────────────
+function NavItem({ item, isActive, collapsed, onClick }: {
+  item: typeof navItems[0]; isActive: boolean; collapsed: boolean; onClick?: () => void;
+}) {
+  const Icon = item.icon;
+
+  return (
+    <Link href={item.href} onClick={onClick} title={collapsed ? item.label : undefined}>
+      <motion.div
+        className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer"
+        style={{
+          color: isActive ? "#FFFFFF" : "rgba(255, 255, 255, 0.6)",
+          background: isActive ? "rgba(255, 255, 255, 0.08)" : "transparent",
+        }}
+        whileHover={{
+          background: "rgba(255, 255, 255, 0.06)",
+          scale: collapsed ? 1 : 1.005,
+          x: collapsed ? 0 : 2,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 100,
+          damping: 20,
+        }}
+      >
+        {/* Active State - Left Border with Flow Animation */}
+        {isActive && (
+          <>
+            <motion.div
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6"
+              style={{ background: "#FFFFFF" }}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ 
+                opacity: 1, 
+                height: 24,
+                boxShadow: "0 0 12px rgba(255, 255, 255, 0.6)"
+              }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            />
+            {/* Breathing Dot Next to Icon */}
+            <motion.div
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full"
+              style={{ background: "#FFFFFF" }}
+              animate={{
+                opacity: [0.6, 1, 0.6],
+                scale: [1, 1.3, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+          </>
+        )}
+
+        {/* Icon */}
+        <Icon
+          className="shrink-0 transition-colors duration-200"
+          style={{
+            width: 18,
+            height: 18,
+            color: isActive ? "#FFFFFF" : "rgba(255, 255, 255, 0.6)",
+            strokeWidth: isActive ? 2.5 : 2,
+          }}
+        />
+
+        {/* Label */}
+        {!collapsed && (
+          <motion.span
+            className="whitespace-nowrap"
+            style={{ 
+              color: isActive ? "#FFFFFF" : "rgba(255, 255, 255, 0.6)",
+              fontWeight: isActive ? 500 : 400,
+              letterSpacing: "-0.02em",
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.05 }}
+          >
+            {item.label}
+          </motion.span>
+        )}
+      </motion.div>
+    </Link>
+  );
+}
+
+// ─── Upgrade Ghost Button ──────────────────────────────────
+function UpgradeButton() {
+  return (
+    <Link href="/upgrade">
+      <motion.div
+        className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer mb-2"
+        style={{
+          color: "#FFFFFF",
+          background: "transparent",
+          border: "0.5px solid rgba(255, 255, 255, 0.2)",
+        }}
+        whileHover={{
+          background: "rgba(255, 255, 255, 0.04)",
+          borderColor: "rgba(255, 255, 255, 0.3)",
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 100,
+          damping: 20,
+        }}
+      >
+        <span style={{ letterSpacing: "-0.02em" }}>Upgrade</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "rgba(255, 255, 255, 0.5)" }}>
+          <path d="M5 12h14M12 5l7 7-7 7" />
+        </svg>
+      </motion.div>
+    </Link>
+  );
+}
+
+// ─── User Profile Section ──────────────────────────────────
 function UserSection({ collapsed }: { collapsed: boolean }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -44,322 +270,209 @@ function UserSection({ collapsed }: { collapsed: boolean }) {
   };
 
   return (
-    <div className="px-2 pb-3 pt-2 border-t" style={{ borderColor: "var(--sidebar-border)" }}>
-      <div className={`flex items-center gap-2.5 px-2 py-2 rounded-lg group transition-colors duration-150 hover:bg-[var(--background-elevated)] ${collapsed ? "justify-center" : ""}`}>
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-[var(--foreground)]"
-          style={{ background: "rgba(255,255,255,0.15)" }}>
+    <div className="px-3 pb-3 pt-3" style={{ borderTop: "0.5px solid rgba(255, 255, 255, 0.08)" }}>
+      <div
+        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg group cursor-pointer transition-all duration-200 hover:bg-[rgba(255,255,255,0.04)] ${
+          collapsed ? "justify-center" : ""
+        }`}
+      >
+        {/* Avatar */}
+        <div
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+          style={{
+            background: "#FFFFFF",
+            color: "#1A1A1A",
+          }}
+        >
           {initials}
         </div>
+
         {!collapsed && (
-          <span className="text-xs truncate flex-1 min-w-0" style={{ color: "var(--foreground-secondary)" }}>{email}</span>
+          <>
+            <span className="text-xs truncate flex-1 min-w-0 font-medium" style={{ color: "rgba(255, 255, 255, 0.7)" }}>
+              {email.split("@")[0]}
+            </span>
+            <motion.button
+              onClick={handleLogout}
+              className="opacity-0 group-hover:opacity-100 transition-all duration-150 p-1.5 rounded-md hover:bg-[rgba(255,255,255,0.06)]"
+              title="Sign out"
+              style={{ color: "rgba(255, 255, 255, 0.4)" }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </motion.button>
+          </>
         )}
-        <button onClick={handleLogout}
-          className={`transition-all duration-150 p-1 rounded hover:bg-[#222222] text-[#555555] hover:text-white ${collapsed ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
-          title="Sign out">
-          <LogOut className="h-3.5 w-3.5" />
-        </button>
       </div>
     </div>
   );
 }
 
-function NavItem({ item, isActive, collapsed, onClick }: {
-  item: typeof navItems[0]; isActive: boolean; collapsed: boolean; onClick?: () => void;
-}) {
-  const Icon = item.icon;
-  return (
-    <Link href={item.href} onClick={onClick} title={collapsed ? item.label : undefined}
-      className="relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 group overflow-hidden"
-      style={{ color: isActive ? "var(--sidebar-foreground)" : "var(--foreground)", background: isActive ? "var(--background-overlay)" : "transparent", justifyContent: collapsed ? "center" : "flex-start" }}>
-      {isActive && (
-        <motion.div layoutId="sidebar-active-bar"
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-[var(--foreground)]"
-          transition={{ type: "spring", stiffness: 400, damping: 35 }} />
-      )}
-      <Icon className="shrink-0 transition-colors duration-150" style={{ width: 17, height: 17, color: "var(--foreground)" }} />
-      {!collapsed && (
-        <span className="transition-colors duration-150 whitespace-nowrap" style={{ color: "var(--foreground)" }}>{item.label}</span>
-      )}
-      {!isActive && (
-        <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150" style={{ background: "var(--background-elevated)", zIndex: -1 }} />
-      )}
-    </Link>
-  );
-}
-
-/* ── Recents dropdown ── */
-function RecentsItem({ collapsed, onMobileClose }: { collapsed: boolean; onMobileClose: () => void }) {
-  const [open, setOpen] = useState(false);
-  const router = useRouter();
-  const { recentChats, recentLoading, loadChat, refreshRecents } = useChat();
-
-  const handleOpen = async () => {
-    if (!open) await refreshRecents();
-    setOpen((v) => !v);
-  };
-
-  const handleLoadChat = (session: typeof recentChats[0]) => {
-    loadChat(session);
-    router.push("/dashboard");
-    setOpen(false);
-    onMobileClose();
-  };
-
-  if (collapsed) {
-    return (
-      <button
-        title="Recents"
-        onClick={handleOpen}
-        className="relative flex items-center justify-center w-full px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 group"
-        style={{ color: "var(--foreground)" }}
-      >
-        <Clock style={{ width: 17, height: 17, color: "var(--foreground)" }} />
-        <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150" style={{ background: "var(--background-elevated)", zIndex: -1 }} />
-      </button>
-    );
-  }
-
-  return (
-    <div>
-      <button
-        onClick={handleOpen}
-        className="relative flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 group overflow-hidden"
-        style={{ color: "var(--foreground)" }}
-      >
-        <Clock style={{ width: 17, height: 17, color: "var(--foreground)", flexShrink: 0 }} />
-        <span className="flex-1 text-left whitespace-nowrap" style={{ color: "var(--foreground)" }}>Recents</span>
-        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
-          <ChevronDown style={{ width: 14, height: 14, color: "var(--foreground-secondary)" }} />
-        </motion.div>
-        <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150" style={{ background: "var(--background-elevated)", zIndex: -1 }} />
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            key="recents-dropdown"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            style={{ overflow: "hidden" }}
-          >
-            <div className="ml-2 mt-0.5 space-y-0.5 pb-1">
-              {recentLoading ? (
-                <div className="px-2 py-2 space-y-1.5">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="h-6 rounded-md shimmer" />
-                  ))}
-                </div>
-              ) : recentChats.length === 0 ? (
-                <div className="px-3 py-2.5 rounded-lg" style={{ background: "var(--background-elevated)" }}>
-                  <p className="text-xs" style={{ color: "var(--foreground-secondary)" }}>No recent chats yet</p>
-                </div>
-              ) : (
-                recentChats.map((session) => (
-                  <button
-                    key={session.id}
-                    onClick={() => handleLoadChat(session)}
-                    className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left transition-all duration-150 group/item"
-                    style={{ color: "var(--foreground-secondary)" }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--background-elevated)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-                  >
-                    <MessageSquare style={{ width: 13, height: 13, flexShrink: 0, color: "var(--foreground-secondary)" }} />
-                    <span className="text-xs truncate flex-1" style={{ color: "var(--foreground)" }}>
-                      {session.title}
-                    </span>
-                  </button>
-                ))
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-/* ── New Task button ── */
-function NewTaskButton({ collapsed, onMobileClose }: { collapsed: boolean; onMobileClose: () => void }) {
-  const router = useRouter();
-  const { startNewChat } = useChat();
-  const [loading, setLoading] = useState(false);
-
-  const handleNewTask = async () => {
-    setLoading(true);
-    await startNewChat();
-    router.push("/dashboard");
-    onMobileClose();
-    setLoading(false);
-  };
-
-  if (collapsed) {
-    return (
-      <button
-        onClick={handleNewTask}
-        title="New Task"
-        disabled={loading}
-        className="flex items-center justify-center w-full px-2 py-2 rounded-lg transition-all duration-150 group"
-        style={{ background: "var(--foreground)", color: "var(--background)" }}
-      >
-        <Plus style={{ width: 16, height: 16 }} />
-      </button>
-    );
-  }
-
-  return (
-    <button
-      onClick={handleNewTask}
-      disabled={loading}
-      className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-150 hover:opacity-85"
-      style={{ background: "var(--foreground)", color: "var(--background)" }}
-    >
-      <Plus style={{ width: 15, height: 15, flexShrink: 0 }} />
-      <span>New Task</span>
-    </button>
-  );
-}
-
-/* ── Credits widget (shown in sidebar when expanded) ── */
-function CreditsWidget() {
-  const [info, setInfo] = useState<{ remaining: number; total: number; plan: string } | null>(null);
-
-  React.useEffect(() => {
-    fetch("/api/credits")
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d) setInfo({ remaining: d.credits?.remaining ?? 0, total: d.credits?.total ?? 100, plan: d.plan ?? "free" });
-      })
-      .catch(() => {});
-  }, []);
-
-  if (!info || info.plan === "basic") return null; // basic = BYOK, no credit tracking
-
-  const pct = info.total > 0 ? Math.round((info.remaining / info.total) * 100) : 0;
-  const color = pct > 50 ? "#FFFFFF" : pct > 20 ? "#FFFFFF" : "#FF453A";
-
-  return (
-    <Link href="/upgrade" className="block mx-0.5 mb-1 px-3 py-2.5 rounded-xl border group transition-colors duration-150"
-      style={{ background: "var(--background-elevated)", borderColor: "var(--border-subtle)" }}
-      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--border)"; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--border-subtle)"; }}
-    >
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] text-[var(--foreground-secondary)] font-medium uppercase tracking-wider">Credits</span>
-        <span className="text-[10px] font-semibold" style={{ color }}>{info.remaining.toLocaleString()}</span>
-      </div>
-      <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "var(--background-overlay)" }}>
-        <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: color }} />
-      </div>
-      <p className="text-[9px] text-[var(--foreground-tertiary)] mt-1.5">
-        {info.plan === "free" ? "Free · resets daily" : `${info.plan} plan`}
-        {" · "}
-        <span className="text-[var(--foreground-secondary)] group-hover:text-white transition-colors">Upgrade →</span>
-      </p>
-    </Link>
-  );
-}
-
+// ─── Main Sidebar Component ────────────────────────────────
 export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isAIServiceActive, setIsAIServiceActive] = useState(false);
+
+  // Simulate AI service activity (replace with real WebSocket/event later)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsAIServiceActive(Math.random() > 0.7);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const sidebarContent = (
-    <div className="flex h-full flex-col" style={{ background: "var(--sidebar)" }}>
-      {/* Logo + collapse toggle */}
-      <div className={`flex items-center ${collapsed ? "justify-center px-2 py-[18px]" : "justify-between px-3 py-4"}`}>
+    <div
+      className="flex h-full flex-col"
+      style={{
+        // Warm Grey Background with subtle gradient
+        background: "linear-gradient(180deg, #1C1C1C 0%, #1A1A1A 100%)",
+        borderRight: "0.5px solid rgba(255, 255, 255, 0.08)",
+      }}
+    >
+      {/* Logo + AI Alive Indicator + Collapse Toggle */}
+      <div className={`relative flex items-center ${collapsed ? "justify-center px-2 py-5" : "justify-between px-4 py-5"}`}>
         {collapsed ? (
-          <Link href="/dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden border border-white/10 shrink-0">
-            <Image src="/logo.png" alt="Inceptive" width={28} height={28} className="object-cover" />
+          <Link href="/dashboard" className="relative flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden shrink-0" style={{ background: "#FFFFFF" }}>
+            <Image src="/logo.png" alt="Inceptive" width={22} height={22} className="object-cover" />
+            {isAIServiceActive && <AliveIndicator />}
           </Link>
         ) : (
-          <Link href="/dashboard" className="flex items-center gap-2.5 px-1">
-            <div className="relative flex h-7 w-7 items-center justify-center rounded-lg overflow-hidden border border-white/10 shrink-0">
+          <Link href="/dashboard" className="relative flex items-center gap-3 px-1">
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden shrink-0" style={{ background: "#FFFFFF" }}>
               <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
+              {isAIServiceActive && <AliveIndicator />}
             </div>
-            <span className="text-sm font-semibold text-white tracking-tight">Inceptive</span>
+            <span className="text-sm font-semibold tracking-tight" style={{ color: "#FFFFFF", letterSpacing: "-0.02em" }}>
+              Inceptive
+            </span>
           </Link>
         )}
-        <button onClick={toggle}
-          className="hidden md:flex h-7 w-7 items-center justify-center rounded-lg text-[#555555] hover:text-white hover:bg-[#111111] transition-all duration-150"
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-          {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-        </button>
+
+        {/* Collapse Toggle */}
+        {!collapsed && (
+          <motion.button
+            onClick={toggle}
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200"
+            style={{ color: "rgba(255, 255, 255, 0.4)" }}
+            whileHover={{ background: "rgba(255, 255, 255, 0.06)", color: "#FFFFFF" }}
+            whileTap={{ scale: 0.95 }}
+            title={collapsed ? "Expand" : "Collapse"}
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </motion.button>
+        )}
       </div>
 
-      {/* New Task button — above Dashboard */}
-      <div className="px-4 mb-2">
-        <NewTaskButton collapsed={collapsed} onMobileClose={() => setMobileOpen(false)} />
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 px-2 py-1 space-y-0.5 overflow-y-auto">
-        {navItems.map((item, idx) => (
-          <React.Fragment key={item.href}>
-            <NavItem
-              item={item}
-              isActive={pathname === item.href}
-              collapsed={collapsed}
-              onClick={() => setMobileOpen(false)}
-            />
-            {/* Insert Recents after Reports (index 5) */}
-            {idx === 5 && (
-              <RecentsItem collapsed={collapsed} onMobileClose={() => setMobileOpen(false)} />
-            )}
-          </React.Fragment>
+      {/* Navigation Items */}
+      <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
+        {navItems.map((item) => (
+          <NavItem
+            key={item.href}
+            item={item}
+            isActive={pathname === item.href}
+            collapsed={collapsed}
+          />
         ))}
       </nav>
 
-      {/* Bottom: Upgrade + Settings */}
-      <div className="px-2 py-1 space-y-0.5 mb-1">
-        {!collapsed && <CreditsWidget />}
-        {bottomItems.map((item) => (
-          <NavItem key={item.href} item={item} isActive={pathname === item.href} collapsed={collapsed} onClick={() => setMobileOpen(false)} />
-        ))}
+      {/* Bottom Section: Power Meter + Upgrade + Settings */}
+      <div className="px-2 pb-2">
+        {!collapsed && <PowerMeter />}
+        {!collapsed && <UpgradeButton />}
+        <NavItem
+          item={bottomItems[1]}
+          isActive={pathname === bottomItems[1].href}
+          collapsed={collapsed}
+        />
       </div>
 
+      {/* User Profile */}
       <UserSection collapsed={collapsed} />
     </div>
   );
 
   return (
     <>
-      <button onClick={() => setMobileOpen(!mobileOpen)}
-        className="fixed top-4 left-4 z-50 md:hidden flex h-9 w-9 items-center justify-center rounded-lg border transition-colors duration-150"
-        style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }} aria-label="Toggle navigation">
+      {/* Mobile Toggle Button */}
+      <motion.button
+        onClick={() => setMobileOpen(!mobileOpen)}
+        className="fixed top-4 left-4 z-50 md:hidden flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200"
+        style={{
+          background: "rgba(255, 255, 255, 0.95)",
+          borderColor: "rgba(0, 0, 0, 0.1)",
+          backdropFilter: "blur(20px)",
+        }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        aria-label="Toggle navigation"
+      >
         <AnimatePresence mode="wait" initial={false}>
-          {mobileOpen
-            ? <motion.div key="x" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 90 }} transition={{ duration: 0.15 }}><X className="h-4 w-4 text-white" /></motion.div>
-            : <motion.div key="menu" initial={{ opacity: 0, rotate: 90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: -90 }} transition={{ duration: 0.15 }}><Menu className="h-4 w-4 text-white" /></motion.div>
-          }
+          {mobileOpen ? (
+            <motion.div
+              key="x"
+              initial={{ opacity: 0, rotate: -90 }}
+              animate={{ opacity: 1, rotate: 0 }}
+              exit={{ opacity: 0, rotate: 90 }}
+              transition={{ duration: 0.15 }}
+            >
+              <X className="h-5 w-5" style={{ color: "#1A1A1A" }} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="menu"
+              initial={{ opacity: 0, rotate: 90 }}
+              animate={{ opacity: 1, rotate: 0 }}
+              exit={{ opacity: 0, rotate: -90 }}
+              transition={{ duration: 0.15 }}
+            >
+              <Menu className="h-5 w-5" style={{ color: "#1A1A1A" }} />
+            </motion.div>
+          )}
         </AnimatePresence>
-      </button>
+      </motion.button>
 
+      {/* Mobile Overlay */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div key="overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
-            onClick={() => setMobileOpen(false)} />
+          <motion.div
+            key="overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-40 md:hidden"
+            style={{ background: "rgba(0, 0, 0, 0.7)", backdropFilter: "blur(8px)" }}
+            onClick={() => setMobileOpen(false)}
+          />
         )}
       </AnimatePresence>
 
+      {/* Mobile Sidebar */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.aside key="mobile-sidebar" initial={{ x: -260 }} animate={{ x: 0 }} exit={{ x: -260 }}
-            transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className="fixed inset-y-0 left-0 z-40 w-[240px] md:hidden">
+          <motion.aside
+            key="mobile-sidebar"
+            initial={{ x: -280, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -280, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 35 }}
+            className="fixed inset-y-0 left-0 z-40 w-[280px] md:hidden"
+          >
             {sidebarContent}
           </motion.aside>
         )}
       </AnimatePresence>
 
+      {/* Desktop Sidebar */}
       <motion.aside
-        className="hidden md:flex md:flex-col md:fixed md:inset-y-0 border-r z-30"
-        style={{ borderColor: "var(--sidebar-border)", overflow: "hidden" }}
-        animate={{ width: collapsed ? 64 : 240 }}
-        transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="hidden md:flex md:flex-col md:fixed md:inset-y-0 z-30"
+        style={{ overflow: "hidden" }}
+        animate={{ width: collapsed ? 80 : 260 }}
+        transition={{ duration: 0.4, type: "spring", stiffness: 100, damping: 20 }}
       >
         {sidebarContent}
       </motion.aside>
