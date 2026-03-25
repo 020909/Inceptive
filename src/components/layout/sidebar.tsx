@@ -38,19 +38,19 @@ const bottomItems = [
 function AliveIndicator() {
   return (
     <motion.div
-      className="absolute top-2 right-2 w-2 h-2 rounded-full"
+      className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
       style={{ background: "#FFFFFF" }}
       animate={{
-        opacity: [0.6, 1, 0.6],
-        scale: [1, 1.2, 1],
+        opacity: [0.4, 1, 0.4],
+        scale: [1, 1.15, 1],
         boxShadow: [
-          "0 0 8px rgba(255, 255, 255, 0.4)",
-          "0 0 16px rgba(255, 255, 255, 0.8)",
-          "0 0 8px rgba(255, 255, 255, 0.4)",
+          "0 0 4px rgba(255, 255, 255, 0.3)",
+          "0 0 12px rgba(255, 255, 255, 0.7)",
+          "0 0 4px rgba(255, 255, 255, 0.3)",
         ],
       }}
       transition={{
-        duration: 2,
+        duration: 3,
         repeat: Infinity,
         ease: "easeInOut",
       }}
@@ -77,15 +77,14 @@ function PowerMeter() {
     };
     fetchCredits();
     
-    // Poll for credit changes
-    const interval = setInterval(fetchCredits, 5000);
+    const interval = setInterval(fetchCredits, 10000);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     if (credits?.remaining) {
       setIsAnimating(true);
-      const timer = setTimeout(() => setIsAnimating(false), 2000);
+      const timer = setTimeout(() => setIsAnimating(false), 3000);
       return () => clearTimeout(timer);
     }
   }, [credits?.remaining]);
@@ -95,45 +94,50 @@ function PowerMeter() {
   const pct = credits.total > 0 ? Math.round((credits.remaining / credits.total) * 100) : 0;
 
   return (
-    <div className="w-full px-4 py-4">
-      {/* Credits Display */}
-      <div className="flex items-end justify-between mb-2">
-        <div>
-          <span className="text-[10px] font-medium uppercase tracking-widest" style={{ color: "rgba(255, 255, 255, 0.5)" }}>
-            Energy
+    <div className="w-full px-4 py-6">
+      <div className="flex items-end justify-between mb-2.5">
+        <div className="space-y-0.5">
+          <span className="text-[9px] font-medium uppercase tracking-[0.1em]" style={{ color: "rgba(255, 255, 255, 0.4)" }}>
+            System Energy
           </span>
-          <div className="text-lg font-semibold" style={{ color: "#FFFFFF" }}>
-            {credits.remaining.toLocaleString()}
+          <div className="text-sm font-semibold tracking-[-0.02em]" style={{ color: "#FFFFFF" }}>
+            {credits.remaining.toLocaleString()} <span className="text-[10px] font-normal opacity-40 ml-0.5">/ {credits.total.toLocaleString()}</span>
           </div>
         </div>
-        <span className="text-xs" style={{ color: "rgba(255, 255, 255, 0.4)" }}>
+        <span className="text-[10px] font-medium opacity-40" style={{ color: "#FFFFFF" }}>
           {pct}%
         </span>
       </div>
 
-      {/* Energy Bar */}
-      <div className="relative h-0.5 w-full" style={{ background: "rgba(255, 255, 255, 0.1)" }}>
+      <div className="relative h-[1px] w-full" style={{ background: "rgba(255, 255, 255, 0.08)" }}>
         <motion.div
           className="absolute left-0 top-0 h-full"
           style={{ background: "#FFFFFF" }}
           initial={{ width: 0 }}
           animate={{ 
             width: `${pct}%`,
-            boxShadow: isAnimating 
-              ? ["0 0 8px rgba(255, 255, 255, 0.4)", "0 0 16px rgba(255, 255, 255, 0.8)", "0 0 8px rgba(255, 255, 255, 0.4)"]
-              : "none"
           }}
-          transition={{ 
-            width: { duration: 0.5, ease: "easeOut" },
-            boxShadow: { duration: 1.5, repeat: isAnimating ? Infinity : 0 }
+          transition={{ duration: 0.8, ease: "circOut" }}
+        />
+        {/* Pulsing Glow Overlay */}
+        <motion.div
+          className="absolute left-0 top-0 h-full"
+          style={{ background: "#FFFFFF", width: `${pct}%` }}
+          animate={{
+            opacity: [0, 0.4, 0],
+            boxShadow: [
+              "0 0 0px rgba(255, 255, 255, 0)",
+              "0 0 8px rgba(255, 255, 255, 0.6)",
+              "0 0 0px rgba(255, 255, 255, 0)",
+            ],
+          }}
+          transition={{
+            duration: 2.5,
+            repeat: Infinity,
+            ease: "easeInOut",
           }}
         />
       </div>
-
-      {/* Reset Info */}
-      <p className="text-[9px] mt-2" style={{ color: "rgba(255, 255, 255, 0.3)" }}>
-        resets daily
-      </p>
     </div>
   );
 }
@@ -147,76 +151,57 @@ function NavItem({ item, isActive, collapsed, onClick }: {
   return (
     <Link href={item.href} onClick={onClick} title={collapsed ? item.label : undefined}>
       <motion.div
-        className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer"
+        className="relative flex items-center gap-3.5 px-3.5 py-2.5 rounded-lg text-sm cursor-pointer group"
         style={{
-          color: isActive ? "#FFFFFF" : "rgba(255, 255, 255, 0.6)",
-          background: isActive ? "rgba(255, 255, 255, 0.08)" : "transparent",
+          color: isActive ? "#FFFFFF" : "rgba(255, 255, 255, 0.5)",
+          background: isActive ? "rgba(255, 255, 255, 0.04)" : "transparent",
         }}
         whileHover={{
           background: "rgba(255, 255, 255, 0.06)",
-          scale: collapsed ? 1 : 1.005,
           x: collapsed ? 0 : 2,
         }}
         transition={{
           type: "spring",
           stiffness: 100,
-          damping: 20,
+          damping: 25,
         }}
       >
-        {/* Active State - Left Border with Flow Animation */}
+        {/* Active State - 0.5px Left Border */}
         {isActive && (
-          <>
-            <motion.div
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6"
-              style={{ background: "#FFFFFF" }}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ 
-                opacity: 1, 
-                height: 24,
-                boxShadow: "0 0 12px rgba(255, 255, 255, 0.6)"
-              }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-            />
-            {/* Breathing Dot Next to Icon */}
-            <motion.div
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full"
-              style={{ background: "#FFFFFF" }}
-              animate={{
-                opacity: [0.6, 1, 0.6],
-                scale: [1, 1.3, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-          </>
+          <motion.div
+            layoutId="nav-active-border"
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-[0.5px] h-5"
+            style={{ background: "#FFFFFF" }}
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: 1,
+              boxShadow: "0 0 8px rgba(255, 255, 255, 0.4)"
+            }}
+            transition={{ duration: 0.4 }}
+          />
         )}
 
         {/* Icon */}
         <Icon
-          className="shrink-0 transition-colors duration-200"
+          className="shrink-0 transition-all duration-300"
           style={{
-            width: 18,
-            height: 18,
-            color: isActive ? "#FFFFFF" : "rgba(255, 255, 255, 0.6)",
-            strokeWidth: isActive ? 2.5 : 2,
+            width: 17,
+            height: 17,
+            strokeWidth: isActive ? 1.5 : 1.2,
+            color: isActive ? "#FFFFFF" : "rgba(255, 255, 255, 0.5)",
           }}
         />
 
         {/* Label */}
         {!collapsed && (
           <motion.span
-            className="whitespace-nowrap"
+            className="whitespace-nowrap font-medium"
             style={{ 
-              color: isActive ? "#FFFFFF" : "rgba(255, 255, 255, 0.6)",
-              fontWeight: isActive ? 500 : 400,
               letterSpacing: "-0.02em",
             }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.05 }}
+            initial={{ opacity: 0, x: -4 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
           >
             {item.label}
           </motion.span>
@@ -231,26 +216,18 @@ function UpgradeButton() {
   return (
     <Link href="/upgrade">
       <motion.div
-        className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer mb-2"
+        className="mx-3 mt-2 flex items-center justify-center px-3 py-2 rounded-lg text-[11px] font-semibold cursor-pointer border border-white/10 hover:border-white/20 transition-all"
         style={{
           color: "#FFFFFF",
-          background: "transparent",
-          border: "0.5px solid rgba(255, 255, 255, 0.2)",
+          background: "rgba(255, 255, 255, 0.02)",
         }}
         whileHover={{
-          background: "rgba(255, 255, 255, 0.04)",
-          borderColor: "rgba(255, 255, 255, 0.3)",
+          background: "rgba(255, 255, 255, 0.05)",
+          y: -1,
         }}
-        transition={{
-          type: "spring",
-          stiffness: 100,
-          damping: 20,
-        }}
+        whileTap={{ scale: 0.98 }}
       >
-        <span style={{ letterSpacing: "-0.02em" }}>Upgrade</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "rgba(255, 255, 255, 0.5)" }}>
-          <path d="M5 12h14M12 5l7 7-7 7" />
-        </svg>
+        <span className="tracking-[0.05em] uppercase">Upgrade Plan</span>
       </motion.div>
     </Link>
   );
@@ -270,17 +247,16 @@ function UserSection({ collapsed }: { collapsed: boolean }) {
   };
 
   return (
-    <div className="px-3 pb-3 pt-3" style={{ borderTop: "0.5px solid rgba(255, 255, 255, 0.08)" }}>
+    <div className="px-3 pb-6 pt-4" style={{ borderTop: "0.5px solid rgba(255, 255, 255, 0.05)" }}>
       <div
-        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg group cursor-pointer transition-all duration-200 hover:bg-[rgba(255,255,255,0.04)] ${
+        className={`flex items-center gap-3 px-2 py-2 rounded-xl group cursor-pointer transition-all duration-300 hover:bg-[rgba(255,255,255,0.03)] ${
           collapsed ? "justify-center" : ""
         }`}
       >
-        {/* Avatar */}
         <div
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold"
           style={{
-            background: "#FFFFFF",
+            background: "linear-gradient(135deg, #FFFFFF 0%, #E0E0E0 100%)",
             color: "#1A1A1A",
           }}
         >
@@ -289,18 +265,18 @@ function UserSection({ collapsed }: { collapsed: boolean }) {
 
         {!collapsed && (
           <>
-            <span className="text-xs truncate flex-1 min-w-0 font-medium" style={{ color: "rgba(255, 255, 255, 0.7)" }}>
-              {email.split("@")[0]}
-            </span>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-[11px] font-semibold truncate" style={{ color: "#FFFFFF", letterSpacing: "-0.01em" }}>
+                {email.split("@")[0]}
+              </span>
+              <span className="text-[9px] opacity-40 uppercase tracking-widest font-medium">Free Tier</span>
+            </div>
             <motion.button
               onClick={handleLogout}
-              className="opacity-0 group-hover:opacity-100 transition-all duration-150 p-1.5 rounded-md hover:bg-[rgba(255,255,255,0.06)]"
-              title="Sign out"
-              style={{ color: "rgba(255, 255, 255, 0.4)" }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              className="opacity-0 group-hover:opacity-40 transition-all duration-200 p-1.5 hover:opacity-100"
+              style={{ color: "#FFFFFF" }}
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
             </motion.button>
           </>
         )}
@@ -314,61 +290,40 @@ export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isAIServiceActive, setIsAIServiceActive] = useState(false);
-
-  // Simulate AI service activity (replace with real WebSocket/event later)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsAIServiceActive(Math.random() > 0.7);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  const [isAIServiceActive, setIsAIServiceActive] = useState(true);
 
   const sidebarContent = (
     <div
-      className="flex h-full flex-col"
+      className="flex h-full flex-col relative overflow-hidden"
       style={{
-        // Warm Grey Background with subtle gradient
-        background: "linear-gradient(180deg, #1C1C1C 0%, #1A1A1A 100%)",
-        borderRight: "0.5px solid rgba(255, 255, 255, 0.08)",
+        background: "#1C1C1C",
       }}
     >
-      {/* Logo + AI Alive Indicator + Collapse Toggle */}
-      <div className={`relative flex items-center ${collapsed ? "justify-center px-2 py-5" : "justify-between px-4 py-5"}`}>
-        {collapsed ? (
-          <Link href="/dashboard" className="relative flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden shrink-0" style={{ background: "#FFFFFF" }}>
-            <Image src="/logo.png" alt="Inceptive" width={22} height={22} className="object-cover" />
-            {isAIServiceActive && <AliveIndicator />}
-          </Link>
-        ) : (
-          <Link href="/dashboard" className="relative flex items-center gap-3 px-1">
-            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden shrink-0" style={{ background: "#FFFFFF" }}>
-              <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
-              {isAIServiceActive && <AliveIndicator />}
-            </div>
-            <span className="text-sm font-semibold tracking-tight" style={{ color: "#FFFFFF", letterSpacing: "-0.02em" }}>
+      {/* Subtle Grain Overlay */}
+      <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
+
+      {/* Header: Logo + AI Alive Indicator */}
+      <div className={`relative flex items-center ${collapsed ? "justify-center py-8" : "justify-between px-6 py-8"}`}>
+        <Link href="/dashboard" className="relative group">
+          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden shrink-0 transition-transform duration-500 group-hover:scale-105" style={{ background: "#FFFFFF" }}>
+            <Image src="/logo.png" alt="Inceptive" fill className="object-cover p-1" />
+          </div>
+          {isAIServiceActive && <AliveIndicator />}
+        </Link>
+
+        {!collapsed && (
+          <motion.div className="flex items-center gap-2">
+            <span className="text-xs font-bold tracking-[-0.03em] uppercase" style={{ color: "#FFFFFF" }}>
               Inceptive
             </span>
-          </Link>
-        )}
-
-        {/* Collapse Toggle */}
-        {!collapsed && (
-          <motion.button
-            onClick={toggle}
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200"
-            style={{ color: "rgba(255, 255, 255, 0.4)" }}
-            whileHover={{ background: "rgba(255, 255, 255, 0.06)", color: "#FFFFFF" }}
-            whileTap={{ scale: 0.95 }}
-            title={collapsed ? "Expand" : "Collapse"}
-          >
-            <PanelLeftClose className="h-4 w-4" />
-          </motion.button>
+            <div className="h-1 w-1 rounded-full bg-white opacity-20" />
+            <span className="text-[9px] font-medium opacity-30 uppercase tracking-[0.1em]">v0.1</span>
+          </motion.div>
         )}
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 space-y-0.5">
         {navItems.map((item) => (
           <NavItem
             key={item.href}
@@ -379,18 +334,20 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Bottom Section: Power Meter + Upgrade + Settings */}
-      <div className="px-2 pb-2">
+      {/* Bottom Section */}
+      <div className="mt-auto">
         {!collapsed && <PowerMeter />}
         {!collapsed && <UpgradeButton />}
-        <NavItem
-          item={bottomItems[1]}
-          isActive={pathname === bottomItems[1].href}
-          collapsed={collapsed}
-        />
+        <div className="px-3 py-2 mt-2">
+          <NavItem
+            item={bottomItems[1]}
+            isActive={pathname === bottomItems[1].href}
+            collapsed={collapsed}
+          />
+        </div>
       </div>
 
-      {/* User Profile */}
+      {/* User Section */}
       <UserSection collapsed={collapsed} />
     </div>
   );
@@ -400,52 +357,32 @@ export function Sidebar() {
       {/* Mobile Toggle Button */}
       <motion.button
         onClick={() => setMobileOpen(!mobileOpen)}
-        className="fixed top-4 left-4 z-50 md:hidden flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200"
+        className="fixed top-4 left-4 z-50 md:hidden flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300"
         style={{
-          background: "rgba(255, 255, 255, 0.95)",
-          borderColor: "rgba(0, 0, 0, 0.1)",
+          background: "rgba(255, 255, 255, 0.05)",
           backdropFilter: "blur(20px)",
+          border: "0.5px solid rgba(255, 255, 255, 0.1)",
         }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        aria-label="Toggle navigation"
       >
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="wait">
           {mobileOpen ? (
-            <motion.div
-              key="x"
-              initial={{ opacity: 0, rotate: -90 }}
-              animate={{ opacity: 1, rotate: 0 }}
-              exit={{ opacity: 0, rotate: 90 }}
-              transition={{ duration: 0.15 }}
-            >
-              <X className="h-5 w-5" style={{ color: "#1A1A1A" }} />
-            </motion.div>
+            <X key="x" className="h-5 w-5 text-white" strokeWidth={1.5} />
           ) : (
-            <motion.div
-              key="menu"
-              initial={{ opacity: 0, rotate: 90 }}
-              animate={{ opacity: 1, rotate: 0 }}
-              exit={{ opacity: 0, rotate: -90 }}
-              transition={{ duration: 0.15 }}
-            >
-              <Menu className="h-5 w-5" style={{ color: "#1A1A1A" }} />
-            </motion.div>
+            <Menu key="menu" className="h-5 w-5 text-white" strokeWidth={1.5} />
           )}
         </AnimatePresence>
       </motion.button>
 
-      {/* Mobile Overlay */}
+      {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            key="overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 md:hidden"
-            style={{ background: "rgba(0, 0, 0, 0.7)", backdropFilter: "blur(8px)" }}
+            className="fixed inset-0 z-40 md:hidden bg-black/60 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
         )}
@@ -455,12 +392,11 @@ export function Sidebar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.aside
-            key="mobile-sidebar"
-            initial={{ x: -280, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -280, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 35 }}
-            className="fixed inset-y-0 left-0 z-40 w-[280px] md:hidden"
+            initial={{ x: -280 }}
+            animate={{ x: 0 }}
+            exit={{ x: -280 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed inset-y-0 left-0 z-50 w-[260px] md:hidden shadow-2xl"
           >
             {sidebarContent}
           </motion.aside>
@@ -470,9 +406,9 @@ export function Sidebar() {
       {/* Desktop Sidebar */}
       <motion.aside
         className="hidden md:flex md:flex-col md:fixed md:inset-y-0 z-30"
+        animate={{ width: collapsed ? 80 : 240 }}
+        transition={{ duration: 0.5, type: "spring", stiffness: 100, damping: 20 }}
         style={{ overflow: "hidden" }}
-        animate={{ width: collapsed ? 80 : 260 }}
-        transition={{ duration: 0.4, type: "spring", stiffness: 100, damping: 20 }}
       >
         {sidebarContent}
       </motion.aside>
