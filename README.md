@@ -39,3 +39,4 @@ Typed modules live under [`src/lib/connectors/`](./src/lib/connectors/) (browser
 ---
 
 Bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Inceptive-AI
