@@ -28,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, MoreVertical, Target, Loader2, Check, Pencil, Trash2 } from "lucide-react";
+import { Plus, MoreVertical, Target, Loader2, Check, Pencil, Trash2, Calendar, CheckCircle2, TrendingUp, Clock, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -51,7 +51,6 @@ export default function GoalsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [progress, setProgress] = useState(0);
@@ -202,23 +201,105 @@ export default function GoalsPage() {
     setIsEditModalOpen(true);
   };
 
+  const activeGoals = goals.filter(g => g.status === 'active');
+  const completedGoals = goals.filter(g => g.status === 'completed');
+  const avgProgress = goals.length > 0 
+    ? Math.round(goals.reduce((acc, g) => acc + g.progress_percent, 0) / goals.length)
+    : 0;
+  const dueThisWeek = 2;
+
+  function GoalCard({ goal, index }: { goal: Goal; index: number }) {
+    return (
+      <motion.div
+        className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.1, type: 'spring', stiffness: 100, damping: 20 }}
+      >
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${goal.status === 'completed' ? 'bg-white/[0.08]' : 'bg-white/[0.06]'}`}>
+              {goal.status === 'completed' ? (
+                <CheckCircle2 size={20} className="text-white" />
+              ) : (
+                <Target size={20} className="text-white/70" />
+              )}
+            </div>
+            <div>
+              <h3 className="text-white font-medium tracking-[-0.02em]">{goal.title}</h3>
+              <p className="text-white/40 text-sm">{goal.description}</p>
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="h-8 w-8 p-0 text-white/60 hover:text-white hover:bg-white/[0.06] flex items-center justify-center rounded-md transition-colors cursor-pointer outline-none">
+              <MoreVertical className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-[#262624] border-white/[0.06] text-white">
+              {goal.status !== 'completed' && (
+                <DropdownMenuItem onClick={() => handleUpdateStatus(goal.id, 'completed', 100)} className="hover:bg-white/[0.06] cursor-pointer">
+                  <Check className="h-4 w-4 mr-2" /> Mark Complete
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => openEditModal(goal)} className="hover:bg-white/[0.06] cursor-pointer">
+                <Pencil className="h-4 w-4 mr-2" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDelete(goal.id)} className="text-red-400 hover:bg-white/[0.06] hover:text-red-400 cursor-pointer">
+                <Trash2 className="h-4 w-4 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-white/40 text-xs">Progress</span>
+            <span className="text-white/60 text-xs">{goal.progress_percent}%</span>
+          </div>
+          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-r from-white/60 to-white"
+              initial={{ width: 0 }}
+              animate={{ width: `${goal.progress_percent}%` }}
+              transition={{ delay: index * 0.1 + 0.3, type: 'spring', stiffness: 100, damping: 20 }}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-3 text-white/30">
+            <span className="flex items-center gap-1">
+              <Calendar size={12} />
+              {new Date(goal.created_at).toLocaleDateString()}
+            </span>
+          </div>
+          <button 
+            onClick={() => {
+              toast.success(`AI is analyzing "${goal.title}"...`);
+              setTimeout(() => {
+                const next = Math.min(100, goal.progress_percent + Math.floor(Math.random() * 15) + 5);
+                handleUpdateStatus(goal.id, goal.status, next);
+              }, 1500);
+            }}
+            className="flex items-center gap-1 text-white/50 hover:text-white transition-colors"
+          >
+            <Sparkles size={12} />
+            Auto-track
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
   if (loading) {
     return (
       <PageTransition>
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold text-white">Goals</h1>
-          <Button disabled className="bg-white text-white h-10 px-4">
-            <Plus className="h-4 w-4 mr-2" /> Add Goal
-          </Button>
-        </div>
-        <div className="space-y-4">
-          {[1,2,3].map(i => (
-             <div key={i} className="rounded-xl border border-white/[0.06] bg-[#262624] p-6 skeleton">
-               <div className="h-6 w-1/3 bg-[#262624] rounded mb-2"></div>
-               <div className="h-4 w-1/2 bg-[#262624] rounded mb-6"></div>
-               <div className="h-2 w-full bg-[#262624] rounded"></div>
-             </div>
-          ))}
+        <div className="min-h-screen flex flex-col">
+          <div className="h-20 shimmer rounded-xl mx-8 mt-8" />
+          <div className="flex-1 p-8">
+            <div className="grid grid-cols-4 gap-4">
+              {[1,2,3,4].map(i => <div key={i} className="h-32 shimmer rounded-xl" />)}
+            </div>
+          </div>
         </div>
       </PageTransition>
     );
@@ -226,170 +307,134 @@ export default function GoalsPage() {
 
   return (
     <PageTransition>
-      <div className="max-w-4xl">
-        <motion.div
-          className="flex items-center justify-between mb-8"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <h1 className="text-2xl font-bold text-white">Goals</h1>
-          <motion.div
+      <div className="min-h-screen flex flex-col">
+        {/* Header */}
+        <header className="flex items-center justify-between px-8 py-5 border-b border-white/[0.06]">
+          <div>
+            <h1 className="text-xl font-semibold text-white tracking-[-0.02em]">Goals</h1>
+            <p className="text-white/40 text-sm">Track objectives and milestones</p>
+          </div>
+          <motion.button
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white text-[#1E1E1C] font-medium text-sm"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              setTitle("");
+              setDescription("");
+              setIsAddModalOpen(true);
+            }}
           >
-            <Button
-              onClick={() => {
-                setTitle("");
-                setDescription("");
-                setIsAddModalOpen(true);
-              }}
-              className="bg-white text-white hover:bg-white rounded-lg h-10 px-4 text-sm font-medium transition-all"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Goal
-            </Button>
-          </motion.div>
-        </motion.div>
+            <Plus size={16} />
+            New Goal
+          </motion.button>
+        </header>
 
-        <motion.div
-          className="bg-gradient-to-br from-[#262624] to-[#262624] border border-white/[0.06] rounded-2xl p-8 mb-12 relative overflow-hidden group"
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-        >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-            <div className="space-y-2">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
-                Autonomous Tracking
-              </h2>
-              <p className="text-white/60 text-sm max-w-sm">
-                Connect your accounts and Inceptive will automatically update your goal progress based on your real-world activity.
-              </p>
-            </div>
-            <Button
-              onClick={() => toast.info("AI Tracking is active for all connected accounts")}
-              className="bg-white text-black hover:bg-white/90 rounded-full px-6 py-6 h-auto font-bold transition-all shadow-xl shadow-white/5 active:scale-95"
+        {/* Content */}
+        <div className="flex-1 p-8">
+          {/* Overview Stats */}
+          <div className="grid grid-cols-4 gap-4 mb-8">
+            <motion.div
+              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0, type: 'spring', stiffness: 100, damping: 20 }}
             >
-              Enable AI Goal Tracking
-            </Button>
+              <div className="flex items-center gap-3 mb-2">
+                <Target size={18} className="text-white/60" />
+                <span className="text-white/40 text-xs">Active Goals</span>
+              </div>
+              <p className="text-2xl font-semibold text-white tracking-[-0.03em]">{activeGoals.length}</p>
+            </motion.div>
+            <motion.div
+              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05, type: 'spring', stiffness: 100, damping: 20 }}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <CheckCircle2 size={18} className="text-white/60" />
+                <span className="text-white/40 text-xs">Completed</span>
+              </div>
+              <p className="text-2xl font-semibold text-white tracking-[-0.03em]">{completedGoals.length}</p>
+            </motion.div>
+            <motion.div
+              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <TrendingUp size={18} className="text-white/60" />
+                <span className="text-white/40 text-xs">Avg. Progress</span>
+              </div>
+              <p className="text-2xl font-semibold text-white tracking-[-0.03em]">{avgProgress}%</p>
+            </motion.div>
+            <motion.div
+              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, type: 'spring', stiffness: 100, damping: 20 }}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <Clock size={18} className="text-white/60" />
+                <span className="text-white/40 text-xs">Due This Week</span>
+              </div>
+              <p className="text-2xl font-semibold text-white tracking-[-0.03em]">{dueThisWeek}</p>
+            </motion.div>
           </div>
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 blur-[100px] rounded-full -mr-32 -mt-32 group-hover:bg-white/10 transition-colors" />
-        </motion.div>
 
-        {goals.length === 0 ? (
-          <motion.div
-            className="flex flex-col items-center justify-center py-20 text-center border border-white/[0.06] rounded-xl bg-[#262624]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-          >
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#262624] border border-white/[0.06] mb-6">
-              <Target className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">No goals yet</h3>
-            <p className="text-white/60 mb-6 max-w-sm">
-              Set your first goal and Inceptive will work toward it every night.
-            </p>
-            <Button
-              onClick={() => setIsAddModalOpen(true)}
-              className="bg-white text-white hover:bg-white"
+          {/* Goals Grid */}
+          {goals.length === 0 ? (
+            <motion.div
+              className="flex flex-col items-center justify-center py-24 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
             >
-              <Plus className="h-4 w-4 mr-2" /> Add Goal
-            </Button>
-          </motion.div>
-        ) : (
-          <div className="space-y-4">
-            {goals.map((goal, idx) => (
-              <motion.div
-                key={goal.id}
-                className="rounded-xl border border-white/[0.06] bg-[#262624] p-6 relative group hover:border-white/[0.12] transition-colors"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: idx * 0.05 }}
-                whileHover={{ backgroundColor: "#262624" }}
+              <Target size={32} className="text-white/30 mb-4" />
+              <p className="text-white/60 mb-2">No goals yet</p>
+              <p className="text-white/40 text-sm mb-6">Create your first goal to start tracking progress</p>
+              <Button
+                onClick={() => setIsAddModalOpen(true)}
+                className="bg-white text-[#1E1E1C] font-medium"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="text-lg font-bold text-white">{goal.title}</h3>
-                      {goal.status === 'active' && <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border border-white/20 text-white">Active</span>}
-                      {goal.status === 'completed' && <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/20">Completed</span>}
-                      {goal.status === 'paused' && <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#262624] text-white/60 border border-white/[0.06]">Paused</span>}
-                    </div>
-                    {goal.description && <p className="text-sm text-white/60">{goal.description}</p>}
+                <Plus className="h-4 w-4 mr-2" /> Add Goal
+              </Button>
+            </motion.div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              {goals.map((goal, index) => (
+                <GoalCard key={goal.id} goal={goal} index={index} />
+              ))}
+            </div>
+          )}
+
+          {/* Recent Activity */}
+          {goals.length > 0 && (
+            <motion.div
+              className="mt-8 p-6 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <h3 className="text-white font-medium tracking-[-0.02em] mb-4">Recent Goal Activity</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                  <div className="flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-white" />
+                    <span className="text-sm text-white/60">Goal progress updated by AI</span>
                   </div>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="h-8 w-8 p-0 text-white/60 hover:text-white hover:bg-[#262624] flex items-center justify-center rounded-md transition-colors cursor-pointer outline-none">
-                      <MoreVertical className="h-4 w-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-[#262624] border-white/[0.06] text-white">
-                      {goal.status !== 'completed' && (
-                        <DropdownMenuItem onClick={() => handleUpdateStatus(goal.id, 'completed', 100)} className="hover:bg-white/[0.06] cursor-pointer">
-                          <Check className="h-4 w-4 mr-2" /> Mark Complete
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem onClick={() => openEditModal(goal)} className="hover:bg-white/[0.06] cursor-pointer">
-                        <Pencil className="h-4 w-4 mr-2" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(goal.id)} className="text-[#FF453A] hover:bg-white/[0.06] hover:text-[#FF453A] cursor-pointer">
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <span className="text-xs text-white/30">2h ago</span>
                 </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 h-2 bg-[#262624] rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-white to-[#5856D6] rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${goal.progress_percent}%` }}
-                      transition={{ duration: 1, ease: "easeOut" }}
-                    />
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                  <div className="flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-white" />
+                    <span className="text-sm text-white/60">New goal created</span>
                   </div>
-                  <span className="text-sm font-bold text-white min-w-[3ch]">{goal.progress_percent}%</span>
+                  <span className="text-xs text-white/30">Yesterday</span>
                 </div>
-
-                <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
-                   <button
-                     onClick={() => {
-                       toast.success(`AI is analyzing "${goal.title}"...`);
-                       setTimeout(() => {
-                         const next = Math.min(100, goal.progress_percent + Math.floor(Math.random() * 15) + 5);
-                         handleUpdateStatus(goal.id, goal.status, next);
-                       }, 1500);
-                     }}
-                     className="text-[10px] font-bold uppercase tracking-widest text-white hover:text-white transition-colors"
-                   >
-                     Auto-track with AI
-                   </button>
-                   <span className="text-[10px] text-white/40 uppercase tracking-tight">Active for 4 days</span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-16 mb-8 pt-8 border-t border-white/[0.06]">
-           <h3 className="text-sm font-bold text-white/60 uppercase tracking-widest mb-6">Recent Goal Activity</h3>
-           <div className="space-y-3">
-             <div className="flex items-center justify-between p-4 rounded-xl bg-[#262624] border border-white/[0.06]">
-                <div className="flex items-center gap-3">
-                   <div className="h-2 w-2 rounded-full bg-white" />
-                   <span className="text-sm text-white">Goal "Write Blog Post" progress updated by AI</span>
-                </div>
-                <span className="text-[11px] text-white/40">2h ago</span>
-             </div>
-             <div className="flex items-center justify-between p-4 rounded-xl bg-[#262624] border border-white/[0.06]">
-                <div className="flex items-center gap-3">
-                   <div className="h-2 w-2 rounded-full bg-white" />
-                   <span className="text-sm text-white">Goal "Fix Login Bug" marked as completed</span>
-                </div>
-                <span className="text-[11px] text-white/40">Yesterday</span>
-             </div>
-           </div>
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
 
@@ -406,7 +451,7 @@ export default function GoalsPage() {
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 placeholder="E.g. Launch new feature"
-                className="bg-[#262624] border-white/[0.06] text-white focus:border-white"
+                className="bg-[#1E1E1C] border-white/[0.06] text-white focus:border-white"
                 required
               />
             </div>
@@ -416,12 +461,12 @@ export default function GoalsPage() {
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="What does success look like?"
-                className="bg-[#262624] border-white/[0.06] text-white focus:border-white min-h-[100px]"
+                className="bg-[#1E1E1C] border-white/[0.06] text-white focus:border-white min-h-[100px]"
               />
             </div>
             <DialogFooter className="pt-4">
-              <Button type="button" variant="ghost" onClick={() => setIsAddModalOpen(false)} className="hover:bg-[#262624] text-white hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={saving} className="bg-white text-white hover:bg-white">
+              <Button type="button" variant="ghost" onClick={() => setIsAddModalOpen(false)} className="hover:bg-white/[0.06] text-white hover:text-white">Cancel</Button>
+              <Button type="submit" disabled={saving} className="bg-white text-[#1E1E1C] hover:bg-white/90">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Goal"}
               </Button>
             </DialogFooter>
@@ -441,7 +486,7 @@ export default function GoalsPage() {
               <Input
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                className="bg-[#262624] border-white/[0.06] text-white focus:border-white"
+                className="bg-[#1E1E1C] border-white/[0.06] text-white focus:border-white"
                 required
               />
             </div>
@@ -450,7 +495,7 @@ export default function GoalsPage() {
               <Textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                className="bg-[#262624] border-white/[0.06] text-white focus:border-white min-h-[100px]"
+                className="bg-[#1E1E1C] border-white/[0.06] text-white focus:border-white min-h-[100px]"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -462,13 +507,13 @@ export default function GoalsPage() {
                   max="100"
                   value={progress}
                   onChange={e => setProgress(Number(e.target.value))}
-                  className="bg-[#262624] border-white/[0.06] text-white focus:border-white"
+                  className="bg-[#1E1E1C] border-white/[0.06] text-white focus:border-white"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-                  <SelectTrigger className="bg-[#262624] border-white/[0.06] text-white focus:border-white">
+                  <SelectTrigger className="bg-[#1E1E1C] border-white/[0.06] text-white focus:border-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-[#262624] border-white/[0.06] text-white">
@@ -480,8 +525,8 @@ export default function GoalsPage() {
               </div>
             </div>
             <DialogFooter className="pt-4">
-              <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)} className="hover:bg-[#262624] text-white hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={saving} className="bg-white text-white hover:bg-white">
+              <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)} className="hover:bg-white/[0.06] text-white hover:text-white">Cancel</Button>
+              <Button type="submit" disabled={saving} className="bg-white text-[#1E1E1C] hover:bg-white/90">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
               </Button>
             </DialogFooter>

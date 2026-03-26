@@ -16,7 +16,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Share2, Plus, Loader2, Calendar, Check, Unlink, ExternalLink, Send, Bot } from "lucide-react";
+import { Share2, Plus, Loader2, Calendar, Check, Unlink, ExternalLink, Send, Bot, Plug, RefreshCw, Settings, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatTimeAgo } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,81 +33,94 @@ interface ConnectedAccount {
 }
 
 const SOCIAL_CONNECTORS = [
-  // Email Providers
-  { id: "gmail",     provider: "google",    name: "Gmail",       logo: "/logos/email/gmail.png",   users: "1.8B+",  telegramInput: false, type: "email" },
-  { id: "outlook",   provider: "outlook",   name: "Outlook",     logo: "/logos/email/outlook.png", users: "400M+",  telegramInput: false, type: "email" },
-  // Social Providers
-  { id: "x",         provider: "twitter",   name: "X (Twitter)", logo: "/logos/social/x.png",         users: "600M+",  telegramInput: false, type: "social" },
-  { id: "linkedin",  provider: "linkedin",  name: "LinkedIn",    logo: "/logos/social/linkedin.png",  users: "950M+",  telegramInput: false, type: "social" },
-  { id: "facebook",  provider: "facebook",  name: "Facebook",    logo: "/logos/social/facebook.png",  users: "3B+",    telegramInput: false, type: "social" },
-  { id: "instagram", provider: "instagram", name: "Instagram",   logo: "/logos/social/instagram.png", users: "2B+",    telegramInput: false, type: "social" },
-  { id: "telegram",  provider: "telegram",  name: "Telegram",    logo: "/logos/social/telegram.png",  users: "900M+",  telegramInput: true,  type: "social" },
-  { id: "tiktok",    provider: "tiktok",    name: "TikTok",      logo: "/logos/social/tiktok.png",    users: "1.5B+",  telegramInput: false, type: "social" },
-  { id: "youtube",   provider: "youtube",   name: "YouTube",     logo: "/logos/social/youtube.png",   users: "2.5B+",  telegramInput: false, type: "social" },
+  { id: "gmail",     provider: "google",    name: "Gmail",       logo: "/logos/email/gmail.png",   users: "1.8B+",  telegramInput: false, type: "email", description: "Send and receive emails" },
+  { id: "outlook",   provider: "outlook",   name: "Outlook",     logo: "/logos/email/outlook.png", users: "400M+",  telegramInput: false, type: "email", description: "Microsoft 365 email" },
+  { id: "x",         provider: "twitter",    name: "X (Twitter)", logo: "/logos/social/x.png",         users: "600M+",  telegramInput: false, type: "social", description: "Team messaging and notifications" },
+  { id: "linkedin",  provider: "linkedin",  name: "LinkedIn",    logo: "/logos/social/linkedin.png",  users: "950M+",  telegramInput: false, type: "social", description: "Professional networking" },
+  { id: "facebook", provider: "facebook",  name: "Facebook",    logo: "/logos/social/facebook.png",  users: "3B+",    telegramInput: false, type: "social", description: "Social media platform" },
+  { id: "instagram", provider: "instagram", name: "Instagram",   logo: "/logos/social/instagram.png", users: "2B+",    telegramInput: false, type: "social", description: "Photo and video sharing" },
+  { id: "telegram",  provider: "telegram",  name: "Telegram",    logo: "/logos/social/telegram.png",  users: "900M+",  telegramInput: true,  type: "social", description: "Messaging and channels" },
+  { id: "tiktok",    provider: "tiktok",    name: "TikTok",      logo: "/logos/social/tiktok.png",    users: "1.5B+",  telegramInput: false, type: "social", description: "Short-form video" },
+  { id: "youtube",   provider: "youtube",   name: "YouTube",     logo: "/logos/social/youtube.png",   users: "2.5B+",  telegramInput: false, type: "social", description: "Video hosting and streaming" },
 ];
 
-function ConnectorCard({ connector, connected, connectedAccount, session, onDisconnect, onTelegramConnect }: {
+function StatusBadge({ status }: { status: 'connected' | 'disconnected' | 'error' }) {
+  const configs = {
+    connected: { icon: Check, color: 'text-white', bg: 'bg-white/[0.08]', label: 'Connected' },
+    disconnected: { icon: Plug, color: 'text-white/40', bg: 'bg-white/[0.03]', label: 'Disconnected' },
+    error: { icon: AlertCircle, color: 'text-white/60', bg: 'bg-white/[0.05]', label: 'Error' },
+  };
+  const config = configs[status];
+  const Icon = config.icon;
+
+  return (
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${config.bg}`}>
+      <Icon size={12} className={config.color} />
+      <span className={`text-xs font-medium ${config.color}`}>{config.label}</span>
+    </div>
+  );
+}
+
+function ConnectorCard({ connector, index, connected, connectedAccount, onConnect, onDisconnect }: {
   connector: typeof SOCIAL_CONNECTORS[0];
+  index: number;
   connected: boolean;
   connectedAccount?: ConnectedAccount;
-  session: Session | null;
-  onDisconnect: (provider: string) => void;
-  onTelegramConnect: () => void;
+  onConnect: () => void;
+  onDisconnect: () => void;
 }) {
-  const handleConnect = () => {
-    if (!session?.access_token) { toast.error("Please sign in first"); return; }
-    if (connector.telegramInput) { onTelegramConnect(); return; }
-    
-    const base = connector.type === "email" ? `/api/auth/${connector.provider}/connect` : `/api/connectors/${connector.provider}/auth`;
-    const url = `${base}?token=${encodeURIComponent(session.access_token)}&redirect_to=/social`;
-    window.location.href = url;
-  };
-  
-  const displayName = connectedAccount?.account_name || connectedAccount?.metadata?.username;
-  
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
-    <motion.div whileHover={{ y: -2, boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }} transition={{ duration: 0.18 }}
-      className={`flex flex-col gap-3 p-4 rounded-2xl border transition-colors duration-150 bg-[#262624] ${connected ? "border-white/25" : "border-white/6"}`}>
-      
-      <div className="flex items-center gap-3">
-        <img src={connector.logo} alt={connector.name} width={28} height={28} className="object-contain shrink-0" />
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-white leading-tight">{connector.name}</div>
-          <div className="text-xs text-white/40 truncate">
-            {connected && displayName ? displayName : connector.users + " users"}
-          </div>
+    <motion.div
+      className="group p-5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05, type: 'spring', stiffness: 100, damping: 20 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center text-2xl">
+          <img src={connector.logo} alt={connector.name} width={28} height={28} className="object-contain" />
         </div>
+        <StatusBadge status={connected ? 'connected' : 'disconnected'} />
       </div>
-      
-      <div className="flex items-center justify-end gap-2 mt-1">
-        {connected ? (
-          <div className="flex items-center gap-1.5 shrink-0">
-            {connectedAccount?.decrypted === false ? (
-              <button onClick={handleConnect}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium animate-pulse transition-opacity hover:opacity-80 bg-white/10 text-white border border-white/20">
-                <ExternalLink className="w-3 h-3" />Reconnect
+
+      <h3 className="text-white font-medium tracking-[-0.02em] mb-1">{connector.name}</h3>
+      <p className="text-white/40 text-sm mb-4">{connector.description}</p>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-xs text-white/30">
+          <RefreshCw size={12} />
+          <span>{connected ? 'Synced recently' : 'Not connected'}</span>
+        </div>
+
+        <motion.div
+          className="flex items-center gap-1"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isHovered ? 1 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {connected ? (
+            <>
+              <button className="p-2 rounded-lg hover:bg-white/[0.08] transition-colors">
+                <RefreshCw size={14} className="text-white/50" />
               </button>
-            ) : (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-white/10 text-white border border-white/30">
-                <Check className="w-3 h-3" /><span>Connected</span>
-              </div>
-            )}
-            <button onClick={() => onDisconnect(connector.provider)}
-              className="px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 bg-white/10 text-white/60 border border-white/20">
-              Disconnect
+              <button className="p-2 rounded-lg hover:bg-white/[0.08] transition-colors">
+                <Settings size={14} className="text-white/50" />
+              </button>
+              <button onClick={onDisconnect} className="p-2 rounded-lg hover:bg-white/[0.08] transition-colors text-white/50 hover:text-red-400">
+                <Unlink size={14} />
+              </button>
+            </>
+          ) : (
+            <button onClick={onConnect} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.08] text-white text-xs font-medium hover:bg-white/[0.12] transition-colors">
+              <Plug size={12} />
+              Connect
             </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 w-full mt-2">
-            <button onClick={() => handleConnect()}
-              className="flex-1 items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold transition-opacity flex bg-white text-[#262624]"
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.85"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}>
-              {connector.telegramInput ? <Bot className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
-              Connect Account
-            </button>
-          </div>
-        )}
+          )}
+        </motion.div>
       </div>
     </motion.div>
   );
@@ -127,10 +140,10 @@ export default function SocialPage() {
   const [scheduleTime, setScheduleTime] = useState("");
   const [generateWithAi, setGenerateWithAi] = useState(false);
   const [topic, setTopic] = useState("");
-  // Telegram bot setup
   const [botToken, setBotToken] = useState("");
   const [chatId, setChatId] = useState("");
   const [connectingTelegram, setConnectingTelegram] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'email' | 'social'>('all');
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -167,7 +180,6 @@ export default function SocialPage() {
     init();
   }, [init]);
 
-  // Handle OAuth callback params (no useSearchParams — avoids Next.js Suspense requirement)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -187,6 +199,15 @@ export default function SocialPage() {
     }
     if (connected || error) window.history.replaceState({}, "", "/social");
   }, [init, refreshAuth]);
+
+  const handleConnect = (connector: typeof SOCIAL_CONNECTORS[0]) => {
+    if (!session?.access_token) { toast.error("Please sign in first"); return; }
+    if (connector.telegramInput) { setIsTelegramModalOpen(true); return; }
+    
+    const base = connector.type === "email" ? `/api/auth/${connector.provider}/connect` : `/api/connectors/${connector.provider}/auth`;
+    const url = `${base}?token=${encodeURIComponent(session.access_token)}&redirect_to=/social`;
+    window.location.href = url;
+  };
 
   const handleDisconnect = async (provider: string) => {
     if (!session?.access_token) return;
@@ -286,150 +307,193 @@ export default function SocialPage() {
     return prov ? connectedAccounts.some(a => a.provider === prov) : false;
   };
 
+  const filteredConnectors = selectedCategory === 'all' 
+    ? SOCIAL_CONNECTORS 
+    : SOCIAL_CONNECTORS.filter(c => c.type === selectedCategory);
+
+  const connectedCount = connectedAccounts.length;
+
   if (loading) return (
-    <PageTransition><div>
-      <div className="h-7 w-48 shimmer rounded-lg mb-2" />
-      <div className="h-4 w-64 shimmer rounded mb-8" />
-      <div className="h-[280px] rounded-2xl shimmer" />
-    </div></PageTransition>
+    <PageTransition>
+      <div className="min-h-screen flex flex-col">
+        <div className="h-20 shimmer rounded-xl mx-8 mt-8" />
+        <div className="flex-1 p-8">
+          <div className="grid grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => <div key={i} className="h-48 shimmer rounded-xl" />)}
+          </div>
+        </div>
+      </div>
+    </PageTransition>
   );
 
   return (
     <PageTransition>
-      <div className="max-w-[1200px] mx-auto">
+      <div className="min-h-screen flex flex-col">
         {/* Header */}
-        <motion.div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8"
-          initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+        <header className="flex items-center justify-between px-8 py-5 border-b border-white/[0.06]">
           <div>
-            <h1 className="text-2xl font-bold text-white mb-1">Connectors</h1>
-            <p className="text-sm text-white/60">Manage your social media and platform connections</p>
+            <h1 className="text-xl font-semibold text-white tracking-[-0.02em]">Connectors</h1>
+            <p className="text-white/40 text-sm">Manage integrations and data sources</p>
           </div>
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="self-start sm:self-auto">
-            <Button onClick={() => { setPlatform("X"); setContent(""); setTopic(""); setScheduleTime(""); setGenerateWithAi(false); setIsModalOpen(true); }}
-              className="rounded-lg h-10 px-4 text-sm font-medium border-0 bg-white text-[#262624]">
-              <Plus className="h-4 w-4 mr-2" />Create Post
-            </Button>
-          </motion.div>
-        </motion.div>
+          <motion.button
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white text-[#1E1E1C] font-medium text-sm"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => { setPlatform("X"); setContent(""); setTopic(""); setScheduleTime(""); setGenerateWithAi(false); setIsModalOpen(true); }}
+          >
+            <Plus size={16} />
+            Create Post
+          </motion.button>
+        </header>
 
-        {/* Connectors */}
-        <div className="space-y-8 mb-8">
-          {/* Email Connectors */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
-            className="rounded-2xl border p-5 bg-[#262624] border-white/6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-sm font-semibold text-white">Email & Messaging</h2>
-                <p className="text-xs text-white/60 mt-0.5">Link your primary communication channels</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {SOCIAL_CONNECTORS.filter(c => c.type === "email").map((c, i) => (
-                <ConnectorCard key={c.id} connector={c}
-                  connected={connectedAccounts.some(a => a.provider === c.provider)}
-                  connectedAccount={connectedAccounts.find(a => a.provider === c.provider)}
-                  session={session} onDisconnect={handleDisconnect}
-                  onTelegramConnect={() => setIsTelegramModalOpen(true)} />
-              ))}
-            </div>
-          </motion.div>
+        {/* Content */}
+        <div className="flex-1 p-8">
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <motion.div
+              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0, type: 'spring', stiffness: 100, damping: 20 }}
+            >
+              <p className="text-white/40 text-sm mb-1">Connected</p>
+              <p className="text-3xl font-semibold text-white tracking-[-0.03em]">{connectedCount}</p>
+            </motion.div>
+            <motion.div
+              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05, type: 'spring', stiffness: 100, damping: 20 }}
+            >
+              <p className="text-white/40 text-sm mb-1">Available</p>
+              <p className="text-3xl font-semibold text-white tracking-[-0.03em]">24</p>
+            </motion.div>
+            <motion.div
+              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}
+            >
+              <p className="text-white/40 text-sm mb-1">Sync Errors</p>
+              <p className="text-3xl font-semibold text-white/60 tracking-[-0.03em]">0</p>
+            </motion.div>
+          </div>
 
-          {/* Social Connectors */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}
-            className="rounded-2xl border p-5 bg-[#262624] border-white/6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-sm font-semibold text-white">Social Media Profiles</h2>
-                <p className="text-xs text-white/60 mt-0.5">Link accounts for AI content publishing</p>
+          {/* Category Filter */}
+          <div className="flex items-center gap-2 mb-6">
+            {(['all', 'email', 'social'] as const).map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`
+                  px-4 py-2 rounded-lg text-sm capitalize transition-all duration-200
+                  ${selectedCategory === category
+                    ? 'bg-white/[0.08] text-white'
+                    : 'text-white/50 hover:bg-white/[0.04] hover:text-white/80'
+                  }
+                `}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+
+          {/* Connectors Grid */}
+          <div className="grid grid-cols-4 gap-4">
+            {filteredConnectors.map((connector, index) => (
+              <ConnectorCard 
+                key={connector.id} 
+                connector={connector} 
+                index={index}
+                connected={connectedAccounts.some(a => a.provider === connector.provider)}
+                connectedAccount={connectedAccounts.find(a => a.provider === connector.provider)}
+                onConnect={() => handleConnect(connector)}
+                onDisconnect={() => handleDisconnect(connector.provider)}
+              />
+            ))}
+          </div>
+
+          {/* Posts Section */}
+          <div className="mt-8">
+            <h2 className="text-white font-medium tracking-[-0.02em] mb-4">Recent Posts</h2>
+            {posts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                <Share2 size={32} className="text-white/30 mb-4" />
+                <p className="text-white/60 mb-2">No posts yet</p>
+                <p className="text-white/40 text-sm">Connect your accounts and create a post to get started</p>
               </div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {SOCIAL_CONNECTORS.filter(c => c.type === "social").map((c, i) => (
-                <ConnectorCard key={c.id} connector={c}
-                  connected={connectedAccounts.some(a => a.provider === c.provider)}
-                  connectedAccount={connectedAccounts.find(a => a.provider === c.provider)}
-                  session={session} onDisconnect={handleDisconnect}
-                  onTelegramConnect={() => setIsTelegramModalOpen(true)} />
-              ))}
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {posts.slice(0, 4).map((post, idx) => (
+                  <motion.div
+                    key={post.id}
+                    className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] transition-all"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-white/[0.06] text-white/80">
+                        {post.platform}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <div className={`h-2 w-2 rounded-full ${getStatusColor(post.status)}`} />
+                        <span className="text-xs text-white/40 capitalize">{post.status}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-white/60 line-clamp-2 mb-3">{post.content}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/30">
+                        {post.scheduled_for ? new Date(post.scheduled_for).toLocaleDateString() : 'Not scheduled'}
+                      </span>
+                      {post.status !== "published" && (
+                        <button
+                          onClick={() => handlePublish(post.id)}
+                          disabled={publishing === post.id || !isPlatformConnected(post.platform)}
+                          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-white/[0.08] text-white hover:bg-white/[0.12] disabled:opacity-50"
+                        >
+                          {publishing === post.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Publish'}
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* API Access */}
+          <motion.div
+            className="mt-8 p-6 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, type: 'spring', stiffness: 100, damping: 20 }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white font-medium tracking-[-0.02em] mb-1">Developer API</h3>
+                <p className="text-white/40 text-sm">Build custom integrations with our API</p>
+              </div>
+              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/[0.06] text-white text-sm hover:bg-white/[0.08] transition-colors">
+                <ExternalLink size={14} />
+                View Documentation
+              </button>
             </div>
           </motion.div>
         </div>
-
-        {/* Posts list */}
-        {posts.length === 0 ? (
-          <motion.div className="flex flex-col items-center justify-center py-28 text-center border rounded-2xl bg-[#262624] border-white/6"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl mb-5 bg-white/[0.08] border border-white/18">
-              <Share2 className="h-6 w-6 text-white" />
-            </div>
-            <h3 className="text-base font-semibold text-white mb-1.5">No posts yet</h3>
-            <p className="text-sm text-white/60 mb-6 max-w-sm">Connect your accounts, then let AI draft and publish your social posts.</p>
-            <Button onClick={() => setIsModalOpen(true)} className="rounded-xl px-5 h-10 text-sm font-semibold border-0 bg-white text-[#262624]">
-              <Plus className="h-4 w-4 mr-2" />Create Post
-            </Button>
-          </motion.div>
-        ) : (
-          <motion.div className="grid gap-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-            <AnimatePresence>
-              {posts.map((post, idx) => (
-                <motion.div key={post.id}
-                  className="rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 transition-colors duration-150 bg-[#262624] border-white/6"
-                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: idx * 0.04 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#444444"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.06)"; }}>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="px-3 py-1 text-white text-xs font-semibold rounded-full tracking-wide bg-white/10 border border-white/12">
-                        {post.platform}
-                      </span>
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border bg-[#262624] border-white/6">
-                        <div className={`h-2 w-2 rounded-full ${getStatusColor(post.status)}`} />
-                        <span className="text-xs uppercase font-medium tracking-wide text-white/60">{post.status}</span>
-                      </div>
-                    </div>
-                    <p className="text-sm text-white leading-relaxed line-clamp-2">{post.content}</p>
-                  </div>
-                  <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0">
-                    {(post.scheduled_for || post.scheduled_at) && (
-                      <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-white/60 text-sm border bg-[#262624] border-white/6">
-                        <Calendar className="h-4 w-4" />
-                        {new Date(post.scheduled_for || post.scheduled_at!).toLocaleDateString()} at {new Date(post.scheduled_for || post.scheduled_at!).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </div>
-                    )}
-                    {post.status !== "published" && (
-                      <button
-                        onClick={() => handlePublish(post.id)}
-                        disabled={publishing === post.id}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity disabled:opacity-50 ${isPlatformConnected(post.platform) ? "bg-white text-[#262624]" : "bg-white/10 text-white"}`}
-                        title={isPlatformConnected(post.platform) ? `Publish to ${post.platform}` : "Connect account to publish"}>
-                        {publishing === post.id
-                          ? <Loader2 className="h-3 w-3 animate-spin" />
-                          : <Send className="h-3 w-3" />}
-                        {isPlatformConnected(post.platform) ? "Publish Now" : "Publish"}
-                      </button>
-                    )}
-                    {post.status === "published" && (
-                      <span className="text-xs text-white font-medium">{post.created_at ? formatTimeAgo(new Date(post.created_at)) : "Published"}</span>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
-        )}
       </div>
 
       {/* Create Post Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="border text-white sm:max-w-xl bg-[#262624] border-white/6">
+        <DialogContent className="border text-white sm:max-w-xl bg-[#262624] border-white/[0.06]">
           <DialogHeader><DialogTitle className="text-white">Create Social Post</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 pt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-white/60 text-xs uppercase tracking-wide">Platform</Label>
                 <Select value={platform} onValueChange={(v) => v && setPlatform(v)}>
-                  <SelectTrigger className="bg-[#262624] border border-white/6 text-white"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-[#262624] border border-white/6 text-white">
+                  <SelectTrigger className="bg-[#1E1E1C] border border-white/[0.06] text-white"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-[#262624] border border-white/[0.06] text-white">
                     {["X", "LinkedIn", "Instagram", "Facebook", "Telegram", "TikTok", "YouTube"].map(p => (
                       <SelectItem key={p} value={p}>{p}</SelectItem>
                     ))}
@@ -439,7 +503,7 @@ export default function SocialPage() {
               <div className="space-y-2">
                 <Label className="text-white/60 text-xs uppercase tracking-wide">Schedule Time</Label>
                 <Input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)}
-                  className="text-white focus-visible:ring-white/20 [color-scheme:dark] bg-[#262624] border border-white/6" />
+                  className="text-white focus-visible:ring-white/20 [color-scheme:dark] bg-[#1E1E1C] border border-white/[0.06]" />
               </div>
             </div>
             <div className="flex items-center gap-2 pt-1">
@@ -452,20 +516,20 @@ export default function SocialPage() {
                 <Label className="text-white/60 text-xs uppercase tracking-wide">Topic</Label>
                 <Input value={topic} onChange={e => setTopic(e.target.value)}
                   placeholder="What should the post be about?"
-                  className="text-white placeholder:text-white/30 focus-visible:ring-white/20 bg-[#262624] border border-white/6" required />
+                  className="text-white placeholder:text-white/30 focus-visible:ring-white/20 bg-[#1E1E1C] border border-white/[0.06]" required />
               </div>
             ) : (
               <div className="space-y-2">
                 <Label className="text-white/60 text-xs uppercase tracking-wide">Content</Label>
                 <Textarea value={content} onChange={e => setContent(e.target.value)}
                   placeholder="Write your post here..."
-                  className="text-white placeholder:text-white/30 focus-visible:ring-white/20 min-h-[120px] bg-[#262624] border border-white/6" required />
+                  className="text-white placeholder:text-white/30 focus-visible:ring-white/20 min-h-[120px] bg-[#1E1E1C] border border-white/[0.06]" required />
               </div>
             )}
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}
                 className="hover:bg-white/10 text-white hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={saving} className="border-0 bg-white text-[#262624]">
+              <Button type="submit" disabled={saving} className="border-0 bg-white text-[#1E1E1C]">
                 {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{generateWithAi ? "Generating…" : "Saving…"}</> : generateWithAi ? "Generate & Save" : "Schedule Post"}
               </Button>
             </DialogFooter>
@@ -475,7 +539,7 @@ export default function SocialPage() {
 
       {/* Telegram Bot Token Modal */}
       <Dialog open={isTelegramModalOpen} onOpenChange={setIsTelegramModalOpen}>
-        <DialogContent className="border text-white sm:max-w-md bg-[#262624] border-white/6">
+        <DialogContent className="border text-white sm:max-w-md bg-[#262624] border-white/[0.06]">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
               <img src="/logos/social/telegram.png" width={22} height={22} className="object-contain" alt="Telegram" />
@@ -483,7 +547,7 @@ export default function SocialPage() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleTelegramConnect} className="space-y-4 pt-4">
-            <div className="px-3 py-3 rounded-xl text-xs text-white/60 leading-relaxed bg-[#262624] border border-white/6">
+            <div className="px-3 py-3 rounded-xl text-xs text-white/60 leading-relaxed bg-[#1E1E1C] border border-white/[0.06]">
               1. Create a bot via <span className="text-white">@BotFather</span> on Telegram<br/>
               2. Copy the bot token and paste below<br/>
               3. Add your bot to a channel/group and paste the Chat ID
@@ -492,18 +556,18 @@ export default function SocialPage() {
               <Label className="text-white/60 text-xs uppercase tracking-wide">Bot Token</Label>
               <Input value={botToken} onChange={e => setBotToken(e.target.value)}
                 placeholder="1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ"
-                className="text-white placeholder:text-white/30 font-mono text-xs focus-visible:ring-white/20 bg-[#262624] border border-white/6" required />
+                className="text-white placeholder:text-white/30 font-mono text-xs focus-visible:ring-white/20 bg-[#1E1E1C] border border-white/[0.06]" required />
             </div>
             <div className="space-y-2">
               <Label className="text-white/60 text-xs uppercase tracking-wide">Chat ID (channel or group)</Label>
               <Input value={chatId} onChange={e => setChatId(e.target.value)}
                 placeholder="-1001234567890 or @channelname"
-                className="text-white placeholder:text-white/30 font-mono text-xs focus-visible:ring-white/20 bg-[#262624] border border-white/6" />
+                className="text-white placeholder:text-white/30 font-mono text-xs focus-visible:ring-white/20 bg-[#1E1E1C] border border-white/[0.06]" />
             </div>
             <DialogFooter className="pt-2">
               <Button type="button" variant="ghost" onClick={() => setIsTelegramModalOpen(false)}
                 className="hover:bg-white/10 text-white hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={connectingTelegram} className="border-0 bg-white text-[#262624]">
+              <Button type="submit" disabled={connectingTelegram} className="border-0 bg-white text-[#1E1E1C]">
                 {connectingTelegram ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Connecting…</> : "Connect Bot"}
               </Button>
             </DialogFooter>

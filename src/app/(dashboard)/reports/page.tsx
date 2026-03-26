@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
-import { Loader2, TrendingUp, BarChart3, Target } from "lucide-react";
+import { Loader2, TrendingUp, BarChart3, Target, FileText, Download, Share2, Zap, MoreHorizontal, Clock } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -30,6 +30,92 @@ interface WeeklyReport {
   goals_active: number;
   chart_data: any[];
   created_at: string;
+}
+
+interface Report {
+  id: string;
+  title: string;
+  description: string;
+  type: 'analytics' | 'performance' | 'financial' | 'custom';
+  createdAt: string;
+  fileSize: string;
+}
+
+const mockReports: Report[] = [
+  { id: '1', title: 'Weekly Performance Summary', description: 'Comprehensive analysis of AI agent performance and user engagement metrics.', type: 'performance', createdAt: '2 hours ago', fileSize: '2.4 MB' },
+  { id: '2', title: 'User Growth Analysis', description: 'Month-over-month user acquisition and retention trends with projections.', type: 'analytics', createdAt: '1 day ago', fileSize: '4.1 MB' },
+  { id: '3', title: 'Q4 Financial Overview', description: 'Revenue, expenses, and runway analysis for Q4 2024.', type: 'financial', createdAt: '3 days ago', fileSize: '1.8 MB' },
+  { id: '5', title: 'Competitor Benchmark Report', description: 'Detailed comparison against Claude Cowork, Perplexity, and Manus.', type: 'custom', createdAt: '1 week ago', fileSize: '5.2 MB' },
+];
+
+function TypeBadge({ type }: { type: Report['type'] }) {
+  const configs = {
+    analytics: { icon: BarChart3, color: 'text-white', bg: 'bg-white/[0.06]', label: 'Analytics' },
+    performance: { icon: Zap, color: 'text-white/80', bg: 'bg-white/[0.06]', label: 'Performance' },
+    financial: { icon: TrendingUp, color: 'text-white', bg: 'bg-white/[0.06]', label: 'Financial' },
+    custom: { icon: FileText, color: 'text-white/80', bg: 'bg-white/[0.06]', label: 'Custom' },
+  };
+  const config = configs[type];
+  const Icon = config.icon;
+
+  return (
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${config.bg}`}>
+      <Icon size={12} className={config.color} />
+      <span className={`text-xs font-medium ${config.color}`}>{config.label}</span>
+    </div>
+  );
+}
+
+function ReportCard({ report, index }: { report: Report; index: number }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <motion.div
+      className="group p-5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1, type: 'spring', stiffness: 100, damping: 20 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="w-10 h-10 rounded-lg bg-white/[0.06] flex items-center justify-center">
+          <FileText size={20} className="text-white/70" />
+        </div>
+        <TypeBadge type={report.type} />
+      </div>
+
+      <h3 className="text-white font-medium tracking-[-0.02em] mb-2">{report.title}</h3>
+      <p className="text-white/40 text-sm mb-4 line-clamp-2">{report.description}</p>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 text-xs text-white/30">
+          <span className="flex items-center gap-1">
+            <Clock size={12} />
+            {report.createdAt}
+          </span>
+          <span>{report.fileSize}</span>
+        </div>
+
+        <motion.div
+          className="flex items-center gap-1"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isHovered ? 1 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <button className="p-2 rounded-lg hover:bg-white/[0.08] transition-colors">
+            <Download size={14} className="text-white/50" />
+          </button>
+          <button className="p-2 rounded-lg hover:bg-white/[0.08] transition-colors">
+            <Share2 size={14} className="text-white/50" />
+          </button>
+          <button className="p-2 rounded-lg hover:bg-white/[0.08] transition-colors">
+            <MoreHorizontal size={14} className="text-white/50" />
+          </button>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
 }
 
 export default function ReportsPage() {
@@ -83,7 +169,7 @@ export default function ReportsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to generate");
-      toast.success("✅ Report generated!");
+      toast.success("Report generated!");
       if (data.report) setReports(prev => [data.report, ...prev]);
     } catch (err: any) {
       toast.error(err.message);
@@ -95,13 +181,14 @@ export default function ReportsPage() {
   if (loading) {
     return (
       <PageTransition>
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">Weekly Reports</h1>
-            <Button disabled className="bg-[#1A1A1A] text-white/60 h-10 px-4">
-                <TrendingUp className="h-4 w-4 mr-2" /> Generate Report
-              </Button>
+        <div className="min-h-screen flex flex-col">
+          <div className="h-20 shimmer rounded-xl mx-8 mt-8" />
+          <div className="flex-1 p-8">
+            <div className="grid grid-cols-4 gap-4">
+              {[1,2,3,4].map(i => <div key={i} className="h-32 shimmer rounded-xl" />)}
             </div>
-            <div className="rounded-xl border border-white/[0.06] bg-[#262624] p-10 skeleton h-[400px]" />
+          </div>
+        </div>
       </PageTransition>
     );
   }
@@ -110,77 +197,128 @@ export default function ReportsPage() {
 
   return (
     <PageTransition>
-      <div className="max-w-4xl mx-auto">
-        <motion.div
-          className="flex items-center justify-between mb-8"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
+      <div className="min-h-screen flex flex-col">
+        {/* Header */}
+        <header className="flex items-center justify-between px-8 py-5 border-b border-white/[0.06]">
           <div>
-            <h1 className="text-2xl font-bold text-white mb-2">Weekly Reports</h1>
-            <p className="text-sm text-white/60">Analytics and insights from your AI</p>
+            <h1 className="text-xl font-semibold text-white tracking-[-0.02em]">Reports</h1>
+            <p className="text-white/40 text-sm">AI-generated insights and analytics</p>
           </div>
-          {reports.length > 0 && (
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button
-                onClick={handleGenerateSample}
-                disabled={generating}
-                className="bg-[#1A1A1A] border border-white/[0.06] text-white hover:bg-[#222222] rounded-lg h-10 px-4 text-sm font-medium transition-all"
-              >
-                {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <TrendingUp className="h-4 w-4 mr-2" />}
-                Generate Latest
-              </Button>
-            </motion.div>
-          )}
-        </motion.div>
-
-        {reports.length === 0 ? (
-          <motion.div
-            className="flex flex-col items-center justify-center py-32 text-center border border-white/[0.06] rounded-xl bg-[#262624]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
+          <motion.button
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white text-[#1E1E1C] font-medium text-sm"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleGenerateSample}
+            disabled={generating}
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#262624] border border-white/[0.06] mb-6">
-              <BarChart3 className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">No reports generated</h3>
-            <p className="text-white/60 mb-6 max-w-sm">
-              Generate your first weekly report to see analytics based on your real platform data.
-            </p>
-            <Button
-              onClick={handleGenerateSample}
-              disabled={generating}
-              className="bg-white text-[#111111] hover:bg-[#FFFFFF]"
-            >
-              {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : "Generate Sample Report"}
-            </Button>
-          </motion.div>
-        ) : (
-          latestReport && (
+            {generating ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+            Generate Report
+          </motion.button>
+        </header>
+
+        {/* Content */}
+        <div className="flex-1 p-8">
+          {/* Quick Stats */}
+          <div className="grid grid-cols-4 gap-4 mb-8">
             <motion.div
-              className="space-y-6"
+              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0, type: 'spring', stiffness: 100, damping: 20 }}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center">
+                  <FileText size={16} className="text-white/60" />
+                </div>
+                <span className="text-white/40 text-xs">Total Reports</span>
+              </div>
+              <p className="text-2xl font-semibold text-white tracking-[-0.03em]">{reports.length + mockReports.length}</p>
+            </motion.div>
+            <motion.div
+              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05, type: 'spring', stiffness: 100, damping: 20 }}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center">
+                  <Zap size={16} className="text-white/60" />
+                </div>
+                <span className="text-white/40 text-xs">Generated This Week</span>
+              </div>
+              <p className="text-2xl font-semibold text-white tracking-[-0.03em]">5</p>
+            </motion.div>
+            <motion.div
+              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center">
+                  <Share2 size={16} className="text-white/60" />
+                </div>
+                <span className="text-white/40 text-xs">Shared</span>
+              </div>
+              <p className="text-2xl font-semibold text-white tracking-[-0.03em]">12</p>
+            </motion.div>
+            <motion.div
+              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, type: 'spring', stiffness: 100, damping: 20 }}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center">
+                  <BarChart3 size={16} className="text-white/60" />
+                </div>
+                <span className="text-white/40 text-xs">Storage Used</span>
+              </div>
+              <p className="text-2xl font-semibold text-white tracking-[-0.03em]">48 MB</p>
+            </motion.div>
+          </div>
+
+          {/* Report Templates */}
+          <div className="mb-6">
+            <h2 className="text-white font-medium tracking-[-0.02em] mb-4">Quick Generate</h2>
+            <div className="flex gap-3">
+              {['Weekly Summary', 'User Analytics', 'Performance', 'Competitor Analysis'].map((template, index) => (
+                <motion.button
+                  key={template}
+                  className="px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-white/70 text-sm hover:bg-white/[0.08] hover:border-white/[0.10] hover:text-white transition-all"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + index * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {template}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+
+          {/* Inceptive Weekly Report */}
+          {latestReport && (
+            <motion.div
+              className="space-y-6 mb-8"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4 }}
             >
               {/* Main Report Card */}
-              <div className="rounded-2xl border border-white/[0.06] bg-[#262624] overflow-hidden relative">
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
 
                 <div className="p-8 md:p-12 relative z-10">
                   <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
                     <div>
-                      <h2 className="text-[11px] font-bold text-white/60 uppercase tracking-[0.2em] mb-3">Inceptive Weekly Report</h2>
+                      <h2 className="text-[11px] font-bold text-white/40 uppercase tracking-[0.2em] mb-3">Inceptive Weekly Report</h2>
                       <p className="text-2xl md:text-3xl font-light text-white">{latestReport.date_range_str}</p>
                     </div>
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#FFFFFF]/20 bg-[#FFFFFF]/10 w-fit">
-                      <div className="h-2 w-2 rounded-full bg-[#FFFFFF] animate-pulse" />
-                      <span className="text-xs font-semibold tracking-wide text-[#FFFFFF] uppercase">All systems running</span>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.10] bg-white/[0.06] w-fit">
+                      <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                      <span className="text-xs font-semibold tracking-wide text-white uppercase">All systems running</span>
                     </div>
                   </div>
 
@@ -217,20 +355,20 @@ export default function ReportsPage() {
                   </div>
 
                   {topGoal && (
-                    <div className="bg-[#262624] border border-white/[0.06] rounded-xl p-6 mb-12">
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 mb-12">
                       <div className="flex items-center gap-3 mb-4">
-                        <Target className="h-5 w-5 text-white" />
-                        <h3 className="text-sm font-semibold text-white">Current Priority Focus</h3>
+                        <Target className="h-5 w-5 text-white/60" />
+                        <h3 className="text-sm font-medium text-white">Current Priority Focus</h3>
                       </div>
                       <p className="text-white mb-4 text-lg">{topGoal.title}</p>
                       <div className="flex items-center gap-4">
-                        <div className="flex-1 h-1.5 bg-[#222222] rounded-full overflow-hidden">
+                        <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-white rounded-full"
                             style={{ width: `${topGoal.progress_percent}%` }}
                           />
                         </div>
-                        <span className="text-xs font-bold text-white min-w-[3ch]">{topGoal.progress_percent}%</span>
+                        <span className="text-xs font-medium text-white min-w-[3ch]">{topGoal.progress_percent}%</span>
                       </div>
                     </div>
                   )}
@@ -244,30 +382,30 @@ export default function ReportsPage() {
 
               {/* Chart Section */}
               {latestReport.chart_data && latestReport.chart_data.length > 0 && (
-                <div className="rounded-2xl border border-white/[0.06] bg-[#262624] p-8">
-                  <h3 className="text-sm font-bold text-white mb-8">Tasks Completed (Past 8 Weeks)</h3>
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-8">
+                  <h3 className="text-white font-medium tracking-[-0.02em] mb-8">Tasks Completed (Past 8 Weeks)</h3>
                   <div className="h-[250px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={latestReport.chart_data}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#222222" vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
                         <XAxis
                           dataKey="week"
-                          stroke="#555555"
+                          stroke="rgba(255,255,255,0.4)"
                           fontSize={12}
                           tickLine={false}
                           axisLine={false}
                           dy={10}
                         />
                         <YAxis
-                          stroke="#555555"
+                          stroke="rgba(255,255,255,0.4)"
                           fontSize={12}
                           tickLine={false}
                           axisLine={false}
                           dx={-10}
                         />
                         <Tooltip
-                          cursor={{ fill: '#1A1A1A' }}
-                          contentStyle={{ backgroundColor: '#111111', border: '1px solid #222222', borderRadius: '8px', color: '#FFF' }}
+                          cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                          contentStyle={{ backgroundColor: '#262624', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#FFF' }}
                           itemStyle={{ color: '#FFF' }}
                         />
                         <Bar
@@ -282,8 +420,16 @@ export default function ReportsPage() {
                 </div>
               )}
             </motion.div>
-          )
-        )}
+          )}
+
+          {/* Recent Reports Grid */}
+          <h2 className="text-white font-medium tracking-[-0.02em] mb-4">Recent Reports</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {mockReports.map((report, index) => (
+              <ReportCard key={report.id} report={report} index={index} />
+            ))}
+          </div>
+        </div>
       </div>
     </PageTransition>
   );
