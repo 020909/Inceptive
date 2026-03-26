@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import {
   LayoutGrid,
   Bot,
@@ -14,6 +15,8 @@ import {
   FileText,
   Zap,
   Settings,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const navItems = [
@@ -48,7 +51,7 @@ function ActiveIndicator() {
   );
 }
 
-function NavItemComponent({ item, isActive }: { item: typeof navItems[0]; isActive: boolean }) {
+function NavItemComponent({ item, isActive, collapsed }: { item: typeof navItems[0]; isActive: boolean; collapsed: boolean }) {
   const Icon = item.icon;
 
   return (
@@ -84,17 +87,19 @@ function NavItemComponent({ item, isActive }: { item: typeof navItems[0]; isActi
         </motion.div>
 
         {/* Label */}
-        <span
-          className={`
-            text-sm text-white tracking-[-0.02em]
-            ${isActive ? "font-medium" : "font-normal"}
-          `}
-        >
-          {item.label}
-        </span>
+        {!collapsed && (
+          <span
+            className={`
+              text-sm text-white tracking-[-0.02em]
+              ${isActive ? "font-medium" : "font-normal"}
+            `}
+          >
+            {item.label}
+          </span>
+        )}
 
         {/* Active breathing dot */}
-        {isActive && (
+        {isActive && !collapsed && (
           <motion.div
             className="ml-auto"
             initial={{ opacity: 0, scale: 0 }}
@@ -110,8 +115,12 @@ function NavItemComponent({ item, isActive }: { item: typeof navItems[0]; isActi
 }
 
 // Power Meter - Credits section
-function PowerMeter({ credits = 100, maxCredits = 100 }: { credits?: number; maxCredits?: number }) {
+function PowerMeter({ credits = 100, maxCredits = 100, collapsed }: { credits?: number; maxCredits?: number; collapsed: boolean }) {
   const percentage = (credits / maxCredits) * 100;
+
+  if (collapsed) {
+    return null;
+  }
 
   return (
     <div className="mt-auto pt-6 px-3">
@@ -171,16 +180,19 @@ function PowerMeter({ credits = 100, maxCredits = 100 }: { credits?: number; max
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = React.useState(false);
 
   return (
     <motion.aside
-      className="
-        fixed left-0 top-0 h-full w-64
+      className={`
+        fixed left-0 top-0 h-full
         flex flex-col
         bg-[#262624]
         border-r border-white/[0.06]
         z-50
-      "
+        transition-all duration-300
+        ${collapsed ? 'w-16' : 'w-64'}
+      `}
       initial={{ x: -100, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 100, damping: 25 }}
@@ -197,39 +209,55 @@ export function Sidebar() {
       <div className="absolute inset-0 shadow-[inset_-1px_0_0_rgba(255,255,255,0.03)] pointer-events-none" />
 
       {/* Logo section */}
-      <div className="relative px-5 py-5 flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          {/* Inceptive Logo Icon */}
+      <div className="relative px-4 py-5 flex items-center gap-3">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          {/* Inceptive Logo Image */}
           <motion.div
-            className="w-7 h-7 rounded-lg bg-white flex items-center justify-center"
+            className="w-7 h-7 relative rounded-lg overflow-hidden bg-white"
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
           >
-            <span className="text-[#262624] font-bold text-sm tracking-[-0.03em]">I</span>
+            <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
           </motion.div>
-          <span className="text-white font-semibold text-base tracking-[-0.02em]">Inceptive</span>
-        </div>
+          {!collapsed && (
+            <span className="text-white font-semibold text-base tracking-[-0.02em]">Inceptive</span>
+          )}
+        </Link>
 
-        {/* Manus-style breathing indicator */}
-        <div className="ml-auto">
-          <ActiveIndicator />
-        </div>
+        {/* Collapse toggle button */}
+        <motion.button
+          onClick={() => setCollapsed(!collapsed)}
+          className="ml-auto p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {collapsed ? (
+            <ChevronRight size={16} className="text-white/50" />
+          ) : (
+            <ChevronLeft size={16} className="text-white/50" />
+          )}
+        </motion.button>
       </div>
 
       {/* Divider */}
       <div className="mx-5 h-px bg-white/[0.06] mb-4" />
 
       {/* Navigation */}
-      <nav className="relative flex-1 px-3 space-y-0.5">
+      <nav className="relative flex-1 px-3 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => (
-          <NavItemComponent key={item.href} item={item} isActive={pathname === item.href} />
+          <NavItemComponent 
+            key={item.href} 
+            item={item} 
+            isActive={pathname === item.href}
+            collapsed={collapsed}
+          />
         ))}
       </nav>
 
       {/* Power Meter */}
       <div className="relative px-3 pb-5">
         <div className="h-px bg-white/[0.06] mb-4" />
-        <PowerMeter credits={100} maxCredits={100} />
+        <PowerMeter credits={100} maxCredits={100} collapsed={collapsed} />
       </div>
 
       {/* Settings */}
@@ -245,8 +273,10 @@ export function Sidebar() {
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
           >
             <Settings size={18} strokeWidth={1.5} className="text-white" />
-            <span className="text-sm text-white tracking-[-0.02em]">Settings</span>
-            {pathname === "/settings" && (
+            {!collapsed && (
+              <span className="text-sm text-white tracking-[-0.02em]">Settings</span>
+            )}
+            {pathname === "/settings" && !collapsed && (
               <motion.div className="ml-auto" initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }}>
                 <ActiveIndicator />
               </motion.div>

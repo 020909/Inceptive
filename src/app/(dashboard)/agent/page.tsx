@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Code, Video, Megaphone, Target, Play, Pause, RotateCcw, Settings, MoreHorizontal, Clock, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
+import { Bot, Play, Pause, RotateCcw, Settings, MoreHorizontal, Clock, Plus } from 'lucide-react';
 
 interface AgentTask {
   id: string;
@@ -44,7 +43,7 @@ function TaskCard({ task, index }: { task: AgentTask; index: number }) {
 
   return (
     <motion.div
-      className="group relative p-5 rounded-xl bg-[#262624] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300"
+      className="group relative p-5 rounded-xl bg-[#262624] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 cursor-pointer"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1, type: 'spring', stiffness: 100, damping: 20 }}
@@ -109,11 +108,11 @@ function TaskCard({ task, index }: { task: AgentTask; index: number }) {
 
 export default function AgentPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="p-8">
       {/* Header */}
-      <header className="flex items-center justify-between px-8 py-5 border-b border-white/[0.06]">
+      <header className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-xl font-semibold text-white tracking-[-0.02em]">AI Agents</h1>
+          <h1 className="text-2xl font-semibold text-white tracking-[-0.02em]">AI Agents</h1>
           <p className="text-white/40 text-sm">Manage and monitor your autonomous agents</p>
         </div>
         <motion.button
@@ -127,35 +126,32 @@ export default function AgentPage() {
         </motion.button>
       </header>
 
-      {/* Content */}
-      <div className="flex-1 p-8">
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          {[
-            { label: 'Active Agents', value: '2', color: 'text-blue-400' },
-            { label: 'Tasks Completed', value: '1,234', color: 'text-white' },
-            { label: 'Success Rate', value: '98.5%', color: 'text-white' },
-            { label: 'Avg. Response', value: '1.2s', color: 'text-white/60' },
-          ].map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              className="p-5 rounded-xl bg-[#262624] border border-white/[0.06]"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05, type: 'spring', stiffness: 100, damping: 20 }}
-            >
-              <p className="text-white/40 text-sm mb-1">{stat.label}</p>
-              <p className={`text-2xl font-semibold ${stat.color} tracking-[-0.03em]`}>{stat.value}</p>
-            </motion.div>
-          ))}
-        </div>
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4 mb-8">
+        {[
+          { label: 'Active Agents', value: '2', color: 'text-blue-400' },
+          { label: 'Tasks Completed', value: '1,234', color: 'text-white' },
+          { label: 'Success Rate', value: '98.5%', color: 'text-white' },
+          { label: 'Avg. Response', value: '1.2s', color: 'text-white/60' },
+        ].map((stat, index) => (
+          <motion.div
+            key={stat.label}
+            className="p-5 rounded-xl bg-[#262624] border border-white/[0.06]"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05, type: 'spring', stiffness: 100, damping: 20 }}
+          >
+            <p className="text-white/40 text-sm mb-1">{stat.label}</p>
+            <p className={`text-2xl font-semibold ${stat.color} tracking-[-0.03em]`}>{stat.value}</p>
+          </motion.div>
+        ))}
+      </div>
 
-        {/* Task Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          {mockTasks.map((task, index) => (
-            <TaskCard key={task.id} task={task} index={index} />
-          ))}
-        </div>
+      {/* Task Grid */}
+      <div className="grid grid-cols-2 gap-4">
+        {mockTasks.map((task, index) => (
+          <TaskCard key={task.id} task={task} index={index} />
+        ))}
       </div>
     </div>
   );
