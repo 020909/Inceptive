@@ -1,9 +1,9 @@
 'use client';
 
-import React from "react";
+import React, { createContext, useContext } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import {
   LayoutGrid,
@@ -17,162 +17,120 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 
-const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
-  { label: "Agent", href: "/agent", icon: Bot },
-  { label: "Email", href: "/email", icon: Mail },
-  { label: "Research", href: "/research", icon: Search },
-  { label: "Connectors", href: "/social", icon: Plug },
-  { label: "Goals", href: "/goals", icon: Target },
-  { label: "Reports", href: "/reports", icon: FileText },
-];
+// ── Sidebar context so layout can react to collapse ──
+const SidebarContext = createContext({ collapsed: false, setCollapsed: (_: boolean) => {} });
+export function useSidebar() { return useContext(SidebarContext); }
 
-// Manus-style breathing dot indicator
-function ActiveIndicator() {
+export function SidebarProvider({ children }: { children: React.ReactNode }) {
+  const [collapsed, setCollapsed] = React.useState(false);
   return (
-    <div className="relative flex items-center justify-center w-2 h-2">
-      <motion.div
-        className="absolute w-full h-full rounded-full bg-white"
-        animate={{
-          scale: [1, 1.5, 1],
-          opacity: [0.5, 1, 0.5],
-        }}
-        transition={{
-          duration: 2,
-          ease: "easeInOut",
-          times: [0, 0.5, 1],
-          repeat: Infinity,
-        }}
-      />
-      <div className="relative w-1.5 h-1.5 rounded-full bg-white" />
-    </div>
+    <SidebarContext.Provider value={{ collapsed, setCollapsed }}>
+      {children}
+    </SidebarContext.Provider>
   );
 }
 
-function NavItemComponent({ item, isActive, collapsed }: { item: typeof navItems[0]; isActive: boolean; collapsed: boolean }) {
+const navItems = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
+  { label: "Agent",     href: "/agent",     icon: Bot },
+  { label: "Skills",    href: "/skills",    icon: Sparkles },
+  { label: "Email",     href: "/email",     icon: Mail },
+  { label: "Research",  href: "/research",  icon: Search },
+  { label: "Connectors",href: "/social",    icon: Plug },
+  { label: "Goals",     href: "/goals",     icon: Target },
+  { label: "Reports",   href: "/reports",   icon: FileText },
+];
+
+function BreathingDot() {
+  return (
+    <span className="relative flex h-1.5 w-1.5">
+      <motion.span
+        className="absolute inset-0 rounded-full bg-white"
+        animate={{ scale: [1, 1.6, 1], opacity: [0.4, 0.9, 0.4] }}
+        transition={{ duration: 2.4, ease: "easeInOut", repeat: Infinity }}
+      />
+      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+    </span>
+  );
+}
+
+function NavItem({ item, isActive, collapsed }: { item: typeof navItems[0]; isActive: boolean; collapsed: boolean }) {
   const Icon = item.icon;
 
   return (
-    <Link key={item.href} href={item.href}>
-      <motion.div
+    <Link href={item.href}>
+      <div
         className={`
-          relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
-          transition-colors duration-200 cursor-pointer
-          ${isActive ? "" : "hover:bg-white/[0.06]"}
+          group relative flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer
+          transition-colors duration-150
+          ${isActive ? "bg-white/[0.06]" : "hover:bg-white/[0.04]"}
         `}
-        whileHover={{ x: 2 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
       >
-        {/* Active indicator - left border */}
         {isActive && (
           <motion.div
-            layoutId="activeIndicator"
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-white rounded-full"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            layoutId="nav-active"
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-full bg-white"
+            transition={{ type: "spring", stiffness: 300, damping: 28 }}
           />
         )}
 
-        {/* Icon */}
-        <motion.div
-          animate={{
-            scale: isActive ? 1.05 : 1,
-          }}
-          transition={{ type: "spring", stiffness: 400, damping: 20 }}
-        >
-          <Icon size={18} strokeWidth={1.5} className="text-white" />
-        </motion.div>
+        <Icon
+          size={17}
+          strokeWidth={1.5}
+          className={`shrink-0 transition-colors duration-150 ${
+            isActive ? "text-[var(--fg-primary)]" : "text-[var(--fg-tertiary)] group-hover:text-[var(--fg-secondary)]"
+          }`}
+        />
 
-        {/* Label */}
         {!collapsed && (
           <span
-            className={`
-              text-sm text-white tracking-[-0.02em]
-              ${isActive ? "font-medium" : "font-normal"}
-            `}
+            className={`text-[13px] tracking-[-0.01em] transition-colors duration-150 ${
+              isActive ? "text-[var(--fg-primary)] font-medium" : "text-[var(--fg-secondary)] group-hover:text-[var(--fg-primary)]"
+            }`}
           >
             {item.label}
           </span>
         )}
 
-        {/* Active breathing dot */}
         {isActive && !collapsed && (
-          <motion.div
-            className="ml-auto"
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-          >
-            <ActiveIndicator />
-          </motion.div>
+          <span className="ml-auto">
+            <BreathingDot />
+          </span>
         )}
-      </motion.div>
+      </div>
     </Link>
   );
 }
 
-// Power Meter - Credits section
-function PowerMeter({ credits = 100, maxCredits = 100, collapsed }: { credits?: number; maxCredits?: number; collapsed: boolean }) {
-  const percentage = (credits / maxCredits) * 100;
-
-  if (collapsed) {
-    return null;
-  }
+function PowerMeter({ collapsed }: { collapsed: boolean }) {
+  if (collapsed) return null;
 
   return (
-    <div className="mt-auto pt-6 px-3">
-      <div className="flex items-center justify-between mb-2">
+    <div className="px-3 pb-1">
+      <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
-          <Zap size={12} strokeWidth={2} className="text-white" />
-          <span className="text-xs text-white font-medium tracking-[-0.02em]">{credits} Free</span>
+          <Zap size={11} strokeWidth={2} className="text-[var(--fg-secondary)]" />
+          <span className="text-[11px] text-[var(--fg-secondary)] font-medium">100 credits</span>
         </div>
-        <span className="text-[10px] text-white/50 tracking-[-0.01em]">resets daily</span>
+        <span className="text-[10px] text-[var(--fg-muted)]">resets daily</span>
       </div>
 
-      {/* Energy bar */}
-      <div className="relative h-1 bg-white/10 rounded-full overflow-hidden">
+      <div className="relative h-[3px] bg-white/[0.06] rounded-full overflow-hidden">
         <motion.div
-          className="absolute inset-y-0 left-0 bg-white rounded-full"
+          className="absolute inset-y-0 left-0 bg-white/80 rounded-full"
           initial={{ width: 0 }}
-          animate={{ width: `${percentage}%` }}
-          transition={{ type: "spring", stiffness: 100, damping: 20 }}
-        >
-          {/* Subtle pulse effect on the bar */}
-          <motion.div
-            className="absolute inset-0 bg-white/50 rounded-full"
-            animate={{
-              opacity: [0, 0.5, 0],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 2,
-              ease: "easeInOut",
-              repeat: Infinity,
-              repeatDelay: 1,
-            }}
-          />
-        </motion.div>
+          animate={{ width: "100%" }}
+          transition={{ type: "spring", stiffness: 80, damping: 20, delay: 0.5 }}
+        />
       </div>
 
-      {/* Upgrade button */}
-      <Link href="/upgrade">
-        <motion.button
-          className="
-            mt-3 w-full py-2 px-3 rounded-lg
-            border border-white/20
-            text-xs text-white font-medium tracking-[-0.02em]
-            transition-colors duration-200
-            hover:bg-white/[0.06] hover:border-white/30
-          "
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
-          transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        >
-          Upgrade →
-        </motion.button>
+      <Link href="/upgrade" className="block mt-2.5">
+        <div className="w-full py-1.5 rounded-lg border border-[var(--border-subtle)] text-center text-[11px] text-[var(--fg-secondary)] font-medium tracking-[-0.01em] transition-all duration-150 hover:bg-white/[0.04] hover:border-[var(--border-default)] hover:text-[var(--fg-primary)]">
+          Upgrade
+        </div>
       </Link>
     </div>
   );
@@ -180,109 +138,101 @@ function PowerMeter({ credits = 100, maxCredits = 100, collapsed }: { credits?: 
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = React.useState(false);
+  const { collapsed, setCollapsed } = useSidebar();
 
   return (
     <motion.aside
       className={`
-        fixed left-0 top-0 h-full
+        fixed left-0 top-0 h-full z-50
         flex flex-col
-        bg-[#262624]
-        border-r border-white/[0.06]
-        z-50
-        transition-all duration-300
-        ${collapsed ? 'w-16' : 'w-64'}
+        glass noise
+        border-r border-[var(--border-subtle)]
+        transition-[width] duration-200 ease-out
+        ${collapsed ? 'w-[60px]' : 'w-[240px]'}
       `}
-      initial={{ x: -100, opacity: 0 }}
+      style={{ background: "rgba(17, 17, 17, 0.75)" }}
+      initial={{ x: -40, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 100, damping: 25 }}
+      transition={{ type: "spring", stiffness: 140, damping: 22 }}
     >
-      {/* Subtle background texture */}
-      <div
-        className="absolute inset-0 opacity-[0.02] pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-        }}
-      />
-
-      {/* Ambient shadow overlay for depth */}
-      <div className="absolute inset-0 shadow-[inset_-1px_0_0_rgba(255,255,255,0.03)] pointer-events-none" />
-
-      {/* Logo section */}
-      <div className="relative px-4 py-5 flex items-center gap-3">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          {/* Inceptive Logo Image */}
-          <motion.div
-            className="w-7 h-7 relative rounded-lg overflow-hidden bg-white"
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 400, damping: 20 }}
-          >
+      {/* Logo */}
+      <div className="relative px-3 pt-4 pb-3 flex items-center gap-2.5">
+        <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0">
+          <div className="w-7 h-7 relative rounded-lg overflow-hidden bg-white shrink-0">
             <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
-          </motion.div>
+          </div>
           {!collapsed && (
-            <span className="text-white font-semibold text-base tracking-[-0.02em]">Inceptive</span>
+            <span className="text-[var(--fg-primary)] font-semibold text-[15px] tracking-[-0.03em]">
+              Inceptive
+            </span>
           )}
         </Link>
 
-        {/* Collapse toggle button */}
-        <motion.button
-          onClick={() => setCollapsed(!collapsed)}
-          className="ml-auto p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {collapsed ? (
-            <ChevronRight size={16} className="text-white/50" />
-          ) : (
-            <ChevronLeft size={16} className="text-white/50" />
-          )}
-        </motion.button>
+        {!collapsed && (
+          <button
+            onClick={() => setCollapsed(true)}
+            className="ml-auto p-1 rounded-md transition-colors hover:bg-white/[0.06]"
+          >
+            <ChevronLeft size={14} className="text-[var(--fg-muted)]" />
+          </button>
+        )}
+        {collapsed && (
+          <button
+            onClick={() => setCollapsed(false)}
+            className="absolute -right-3 top-5 p-1 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] transition-colors hover:bg-[var(--bg-overlay)]"
+          >
+            <ChevronRight size={10} className="text-[var(--fg-tertiary)]" />
+          </button>
+        )}
       </div>
 
-      {/* Divider */}
-      <div className="mx-5 h-px bg-white/[0.06] mb-4" />
+      <div className="mx-3 h-px bg-[var(--border-subtle)]" />
 
-      {/* Navigation */}
-      <nav className="relative flex-1 px-3 space-y-0.5 overflow-y-auto">
+      {/* Nav */}
+      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
         {navItems.map((item) => (
-          <NavItemComponent 
-            key={item.href} 
-            item={item} 
+          <NavItem
+            key={item.href}
+            item={item}
             isActive={pathname === item.href}
             collapsed={collapsed}
           />
         ))}
       </nav>
 
-      {/* Power Meter */}
-      <div className="relative px-3 pb-5">
-        <div className="h-px bg-white/[0.06] mb-4" />
-        <PowerMeter credits={100} maxCredits={100} collapsed={collapsed} />
-      </div>
+      {/* Bottom section */}
+      <div className="px-2 pb-2 space-y-1">
+        <div className="mx-1 h-px bg-[var(--border-subtle)] mb-2" />
 
-      {/* Settings */}
-      <div className="relative px-3 pb-5">
-        <Link href="/settings">
-          <motion.div
-            className={`
-              flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer
-              transition-colors duration-200
-              ${pathname === "/settings" ? "bg-white/[0.08]" : "hover:bg-white/[0.06]"}
-            `}
-            whileHover={{ x: 2 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          >
-            <Settings size={18} strokeWidth={1.5} className="text-white" />
-            {!collapsed && (
-              <span className="text-sm text-white tracking-[-0.02em]">Settings</span>
-            )}
-            {pathname === "/settings" && !collapsed && (
-              <motion.div className="ml-auto" initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }}>
-                <ActiveIndicator />
-              </motion.div>
-            )}
-          </motion.div>
-        </Link>
+        <PowerMeter collapsed={collapsed} />
+
+        {/* Settings */}
+        <div className="px-1">
+          <Link href="/settings">
+            <div
+              className={`
+                group flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer
+                transition-colors duration-150
+                ${pathname === "/settings" ? "bg-white/[0.06]" : "hover:bg-white/[0.04]"}
+              `}
+            >
+              <Settings
+                size={17}
+                strokeWidth={1.5}
+                className={`shrink-0 transition-colors ${
+                  pathname === "/settings" ? "text-[var(--fg-primary)]" : "text-[var(--fg-tertiary)] group-hover:text-[var(--fg-secondary)]"
+                }`}
+              />
+              {!collapsed && (
+                <span className={`text-[13px] tracking-[-0.01em] transition-colors ${
+                  pathname === "/settings" ? "text-[var(--fg-primary)] font-medium" : "text-[var(--fg-secondary)] group-hover:text-[var(--fg-primary)]"
+                }`}>
+                  Settings
+                </span>
+              )}
+            </div>
+          </Link>
+        </div>
       </div>
     </motion.aside>
   );

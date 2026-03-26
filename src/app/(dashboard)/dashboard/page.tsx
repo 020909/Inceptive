@@ -1,142 +1,144 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { OmniscientInputBar } from '@/components/omniscient-input-bar';
-import { Sparkles, ArrowRight, Zap, TrendingUp, Mail, FileText, Search, Bot } from 'lucide-react';
+import { ArrowRight, Mail, FileText, TrendingUp, Sparkles, Zap, Search, Bot } from 'lucide-react';
 
-const QuickAction = ({ icon: Icon, label, description }: { icon: any; label: string; description: string }) => (
-  <motion.button
-    whileHover={{ y: -2, x: 2 }}
-    whileTap={{ scale: 0.98 }}
-    className="group relative p-4 rounded-xl bg-[#262624] border border-white/[0.06] hover:border-white/[0.12] text-left w-full transition-all duration-200"
-  >
-    <div className="flex items-start gap-3">
-      <div className="p-2 rounded-lg bg-white/[0.06] text-white">
-        <Icon size={18} strokeWidth={1.5} />
-      </div>
-      <div className="flex-1">
-        <div className="text-white font-medium text-sm mb-0.5">{label}</div>
-        <div className="text-white/40 text-xs">{description}</div>
-      </div>
-      <ArrowRight size={16} className="text-white/20 group-hover:text-white/40 transition-colors mt-2" />
-    </div>
-  </motion.button>
-);
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
 
-const StatCard = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
-  <div className="p-4 rounded-xl bg-[#262624] border border-white/[0.06]">
-    <div className="flex items-center justify-between mb-2">
-      <Icon size={16} className="text-white/50" strokeWidth={1.5} />
-      <span className="text-xs text-white/30">{label}</span>
+function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+      <p className="text-[11px] text-[var(--fg-tertiary)] uppercase tracking-wider mb-2">{label}</p>
+      <p className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{value}</p>
+      {sub && <p className="text-[11px] text-[var(--fg-muted)] mt-1">{sub}</p>}
     </div>
-    <div className="text-2xl font-semibold text-white">{value}</div>
-  </div>
-);
+  );
+}
+
+function QuickAction({ icon: Icon, label, description, href }: {
+  icon: any; label: string; description: string; href: string;
+}) {
+  const router = useRouter();
+  return (
+    <motion.button
+      whileHover={{ y: -1 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={() => router.push(href)}
+      className="group relative p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] text-left w-full transition-all duration-200"
+    >
+      <div className="flex items-start gap-3">
+        <div className="p-2 rounded-lg bg-[var(--bg-elevated)] text-[var(--fg-secondary)]">
+          <Icon size={16} strokeWidth={1.5} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[var(--fg-primary)] font-medium text-sm mb-0.5">{label}</p>
+          <p className="text-[var(--fg-tertiary)] text-xs">{description}</p>
+        </div>
+        <ArrowRight size={14} className="text-[var(--fg-muted)] group-hover:text-[var(--fg-tertiary)] transition-colors mt-1 shrink-0" />
+      </div>
+    </motion.button>
+  );
+}
 
 export default function DashboardPage() {
+  const [credits, setCredits] = useState<{ credits: number; plan: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/credits").then(r => r.json()).then(setCredits).catch(() => {});
+  }, []);
+
+  const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
+  const fadeUp = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
+
   return (
-    <div className="min-h-screen p-8">
-      {/* Header */}
-      <motion.header 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-12"
+    <div className="min-h-screen flex flex-col">
+      {/* ── Header bar ── */}
+      <motion.header
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex items-center justify-between px-8 pt-6 pb-2"
       >
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <span className="text-white/50 text-sm">Welcome back,</span>
-            <span className="text-white font-semibold text-sm">Founder</span>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#262624] border border-white/[0.06]">
-            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-            <span className="text-white/70 text-xs font-medium">System Online</span>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[var(--fg-tertiary)] text-sm">{getGreeting()}</span>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--success)] opacity-75" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
+          </span>
+          <span className="text-[var(--fg-secondary)] text-[11px] font-medium">System Online</span>
         </div>
       </motion.header>
 
-      <div className="max-w-6xl mx-auto">
-        {/* Main Hero Section */}
+      {/* ── Hero ── */}
+      <div className="flex-1 flex flex-col items-center justify-center px-8 -mt-16">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.5 }}
-          className="mb-16 text-center"
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+          className="w-full max-w-2xl text-center"
         >
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#262624] border border-white/[0.08] mb-6">
-            <Sparkles size={14} className="text-white/80" />
-            <span className="text-white/70 text-xs font-medium">AI Agent Ready</span>
-          </div>
-
-          {/* Title */}
-          <h1 className="text-5xl font-semibold text-white mb-4 tracking-tight">
+          <motion.h1
+            variants={fadeUp}
+            className="text-[42px] font-semibold text-[var(--fg-primary)] tracking-[-0.04em] leading-[1.1] mb-3"
+          >
             What would you like<br />to accomplish?
-          </h1>
+          </motion.h1>
 
-          {/* Subtitle */}
-          <p className="text-white/50 text-lg mb-8 max-w-md mx-auto">
-            Research, write, code, and automate your workflows with AI.
-          </p>
+          <motion.p
+            variants={fadeUp}
+            className="text-[var(--fg-tertiary)] text-base mb-8 max-w-md mx-auto"
+          >
+            Research, write, code, and automate — Inceptive handles it.
+          </motion.p>
 
-          {/* Input */}
-          <div className="max-w-2xl mx-auto mb-6">
+          <motion.div variants={fadeUp} className="mb-4">
             <OmniscientInputBar />
-          </div>
+          </motion.div>
 
-          {/* Keyboard Hint */}
-          <div className="flex items-center justify-center gap-1.5 text-white/30 text-xs">
-            <span>Press</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-white/[0.05] text-white/40 text-[10px] border border-white/[0.08]">⌘K</kbd>
+          <motion.div variants={fadeUp} className="flex items-center justify-center gap-1.5 text-[var(--fg-muted)] text-[11px]">
+            <kbd className="px-1.5 py-0.5 rounded bg-[var(--bg-surface)] text-[var(--fg-tertiary)] text-[10px] border border-[var(--border-subtle)]">⌘K</kbd>
             <span>for quick actions</span>
-          </div>
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* ── Bottom section ── */}
+      <div className="px-8 pb-8 max-w-5xl mx-auto w-full">
+        {/* Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="grid grid-cols-3 gap-3 mb-6"
+        >
+          <StatCard label="Credits" value={credits ? String(credits.credits) : "—"} sub={credits?.plan ? `${credits.plan} plan` : undefined} />
+          <StatCard label="Status" value="Active" sub="All systems running" />
+          <StatCard label="Agents" value="Ready" sub="0 tasks queued" />
         </motion.div>
 
-        {/* Stats Grid */}
+        {/* Quick actions */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="grid grid-cols-3 gap-4 mb-8"
+          transition={{ delay: 0.4 }}
         >
-          <StatCard icon={Zap} label="Today" value="100" />
-          <StatCard icon={TrendingUp} label="This Week" value="487" />
-          <StatCard icon={FileText} label="Total Tasks" value="1,243" />
-        </motion.div>
-
-        {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Quick Actions</h2>
-            <span className="text-xs text-white/30">Popular this week</span>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-[var(--fg-secondary)]">Quick actions</h2>
           </div>
-
           <div className="grid grid-cols-2 gap-3">
-            <QuickAction 
-              icon={Mail}
-              label="Draft Email Campaign"
-              description="Generate personalized outreach emails"
-            />
-            <QuickAction 
-              icon={FileText}
-              label="Research Report"
-              description="Deep research with citations"
-            />
-            <QuickAction 
-              icon={TrendingUp}
-              label="Competitive Analysis"
-              description="Analyze competitors and market trends"
-            />
-            <QuickAction 
-              icon={Sparkles}
-              label="Content Creation"
-              description="Generate blog posts and articles"
-            />
+            <QuickAction icon={Mail} label="Email Autopilot" description="Manage inbox and draft replies" href="/email" />
+            <QuickAction icon={Search} label="Deep Research" description="Research with citations" href="/research" />
+            <QuickAction icon={Bot} label="Agent Tasks" description="Run autonomous workflows" href="/agent" />
+            <QuickAction icon={Sparkles} label="Skills Library" description="One-click AI workflows" href="/skills" />
           </div>
         </motion.div>
       </div>

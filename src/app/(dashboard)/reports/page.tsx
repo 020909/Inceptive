@@ -50,10 +50,10 @@ const mockReports: Report[] = [
 
 function TypeBadge({ type }: { type: Report['type'] }) {
   const configs = {
-    analytics: { icon: BarChart3, color: 'text-white', bg: 'bg-white/[0.06]', label: 'Analytics' },
-    performance: { icon: Zap, color: 'text-white/80', bg: 'bg-white/[0.06]', label: 'Performance' },
-    financial: { icon: TrendingUp, color: 'text-white', bg: 'bg-white/[0.06]', label: 'Financial' },
-    custom: { icon: FileText, color: 'text-white/80', bg: 'bg-white/[0.06]', label: 'Custom' },
+    analytics: { icon: BarChart3, color: 'text-white', bg: 'bg-[var(--bg-elevated)]', label: 'Analytics' },
+    performance: { icon: Zap, color: 'text-[var(--fg-primary)]', bg: 'bg-[var(--bg-elevated)]', label: 'Performance' },
+    financial: { icon: TrendingUp, color: 'text-white', bg: 'bg-[var(--bg-elevated)]', label: 'Financial' },
+    custom: { icon: FileText, color: 'text-[var(--fg-primary)]', bg: 'bg-[var(--bg-elevated)]', label: 'Custom' },
   };
   const config = configs[type];
   const Icon = config.icon;
@@ -71,7 +71,7 @@ function ReportCard({ report, index }: { report: Report; index: number }) {
 
   return (
     <motion.div
-      className="group p-5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300"
+      className="group p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-all duration-300"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1, type: 'spring', stiffness: 100, damping: 20 }}
@@ -79,17 +79,17 @@ function ReportCard({ report, index }: { report: Report; index: number }) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="flex items-start justify-between mb-4">
-        <div className="w-10 h-10 rounded-lg bg-white/[0.06] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center">
           <FileText size={20} className="text-white/70" />
         </div>
         <TypeBadge type={report.type} />
       </div>
 
       <h3 className="text-white font-medium tracking-[-0.02em] mb-2">{report.title}</h3>
-      <p className="text-white/40 text-sm mb-4 line-clamp-2">{report.description}</p>
+      <p className="text-[var(--fg-muted)] text-sm mb-4 line-clamp-2">{report.description}</p>
 
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 text-xs text-white/30">
+        <div className="flex items-center gap-3 text-xs text-[var(--fg-muted)]">
           <span className="flex items-center gap-1">
             <Clock size={12} />
             {report.createdAt}
@@ -103,14 +103,14 @@ function ReportCard({ report, index }: { report: Report; index: number }) {
           animate={{ opacity: isHovered ? 1 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <button className="p-2 rounded-lg hover:bg-white/[0.08] transition-colors">
-            <Download size={14} className="text-white/50" />
+          <button className="p-2 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors">
+            <Download size={14} className="text-[var(--fg-tertiary)]" />
           </button>
-          <button className="p-2 rounded-lg hover:bg-white/[0.08] transition-colors">
-            <Share2 size={14} className="text-white/50" />
+          <button className="p-2 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors">
+            <Share2 size={14} className="text-[var(--fg-tertiary)]" />
           </button>
-          <button className="p-2 rounded-lg hover:bg-white/[0.08] transition-colors">
-            <MoreHorizontal size={14} className="text-white/50" />
+          <button className="p-2 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors">
+            <MoreHorizontal size={14} className="text-[var(--fg-tertiary)]" />
           </button>
         </motion.div>
       </div>
@@ -199,13 +199,13 @@ export default function ReportsPage() {
     <PageTransition>
       <div className="min-h-screen flex flex-col">
         {/* Header */}
-        <header className="flex items-center justify-between px-8 py-5 border-b border-white/[0.06]">
+        <header className="flex items-center justify-between px-8 py-5 border-b border-[var(--border-subtle)]">
           <div>
             <h1 className="text-xl font-semibold text-white tracking-[-0.02em]">Reports</h1>
-            <p className="text-white/40 text-sm">AI-generated insights and analytics</p>
+            <p className="text-[var(--fg-muted)] text-sm">AI-generated insights and analytics</p>
           </div>
           <motion.button
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white text-[#1E1E1C] font-medium text-sm"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white text-[var(--bg-base)] font-medium text-sm"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleGenerateSample}
@@ -221,58 +221,58 @@ export default function ReportsPage() {
           {/* Quick Stats */}
           <div className="grid grid-cols-4 gap-4 mb-8">
             <motion.div
-              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0, type: 'spring', stiffness: 100, damping: 20 }}
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center">
-                  <FileText size={16} className="text-white/60" />
+                <div className="w-8 h-8 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center">
+                  <FileText size={16} className="text-[var(--fg-secondary)]" />
                 </div>
-                <span className="text-white/40 text-xs">Total Reports</span>
+                <span className="text-[var(--fg-muted)] text-xs">Total Reports</span>
               </div>
               <p className="text-2xl font-semibold text-white tracking-[-0.03em]">{reports.length + mockReports.length}</p>
             </motion.div>
             <motion.div
-              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05, type: 'spring', stiffness: 100, damping: 20 }}
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center">
-                  <Zap size={16} className="text-white/60" />
+                <div className="w-8 h-8 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center">
+                  <Zap size={16} className="text-[var(--fg-secondary)]" />
                 </div>
-                <span className="text-white/40 text-xs">Generated This Week</span>
+                <span className="text-[var(--fg-muted)] text-xs">Generated This Week</span>
               </div>
               <p className="text-2xl font-semibold text-white tracking-[-0.03em]">5</p>
             </motion.div>
             <motion.div
-              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center">
-                  <Share2 size={16} className="text-white/60" />
+                <div className="w-8 h-8 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center">
+                  <Share2 size={16} className="text-[var(--fg-secondary)]" />
                 </div>
-                <span className="text-white/40 text-xs">Shared</span>
+                <span className="text-[var(--fg-muted)] text-xs">Shared</span>
               </div>
               <p className="text-2xl font-semibold text-white tracking-[-0.03em]">12</p>
             </motion.div>
             <motion.div
-              className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+              className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15, type: 'spring', stiffness: 100, damping: 20 }}
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center">
-                  <BarChart3 size={16} className="text-white/60" />
+                <div className="w-8 h-8 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center">
+                  <BarChart3 size={16} className="text-[var(--fg-secondary)]" />
                 </div>
-                <span className="text-white/40 text-xs">Storage Used</span>
+                <span className="text-[var(--fg-muted)] text-xs">Storage Used</span>
               </div>
               <p className="text-2xl font-semibold text-white tracking-[-0.03em]">48 MB</p>
             </motion.div>
@@ -285,7 +285,7 @@ export default function ReportsPage() {
               {['Weekly Summary', 'User Analytics', 'Performance', 'Competitor Analysis'].map((template, index) => (
                 <motion.button
                   key={template}
-                  className="px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-white/70 text-sm hover:bg-white/[0.08] hover:border-white/[0.10] hover:text-white transition-all"
+                  className="px-4 py-3 rounded-xl bg-white/[0.04] border border-[var(--border-subtle)] text-white/70 text-sm hover:bg-[var(--bg-elevated)] hover:border-white/[0.10] hover:text-white transition-all"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + index * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
@@ -307,16 +307,16 @@ export default function ReportsPage() {
               transition={{ duration: 0.4 }}
             >
               {/* Main Report Card */}
-              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden relative">
+              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-hidden relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
 
                 <div className="p-8 md:p-12 relative z-10">
                   <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
                     <div>
-                      <h2 className="text-[11px] font-bold text-white/40 uppercase tracking-[0.2em] mb-3">Inceptive Weekly Report</h2>
+                      <h2 className="text-[11px] font-bold text-[var(--fg-muted)] uppercase tracking-[0.2em] mb-3">Inceptive Weekly Report</h2>
                       <p className="text-2xl md:text-3xl font-light text-white">{latestReport.date_range_str}</p>
                     </div>
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.10] bg-white/[0.06] w-fit">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.10] bg-[var(--bg-elevated)] w-fit">
                       <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
                       <span className="text-xs font-semibold tracking-wide text-white uppercase">All systems running</span>
                     </div>
@@ -324,40 +324,40 @@ export default function ReportsPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-8 mb-12">
                     <div className="space-y-6">
-                      <div className="flex justify-between items-end border-b border-white/[0.06] pb-4">
-                        <span className="text-white/60 text-sm">Hours worked by your AI</span>
+                      <div className="flex justify-between items-end border-b border-[var(--border-subtle)] pb-4">
+                        <span className="text-[var(--fg-secondary)] text-sm">Hours worked by your AI</span>
                         <span className="text-white font-mono text-xl">{latestReport.hours_worked}h</span>
                       </div>
-                      <div className="flex justify-between items-end border-b border-white/[0.06] pb-4">
-                        <span className="text-white/60 text-sm">Tasks completed</span>
+                      <div className="flex justify-between items-end border-b border-[var(--border-subtle)] pb-4">
+                        <span className="text-[var(--fg-secondary)] text-sm">Tasks completed</span>
                         <span className="text-white font-mono text-xl">{latestReport.tasks_completed}</span>
                       </div>
-                      <div className="flex justify-between items-end border-b border-white/[0.06] pb-4">
-                        <span className="text-white/60 text-sm">Emails sent</span>
+                      <div className="flex justify-between items-end border-b border-[var(--border-subtle)] pb-4">
+                        <span className="text-[var(--fg-secondary)] text-sm">Emails sent</span>
                         <span className="text-white font-mono text-xl">{latestReport.emails_sent}</span>
                       </div>
                     </div>
 
                     <div className="space-y-6">
-                      <div className="flex justify-between items-end border-b border-white/[0.06] pb-4">
-                        <span className="text-white/60 text-sm">Research reports</span>
+                      <div className="flex justify-between items-end border-b border-[var(--border-subtle)] pb-4">
+                        <span className="text-[var(--fg-secondary)] text-sm">Research reports</span>
                         <span className="text-white font-mono text-xl">{latestReport.research_reports}</span>
                       </div>
-                      <div className="flex justify-between items-end border-b border-white/[0.06] pb-4">
-                        <span className="text-white/60 text-sm">Social posts scheduled</span>
+                      <div className="flex justify-between items-end border-b border-[var(--border-subtle)] pb-4">
+                        <span className="text-[var(--fg-secondary)] text-sm">Social posts scheduled</span>
                         <span className="text-white font-mono text-xl">{latestReport.social_posts}</span>
                       </div>
-                      <div className="flex justify-between items-end border-b border-white/[0.06] pb-4">
-                        <span className="text-white/60 text-sm">Goals active</span>
+                      <div className="flex justify-between items-end border-b border-[var(--border-subtle)] pb-4">
+                        <span className="text-[var(--fg-secondary)] text-sm">Goals active</span>
                         <span className="text-white font-mono text-xl">{latestReport.goals_active}</span>
                       </div>
                     </div>
                   </div>
 
                   {topGoal && (
-                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 mb-12">
+                    <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-6 mb-12">
                       <div className="flex items-center gap-3 mb-4">
-                        <Target className="h-5 w-5 text-white/60" />
+                        <Target className="h-5 w-5 text-[var(--fg-secondary)]" />
                         <h3 className="text-sm font-medium text-white">Current Priority Focus</h3>
                       </div>
                       <p className="text-white mb-4 text-lg">{topGoal.title}</p>
@@ -373,7 +373,7 @@ export default function ReportsPage() {
                     </div>
                   )}
 
-                  <div className="pt-8 border-t border-white/[0.06] flex justify-between items-center text-xs text-white/40">
+                  <div className="pt-8 border-t border-[var(--border-subtle)] flex justify-between items-center text-xs text-[var(--fg-muted)]">
                     <span>Every Sunday. Delivered to your inbox.</span>
                     <span>Inceptive AI</span>
                   </div>
@@ -382,7 +382,7 @@ export default function ReportsPage() {
 
               {/* Chart Section */}
               {latestReport.chart_data && latestReport.chart_data.length > 0 && (
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-8">
+                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8">
                   <h3 className="text-white font-medium tracking-[-0.02em] mb-8">Tasks Completed (Past 8 Weeks)</h3>
                   <div className="h-[250px] w-full">
                     <ResponsiveContainer width="100%" height="100%">

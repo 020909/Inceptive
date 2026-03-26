@@ -4,21 +4,20 @@ import React from "react";
 import { AuthProvider } from "@/lib/auth-context";
 import { ChatProvider } from "@/lib/chat-context";
 import { AgentProvider } from "@/lib/agent-context";
-import { Sidebar } from "@/components/layout/sidebar";
-import { motion } from "framer-motion";
+import { Sidebar, SidebarProvider, useSidebar } from "@/components/layout/sidebar";
 
 function LayoutInner({ children }: { children: React.ReactNode }) {
+  const { collapsed } = useSidebar();
+
   return (
-    <div className="min-h-screen bg-[#1E1E1C]">
+    <div className="min-h-screen bg-[var(--bg-app)] noise">
       <Sidebar />
-      <motion.main
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="ml-64 min-h-screen"
+      <main
+        className="min-h-screen transition-[margin] duration-200 ease-out"
+        style={{ marginLeft: collapsed ? 60 : 240 }}
       >
         {children}
-      </motion.main>
+      </main>
     </div>
   );
 }
@@ -32,7 +31,9 @@ export default function DashboardLayout({
     <AuthProvider>
       <AgentProvider>
         <ChatProvider>
-          <LayoutInner>{children}</LayoutInner>
+          <SidebarProvider>
+            <LayoutInner>{children}</LayoutInner>
+          </SidebarProvider>
         </ChatProvider>
       </AgentProvider>
     </AuthProvider>

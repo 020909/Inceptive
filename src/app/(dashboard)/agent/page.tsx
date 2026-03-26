@@ -1,157 +1,241 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Bot, Play, Pause, RotateCcw, Settings, MoreHorizontal, Clock, Plus } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Bot, Play, Pause, Clock, Plus, RefreshCw, MoreHorizontal, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
-interface AgentTask {
+interface AgentJob {
   id: string;
-  name: string;
-  status: 'running' | 'paused' | 'completed' | 'failed';
-  progress: number;
-  description: string;
-  lastRun: string;
+  kind: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  payload: Record<string, any> | null;
+  result: any;
+  logs: string[] | null;
+  attempts: number;
+  created_at: string;
+  updated_at: string;
 }
 
-const mockTasks: AgentTask[] = [
-  { id: '1', name: 'Email Autopilot', status: 'running', progress: 78, description: 'Processing 23 emails', lastRun: '2 mins ago' },
-  { id: '2', name: 'Research Assistant', status: 'running', progress: 45, description: 'Analyzing market trends', lastRun: '5 mins ago' },
-  { id: '3', name: 'Code Review Bot', status: 'paused', progress: 0, description: 'Waiting for PRs', lastRun: '1 hour ago' },
-  { id: '4', name: 'Content Generator', status: 'completed', progress: 100, description: 'Generated 5 blog posts', lastRun: '3 hours ago' },
+const JOB_PRESETS = [
+  { kind: "browser.probe", label: "Browser Probe", description: "Test browser connectivity" },
+  { kind: "connector.health", label: "Connector Health", description: "Check all connector status" },
+  { kind: "inbox.monitor.stub", label: "Inbox Monitor", description: "Scan email inbox" },
+  { kind: "computer.use.stub", label: "Computer Use", description: "Run screen automation" },
 ];
 
-function StatusBadge({ status }: { status: AgentTask['status'] }) {
-  const configs = {
-    running: { icon: Play, color: 'text-blue-400', bg: 'bg-blue-400/10', label: 'Running' },
-    paused: { icon: Pause, color: 'text-white/50', bg: 'bg-white/[0.06]', label: 'Paused' },
-    completed: { icon: Bot, color: 'text-blue-400', bg: 'bg-blue-400/10', label: 'Completed' },
-    failed: { icon: Bot, color: 'text-white/50', bg: 'bg-white/[0.06]', label: 'Failed' },
-  };
-  const config = configs[status];
-  const Icon = config.icon;
+const STATUS_CONFIG = {
+  pending:   { icon: Clock,         color: "text-[var(--fg-tertiary)]", bg: "bg-[var(--bg-elevated)]", label: "Pending" },
+  running:   { icon: Play,          color: "text-[var(--accent)]",      bg: "bg-[var(--accent-muted)]", label: "Running" },
+  completed: { icon: CheckCircle2,  color: "text-[var(--success)]",     bg: "bg-[var(--success-soft)]", label: "Done" },
+  failed:    { icon: XCircle,       color: "text-[var(--destructive)]", bg: "bg-[var(--destructive-soft)]", label: "Failed" },
+};
 
+function StatusBadge({ status }: { status: AgentJob['status'] }) {
+  const c = STATUS_CONFIG[status];
+  const Icon = c.icon;
   return (
-    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${config.bg}`}>
-      <Icon size={12} className={config.color} />
-      <span className={`text-xs font-medium ${config.color}`}>{config.label}</span>
+    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${c.bg}`}>
+      <Icon size={11} className={c.color} />
+      <span className={`text-[11px] font-medium ${c.color}`}>{c.label}</span>
     </div>
   );
 }
 
-function TaskCard({ task, index }: { task: AgentTask; index: number }) {
-  const [isHovered, setIsHovered] = useState(false);
+function JobCard({ job, index }: { job: AgentJob; index: number }) {
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <motion.div
-      className="group relative p-5 rounded-xl bg-[#262624] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 cursor-pointer"
-      initial={{ opacity: 0, y: 20 }}
+      layout
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, type: 'spring', stiffness: 100, damping: 20 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      transition={{ delay: index * 0.04 }}
+      className="group p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-colors duration-150 cursor-pointer"
+      onClick={() => setExpanded(!expanded)}
     >
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-white/[0.06] flex items-center justify-center">
-            <Bot size={20} className="text-white/70" />
+          <div className="w-9 h-9 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center shrink-0">
+            <Bot size={16} className="text-[var(--fg-tertiary)]" />
           </div>
-          <div>
-            <h3 className="text-white font-medium tracking-[-0.02em]">{task.name}</h3>
-            <p className="text-white/40 text-sm">{task.description}</p>
+          <div className="min-w-0">
+            <p className="text-[var(--fg-primary)] font-medium text-sm tracking-[-0.01em]">{job.kind}</p>
+            <p className="text-[var(--fg-muted)] text-[11px]">
+              {new Date(job.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            </p>
           </div>
         </div>
-        <StatusBadge status={task.status} />
+        <StatusBadge status={job.status} />
       </div>
 
-      {/* Progress bar */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-white/40 text-xs">Progress</span>
-          <span className="text-white/60 text-xs">{task.progress}%</span>
-        </div>
-        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+      <AnimatePresence>
+        {expanded && (
           <motion.div
-            className="h-full bg-white rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${task.progress}%` }}
-            transition={{ delay: index * 0.1 + 0.3, type: 'spring', stiffness: 100, damping: 20 }}
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-white/30 text-xs">
-          <Clock size={12} />
-          <span>Last run {task.lastRun}</span>
-        </div>
-
-        <motion.div
-          className="flex items-center gap-2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isHovered ? 1 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <button className="p-2 rounded-lg hover:bg-white/[0.06] transition-colors">
-            <RotateCcw size={14} className="text-white/50" />
-          </button>
-          <button className="p-2 rounded-lg hover:bg-white/[0.06] transition-colors">
-            <Settings size={14} className="text-white/50" />
-          </button>
-          <button className="p-2 rounded-lg hover:bg-white/[0.06] transition-colors">
-            <MoreHorizontal size={14} className="text-white/50" />
-          </button>
-        </motion.div>
-      </div>
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="pt-3 mt-3 border-t border-[var(--border-subtle)] space-y-2">
+              {job.logs && job.logs.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-wider mb-1">Logs</p>
+                  <div className="space-y-0.5">
+                    {job.logs.slice(-5).map((log, i) => (
+                      <p key={i} className="text-[11px] text-[var(--fg-tertiary)] font-mono">{log}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {job.result && (
+                <div>
+                  <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-wider mb-1">Result</p>
+                  <p className="text-[11px] text-[var(--fg-secondary)] font-mono break-all">
+                    {typeof job.result === 'string' ? job.result : JSON.stringify(job.result, null, 2).slice(0, 200)}
+                  </p>
+                </div>
+              )}
+              <p className="text-[10px] text-[var(--fg-muted)]">Attempts: {job.attempts}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
 
 export default function AgentPage() {
+  const [jobs, setJobs] = useState<AgentJob[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [enqueuing, setEnqueuing] = useState<string | null>(null);
+
+  const fetchJobs = useCallback(async () => {
+    try {
+      const res = await fetch("/api/agent/jobs");
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setJobs(data.jobs || []);
+    } catch {
+      /* silently fail — shows empty state */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchJobs(); }, [fetchJobs]);
+
+  const enqueue = async (kind: string) => {
+    setEnqueuing(kind);
+    try {
+      const res = await fetch("/api/agent/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      toast.success("Job queued");
+      fetchJobs();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to queue job");
+    } finally {
+      setEnqueuing(null);
+    }
+  };
+
+  const counts = {
+    total: jobs.length,
+    running: jobs.filter(j => j.status === 'running').length,
+    completed: jobs.filter(j => j.status === 'completed').length,
+    failed: jobs.filter(j => j.status === 'failed').length,
+  };
+
   return (
-    <div className="p-8">
+    <div className="p-8 max-w-5xl mx-auto">
       {/* Header */}
-      <header className="flex items-center justify-between mb-8">
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-start justify-between mb-8"
+      >
         <div>
-          <h1 className="text-2xl font-semibold text-white tracking-[-0.02em]">AI Agents</h1>
-          <p className="text-white/40 text-sm">Manage and monitor your autonomous agents</p>
+          <h1 className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">AI Agents</h1>
+          <p className="text-[var(--fg-tertiary)] text-sm mt-0.5">Autonomous task execution and monitoring</p>
         </div>
-        <motion.button
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white text-[#1E1E1C] font-medium text-sm tracking-[-0.02em]"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+        <button
+          onClick={fetchJobs}
+          className="p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--fg-tertiary)] hover:text-[var(--fg-primary)] hover:border-[var(--border-default)] transition-colors"
         >
-          <Plus size={16} />
-          New Agent
-        </motion.button>
-      </header>
+          <RefreshCw size={15} />
+        </button>
+      </motion.div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      {/* Stats row */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="grid grid-cols-4 gap-3 mb-8"
+      >
         {[
-          { label: 'Active Agents', value: '2', color: 'text-blue-400' },
-          { label: 'Tasks Completed', value: '1,234', color: 'text-white' },
-          { label: 'Success Rate', value: '98.5%', color: 'text-white' },
-          { label: 'Avg. Response', value: '1.2s', color: 'text-white/60' },
-        ].map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            className="p-5 rounded-xl bg-[#262624] border border-white/[0.06]"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05, type: 'spring', stiffness: 100, damping: 20 }}
-          >
-            <p className="text-white/40 text-sm mb-1">{stat.label}</p>
-            <p className={`text-2xl font-semibold ${stat.color} tracking-[-0.03em]`}>{stat.value}</p>
-          </motion.div>
+          { label: "Total", value: counts.total },
+          { label: "Running", value: counts.running },
+          { label: "Completed", value: counts.completed },
+          { label: "Failed", value: counts.failed },
+        ].map((s) => (
+          <div key={s.label} className="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+            <p className="text-[11px] text-[var(--fg-tertiary)] uppercase tracking-wider mb-1">{s.label}</p>
+            <p className="text-xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">{s.value}</p>
+          </div>
         ))}
-      </div>
+      </motion.div>
 
-      {/* Task Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        {mockTasks.map((task, index) => (
-          <TaskCard key={task.id} task={task} index={index} />
-        ))}
+      {/* Quick launch */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="mb-8"
+      >
+        <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider mb-3">Quick launch</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {JOB_PRESETS.map(p => (
+            <button
+              key={p.kind}
+              onClick={() => enqueue(p.kind)}
+              disabled={!!enqueuing}
+              className="group p-3 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] text-left transition-colors disabled:opacity-50"
+            >
+              <p className="text-[var(--fg-primary)] text-sm font-medium mb-0.5">{p.label}</p>
+              <p className="text-[var(--fg-muted)] text-[11px]">{p.description}</p>
+              {enqueuing === p.kind && <Loader2 size={12} className="animate-spin text-[var(--fg-tertiary)] mt-1" />}
+            </button>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Job list */}
+      <div>
+        <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider mb-3">Recent jobs</p>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="animate-spin text-[var(--fg-muted)]" size={20} />
+          </div>
+        ) : jobs.length === 0 ? (
+          <div className="text-center py-16">
+            <Bot size={32} className="text-[var(--fg-muted)] mx-auto mb-3" />
+            <p className="text-[var(--fg-tertiary)] text-sm">No agent jobs yet</p>
+            <p className="text-[var(--fg-muted)] text-xs mt-1">Use Quick Launch above to start a task</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {jobs.map((job, i) => (
+              <JobCard key={job.id} job={job} index={i} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
