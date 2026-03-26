@@ -10,7 +10,7 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
   const { collapsed } = useSidebar();
 
   return (
-    <div className="min-h-screen bg-[var(--bg-app)] noise">
+    <div className="min-h-screen bg-[var(--bg-app)]">
       <Sidebar />
       <main
         className="min-h-screen transition-[margin] duration-200 ease-out"

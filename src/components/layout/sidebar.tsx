@@ -145,7 +145,7 @@ export function Sidebar() {
       className={`
         fixed left-0 top-0 h-full z-50
         flex flex-col
-        glass noise
+        glass
         border-r border-[var(--border-subtle)]
         transition-[width] duration-200 ease-out
         ${collapsed ? 'w-[60px]' : 'w-[240px]'}
