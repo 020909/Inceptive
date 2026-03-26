@@ -206,10 +206,10 @@ export async function POST(req: Request) {
     } else {
       const defaultKey = process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY || "";
       if (!defaultKey) {
-        return new Response(
+      return new Response(
           JSON.stringify({ error: "AI not configured. Add your API key in Settings." }),
-          { status: 400 }
-        );
+        { status: 400 }
+      );
       }
       model = buildModel(defaultKey, "openrouter", "google/gemini-2.0-flash-001");
     }
@@ -322,7 +322,7 @@ ${_cs}
       }
     }
 
-        const result = streamText({
+    const result = streamText({
       model,
       system: systemOverride || systemPrompt,
       messages: finalHistory,
