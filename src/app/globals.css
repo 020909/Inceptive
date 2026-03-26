@@ -1,62 +1,104 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+:root {
+  --background: #1E1E1C;
+  --foreground: #ffffff;
+  --card: #262624;
+  --card-foreground: #ffffff;
+  --popover: #262624;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #262624;
+  --secondary: #262624;
+  --secondary-foreground: #ffffff;
+  --muted: #262624;
+  --muted-foreground: #ffffff;
+  --accent: #262624;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.06);
+  --input: rgba(255, 255, 255, 0.06);
+  --ring: rgba(255, 255, 255, 0.1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
 
 @layer base {
-  :root {
-    --background: 220 14.3% 4.1%;
-    --foreground: 0 0% 100%;
-    --card: 220 14.3% 6.1%;
-    --card-foreground: 0 0% 100%;
-    --primary: 220 14.3% 8.1%;
-    --primary-foreground: 0 0% 100%;
-    --muted: 220 14.3% 10.1%;
-    --muted-foreground: 220 14.3% 60%;
-    --border: 220 14.3% 15%;
-    --input: 220 14.3% 10.1%;
-    --ring: 220 14.3% 8.1%;
+  html,
+  body {
+    @apply text-white antialiased;
+    background: #1E1E1C;
   }
 
-  .dark {
-    --background: 220 14.3% 4.1%;
-    --foreground: 0 0% 100%;
-    --card: 220 14.3% 6.1%;
-    --card-foreground: 0 0% 100%;
-    --primary: 220 14.3% 8.1%;
-    --primary-foreground: 0 0% 100%;
-    --muted: 220 14.3% 10.1%;
-    --muted-foreground: 220 14.3% 60%;
-    --border: 220 14.3% 15%;
-    --input: 220 14.3% 10.1%;
-    --ring: 220 14.3% 8.1%;
+  .using-mouse * {
+    outline: none !important;
+  }
+
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Selection color */
+  ::selection {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+  }
+
+  /* Glass effect */
+  .glass {
+    background: #262624;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .glass-hover:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
   }
 }
 
 @layer utilities {
-  .ambient-shadow {
-    box-shadow: 
-      0 1px 2px rgba(0, 0, 0, 0.07),
-      0 2px 4px rgba(0, 0, 0, 0.07),
-      0 4px 8px rgba(0, 0, 0, 0.07),
-      0 8px 16px rgba(0, 0, 0, 0.07),
-      0 16px 32px rgba(0, 0, 0, 0.07),
-      0 32px 64px rgba(0, 0, 0, 0.07);
+  /* Tracking utilities */
+  .tracking-tight-custom {
+    letter-spacing: -0.02em;
   }
-  
-  .frosted-glass {
-    background-color: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(10px) saturate(180%);
-    -webkit-backdrop-filter: blur(10px) saturate(180%);
-    border: 0.5px solid rgba(255, 255, 255, 0.08);
-  }
-  
-  .masonry {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1.5rem;
-  }
-  
-  .masonry-item {
-    break-inside: avoid;
+
+  .tracking-tighter-custom {
+    letter-spacing: -0.03em;
   }
 }

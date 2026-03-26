@@ -3,76 +3,143 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { OmniscientInputBar } from '@/components/omniscient-input-bar';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, ArrowRight, Zap, TrendingUp, Mail, FileText, Search, Bot } from 'lucide-react';
 
-const SuggestedAction = ({ label }: { label: string }) => (
-  <button
-    className="px-4 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white/50 text-[13px] font-medium tracking-tight transition-all hover:bg-white/[0.06] hover:border-white/[0.12] hover:text-white"
+const QuickAction = ({ icon: Icon, label, description }: { icon: any; label: string; description: string }) => (
+  <motion.button
+    whileHover={{ y: -2, x: 2 }}
+    whileTap={{ scale: 0.98 }}
+    className="group relative p-4 rounded-xl bg-[#262624] border border-white/[0.06] hover:border-white/[0.12] text-left w-full transition-all duration-200"
   >
-    {label}
-  </button>
+    <div className="flex items-start gap-3">
+      <div className="p-2 rounded-lg bg-white/[0.06] text-white">
+        <Icon size={18} strokeWidth={1.5} />
+      </div>
+      <div className="flex-1">
+        <div className="text-white font-medium text-sm mb-0.5">{label}</div>
+        <div className="text-white/40 text-xs">{description}</div>
+      </div>
+      <ArrowRight size={16} className="text-white/20 group-hover:text-white/40 transition-colors mt-2" />
+    </div>
+  </motion.button>
+);
+
+const StatCard = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
+  <div className="p-4 rounded-xl bg-[#262624] border border-white/[0.06]">
+    <div className="flex items-center justify-between mb-2">
+      <Icon size={16} className="text-white/50" strokeWidth={1.5} />
+      <span className="text-xs text-white/30">{label}</span>
+    </div>
+    <div className="text-2xl font-semibold text-white">{value}</div>
+  </div>
 );
 
 export default function DashboardPage() {
   return (
-    <div className="relative flex flex-col min-h-screen bg-[#1E1E1C]">
-      {/* HEADER */}
-      <header className="relative z-10 flex items-center justify-between px-10 py-6">
-        <div className="flex items-center gap-2">
-          <span className="text-white/40 text-[13px] tracking-tight font-medium">Welcome back,</span>
-          <span className="text-white font-semibold text-[13px] tracking-tight">Founder</span>
+    <div className="min-h-screen p-8">
+      {/* Header */}
+      <motion.header 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-12"
+      >
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <span className="text-white/50 text-sm">Welcome back,</span>
+            <span className="text-white font-semibold text-sm">Founder</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#262624] border border-white/[0.06]">
+            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            <span className="text-white/70 text-xs font-medium">System Online</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.05]">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
-          <span className="text-white/60 text-[11px] font-bold uppercase tracking-widest">System Online</span>
-        </div>
-      </header>
+      </motion.header>
 
-      {/* CENTER CONTENT */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-20">
-        <div className="w-full max-w-2xl flex flex-col items-center text-center">
-          {/* Status Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.08] mb-10">
+      <div className="max-w-6xl mx-auto">
+        {/* Main Hero Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+          className="mb-16 text-center"
+        >
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#262624] border border-white/[0.08] mb-6">
             <Sparkles size={14} className="text-white/80" />
-            <span className="text-white/70 text-[13px] font-medium tracking-tight">Your AI agent is ready</span>
+            <span className="text-white/70 text-xs font-medium">AI Agent Ready</span>
           </div>
 
-          {/* Heading */}
-          <div className="mb-14">
-            <h1 className="text-[56px] font-bold text-white mb-6 tracking-[-0.04em] leading-[1.1]">
-              What would you like<br />to accomplish?
-            </h1>
-            <p className="text-lg text-white/30 tracking-tight font-medium max-w-[450px] mx-auto leading-relaxed">
-              Inceptive can research, write, code, and automate your workflows.
-            </p>
-          </div>
+          {/* Title */}
+          <h1 className="text-5xl font-semibold text-white mb-4 tracking-tight">
+            What would you like<br />to accomplish?
+          </h1>
 
-          {/* Input Bar */}
-          <div className="w-full max-w-2xl mb-10">
+          {/* Subtitle */}
+          <p className="text-white/50 text-lg mb-8 max-w-md mx-auto">
+            Research, write, code, and automate your workflows with AI.
+          </p>
+
+          {/* Input */}
+          <div className="max-w-2xl mx-auto mb-6">
             <OmniscientInputBar />
           </div>
 
-          {/* Suggested Actions */}
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {["Research a topic", "Write an email", "Analyze data", "Build a feature"].map((label) => (
-              <SuggestedAction key={label} label={label} />
-            ))}
+          {/* Keyboard Hint */}
+          <div className="flex items-center justify-center gap-1.5 text-white/30 text-xs">
+            <span>Press</span>
+            <kbd className="px-1.5 py-0.5 rounded bg-white/[0.05] text-white/40 text-[10px] border border-white/[0.08]">⌘K</kbd>
+            <span>for quick actions</span>
           </div>
-        </div>
-      </div>
+        </motion.div>
 
-      {/* FOOTER */}
-      <footer className="px-10 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 text-white/20 text-[11px] font-medium tracking-tight">
-            Press 
-            <kbd className="px-1.5 py-0.5 rounded bg-white/[0.05] text-white/40 text-[10px] mx-1 border border-white/5 font-sans">⌘</kbd> 
-            <kbd className="px-1.5 py-0.5 rounded bg-white/[0.05] text-white/40 text-[10px] mx-1 border border-white/5 font-sans">K</kbd> 
-            for commands
+        {/* Stats Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="grid grid-cols-3 gap-4 mb-8"
+        >
+          <StatCard icon={Zap} label="Today" value="100" />
+          <StatCard icon={TrendingUp} label="This Week" value="487" />
+          <StatCard icon={FileText} label="Total Tasks" value="1,243" />
+        </motion.div>
+
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white">Quick Actions</h2>
+            <span className="text-xs text-white/30">Popular this week</span>
           </div>
-          <span className="text-white/20 text-[10px] font-bold uppercase tracking-[0.2em]">v1.0.0</span>
-        </div>
-      </footer>
+
+          <div className="grid grid-cols-2 gap-3">
+            <QuickAction 
+              icon={Mail}
+              label="Draft Email Campaign"
+              description="Generate personalized outreach emails"
+            />
+            <QuickAction 
+              icon={FileText}
+              label="Research Report"
+              description="Deep research with citations"
+            />
+            <QuickAction 
+              icon={TrendingUp}
+              label="Competitive Analysis"
+              description="Analyze competitors and market trends"
+            />
+            <QuickAction 
+              icon={Sparkles}
+              label="Content Creation"
+              description="Generate blog posts and articles"
+            />
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }

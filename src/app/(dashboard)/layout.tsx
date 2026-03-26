@@ -2,36 +2,39 @@
 
 import React from "react";
 import { AuthProvider } from "@/lib/auth-context";
-import { SidebarProvider, useSidebar } from "@/lib/sidebar-context";
 import { ChatProvider } from "@/lib/chat-context";
 import { AgentProvider } from "@/lib/agent-context";
 import { Sidebar } from "@/components/layout/sidebar";
+import { motion } from "framer-motion";
 
 function LayoutInner({ children }: { children: React.ReactNode }) {
-  const { collapsed } = useSidebar();
   return (
-    <div className="min-h-screen" style={{ background: "var(--background)" }}>
+    <div className="min-h-screen bg-[#1E1E1C]">
       <Sidebar />
-      <main
-        className="min-h-screen transition-all duration-300 ease-in-out md:pl-[var(--sidebar-w)]"
-        style={{ "--sidebar-w": collapsed ? "64px" : "240px" } as React.CSSProperties}
+      <motion.main
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="ml-64 min-h-screen"
       >
         {children}
-      </main>
+      </motion.main>
     </div>
   );
 }
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <SidebarProvider>
-      <AuthProvider>
-        <AgentProvider>
-          <ChatProvider>
-            <LayoutInner>{children}</LayoutInner>
-          </ChatProvider>
-        </AgentProvider>
-      </AuthProvider>
-    </SidebarProvider>
+    <AuthProvider>
+      <AgentProvider>
+        <ChatProvider>
+          <LayoutInner>{children}</LayoutInner>
+        </ChatProvider>
+      </AgentProvider>
+    </AuthProvider>
   );
 }
