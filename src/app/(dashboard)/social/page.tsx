@@ -67,14 +67,13 @@ function ConnectorCard({ connector, connected, connectedAccount, session, onDisc
   
   return (
     <motion.div whileHover={{ y: -2, boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }} transition={{ duration: 0.18 }}
-      className="flex flex-col gap-3 p-4 rounded-2xl border transition-colors duration-150"
-      style={{ background: "var(--background-elevated)", borderColor: connected ? "rgba(255,255,255,0.25)" : "#1A1A1A" }}>
+      className={`flex flex-col gap-3 p-4 rounded-2xl border transition-colors duration-150 bg-[#262624] ${connected ? "border-white/25" : "border-white/6"}`}>
       
       <div className="flex items-center gap-3">
         <img src={connector.logo} alt={connector.name} width={28} height={28} className="object-contain shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-white leading-tight">{connector.name}</div>
-          <div className="text-xs text-[var(--foreground-tertiary)] truncate">
+          <div className="text-xs text-white/40 truncate">
             {connected && displayName ? displayName : connector.users + " users"}
           </div>
         </div>
@@ -85,27 +84,23 @@ function ConnectorCard({ connector, connected, connectedAccount, session, onDisc
           <div className="flex items-center gap-1.5 shrink-0">
             {connectedAccount?.decrypted === false ? (
               <button onClick={handleConnect}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium animate-pulse transition-opacity hover:opacity-80"
-                style={{ background: "rgba(255,159,10,0.15)", color: "#FFFFFF", border: "1px solid rgba(255,159,10,0.3)" }}>
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium animate-pulse transition-opacity hover:opacity-80 bg-white/10 text-white border border-white/20">
                 <ExternalLink className="w-3 h-3" />Reconnect
               </button>
             ) : (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
-                style={{ background: "#FFFFFF20", color: "#FFFFFF", border: "1px solid #FFFFFF30" }}>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-white/10 text-white border border-white/30">
                 <Check className="w-3 h-3" /><span>Connected</span>
               </div>
             )}
             <button onClick={() => onDisconnect(connector.provider)}
-              className="px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
-              style={{ background: "rgba(255,59,48,0.1)", color: "#FF3B30", border: "1px solid rgba(255,59,48,0.2)" }}>
+              className="px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80 bg-white/10 text-white/60 border border-white/20">
               Disconnect
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-2 w-full mt-2">
             <button onClick={() => handleConnect()}
-              className="flex-1 items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold transition-opacity flex"
-              style={{ background: "var(--foreground)", color: "var(--background)" }}
+              className="flex-1 items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold transition-opacity flex bg-white text-[#262624]"
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.85"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}>
               {connector.telegramInput ? <Bot className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
@@ -276,9 +271,9 @@ export default function SocialPage() {
   };
 
   const getStatusColor = (status: string) => {
-    if (status === "published") return "bg-emerald-500";
-    if (status === "draft") return "bg-yellow-500";
-    return "bg-[#555555]";
+    if (status === "published") return "bg-white/80";
+    if (status === "draft") return "bg-white/60";
+    return "bg-white/50";
   };
 
   const platformProvider: Record<string, string> = {
@@ -307,11 +302,11 @@ export default function SocialPage() {
           initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           <div>
             <h1 className="text-2xl font-bold text-white mb-1">Connectors</h1>
-            <p className="text-sm text-[var(--foreground-secondary)]">Manage your social media and platform connections</p>
+            <p className="text-sm text-white/60">Manage your social media and platform connections</p>
           </div>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="self-start sm:self-auto">
             <Button onClick={() => { setPlatform("X"); setContent(""); setTopic(""); setScheduleTime(""); setGenerateWithAi(false); setIsModalOpen(true); }}
-              className="rounded-lg h-10 px-4 text-sm font-medium border-0" style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
+              className="rounded-lg h-10 px-4 text-sm font-medium border-0 bg-white text-[#262624]">
               <Plus className="h-4 w-4 mr-2" />Create Post
             </Button>
           </motion.div>
@@ -321,11 +316,11 @@ export default function SocialPage() {
         <div className="space-y-8 mb-8">
           {/* Email Connectors */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}
-            className="rounded-2xl border p-5" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
+            className="rounded-2xl border p-5 bg-[#262624] border-white/6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-sm font-semibold text-white">Email & Messaging</h2>
-                <p className="text-xs text-[var(--foreground-secondary)] mt-0.5">Link your primary communication channels</p>
+                <p className="text-xs text-white/60 mt-0.5">Link your primary communication channels</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -341,11 +336,11 @@ export default function SocialPage() {
 
           {/* Social Connectors */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}
-            className="rounded-2xl border p-5" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
+            className="rounded-2xl border p-5 bg-[#262624] border-white/6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-sm font-semibold text-white">Social Media Profiles</h2>
-                <p className="text-xs text-[var(--foreground-secondary)] mt-0.5">Link accounts for AI content publishing</p>
+                <p className="text-xs text-white/60 mt-0.5">Link accounts for AI content publishing</p>
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -362,16 +357,14 @@ export default function SocialPage() {
 
         {/* Posts list */}
         {posts.length === 0 ? (
-          <motion.div className="flex flex-col items-center justify-center py-28 text-center border rounded-2xl"
-            style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl mb-5"
-              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)" }}>
-              <Share2 className="h-6 w-6 text-[var(--foreground)]" />
+          <motion.div className="flex flex-col items-center justify-center py-28 text-center border rounded-2xl bg-[#262624] border-white/6"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl mb-5 bg-white/[0.08] border border-white/18">
+              <Share2 className="h-6 w-6 text-white" />
             </div>
             <h3 className="text-base font-semibold text-white mb-1.5">No posts yet</h3>
-            <p className="text-sm text-[var(--foreground-secondary)] mb-6 max-w-sm">Connect your accounts, then let AI draft and publish your social posts.</p>
-            <Button onClick={() => setIsModalOpen(true)} className="rounded-xl px-5 h-10 text-sm font-semibold border-0"
-              style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
+            <p className="text-sm text-white/60 mb-6 max-w-sm">Connect your accounts, then let AI draft and publish your social posts.</p>
+            <Button onClick={() => setIsModalOpen(true)} className="rounded-xl px-5 h-10 text-sm font-semibold border-0 bg-white text-[#262624]">
               <Plus className="h-4 w-4 mr-2" />Create Post
             </Button>
           </motion.div>
@@ -380,26 +373,25 @@ export default function SocialPage() {
             <AnimatePresence>
               {posts.map((post, idx) => (
                 <motion.div key={post.id}
-                  className="rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 transition-colors duration-150"
-                  style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}
+                  className="rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 transition-colors duration-150 bg-[#262624] border-white/6"
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: idx * 0.04 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#333333"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#222222"; }}>
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#444444"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.06)"; }}>
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                      <span className="px-3 py-1 text-white text-xs font-semibold rounded-full tracking-wide" style={{ background: "var(--border)" }}>
+                      <span className="px-3 py-1 text-white text-xs font-semibold rounded-full tracking-wide bg-white/10 border border-white/12">
                         {post.platform}
                       </span>
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border" style={{ background: "var(--background-overlay)", borderColor: "var(--border)" }}>
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border bg-[#262624] border-white/6">
                         <div className={`h-2 w-2 rounded-full ${getStatusColor(post.status)}`} />
-                        <span className="text-xs uppercase font-medium tracking-wide text-[var(--foreground-secondary)]">{post.status}</span>
+                        <span className="text-xs uppercase font-medium tracking-wide text-white/60">{post.status}</span>
                       </div>
                     </div>
                     <p className="text-sm text-white leading-relaxed line-clamp-2">{post.content}</p>
                   </div>
                   <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0">
                     {(post.scheduled_for || post.scheduled_at) && (
-                      <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-[var(--foreground-secondary)] text-sm border" style={{ background: "var(--background-overlay)", borderColor: "var(--border)" }}>
+                      <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-white/60 text-sm border bg-[#262624] border-white/6">
                         <Calendar className="h-4 w-4" />
                         {new Date(post.scheduled_for || post.scheduled_at!).toLocaleDateString()} at {new Date(post.scheduled_for || post.scheduled_at!).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </div>
@@ -408,8 +400,7 @@ export default function SocialPage() {
                       <button
                         onClick={() => handlePublish(post.id)}
                         disabled={publishing === post.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity disabled:opacity-50"
-                        style={{ background: isPlatformConnected(post.platform) ? "var(--foreground)" : "#222222", color: "var(--foreground)" }}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity disabled:opacity-50 ${isPlatformConnected(post.platform) ? "bg-white text-[#262624]" : "bg-white/10 text-white"}`}
                         title={isPlatformConnected(post.platform) ? `Publish to ${post.platform}` : "Connect account to publish"}>
                         {publishing === post.id
                           ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -418,7 +409,7 @@ export default function SocialPage() {
                       </button>
                     )}
                     {post.status === "published" && (
-                      <span className="text-xs text-[#FFFFFF] font-medium">{post.created_at ? formatTimeAgo(new Date(post.created_at)) : "Published"}</span>
+                      <span className="text-xs text-white font-medium">{post.created_at ? formatTimeAgo(new Date(post.created_at)) : "Published"}</span>
                     )}
                   </div>
                 </motion.div>
@@ -430,15 +421,15 @@ export default function SocialPage() {
 
       {/* Create Post Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="border text-white sm:max-w-xl" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
+        <DialogContent className="border text-white sm:max-w-xl bg-[#262624] border-white/6">
           <DialogHeader><DialogTitle className="text-white">Create Social Post</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 pt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-[var(--foreground-secondary)] text-xs uppercase tracking-wide">Platform</Label>
+                <Label className="text-white/60 text-xs uppercase tracking-wide">Platform</Label>
                 <Select value={platform} onValueChange={(v) => v && setPlatform(v)}>
-                  <SelectTrigger style={{ background: "var(--background-overlay)", border: "1px solid var(--border)", color: "white" }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ background: "var(--background)", border: "1px solid var(--border)", color: "white" }}>
+                  <SelectTrigger className="bg-[#262624] border border-white/6 text-white"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-[#262624] border border-white/6 text-white">
                     {["X", "LinkedIn", "Instagram", "Facebook", "Telegram", "TikTok", "YouTube"].map(p => (
                       <SelectItem key={p} value={p}>{p}</SelectItem>
                     ))}
@@ -446,38 +437,35 @@ export default function SocialPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-[var(--foreground-secondary)] text-xs uppercase tracking-wide">Schedule Time</Label>
+                <Label className="text-white/60 text-xs uppercase tracking-wide">Schedule Time</Label>
                 <Input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)}
-                  className="text-white focus-visible:ring-[var(--foreground)] [color-scheme:dark]"
-                  style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }} />
+                  className="text-white focus-visible:ring-white/20 [color-scheme:dark] bg-[#262624] border border-white/6" />
               </div>
             </div>
             <div className="flex items-center gap-2 pt-1">
               <input type="checkbox" id="use-ai" checked={generateWithAi} onChange={e => setGenerateWithAi(e.target.checked)}
-                className="rounded w-4 h-4 cursor-pointer accent-[var(--foreground)]" />
-              <Label htmlFor="use-ai" className="cursor-pointer select-none text-[var(--foreground-secondary)]">Generate with AI</Label>
+                className="rounded w-4 h-4 cursor-pointer accent-white" />
+              <Label htmlFor="use-ai" className="cursor-pointer select-none text-white/60">Generate with AI</Label>
             </div>
             {generateWithAi ? (
               <div className="space-y-2">
-                <Label className="text-[var(--foreground-secondary)] text-xs uppercase tracking-wide">Topic</Label>
+                <Label className="text-white/60 text-xs uppercase tracking-wide">Topic</Label>
                 <Input value={topic} onChange={e => setTopic(e.target.value)}
                   placeholder="What should the post be about?"
-                  className="text-white placeholder:text-[var(--border-strong)] focus-visible:ring-[var(--foreground)]"
-                  style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }} required />
+                  className="text-white placeholder:text-white/30 focus-visible:ring-white/20 bg-[#262624] border border-white/6" required />
               </div>
             ) : (
               <div className="space-y-2">
-                <Label className="text-[var(--foreground-secondary)] text-xs uppercase tracking-wide">Content</Label>
+                <Label className="text-white/60 text-xs uppercase tracking-wide">Content</Label>
                 <Textarea value={content} onChange={e => setContent(e.target.value)}
                   placeholder="Write your post here..."
-                  className="text-white placeholder:text-[var(--border-strong)] focus-visible:ring-[var(--foreground)] min-h-[120px]"
-                  style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }} required />
+                  className="text-white placeholder:text-white/30 focus-visible:ring-white/20 min-h-[120px] bg-[#262624] border border-white/6" required />
               </div>
             )}
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}
-                className="hover:bg-[#1A1A1A] text-white hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={saving} className="border-0" style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
+                className="hover:bg-white/10 text-white hover:text-white">Cancel</Button>
+              <Button type="submit" disabled={saving} className="border-0 bg-white text-[#262624]">
                 {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{generateWithAi ? "Generating…" : "Saving…"}</> : generateWithAi ? "Generate & Save" : "Schedule Post"}
               </Button>
             </DialogFooter>
@@ -487,7 +475,7 @@ export default function SocialPage() {
 
       {/* Telegram Bot Token Modal */}
       <Dialog open={isTelegramModalOpen} onOpenChange={setIsTelegramModalOpen}>
-        <DialogContent className="border text-white sm:max-w-md" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
+        <DialogContent className="border text-white sm:max-w-md bg-[#262624] border-white/6">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
               <img src="/logos/social/telegram.png" width={22} height={22} className="object-contain" alt="Telegram" />
@@ -495,30 +483,27 @@ export default function SocialPage() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleTelegramConnect} className="space-y-4 pt-4">
-            <div className="px-3 py-3 rounded-xl text-xs text-[var(--foreground-secondary)] leading-relaxed"
-              style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }}>
-              1. Create a bot via <span className="text-[var(--foreground)]">@BotFather</span> on Telegram<br/>
+            <div className="px-3 py-3 rounded-xl text-xs text-white/60 leading-relaxed bg-[#262624] border border-white/6">
+              1. Create a bot via <span className="text-white">@BotFather</span> on Telegram<br/>
               2. Copy the bot token and paste below<br/>
               3. Add your bot to a channel/group and paste the Chat ID
             </div>
             <div className="space-y-2">
-              <Label className="text-[var(--foreground-secondary)] text-xs uppercase tracking-wide">Bot Token</Label>
+              <Label className="text-white/60 text-xs uppercase tracking-wide">Bot Token</Label>
               <Input value={botToken} onChange={e => setBotToken(e.target.value)}
                 placeholder="1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ"
-                className="text-white placeholder:text-[var(--border-strong)] font-mono text-xs focus-visible:ring-[var(--foreground)]"
-                style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }} required />
+                className="text-white placeholder:text-white/30 font-mono text-xs focus-visible:ring-white/20 bg-[#262624] border border-white/6" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[var(--foreground-secondary)] text-xs uppercase tracking-wide">Chat ID (channel or group)</Label>
+              <Label className="text-white/60 text-xs uppercase tracking-wide">Chat ID (channel or group)</Label>
               <Input value={chatId} onChange={e => setChatId(e.target.value)}
                 placeholder="-1001234567890 or @channelname"
-                className="text-white placeholder:text-[var(--border-strong)] font-mono text-xs focus-visible:ring-[var(--foreground)]"
-                style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }} />
+                className="text-white placeholder:text-white/30 font-mono text-xs focus-visible:ring-white/20 bg-[#262624] border border-white/6" />
             </div>
             <DialogFooter className="pt-2">
               <Button type="button" variant="ghost" onClick={() => setIsTelegramModalOpen(false)}
-                className="hover:bg-[#1A1A1A] text-white hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={connectingTelegram} className="border-0" style={{ background: "var(--foreground)", color: "var(--foreground)" }}>
+                className="hover:bg-white/10 text-white hover:text-white">Cancel</Button>
+              <Button type="submit" disabled={connectingTelegram} className="border-0 bg-white text-[#262624]">
                 {connectingTelegram ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Connecting…</> : "Connect Bot"}
               </Button>
             </DialogFooter>

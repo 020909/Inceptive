@@ -206,11 +206,11 @@ export default function EmailPage() {
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-white mb-1">Email Autopilot</h1>
-            <p className="text-sm" style={{ color: "var(--foreground-secondary)" }}>
+            <p className="text-sm text-white/60">
               {gmail ? "Connected as " + gmail.account_email : "Connect Gmail to read, reply and send emails with AI"}
             </p>
           </div>
-          <Button onClick={() => setComposeOpen(true)} className="h-9 px-4 text-sm font-semibold rounded-xl border-0" style={{ background: "var(--foreground)", color: "var(--background)" }}>
+          <Button onClick={() => setComposeOpen(true)} className="h-9 px-4 text-sm font-semibold rounded-xl border-0 bg-white text-[#1a1a1a]">
             <Plus className="h-3.5 w-3.5 mr-1.5" />Compose
           </Button>
         </div>
@@ -221,23 +221,23 @@ export default function EmailPage() {
             const acc = accounts.find(a => a.provider === c.id);
             const connected = !!acc;
             return (
-              <div key={c.id} className="flex items-center gap-3 px-4 py-3 rounded-2xl border" style={{ background: "var(--background-elevated)", borderColor: connected ? "rgba(255,255,255,0.15)" : "var(--border)" }}>
+              <div key={c.id} className="flex items-center gap-3 px-4 py-3 rounded-2xl border bg-[#262624] border-white/06">
                 <div className="w-2 h-2 rounded-full shrink-0" style={{ background: connected ? "#FFFFFF" : "#333333" }} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold text-white">{c.name}</div>
-                  <div className="text-xs truncate" style={{ color: "var(--foreground-secondary)" }}>{connected ? acc?.account_email : c.description}</div>
+                  <div className="text-xs truncate text-white/60">{connected ? acc?.account_email : c.description}</div>
                 </div>
                 {connected ? (
                   <button onClick={() => disconnect(c.id)} title="Disconnect" className="opacity-30 hover:opacity-80 transition-opacity" style={{ color: "#FF3B30" }}>
                     <Unlink className="w-3.5 h-3.5" />
                   </button>
-                ) : c.oauthPath ? (
+                  ) : c.oauthPath ? (
                   <button onClick={() => { if (!token) return; window.location.href = c.oauthPath + "?token=" + encodeURIComponent(token) + "&redirect_to=/email"; }}
-                    className="text-xs font-bold px-3 py-1 rounded-lg" style={{ background: "var(--foreground)", color: "var(--background)" }}>
+                    className="text-xs font-bold px-3 py-1 rounded-lg bg-white text-[#1a1a1a]">
                     Connect
                   </button>
                 ) : (
-                  <span className="text-xs" style={{ color: "var(--foreground-secondary)" }}>Soon</span>
+                  <span className="text-xs text-white/60">Soon</span>
                 )}
               </div>
             );
@@ -245,11 +245,10 @@ export default function EmailPage() {
         </div>
 
         {/* Tab bar */}
-        <div className="flex items-center gap-1 p-1 rounded-xl mb-6" style={{ background: "var(--background-elevated)", width: "fit-content" }}>
+        <div className="flex items-center gap-1 p-1 rounded-xl mb-6 bg-[#262624] w-fit">
           {(["inbox", "sent"] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-              style={{ background: tab === t ? "var(--background-overlay)" : "transparent", color: tab === t ? "white" : "var(--foreground-secondary)" }}>
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === t ? "bg-[#3a3a39] text-white" : "text-white/60"}`}>
               {t === "inbox" ? <Inbox className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
               {t === "inbox" ? "Live Inbox" : "Sent & Drafts"}
             </button>
@@ -258,23 +257,22 @@ export default function EmailPage() {
 
         {/* Inbox */}
         {tab === "inbox" && (loadingInbox ? (
-          <div className="flex items-center justify-center py-24"><Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--foreground-secondary)" }} /></div>
+          <div className="flex items-center justify-center py-24"><Loader2 className="h-5 w-5 animate-spin text-white/60" /></div>
         ) : inbox.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 rounded-2xl border text-center" style={{ borderColor: "var(--border)", background: "var(--background-elevated)" }}>
-            <Mail className="h-8 w-8 mb-3" style={{ color: "var(--foreground-secondary)" }} />
+          <div className="flex flex-col items-center justify-center py-24 rounded-2xl border text-center bg-[#262624] border-white/06">
+            <Mail className="h-8 w-8 mb-3 text-white/60" />
             <p className="text-sm font-semibold text-white mb-1">{gmail ? "Inbox is empty" : "Gmail not connected"}</p>
-            <p className="text-xs" style={{ color: "var(--foreground-secondary)" }}>{gmail ? "No unread messages" : "Connect Gmail above to see your inbox"}</p>
+            <p className="text-xs text-white/50">{gmail ? "No unread messages" : "Connect Gmail above to see your inbox"}</p>
           </div>
         ) : (
           <div className="space-y-1">
             {inbox.map((msg, i) => (
               <motion.button key={msg.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                onClick={() => openEmail(msg)} className="w-full text-left px-5 py-4 rounded-xl border group transition-colors"
-                style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.15)"; (e.currentTarget as HTMLElement).style.background = "var(--background-overlay)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLElement).style.background = "var(--background-elevated)"; }}>
+                onClick={() => openEmail(msg)} className="w-full text-left px-5 py-4 rounded-xl border bg-[#262624] border-white/06 group transition-colors"
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.15)"; (e.currentTarget as HTMLElement).style.background = "#3a3a39"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLElement).style.background = "#262624"; }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ background: "var(--background-overlay)", color: "white" }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-[#3a3a39] text-white">
                     {(msg.from[0] || "?").toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -283,9 +281,9 @@ export default function EmailPage() {
                       <span className="w-1.5 h-1.5 rounded-full bg-[#FFFFFF] shrink-0" />
                     </div>
                     <p className="text-sm font-medium text-white truncate">{msg.subject}</p>
-                    <p className="text-xs truncate mt-0.5" style={{ color: "var(--foreground-secondary)" }}>{msg.snippet}</p>
+                    <p className="text-xs truncate mt-0.5 text-white/60">{msg.snippet}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 shrink-0 opacity-0 group-hover:opacity-60 transition-opacity" style={{ color: "var(--foreground-secondary)" }} />
+                  <ChevronRight className="h-4 w-4 shrink-0 opacity-0 group-hover:opacity-60 transition-opacity text-white/60" />
                 </div>
               </motion.button>
             ))}
@@ -294,30 +292,30 @@ export default function EmailPage() {
 
         {/* Sent & Drafts */}
         {tab === "sent" && (drafts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 rounded-2xl border text-center" style={{ borderColor: "var(--border)", background: "var(--background-elevated)" }}>
-            <Send className="h-8 w-8 mb-3" style={{ color: "var(--foreground-secondary)" }} />
+          <div className="flex flex-col items-center justify-center py-24 rounded-2xl border text-center bg-[#262624] border-white/06">
+            <Send className="h-8 w-8 mb-3 text-white/60" />
             <p className="text-sm font-semibold text-white mb-1">No emails yet</p>
-            <p className="text-xs" style={{ color: "var(--foreground-secondary)" }}>Use Compose to draft and send emails with AI</p>
+            <p className="text-xs text-white/50">Use Compose to draft and send emails with AI</p>
           </div>
         ) : (
           <div className="space-y-1">
             {drafts.map((email, i) => (
               <motion.div key={email.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                className="flex items-center gap-4 px-5 py-4 rounded-xl border" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ background: "var(--background-overlay)", color: "white" }}>
+                className="flex items-center gap-4 px-5 py-4 rounded-xl border bg-[#262624] border-white/06">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-[#3a3a39] text-white">
                   {(email.recipient[0] || "?").toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-white truncate">{email.subject}</p>
-                  <p className="text-xs truncate" style={{ color: "var(--foreground-secondary)" }}>To: {email.recipient}</p>
+                  <p className="text-xs truncate text-white/60">To: {email.recipient}</p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: email.status === "sent" ? "#FFFFFF" : "#FFFFFF" }} />
-                  <span className="text-xs capitalize" style={{ color: "var(--foreground-secondary)" }}>{email.status}</span>
-                  <span className="text-xs" style={{ color: "var(--foreground-tertiary)" }}>{formatTimeAgo(new Date(email.created_at))}</span>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#FFFFFF]" />
+                  <span className="text-xs capitalize text-white/60">{email.status}</span>
+                  <span className="text-xs text-white/30">{formatTimeAgo(new Date(email.created_at))}</span>
                   {email.status === "draft" && (
                     <button onClick={() => sendDraft(email.id)} disabled={sending}
-                      className="text-xs px-3 py-1 rounded-lg font-semibold" style={{ background: "var(--foreground)", color: "var(--background)" }}>
+                      className="text-xs px-3 py-1 rounded-lg font-semibold bg-white text-[#1a1a1a]">
                       Send
                     </button>
                   )}
@@ -337,23 +335,22 @@ export default function EmailPage() {
             onClick={() => setSelected(null)}>
             <motion.div initial={{ scale: 0.96, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, y: 12 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-2xl flex flex-col rounded-2xl border overflow-hidden"
-              style={{ background: "var(--background)", borderColor: "var(--border)", maxHeight: "88vh" }}>
+              className="w-full max-w-2xl flex flex-col rounded-2xl border overflow-hidden bg-[#1a1a1a] border-white/06"
+              style={{ maxHeight: "88vh" }}>
 
               {/* Modal header */}
-              <div className="px-6 py-5 border-b flex items-start gap-4" style={{ borderColor: "var(--border)" }}>
+              <div className="px-6 py-5 border-b flex items-start gap-4 border-white/06">
                 <div className="flex-1 min-w-0">
                   <h2 className="text-base font-bold text-white mb-1">{selected.subject}</h2>
-                  <p className="text-sm" style={{ color: "var(--foreground-secondary)" }}>{selected.from}</p>
+                  <p className="text-sm text-white/60">{selected.from}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button onClick={summarizeEmail} disabled={summarizing || loadingBody}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
-                    style={{ background: "rgba(255,255,255,0.06)", color: "#FFFFFF", border: "1px solid rgba(255,255,255,0.12)" }}>
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white/06 text-white border border-white/[0.12]">
                     {summarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                     AI Summary
                   </button>
-                  <button onClick={() => setSelected(null)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "var(--background-elevated)", color: "var(--foreground-secondary)" }}>
+                  <button onClick={() => setSelected(null)} className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#262624] text-white/60">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -365,8 +362,8 @@ export default function EmailPage() {
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                     className="px-6 py-4 border-b overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)" }}>
                     <div className="flex items-center gap-1.5 mb-2">
-                      <Sparkles className="w-3.5 h-3.5" style={{ color: "#FFFFFF" }} />
-                      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "#FFFFFF" }}>AI Summary</span>
+                      <Sparkles className="w-3.5 h-3.5 text-white" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-white">AI Summary</span>
                     </div>
                     <p className="text-sm text-white leading-relaxed whitespace-pre-wrap">{summary}</p>
                   </motion.div>
@@ -376,24 +373,24 @@ export default function EmailPage() {
               {/* Email body */}
               <div className="flex-1 overflow-y-auto px-6 py-5">
                 {loadingBody ? (
-                  <div className="flex items-center gap-2" style={{ color: "var(--foreground-secondary)" }}>
+                  <div className="flex items-center gap-2 text-white/60">
                     <Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">Loading email...</span>
                   </div>
                 ) : (
-                  <div className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "var(--foreground-secondary)" }}>{emailBody || selected.snippet}</div>
+                  <div className="text-sm leading-relaxed whitespace-pre-wrap text-white/60">{emailBody || selected.snippet}</div>
                 )}
               </div>
 
               {/* Reply box */}
-              <div className="px-6 py-4 border-t" style={{ borderColor: "var(--border)", background: "var(--background-elevated)" }}>
+              <div className="px-6 py-4 border-t border-white/06 bg-[#262624]">
                 <div className="flex gap-2">
                   <Input value={reply} onChange={e => setReply(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && reply.trim()) { e.preventDefault(); sendReply(); } }}
                     placeholder={gmail ? "Write a reply and press Enter..." : "Connect Gmail to reply"}
                     disabled={!gmail}
-                    className="flex-1 text-sm" style={{ background: "var(--background)", border: "1px solid var(--border)", color: "white" }} />
+                    className="flex-1 text-sm bg-[#1a1a1a] border-white/06 text-white" />
                   <Button onClick={sendReply} disabled={sending || !reply.trim() || !gmail}
-                    className="h-10 px-4 rounded-xl border-0" style={{ background: "var(--foreground)", color: "var(--background)" }}>
+                    className="h-10 px-4 rounded-xl border-0 bg-white text-[#1a1a1a]">
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </div>
@@ -405,44 +402,44 @@ export default function EmailPage() {
 
       {/* Compose modal */}
       <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
-        <DialogContent className="border text-white sm:max-w-lg" style={{ background: "var(--background)", borderColor: "var(--border)" }}>
+        <DialogContent className="border text-white sm:max-w-lg bg-[#1a1a1a] border-white/06">
           <DialogHeader><DialogTitle className="text-white">Compose with AI</DialogTitle></DialogHeader>
           {!preview ? (
             <form onSubmit={generate} className="space-y-4 pt-2">
               <div>
-                <Label className="text-xs uppercase tracking-wide mb-1.5 block" style={{ color: "var(--foreground-secondary)" }}>To</Label>
-                <Input value={recipient} onChange={e => setRecipient(e.target.value)} placeholder="recipient@email.com" required style={{ background: "var(--background-elevated)", border: "1px solid var(--border)", color: "white" }} />
+                <Label className="text-xs uppercase tracking-wide mb-1.5 block text-white/60">To</Label>
+                <Input value={recipient} onChange={e => setRecipient(e.target.value)} placeholder="recipient@email.com" required className="bg-[#262624] border-white/06 text-white" />
               </div>
               <div>
-                <Label className="text-xs uppercase tracking-wide mb-1.5 block" style={{ color: "var(--foreground-secondary)" }}>Topic</Label>
-                <Input value={topic} onChange={e => setTopic(e.target.value)} placeholder="What is this email about?" required style={{ background: "var(--background-elevated)", border: "1px solid var(--border)", color: "white" }} />
+                <Label className="text-xs uppercase tracking-wide mb-1.5 block text-white/60">Topic</Label>
+                <Input value={topic} onChange={e => setTopic(e.target.value)} placeholder="What is this email about?" required className="bg-[#262624] border-white/06 text-white" />
               </div>
               <div>
-                <Label className="text-xs uppercase tracking-wide mb-1.5 block" style={{ color: "var(--foreground-secondary)" }}>Tone</Label>
+                <Label className="text-xs uppercase tracking-wide mb-1.5 block text-white/60">Tone</Label>
                 <Select value={tone} onValueChange={(v) => { if (v) setTone(v); }}>
-                  <SelectTrigger style={{ background: "var(--background-elevated)", border: "1px solid var(--border)", color: "white" }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ background: "var(--background)", border: "1px solid var(--border)", color: "white" }}>
+                  <SelectTrigger className="bg-[#262624] border-white/06 text-white"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-[#1a1a1a] border-white/06 text-white">
                     {["Professional","Friendly","Formal","Persuasive","Casual"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" disabled={generating} className="w-full border-0 rounded-xl font-semibold" style={{ background: "var(--foreground)", color: "var(--background)" }}>
+              <Button type="submit" disabled={generating} className="w-full border-0 rounded-xl font-semibold bg-white text-[#1a1a1a]">
                 {generating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Writing...</> : "Generate with AI"}
               </Button>
             </form>
           ) : (
             <div className="pt-2 space-y-4">
-              <div className="rounded-xl border p-4" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
-                <p className="text-xs mb-2" style={{ color: "var(--foreground-secondary)" }}>To: <span className="text-white">{preview.recipient}</span></p>
+              <div className="rounded-xl border p-4 bg-[#262624] border-white/06">
+                <p className="text-xs mb-2 text-white/60">To: <span className="text-white">{preview.recipient}</span></p>
                 <p className="text-sm font-bold text-white mb-3">{preview.subject}</p>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "var(--foreground-secondary)" }}>{preview.body}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap text-white/60">{preview.body}</p>
               </div>
               <div className="flex gap-2">
-                <Button onClick={() => sendDraft(preview.id)} disabled={sending} className="flex-1 border-0 font-semibold" style={{ background: "var(--foreground)", color: "var(--background)" }}>
+                <Button onClick={() => sendDraft(preview.id)} disabled={sending} className="flex-1 border-0 font-semibold bg-white text-[#1a1a1a]">
                   {sending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                   {hasConnected ? "Send via Gmail" : "Save Draft"}
                 </Button>
-                <Button onClick={() => { setPreview(null); setComposeOpen(false); }} variant="outline" className="border" style={{ background: "transparent", borderColor: "var(--border)", color: "#FF3B30" }}>
+                <Button onClick={() => { setPreview(null); setComposeOpen(false); }} variant="outline" className="border bg-transparent border-white/06 text-[#FF3B30]">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

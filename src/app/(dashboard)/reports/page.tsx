@@ -97,11 +97,11 @@ export default function ReportsPage() {
       <PageTransition>
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-white mb-2">Weekly Reports</h1>
-          <Button disabled className="bg-[#1A1A1A] text-[var(--foreground-secondary)] h-10 px-4">
-            <TrendingUp className="h-4 w-4 mr-2" /> Generate Report
-          </Button>
-        </div>
-        <div className="rounded-xl border border-[var(--border)] bg-[#111111] p-10 skeleton h-[400px]" />
+            <Button disabled className="bg-[#1A1A1A] text-white/60 h-10 px-4">
+                <TrendingUp className="h-4 w-4 mr-2" /> Generate Report
+              </Button>
+            </div>
+            <div className="rounded-xl border border-white/[0.06] bg-[#262624] p-10 skeleton h-[400px]" />
       </PageTransition>
     );
   }
@@ -119,7 +119,7 @@ export default function ReportsPage() {
         >
           <div>
             <h1 className="text-2xl font-bold text-white mb-2">Weekly Reports</h1>
-            <p className="text-sm text-[var(--foreground-secondary)]">Analytics and insights from your AI</p>
+            <p className="text-sm text-white/60">Analytics and insights from your AI</p>
           </div>
           {reports.length > 0 && (
             <motion.div
@@ -129,7 +129,7 @@ export default function ReportsPage() {
               <Button
                 onClick={handleGenerateSample}
                 disabled={generating}
-                className="bg-[#1A1A1A] border border-[var(--border)] text-white hover:bg-[#222222] rounded-lg h-10 px-4 text-sm font-medium transition-all"
+                className="bg-[#1A1A1A] border border-white/[0.06] text-white hover:bg-[#222222] rounded-lg h-10 px-4 text-sm font-medium transition-all"
               >
                 {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <TrendingUp className="h-4 w-4 mr-2" />}
                 Generate Latest
@@ -140,22 +140,22 @@ export default function ReportsPage() {
 
         {reports.length === 0 ? (
           <motion.div
-            className="flex flex-col items-center justify-center py-32 text-center border border-[var(--border)] rounded-xl bg-[#111111]"
+            className="flex flex-col items-center justify-center py-32 text-center border border-white/[0.06] rounded-xl bg-[#262624]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1A1A1A] border border-[var(--border)] mb-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#262624] border border-white/[0.06] mb-6">
               <BarChart3 className="h-8 w-8 text-white" />
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">No reports generated</h3>
-            <p className="text-[var(--foreground-secondary)] mb-6 max-w-sm">
+            <p className="text-white/60 mb-6 max-w-sm">
               Generate your first weekly report to see analytics based on your real platform data.
             </p>
             <Button
               onClick={handleGenerateSample}
               disabled={generating}
-              className="bg-[var(--foreground)] text-white hover:bg-[#FFFFFF]"
+              className="bg-white text-[#111111] hover:bg-[#FFFFFF]"
             >
               {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : "Generate Sample Report"}
             </Button>
@@ -169,13 +169,13 @@ export default function ReportsPage() {
               transition={{ duration: 0.4 }}
             >
               {/* Main Report Card */}
-              <div className="rounded-2xl border border-[var(--border)] bg-[#0A0A0A] overflow-hidden relative">
+              <div className="rounded-2xl border border-white/[0.06] bg-[#262624] overflow-hidden relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
 
                 <div className="p-8 md:p-12 relative z-10">
                   <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
                     <div>
-                      <h2 className="text-[11px] font-bold text-[var(--foreground-secondary)] uppercase tracking-[0.2em] mb-3">Inceptive Weekly Report</h2>
+                      <h2 className="text-[11px] font-bold text-white/60 uppercase tracking-[0.2em] mb-3">Inceptive Weekly Report</h2>
                       <p className="text-2xl md:text-3xl font-light text-white">{latestReport.date_range_str}</p>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[#FFFFFF]/20 bg-[#FFFFFF]/10 w-fit">
@@ -186,38 +186,38 @@ export default function ReportsPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-8 mb-12">
                     <div className="space-y-6">
-                      <div className="flex justify-between items-end border-b border-[var(--border)] pb-4">
-                        <span className="text-[var(--foreground-secondary)] text-sm">Hours worked by your AI</span>
+                      <div className="flex justify-between items-end border-b border-white/[0.06] pb-4">
+                        <span className="text-white/60 text-sm">Hours worked by your AI</span>
                         <span className="text-white font-mono text-xl">{latestReport.hours_worked}h</span>
                       </div>
-                      <div className="flex justify-between items-end border-b border-[var(--border)] pb-4">
-                        <span className="text-[var(--foreground-secondary)] text-sm">Tasks completed</span>
+                      <div className="flex justify-between items-end border-b border-white/[0.06] pb-4">
+                        <span className="text-white/60 text-sm">Tasks completed</span>
                         <span className="text-white font-mono text-xl">{latestReport.tasks_completed}</span>
                       </div>
-                      <div className="flex justify-between items-end border-b border-[var(--border)] pb-4">
-                        <span className="text-[var(--foreground-secondary)] text-sm">Emails sent</span>
+                      <div className="flex justify-between items-end border-b border-white/[0.06] pb-4">
+                        <span className="text-white/60 text-sm">Emails sent</span>
                         <span className="text-white font-mono text-xl">{latestReport.emails_sent}</span>
                       </div>
                     </div>
 
                     <div className="space-y-6">
-                      <div className="flex justify-between items-end border-b border-[var(--border)] pb-4">
-                        <span className="text-[var(--foreground-secondary)] text-sm">Research reports</span>
+                      <div className="flex justify-between items-end border-b border-white/[0.06] pb-4">
+                        <span className="text-white/60 text-sm">Research reports</span>
                         <span className="text-white font-mono text-xl">{latestReport.research_reports}</span>
                       </div>
-                      <div className="flex justify-between items-end border-b border-[var(--border)] pb-4">
-                        <span className="text-[var(--foreground-secondary)] text-sm">Social posts scheduled</span>
+                      <div className="flex justify-between items-end border-b border-white/[0.06] pb-4">
+                        <span className="text-white/60 text-sm">Social posts scheduled</span>
                         <span className="text-white font-mono text-xl">{latestReport.social_posts}</span>
                       </div>
-                      <div className="flex justify-between items-end border-b border-[var(--border)] pb-4">
-                        <span className="text-[var(--foreground-secondary)] text-sm">Goals active</span>
+                      <div className="flex justify-between items-end border-b border-white/[0.06] pb-4">
+                        <span className="text-white/60 text-sm">Goals active</span>
                         <span className="text-white font-mono text-xl">{latestReport.goals_active}</span>
                       </div>
                     </div>
                   </div>
 
                   {topGoal && (
-                    <div className="bg-[#111111] border border-[var(--border)] rounded-xl p-6 mb-12">
+                    <div className="bg-[#262624] border border-white/[0.06] rounded-xl p-6 mb-12">
                       <div className="flex items-center gap-3 mb-4">
                         <Target className="h-5 w-5 text-white" />
                         <h3 className="text-sm font-semibold text-white">Current Priority Focus</h3>
@@ -226,7 +226,7 @@ export default function ReportsPage() {
                       <div className="flex items-center gap-4">
                         <div className="flex-1 h-1.5 bg-[#222222] rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-[var(--foreground)] rounded-full"
+                            className="h-full bg-white rounded-full"
                             style={{ width: `${topGoal.progress_percent}%` }}
                           />
                         </div>
@@ -235,7 +235,7 @@ export default function ReportsPage() {
                     </div>
                   )}
 
-                  <div className="pt-8 border-t border-[var(--border)] flex justify-between items-center text-xs text-[var(--foreground-tertiary)]">
+                  <div className="pt-8 border-t border-white/[0.06] flex justify-between items-center text-xs text-white/40">
                     <span>Every Sunday. Delivered to your inbox.</span>
                     <span>Inceptive AI</span>
                   </div>
@@ -244,7 +244,7 @@ export default function ReportsPage() {
 
               {/* Chart Section */}
               {latestReport.chart_data && latestReport.chart_data.length > 0 && (
-                <div className="rounded-2xl border border-[var(--border)] bg-[#0A0A0A] p-8">
+                <div className="rounded-2xl border border-white/[0.06] bg-[#262624] p-8">
                   <h3 className="text-sm font-bold text-white mb-8">Tasks Completed (Past 8 Weeks)</h3>
                   <div className="h-[250px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
@@ -272,7 +272,7 @@ export default function ReportsPage() {
                         />
                         <Bar
                           dataKey="tasks_completed"
-                          fill="var(--foreground)"
+                          fill="white"
                           radius={[4, 4, 0, 0]}
                           maxBarSize={40}
                         />
