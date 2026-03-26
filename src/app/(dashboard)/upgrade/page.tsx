@@ -106,7 +106,7 @@ function UpgradePageInner() {
           style={{ borderColor: "var(--border)", color: "var(--foreground-secondary)", background: "var(--background-elevated)" }}>
           <Zap className="w-3 h-3" /> Your 24/7 AI Employee
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight mb-3">
+        <h1 className="text-3xl sm:text-4xl font-bold text-[var(--fg-primary)] tracking-tight mb-3">
           Simple, transparent pricing
         </h1>
         <p className="text-[var(--foreground-secondary)] text-base max-w-md mx-auto">
@@ -116,7 +116,7 @@ function UpgradePageInner() {
           <button
             onClick={handleManageBilling}
             disabled={loading === "portal"}
-            className="mt-4 text-sm text-[var(--foreground-secondary)] underline hover:text-white transition-colors"
+            className="mt-4 text-sm text-[var(--foreground-secondary)] underline hover:text-[var(--fg-primary)] transition-colors"
           >
             {loading === "portal" ? "Opening..." : "Manage billing & invoices →"}
           </button>
@@ -145,7 +145,7 @@ function UpgradePageInner() {
               }}
             >
               {(plan as any).popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold text-white"
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold text-[var(--fg-primary)]"
                   style={{ background: "#007AFF" }}>
                   MOST POPULAR
                 </div>
@@ -159,12 +159,12 @@ function UpgradePageInner() {
 
               {/* Icon + Name */}
               <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white"
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--fg-primary)]"
                   style={{ background: PLAN_ACCENT[plan.id as keyof typeof PLAN_ACCENT], border: `1px solid ${PLAN_BORDER[plan.id as keyof typeof PLAN_BORDER]}` }}>
                   {PLAN_ICONS[plan.id as keyof typeof PLAN_ICONS]}
                 </div>
                 <div>
-                  <p className="text-white font-semibold text-sm">{plan.name}</p>
+                  <p className="text-[var(--fg-primary)] font-semibold text-sm">{plan.name}</p>
                   <p className="text-[var(--foreground-tertiary)] text-[11px]">
                     {plan.id === "free" ? "Always free" :
                      plan.id === "basic" ? "BYOK platform fee" :
@@ -175,7 +175,7 @@ function UpgradePageInner() {
 
               {/* Price */}
               <div className="mb-5">
-                <span className="text-3xl font-bold text-white">${plan.price}</span>
+                <span className="text-3xl font-bold text-[var(--fg-primary)]">${plan.price}</span>
                 <span className="text-[var(--foreground-secondary)] text-sm">/mo</span>
                 <p className="text-xs text-[var(--foreground-tertiary)] mt-1">
                   {plan.id === "free" && "100 credits / day"}
@@ -230,11 +230,11 @@ function UpgradePageInner() {
         className="max-w-2xl mx-auto mt-10 p-5 rounded-2xl border text-sm"
         style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}
       >
-        <p className="font-semibold text-white mb-2">What are Inceptive Credits?</p>
+        <p className="font-semibold text-[var(--fg-primary)] mb-2">What are Inceptive Credits?</p>
         <p className="text-[var(--foreground-secondary)] leading-relaxed">
           Credits are consumed when Inceptive does work for you using our hosted AI.
           A quick chat reply = 10 credits. A web search = 25. A deep research report = 100–300.
-          <span className="text-white"> Basic plan ($9) users bring their own API key — zero credits consumed,
+          <span className="text-[var(--fg-primary)]"> Basic plan ($9) users bring their own API key — zero credits consumed,
           no limits.</span> Credits reset daily (free) or monthly (Pro/Unlimited).
         </p>
       </motion.div>

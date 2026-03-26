@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { ChatProvider } from "@/lib/chat-context";
 import { AgentProvider } from "@/lib/agent-context";
 import { Sidebar, SidebarProvider, useSidebar } from "@/components/layout/sidebar";
+import { ThemeProvider } from "@/lib/theme-context";
 
 function LayoutInner({ children }: { children: React.ReactNode }) {
   const { collapsed } = useSidebar();
@@ -29,13 +30,15 @@ export default function DashboardLayout({
 }) {
   return (
     <AuthProvider>
-      <AgentProvider>
-        <ChatProvider>
-          <SidebarProvider>
-            <LayoutInner>{children}</LayoutInner>
-          </SidebarProvider>
-        </ChatProvider>
-      </AgentProvider>
+      <ThemeProvider>
+        <AgentProvider>
+          <ChatProvider>
+            <SidebarProvider>
+              <LayoutInner>{children}</LayoutInner>
+            </SidebarProvider>
+          </ChatProvider>
+        </AgentProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

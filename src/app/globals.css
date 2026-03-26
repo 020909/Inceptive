@@ -84,9 +84,63 @@
     --surface: var(--bg-surface);
   }
 
+  html.light {
+    --bg-base: #F5F5F7;
+    --bg-app: #EBEBED;
+    --bg-surface: #FFFFFF;
+    --bg-elevated: #F0F0F2;
+    --bg-overlay: #E5E5EA;
+
+    --fg-primary: #1D1D1F;
+    --fg-secondary: #6E6E73;
+    --fg-tertiary: #86868B;
+    --fg-muted: #AEAEB2;
+
+    --border-subtle: rgba(0, 0, 0, 0.06);
+    --border-default: rgba(0, 0, 0, 0.12);
+    --border-strong: rgba(0, 0, 0, 0.22);
+
+    --accent: #0071E3;
+    --accent-soft: rgba(0, 113, 227, 0.10);
+    --accent-muted: rgba(0, 113, 227, 0.06);
+
+    --success: #248A3D;
+    --success-soft: rgba(36, 138, 61, 0.10);
+    --destructive: #FF3B30;
+    --destructive-soft: rgba(255, 59, 48, 0.10);
+    --warning: #FF9F0A;
+    --warning-soft: rgba(255, 159, 10, 0.10);
+
+    --ring: rgba(0, 0, 0, 0.15);
+
+    --background: var(--bg-app);
+    --foreground: var(--fg-primary);
+    --card: var(--bg-surface);
+    --card-foreground: var(--fg-primary);
+    --popover: var(--bg-surface);
+    --popover-foreground: var(--fg-primary);
+    --primary: var(--fg-primary);
+    --primary-foreground: #FFFFFF;
+    --secondary: var(--bg-surface);
+    --secondary-foreground: var(--fg-primary);
+    --muted: var(--bg-elevated);
+    --muted-foreground: var(--fg-secondary);
+    --accent-foreground: #FFFFFF;
+    --destructive-foreground: #FFFFFF;
+    --border: var(--border-default);
+    --input: var(--border-default);
+
+    --foreground-secondary: var(--fg-secondary);
+    --foreground-tertiary: var(--fg-tertiary);
+    --background-elevated: var(--bg-elevated);
+    --background-overlay: var(--bg-overlay);
+    --surface: var(--bg-surface);
+  }
+
   html,
   body {
-    @apply text-white antialiased;
+    @apply antialiased;
+    color: var(--fg-primary);
     background: var(--bg-base);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
@@ -103,11 +157,11 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--border-default);
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.14);
+    background: var(--border-strong);
   }
 
   ::selection {
@@ -118,7 +172,7 @@
 
 @layer utilities {
   .glass {
-    background: rgba(26, 26, 26, 0.7);
+    background: color-mix(in srgb, var(--bg-app) 75%, transparent);
     backdrop-filter: blur(24px) saturate(1.2);
     -webkit-backdrop-filter: blur(24px) saturate(1.2);
     border: 1px solid var(--border-subtle);

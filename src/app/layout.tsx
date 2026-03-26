@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={cn("dark h-full", inter.variable)}>
+    <html lang="en" suppressHydrationWarning className={cn("dark h-full", inter.variable)}>
       <body className="h-full bg-[var(--bg-base)] text-[var(--fg-primary)] antialiased font-sans">
         <MotionConfig transition={{ type: "spring", stiffness: 120, damping: 22 }}>
           {children}

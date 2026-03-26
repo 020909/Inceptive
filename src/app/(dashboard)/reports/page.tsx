@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
-import { Loader2, TrendingUp, BarChart3, Target, FileText, Download, Share2, Zap, MoreHorizontal, Clock } from "lucide-react";
+import { Loader2, TrendingUp, BarChart3, Target, FileText, Share2, Zap } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -32,91 +32,7 @@ interface WeeklyReport {
   created_at: string;
 }
 
-interface Report {
-  id: string;
-  title: string;
-  description: string;
-  type: 'analytics' | 'performance' | 'financial' | 'custom';
-  createdAt: string;
-  fileSize: string;
-}
 
-const mockReports: Report[] = [
-  { id: '1', title: 'Weekly Performance Summary', description: 'Comprehensive analysis of AI agent performance and user engagement metrics.', type: 'performance', createdAt: '2 hours ago', fileSize: '2.4 MB' },
-  { id: '2', title: 'User Growth Analysis', description: 'Month-over-month user acquisition and retention trends with projections.', type: 'analytics', createdAt: '1 day ago', fileSize: '4.1 MB' },
-  { id: '3', title: 'Q4 Financial Overview', description: 'Revenue, expenses, and runway analysis for Q4 2024.', type: 'financial', createdAt: '3 days ago', fileSize: '1.8 MB' },
-  { id: '5', title: 'Competitor Benchmark Report', description: 'Detailed comparison against Claude Cowork, Perplexity, and Manus.', type: 'custom', createdAt: '1 week ago', fileSize: '5.2 MB' },
-];
-
-function TypeBadge({ type }: { type: Report['type'] }) {
-  const configs = {
-    analytics: { icon: BarChart3, color: 'text-white', bg: 'bg-[var(--bg-elevated)]', label: 'Analytics' },
-    performance: { icon: Zap, color: 'text-[var(--fg-primary)]', bg: 'bg-[var(--bg-elevated)]', label: 'Performance' },
-    financial: { icon: TrendingUp, color: 'text-white', bg: 'bg-[var(--bg-elevated)]', label: 'Financial' },
-    custom: { icon: FileText, color: 'text-[var(--fg-primary)]', bg: 'bg-[var(--bg-elevated)]', label: 'Custom' },
-  };
-  const config = configs[type];
-  const Icon = config.icon;
-
-  return (
-    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${config.bg}`}>
-      <Icon size={12} className={config.color} />
-      <span className={`text-xs font-medium ${config.color}`}>{config.label}</span>
-    </div>
-  );
-}
-
-function ReportCard({ report, index }: { report: Report; index: number }) {
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <motion.div
-      className="group p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-all duration-300"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, type: 'spring', stiffness: 100, damping: 20 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-10 h-10 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center">
-          <FileText size={20} className="text-white/70" />
-        </div>
-        <TypeBadge type={report.type} />
-      </div>
-
-      <h3 className="text-white font-medium tracking-[-0.02em] mb-2">{report.title}</h3>
-      <p className="text-[var(--fg-muted)] text-sm mb-4 line-clamp-2">{report.description}</p>
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 text-xs text-[var(--fg-muted)]">
-          <span className="flex items-center gap-1">
-            <Clock size={12} />
-            {report.createdAt}
-          </span>
-          <span>{report.fileSize}</span>
-        </div>
-
-        <motion.div
-          className="flex items-center gap-1"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isHovered ? 1 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <button className="p-2 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors">
-            <Download size={14} className="text-[var(--fg-tertiary)]" />
-          </button>
-          <button className="p-2 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors">
-            <Share2 size={14} className="text-[var(--fg-tertiary)]" />
-          </button>
-          <button className="p-2 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors">
-            <MoreHorizontal size={14} className="text-[var(--fg-tertiary)]" />
-          </button>
-        </motion.div>
-      </div>
-    </motion.div>
-  );
-}
 
 export default function ReportsPage() {
   const { user } = useAuth();
@@ -201,11 +117,11 @@ export default function ReportsPage() {
         {/* Header */}
         <header className="flex items-center justify-between px-8 py-5 border-b border-[var(--border-subtle)]">
           <div>
-            <h1 className="text-xl font-semibold text-white tracking-[-0.02em]">Reports</h1>
+            <h1 className="text-xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Reports</h1>
             <p className="text-[var(--fg-muted)] text-sm">AI-generated insights and analytics</p>
           </div>
           <motion.button
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white text-[var(--bg-base)] font-medium text-sm"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] font-medium text-sm"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleGenerateSample}
@@ -232,7 +148,7 @@ export default function ReportsPage() {
                 </div>
                 <span className="text-[var(--fg-muted)] text-xs">Total Reports</span>
               </div>
-              <p className="text-2xl font-semibold text-white tracking-[-0.03em]">{reports.length + mockReports.length}</p>
+              <p className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{reports.length}</p>
             </motion.div>
             <motion.div
               className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
@@ -246,7 +162,7 @@ export default function ReportsPage() {
                 </div>
                 <span className="text-[var(--fg-muted)] text-xs">Generated This Week</span>
               </div>
-              <p className="text-2xl font-semibold text-white tracking-[-0.03em]">5</p>
+              <p className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{reports.filter(r => new Date(r.created_at) > new Date(Date.now() - 7 * 86400000)).length}</p>
             </motion.div>
             <motion.div
               className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
@@ -260,7 +176,7 @@ export default function ReportsPage() {
                 </div>
                 <span className="text-[var(--fg-muted)] text-xs">Shared</span>
               </div>
-              <p className="text-2xl font-semibold text-white tracking-[-0.03em]">12</p>
+              <p className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">0</p>
             </motion.div>
             <motion.div
               className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
@@ -274,18 +190,18 @@ export default function ReportsPage() {
                 </div>
                 <span className="text-[var(--fg-muted)] text-xs">Storage Used</span>
               </div>
-              <p className="text-2xl font-semibold text-white tracking-[-0.03em]">48 MB</p>
+              <p className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">—</p>
             </motion.div>
           </div>
 
           {/* Report Templates */}
           <div className="mb-6">
-            <h2 className="text-white font-medium tracking-[-0.02em] mb-4">Quick Generate</h2>
+            <h2 className="text-[var(--fg-primary)] font-medium tracking-[-0.02em] mb-4">Quick Generate</h2>
             <div className="flex gap-3">
               {['Weekly Summary', 'User Analytics', 'Performance', 'Competitor Analysis'].map((template, index) => (
                 <motion.button
                   key={template}
-                  className="px-4 py-3 rounded-xl bg-white/[0.04] border border-[var(--border-subtle)] text-white/70 text-sm hover:bg-[var(--bg-elevated)] hover:border-white/[0.10] hover:text-white transition-all"
+                  className="px-4 py-3 rounded-xl bg-white/[0.04] border border-[var(--border-subtle)] text-[var(--fg-primary)]/70 text-sm hover:bg-[var(--bg-elevated)] hover:border-white/[0.10] hover:text-[var(--fg-primary)] transition-all"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + index * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
@@ -314,11 +230,11 @@ export default function ReportsPage() {
                   <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
                     <div>
                       <h2 className="text-[11px] font-bold text-[var(--fg-muted)] uppercase tracking-[0.2em] mb-3">Inceptive Weekly Report</h2>
-                      <p className="text-2xl md:text-3xl font-light text-white">{latestReport.date_range_str}</p>
+                      <p className="text-2xl md:text-3xl font-light text-[var(--fg-primary)]">{latestReport.date_range_str}</p>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.10] bg-[var(--bg-elevated)] w-fit">
                       <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
-                      <span className="text-xs font-semibold tracking-wide text-white uppercase">All systems running</span>
+                      <span className="text-xs font-semibold tracking-wide text-[var(--fg-primary)] uppercase">All systems running</span>
                     </div>
                   </div>
 
@@ -326,30 +242,30 @@ export default function ReportsPage() {
                     <div className="space-y-6">
                       <div className="flex justify-between items-end border-b border-[var(--border-subtle)] pb-4">
                         <span className="text-[var(--fg-secondary)] text-sm">Hours worked by your AI</span>
-                        <span className="text-white font-mono text-xl">{latestReport.hours_worked}h</span>
+                        <span className="text-[var(--fg-primary)] font-mono text-xl">{latestReport.hours_worked}h</span>
                       </div>
                       <div className="flex justify-between items-end border-b border-[var(--border-subtle)] pb-4">
                         <span className="text-[var(--fg-secondary)] text-sm">Tasks completed</span>
-                        <span className="text-white font-mono text-xl">{latestReport.tasks_completed}</span>
+                        <span className="text-[var(--fg-primary)] font-mono text-xl">{latestReport.tasks_completed}</span>
                       </div>
                       <div className="flex justify-between items-end border-b border-[var(--border-subtle)] pb-4">
                         <span className="text-[var(--fg-secondary)] text-sm">Emails sent</span>
-                        <span className="text-white font-mono text-xl">{latestReport.emails_sent}</span>
+                        <span className="text-[var(--fg-primary)] font-mono text-xl">{latestReport.emails_sent}</span>
                       </div>
                     </div>
 
                     <div className="space-y-6">
                       <div className="flex justify-between items-end border-b border-[var(--border-subtle)] pb-4">
                         <span className="text-[var(--fg-secondary)] text-sm">Research reports</span>
-                        <span className="text-white font-mono text-xl">{latestReport.research_reports}</span>
+                        <span className="text-[var(--fg-primary)] font-mono text-xl">{latestReport.research_reports}</span>
                       </div>
                       <div className="flex justify-between items-end border-b border-[var(--border-subtle)] pb-4">
                         <span className="text-[var(--fg-secondary)] text-sm">Social posts scheduled</span>
-                        <span className="text-white font-mono text-xl">{latestReport.social_posts}</span>
+                        <span className="text-[var(--fg-primary)] font-mono text-xl">{latestReport.social_posts}</span>
                       </div>
                       <div className="flex justify-between items-end border-b border-[var(--border-subtle)] pb-4">
                         <span className="text-[var(--fg-secondary)] text-sm">Goals active</span>
-                        <span className="text-white font-mono text-xl">{latestReport.goals_active}</span>
+                        <span className="text-[var(--fg-primary)] font-mono text-xl">{latestReport.goals_active}</span>
                       </div>
                     </div>
                   </div>
@@ -358,9 +274,9 @@ export default function ReportsPage() {
                     <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-6 mb-12">
                       <div className="flex items-center gap-3 mb-4">
                         <Target className="h-5 w-5 text-[var(--fg-secondary)]" />
-                        <h3 className="text-sm font-medium text-white">Current Priority Focus</h3>
+                        <h3 className="text-sm font-medium text-[var(--fg-primary)]">Current Priority Focus</h3>
                       </div>
-                      <p className="text-white mb-4 text-lg">{topGoal.title}</p>
+                      <p className="text-[var(--fg-primary)] mb-4 text-lg">{topGoal.title}</p>
                       <div className="flex items-center gap-4">
                         <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                           <div
@@ -368,7 +284,7 @@ export default function ReportsPage() {
                             style={{ width: `${topGoal.progress_percent}%` }}
                           />
                         </div>
-                        <span className="text-xs font-medium text-white min-w-[3ch]">{topGoal.progress_percent}%</span>
+                        <span className="text-xs font-medium text-[var(--fg-primary)] min-w-[3ch]">{topGoal.progress_percent}%</span>
                       </div>
                     </div>
                   )}
@@ -383,7 +299,7 @@ export default function ReportsPage() {
               {/* Chart Section */}
               {latestReport.chart_data && latestReport.chart_data.length > 0 && (
                 <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8">
-                  <h3 className="text-white font-medium tracking-[-0.02em] mb-8">Tasks Completed (Past 8 Weeks)</h3>
+                  <h3 className="text-[var(--fg-primary)] font-medium tracking-[-0.02em] mb-8">Tasks Completed (Past 8 Weeks)</h3>
                   <div className="h-[250px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={latestReport.chart_data}>
@@ -422,13 +338,16 @@ export default function ReportsPage() {
             </motion.div>
           )}
 
-          {/* Recent Reports Grid */}
-          <h2 className="text-white font-medium tracking-[-0.02em] mb-4">Recent Reports</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {mockReports.map((report, index) => (
-              <ReportCard key={report.id} report={report} index={index} />
-            ))}
-          </div>
+          {/* No reports state */}
+          {reports.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-12 h-12 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] flex items-center justify-center mb-4">
+                <FileText size={20} className="text-[var(--fg-tertiary)]" />
+              </div>
+              <p className="text-sm text-[var(--fg-primary)] font-medium mb-1">No reports yet</p>
+              <p className="text-xs text-[var(--fg-muted)]">Click "Generate Report" to create your first weekly summary.</p>
+            </div>
+          )}
         </div>
       </div>
     </PageTransition>

@@ -48,11 +48,11 @@ function BreathingDot() {
   return (
     <span className="relative flex h-1.5 w-1.5">
       <motion.span
-        className="absolute inset-0 rounded-full bg-white"
+        className="absolute inset-0 rounded-full bg-[var(--fg-primary)]"
         animate={{ scale: [1, 1.6, 1], opacity: [0.4, 0.9, 0.4] }}
         transition={{ duration: 2.4, ease: "easeInOut", repeat: Infinity }}
       />
-      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--fg-primary)]" />
     </span>
   );
 }
@@ -72,7 +72,7 @@ function NavItem({ item, isActive, collapsed }: { item: typeof navItems[0]; isAc
         {isActive && (
           <motion.div
             layoutId="nav-active"
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-full bg-white"
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-full bg-[var(--fg-primary)]"
             transition={{ type: "spring", stiffness: 300, damping: 28 }}
           />
         )}
@@ -120,7 +120,7 @@ function PowerMeter({ collapsed }: { collapsed: boolean }) {
 
       <div className="relative h-[3px] bg-white/[0.06] rounded-full overflow-hidden">
         <motion.div
-          className="absolute inset-y-0 left-0 bg-white/80 rounded-full"
+          className="absolute inset-y-0 left-0 bg-[var(--fg-primary)] rounded-full opacity-80"
           initial={{ width: 0 }}
           animate={{ width: "100%" }}
           transition={{ type: "spring", stiffness: 80, damping: 20, delay: 0.5 }}
@@ -150,7 +150,7 @@ export function Sidebar() {
         transition-[width] duration-200 ease-out
         ${collapsed ? 'w-[60px]' : 'w-[240px]'}
       `}
-      style={{ background: "rgba(17, 17, 17, 0.75)" }}
+      style={{  }}
       initial={{ x: -40, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 140, damping: 22 }}
@@ -158,7 +158,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="relative px-3 pt-4 pb-3 flex items-center gap-2.5">
         <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0">
-          <div className="w-7 h-7 relative rounded-lg overflow-hidden bg-white shrink-0">
+          <div className="w-7 h-7 relative rounded-md overflow-hidden shrink-0">
             <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
           </div>
           {!collapsed && (

@@ -41,7 +41,7 @@ export default function SkillsPage() {
     <PageTransition>
       <div className="max-w-5xl mx-auto p-6 md:p-8">
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-2xl font-bold text-white mb-1">Skills</h1>
+          <h1 className="text-2xl font-bold text-[var(--fg-primary)] mb-1">Skills</h1>
           <p className="text-sm" style={{ color: "var(--foreground-secondary)" }}>One-click agent workflows. Pick a skill, your AI starts working immediately.</p>
         </motion.div>
 
@@ -66,11 +66,11 @@ export default function SkillsPage() {
                 <div className="p-5 flex-1">
                   <div className="flex items-start justify-between mb-4">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }}>
-                      <Icon className="w-4 h-4 text-white" />
+                      <Icon className="w-4 h-4 text-[var(--fg-primary)]" />
                     </div>
                     <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "var(--background-overlay)", color: "var(--foreground-secondary)", border: "1px solid var(--border)" }}>{skill.time}</span>
                   </div>
-                  <h3 className="text-sm font-bold text-white mb-1.5">{skill.title}</h3>
+                  <h3 className="text-sm font-bold text-[var(--fg-primary)] mb-1.5">{skill.title}</h3>
                   <p className="text-xs leading-relaxed" style={{ color: "var(--foreground-secondary)" }}>{skill.description}</p>
                   <div className="flex flex-wrap gap-1.5 mt-3">
                     {skill.tags.map(t => <span key={t} className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: "var(--background-overlay)", color: "var(--foreground-tertiary)" }}>{t}</span>)}
@@ -93,12 +93,12 @@ export default function SkillsPage() {
         </div>
 
         <div className="mt-10 p-5 rounded-2xl border" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
-          <h3 className="text-sm font-bold text-white mb-3">Slash Commands in Dashboard</h3>
+          <h3 className="text-sm font-bold text-[var(--fg-primary)] mb-3">Slash Commands in Dashboard</h3>
           <p className="text-xs mb-4" style={{ color: "var(--foreground-secondary)" }}>Type these shortcuts directly in the chat:</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {[["/inbox","Read Gmail inbox"],[" /research [topic]","Deep research + save"],[" /email [to] [topic]","Compose and send"],[" /post [content]","Schedule social post"],[" /goal [title]","Create a goal"],[" /brief","Morning briefing"]].map(([cmd,desc]) => (
               <div key={cmd} className="flex flex-col gap-1">
-                <code className="text-xs font-mono text-white px-2 py-1 rounded-lg" style={{ background: "var(--background-overlay)" }}>{cmd}</code>
+                <code className="text-xs font-mono text-[var(--fg-primary)] px-2 py-1 rounded-lg" style={{ background: "var(--background-overlay)" }}>{cmd}</code>
                 <span className="text-[10px]" style={{ color: "var(--foreground-tertiary)" }}>{desc}</span>
               </div>
             ))}

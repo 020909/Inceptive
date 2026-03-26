@@ -280,7 +280,7 @@ export default function EmailPage() {
               <span className="text-[var(--fg-primary)] text-xs">AI Active</span>
             </div>
             <motion.button
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white text-[var(--bg-base)] font-medium text-sm"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] font-medium text-sm"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setComposeOpen(true)}
@@ -317,21 +317,21 @@ export default function EmailPage() {
               ))}
             </div>
 
-            {/* AI Stats */}
+            {/* Email Stats */}
             <div className="mt-8 p-4 rounded-xl bg-white/[0.03] border border-[var(--border-subtle)]">
-              <p className="text-[var(--fg-muted)] text-xs mb-3">AI Actions Today</p>
+              <p className="text-[var(--fg-muted)] text-xs mb-3">Overview</p>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[var(--fg-primary)]/60">Auto-replied</span>
-                  <span className="text-[var(--fg-primary)]">8</span>
+                  <span className="text-[var(--fg-tertiary)]">Inbox</span>
+                  <span className="text-[var(--fg-primary)]">{inbox.length}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[var(--fg-primary)]/60">Summarized</span>
-                  <span className="text-[var(--fg-primary)]">15</span>
+                  <span className="text-[var(--fg-tertiary)]">Drafts</span>
+                  <span className="text-[var(--fg-primary)]">{drafts.length}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[var(--fg-primary)]/60">Drafted</span>
-                  <span className="text-[var(--fg-primary)]">3</span>
+                  <span className="text-[var(--fg-tertiary)]">Connected</span>
+                  <span className="text-[var(--fg-primary)]">{accounts.length}</span>
                 </div>
               </div>
             </div>
@@ -478,7 +478,7 @@ export default function EmailPage() {
                     disabled={!gmail}
                     className="flex-1 text-sm bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--fg-primary)]" />
                   <Button onClick={sendReply} disabled={sending || !reply.trim() || !gmail}
-                    className="h-10 px-4 rounded-xl border-0 bg-white text-[var(--bg-base)]">
+                    className="h-10 px-4 rounded-xl border-0 bg-[var(--fg-primary)] text-[var(--bg-base)]">
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </div>
@@ -511,7 +511,7 @@ export default function EmailPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" disabled={generating} className="w-full border-0 rounded-xl font-medium bg-white text-[var(--bg-base)]">
+              <Button type="submit" disabled={generating} className="w-full border-0 rounded-xl font-medium bg-[var(--fg-primary)] text-[var(--bg-base)]">
                 {generating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Writing...</> : "Generate with AI"}
               </Button>
             </form>
@@ -523,7 +523,7 @@ export default function EmailPage() {
                 <p className="text-sm leading-relaxed whitespace-pre-wrap text-[var(--fg-primary)]/60">{preview.body}</p>
               </div>
               <div className="flex gap-2">
-                <Button onClick={() => sendDraft(preview.id)} disabled={sending} className="flex-1 border-0 font-medium bg-white text-[var(--bg-base)]">
+                <Button onClick={() => sendDraft(preview.id)} disabled={sending} className="flex-1 border-0 font-medium bg-[var(--fg-primary)] text-[var(--bg-base)]">
                   {sending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                   {hasConnected ? "Send via Gmail" : "Save Draft"}
                 </Button>

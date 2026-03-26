@@ -46,7 +46,7 @@ const SOCIAL_CONNECTORS = [
 
 function StatusBadge({ status }: { status: 'connected' | 'disconnected' | 'error' }) {
   const configs = {
-    connected: { icon: Check, color: 'text-white', bg: 'bg-[var(--bg-elevated)]', label: 'Connected' },
+    connected: { icon: Check, color: 'text-[var(--fg-primary)]', bg: 'bg-[var(--bg-elevated)]', label: 'Connected' },
     disconnected: { icon: Plug, color: 'text-[var(--fg-muted)]', bg: 'bg-[var(--bg-surface)]', label: 'Disconnected' },
     error: { icon: AlertCircle, color: 'text-[var(--fg-secondary)]', bg: 'bg-white/[0.05]', label: 'Error' },
   };
@@ -87,7 +87,7 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
         <StatusBadge status={connected ? 'connected' : 'disconnected'} />
       </div>
 
-      <h3 className="text-white font-medium tracking-[-0.02em] mb-1">{connector.name}</h3>
+      <h3 className="text-[var(--fg-primary)] font-medium tracking-[-0.02em] mb-1">{connector.name}</h3>
       <p className="text-[var(--fg-muted)] text-sm mb-4">{connector.description}</p>
 
       <div className="flex items-center justify-between">
@@ -115,7 +115,7 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
               </button>
             </>
           ) : (
-            <button onClick={onConnect} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] text-white text-xs font-medium hover:bg-white/[0.12] transition-colors">
+            <button onClick={onConnect} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] text-[var(--fg-primary)] text-xs font-medium hover:bg-white/[0.12] transition-colors">
               <Plug size={12} />
               Connect
             </button>
@@ -332,11 +332,11 @@ export default function SocialPage() {
         {/* Header */}
         <header className="flex items-center justify-between px-8 py-5 border-b border-[var(--border-subtle)]">
           <div>
-            <h1 className="text-xl font-semibold text-white tracking-[-0.02em]">Connectors</h1>
+            <h1 className="text-xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Connectors</h1>
             <p className="text-[var(--fg-muted)] text-sm">Manage integrations and data sources</p>
           </div>
           <motion.button
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white text-[var(--bg-base)] font-medium text-sm"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] font-medium text-sm"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => { setPlatform("X"); setContent(""); setTopic(""); setScheduleTime(""); setGenerateWithAi(false); setIsModalOpen(true); }}
@@ -357,7 +357,7 @@ export default function SocialPage() {
               transition={{ delay: 0, type: 'spring', stiffness: 100, damping: 20 }}
             >
               <p className="text-[var(--fg-muted)] text-sm mb-1">Connected</p>
-              <p className="text-3xl font-semibold text-white tracking-[-0.03em]">{connectedCount}</p>
+              <p className="text-3xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{connectedCount}</p>
             </motion.div>
             <motion.div
               className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
@@ -366,7 +366,7 @@ export default function SocialPage() {
               transition={{ delay: 0.05, type: 'spring', stiffness: 100, damping: 20 }}
             >
               <p className="text-[var(--fg-muted)] text-sm mb-1">Available</p>
-              <p className="text-3xl font-semibold text-white tracking-[-0.03em]">24</p>
+              <p className="text-3xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">24</p>
             </motion.div>
             <motion.div
               className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
@@ -388,7 +388,7 @@ export default function SocialPage() {
                 className={`
                   px-4 py-2 rounded-lg text-sm capitalize transition-all duration-200
                   ${selectedCategory === category
-                    ? 'bg-[var(--bg-elevated)] text-white'
+                    ? 'bg-[var(--bg-elevated)] text-[var(--fg-primary)]'
                     : 'text-[var(--fg-tertiary)] hover:bg-white/[0.03] hover:text-[var(--fg-primary)]'
                   }
                 `}
@@ -415,7 +415,7 @@ export default function SocialPage() {
 
           {/* Posts Section */}
           <div className="mt-8">
-            <h2 className="text-white font-medium tracking-[-0.02em] mb-4">Recent Posts</h2>
+            <h2 className="text-[var(--fg-primary)] font-medium tracking-[-0.02em] mb-4">Recent Posts</h2>
             {posts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
                 <Share2 size={32} className="text-[var(--fg-muted)] mb-4" />
@@ -450,7 +450,7 @@ export default function SocialPage() {
                         <button
                           onClick={() => handlePublish(post.id)}
                           disabled={publishing === post.id || !isPlatformConnected(post.platform)}
-                          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-[var(--bg-elevated)] text-white hover:bg-white/[0.12] disabled:opacity-50"
+                          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-[var(--bg-elevated)] text-[var(--fg-primary)] hover:bg-white/[0.12] disabled:opacity-50"
                         >
                           {publishing === post.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Publish'}
                         </button>
@@ -471,10 +471,10 @@ export default function SocialPage() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-white font-medium tracking-[-0.02em] mb-1">Developer API</h3>
+                <h3 className="text-[var(--fg-primary)] font-medium tracking-[-0.02em] mb-1">Developer API</h3>
                 <p className="text-[var(--fg-muted)] text-sm">Build custom integrations with our API</p>
               </div>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--bg-elevated)] text-white text-sm hover:bg-[var(--bg-elevated)] transition-colors">
+              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--bg-elevated)] text-[var(--fg-primary)] text-sm hover:bg-[var(--bg-elevated)] transition-colors">
                 <ExternalLink size={14} />
                 View Documentation
               </button>
@@ -485,15 +485,15 @@ export default function SocialPage() {
 
       {/* Create Post Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="border text-white sm:max-w-xl bg-[var(--bg-surface)] border-[var(--border-subtle)]">
-          <DialogHeader><DialogTitle className="text-white">Create Social Post</DialogTitle></DialogHeader>
+        <DialogContent className="border text-[var(--fg-primary)] sm:max-w-xl bg-[var(--bg-surface)] border-[var(--border-subtle)]">
+          <DialogHeader><DialogTitle className="text-[var(--fg-primary)]">Create Social Post</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 pt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-[var(--fg-secondary)] text-xs uppercase tracking-wide">Platform</Label>
                 <Select value={platform} onValueChange={(v) => v && setPlatform(v)}>
-                  <SelectTrigger className="bg-[var(--bg-app)] border border-[var(--border-subtle)] text-white"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-white">
+                  <SelectTrigger className="bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--fg-primary)]"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--fg-primary)]">
                     {["X", "LinkedIn", "Instagram", "Facebook", "Telegram", "TikTok", "YouTube"].map(p => (
                       <SelectItem key={p} value={p}>{p}</SelectItem>
                     ))}
@@ -503,7 +503,7 @@ export default function SocialPage() {
               <div className="space-y-2">
                 <Label className="text-[var(--fg-secondary)] text-xs uppercase tracking-wide">Schedule Time</Label>
                 <Input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)}
-                  className="text-white focus-visible:ring-white/20 [color-scheme:dark] bg-[var(--bg-app)] border border-[var(--border-subtle)]" />
+                  className="text-[var(--fg-primary)] focus-visible:ring-white/20 [color-scheme:dark] bg-[var(--bg-app)] border border-[var(--border-subtle)]" />
               </div>
             </div>
             <div className="flex items-center gap-2 pt-1">
@@ -516,20 +516,20 @@ export default function SocialPage() {
                 <Label className="text-[var(--fg-secondary)] text-xs uppercase tracking-wide">Topic</Label>
                 <Input value={topic} onChange={e => setTopic(e.target.value)}
                   placeholder="What should the post be about?"
-                  className="text-white placeholder:text-[var(--fg-muted)] focus-visible:ring-white/20 bg-[var(--bg-app)] border border-[var(--border-subtle)]" required />
+                  className="text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus-visible:ring-white/20 bg-[var(--bg-app)] border border-[var(--border-subtle)]" required />
               </div>
             ) : (
               <div className="space-y-2">
                 <Label className="text-[var(--fg-secondary)] text-xs uppercase tracking-wide">Content</Label>
                 <Textarea value={content} onChange={e => setContent(e.target.value)}
                   placeholder="Write your post here..."
-                  className="text-white placeholder:text-[var(--fg-muted)] focus-visible:ring-white/20 min-h-[120px] bg-[var(--bg-app)] border border-[var(--border-subtle)]" required />
+                  className="text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus-visible:ring-white/20 min-h-[120px] bg-[var(--bg-app)] border border-[var(--border-subtle)]" required />
               </div>
             )}
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}
-                className="hover:bg-white/10 text-white hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={saving} className="border-0 bg-white text-[var(--bg-base)]">
+                className="hover:bg-white/10 text-[var(--fg-primary)] hover:text-[var(--fg-primary)]">Cancel</Button>
+              <Button type="submit" disabled={saving} className="border-0 bg-[var(--fg-primary)] text-[var(--bg-base)]">
                 {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{generateWithAi ? "Generating…" : "Saving…"}</> : generateWithAi ? "Generate & Save" : "Schedule Post"}
               </Button>
             </DialogFooter>
@@ -539,16 +539,16 @@ export default function SocialPage() {
 
       {/* Telegram Bot Token Modal */}
       <Dialog open={isTelegramModalOpen} onOpenChange={setIsTelegramModalOpen}>
-        <DialogContent className="border text-white sm:max-w-md bg-[var(--bg-surface)] border-[var(--border-subtle)]">
+        <DialogContent className="border text-[var(--fg-primary)] sm:max-w-md bg-[var(--bg-surface)] border-[var(--border-subtle)]">
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
+            <DialogTitle className="text-[var(--fg-primary)] flex items-center gap-2">
               <img src="/logos/social/telegram.png" width={22} height={22} className="object-contain" alt="Telegram" />
               Connect Telegram Bot
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleTelegramConnect} className="space-y-4 pt-4">
             <div className="px-3 py-3 rounded-xl text-xs text-[var(--fg-secondary)] leading-relaxed bg-[var(--bg-app)] border border-[var(--border-subtle)]">
-              1. Create a bot via <span className="text-white">@BotFather</span> on Telegram<br/>
+              1. Create a bot via <span className="text-[var(--fg-primary)]">@BotFather</span> on Telegram<br/>
               2. Copy the bot token and paste below<br/>
               3. Add your bot to a channel/group and paste the Chat ID
             </div>
@@ -556,18 +556,18 @@ export default function SocialPage() {
               <Label className="text-[var(--fg-secondary)] text-xs uppercase tracking-wide">Bot Token</Label>
               <Input value={botToken} onChange={e => setBotToken(e.target.value)}
                 placeholder="1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ"
-                className="text-white placeholder:text-[var(--fg-muted)] font-mono text-xs focus-visible:ring-white/20 bg-[var(--bg-app)] border border-[var(--border-subtle)]" required />
+                className="text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] font-mono text-xs focus-visible:ring-white/20 bg-[var(--bg-app)] border border-[var(--border-subtle)]" required />
             </div>
             <div className="space-y-2">
               <Label className="text-[var(--fg-secondary)] text-xs uppercase tracking-wide">Chat ID (channel or group)</Label>
               <Input value={chatId} onChange={e => setChatId(e.target.value)}
                 placeholder="-1001234567890 or @channelname"
-                className="text-white placeholder:text-[var(--fg-muted)] font-mono text-xs focus-visible:ring-white/20 bg-[var(--bg-app)] border border-[var(--border-subtle)]" />
+                className="text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] font-mono text-xs focus-visible:ring-white/20 bg-[var(--bg-app)] border border-[var(--border-subtle)]" />
             </div>
             <DialogFooter className="pt-2">
               <Button type="button" variant="ghost" onClick={() => setIsTelegramModalOpen(false)}
-                className="hover:bg-white/10 text-white hover:text-white">Cancel</Button>
-              <Button type="submit" disabled={connectingTelegram} className="border-0 bg-white text-[var(--bg-base)]">
+                className="hover:bg-white/10 text-[var(--fg-primary)] hover:text-[var(--fg-primary)]">Cancel</Button>
+              <Button type="submit" disabled={connectingTelegram} className="border-0 bg-[var(--fg-primary)] text-[var(--bg-base)]">
                 {connectingTelegram ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Connecting…</> : "Connect Bot"}
               </Button>
             </DialogFooter>
