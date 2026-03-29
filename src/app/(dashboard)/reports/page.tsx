@@ -21,7 +21,7 @@ interface WeeklyReport {
   id: string;
   week_start: string;
   date_range_str: string;
-  hours_worked: string;
+  hours_worked: string | number;
   tasks_completed: number;
   emails_sent: number;
   research_reports: number;
@@ -52,7 +52,20 @@ function downloadWeeklyReportPdf(report: WeeklyReport) {
     `Active goals: ${report.goals_active}`,
   ];
   doc.text(lines, margin, y);
-  doc.save(`inceptive_weekly_report_${report.week_start.slice(0, 10)}.pdf`);
+  doc.save(`inceptive_weekly_report_${String(report.week_start).slice(0, 10)}.pdf`);
+}
+
+function formatReportWhen(r: WeeklyReport) {
+  if (r.date_range_str?.trim()) return r.date_range_str;
+  try {
+    return new Date(r.created_at).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return "";
+  }
 }
 
 
@@ -267,7 +280,7 @@ export default function ReportsPage() {
                   <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
                     <div>
                       <h2 className="text-[11px] font-bold text-[var(--fg-muted)] uppercase tracking-[0.2em] mb-3">Inceptive Weekly Report</h2>
-                      <p className="text-2xl md:text-3xl font-light text-[var(--fg-primary)]">{latestReport.date_range_str}</p>
+                      <p className="text-2xl md:text-3xl font-light text-[var(--fg-primary)]">{formatReportWhen(latestReport)}</p>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--border-default)] bg-[var(--bg-elevated)] w-fit">
                       <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
@@ -372,6 +385,32 @@ export default function ReportsPage() {
                   </div>
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {reports.length > 1 && (
+            <motion.div
+              className="mb-8"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.12 }}
+            >
+              <h2 className="text-[var(--fg-primary)] font-medium tracking-[-0.02em] mb-4">Previous summaries</h2>
+              <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] divide-y divide-[var(--border-subtle)] overflow-hidden">
+                {reports.slice(1).map((r) => (
+                  <div
+                    key={r.id}
+                    className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 text-sm"
+                  >
+                    <div className="text-[var(--fg-primary)] font-medium">{formatReportWhen(r)}</div>
+                    <div className="flex flex-wrap gap-4 text-[var(--fg-muted)] text-xs">
+                      <span>{r.tasks_completed} tasks</span>
+                      <span>{r.research_reports} research</span>
+                      <span>{new Date(r.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </motion.div>
           )}
 

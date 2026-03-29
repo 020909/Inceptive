@@ -7,7 +7,11 @@ import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 import { checkCredits, deductCredits } from "@/lib/credits";
 import { browseUrlText, extractUrls, formatSearchResultsForPrompt, searchWeb } from "@/lib/search/provider";
 import { gatherResearchEnrichment } from "@/lib/research/enrichment";
-import { normalizeReportFormatting } from "@/lib/research/report-format";
+import {
+  ensureRetrievalUrlsListed,
+  normalizeReportFormatting,
+  stripInlineNumericCitations,
+} from "@/lib/research/report-format";
 
 export const maxDuration = 120;
 
@@ -86,7 +90,8 @@ FORMATTING (mandatory — professional report, no markdown hashes):
 - Number every major section: "1. Executive Summary", "2. Key Findings", etc. Put the number and title on its own line.
 - Section titles use the same font size as body text in the UI but are shown bold — write them as plain numbered lines only.
 - Use • for bullet points. You may use **short labels** for emphasis inside bullets.
-- CITATIONS: When a fact comes from SOURCE N below, add an inline marker [N] right after the sentence or clause. Match N to the SOURCE number in the SOURCES block.`;
+- Do NOT use inline citation markers like [1], [2], or [N] after sentences. No bracketed reference numbers in the body.
+- Always end with a final section titled "Sources" or "Sources and references" and list every URL you relied on from the SOURCES (web retrieval) block below (bullet each URL). Nothing should be only cited by a number in brackets.`;
 
 function buildPrompt(topic: string, depth: string) {
   const entertainment = isEntertainmentQuery(topic);
@@ -239,6 +244,8 @@ export async function POST(request: Request) {
     // ── Retrieval step (web-backed) ───────────────────────────────────────
     // Uses unified provider: SearXNG (if configured) with DuckDuckGo fallback.
     let sourcesBlock = "";
+    /** URLs we actually fetched text from — used to guarantee a Sources list */
+    let retrievalUrls: string[] = [];
     let sourcesCount = 0;
     let providerUsed: "tavily" | "brave" | "searxng" | "duckduckgo" = "duckduckgo";
     const clientIp =
@@ -292,6 +299,7 @@ export async function POST(request: Request) {
       }
 
       sourcesCount = browsed.length;
+      retrievalUrls = browsed.map((b) => b.url);
       if (browsed.length > 0) {
         sourcesBlock =
           `\n\nSOURCES (web retrieval)\n` +
@@ -302,6 +310,7 @@ export async function POST(request: Request) {
     } catch {
       // If retrieval fails entirely, we still produce a report (but require the model to be explicit).
       sourcesBlock = "";
+      retrievalUrls = [];
       sourcesCount = 0;
     }
 
@@ -316,7 +325,7 @@ export async function POST(request: Request) {
       // enrichment is optional
     }
 
-    const retrievalRules = `\n\nIMPORTANT:\n- Use SOURCES (web retrieval) and ENRICHMENT when they help.\n- Cite facts from SOURCE N using inline [N] markers (see FORMATTING rules).\n- If a specific fact is missing from retrieved text, you may still answer from general knowledge under a section titled "GENERAL KNOWLEDGE" (not from retrieved URLs).\n- Do NOT claim something is fictional just because it is unfamiliar.\n`;
+    const retrievalRules = `\n\nIMPORTANT:\n- Use SOURCES (web retrieval) and ENRICHMENT when they help.\n- Do not put [1], [2], or [N] markers in the report body; put URLs only in the final Sources section.\n- If a specific fact is missing from retrieved text, you may still answer from general knowledge under a section titled "GENERAL KNOWLEDGE" (not from retrieved URLs).\n- Do NOT claim something is fictional just because it is unfamiliar.\n`;
 
     let responseText = "";
 
@@ -387,15 +396,17 @@ export async function POST(request: Request) {
     if (!responseText) throw new Error("Empty response from AI provider");
     await deductCredits(user_id, action).catch(() => {});
 
-    const urls = extractUrls(responseText);
     const startedAt = new Date().toISOString();
+
+    const finalReportText = sanitizeReport(responseText, retrievalUrls);
+    const urls = extractUrls(finalReportText);
 
     const { data: savedReport, error: insertError } = await admin
       .from("research_reports")
       .insert({
         user_id,
         topic,
-        content: sanitizeReport(responseText),
+        content: finalReportText,
         sources_count: Math.max(sourcesCount, urls.length),
         created_at: new Date().toISOString(),
       })
@@ -416,7 +427,7 @@ export async function POST(request: Request) {
         provider_used: providerUsed,
         status: "completed",
         sources_json: { urls, sources_count: Math.max(sourcesCount, urls.length) },
-        report_text: sanitizeReport(responseText),
+        report_text: finalReportText,
         report_id: savedReport.id,
         started_at: startedAt,
         completed_at: new Date().toISOString(),
@@ -449,13 +460,19 @@ export async function POST(request: Request) {
   }
 }
 
-function sanitizeReport(content: string) {
-  return normalizeReportFormatting(content)
+function sanitizeReport(content: string, retrievalUrls: string[] = []) {
+  let out = normalizeReportFormatting(content);
+  out = stripInlineNumericCitations(out);
+  out = out
     .replace(/^\*\s+/gm, "• ")
     .replace(/^-\s+/gm, "• ")
     .replace(/`/g, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+  if (retrievalUrls.length > 0) {
+    out = ensureRetrievalUrlsListed(out, retrievalUrls);
+  }
+  return out.trim();
 }
 
 export async function GET(request: Request) {

@@ -1,4 +1,32 @@
 /**
+ * Remove inline numeric citation markers like [1], [1, 2] from report body (sources belong in Sources section).
+ */
+export function stripInlineNumericCitations(raw: string): string {
+  return raw
+    .replace(/\s*\[\d+(?:\s*,\s*\d+)*\]/g, "")
+    .replace(/\s*\[N\]/gi, "")
+    .replace(/\s+([.,;:!?])/g, "$1")
+    .replace(/[ \t]{2,}/g, " ");
+}
+
+/**
+ * Append any retrieval URLs not already present so every browsed source appears at the end.
+ */
+export function ensureRetrievalUrlsListed(content: string, urls: string[]): string {
+  const trimmed = content.trim();
+  if (urls.length === 0) return trimmed;
+  const missing = urls.filter((u) => u && !trimmed.includes(u));
+  if (missing.length === 0) return trimmed;
+  const tail = trimmed.slice(-1200);
+  const alreadyHasSourcesHeading = /\bSources\b/i.test(tail);
+  const bullets = missing.map((u) => `• ${u}`).join("\n");
+  if (alreadyHasSourcesHeading) {
+    return `${trimmed}\n${bullets}`;
+  }
+  return `${trimmed}\n\nSources\n${bullets}`;
+}
+
+/**
  * Normalize model output: remove markdown # headers, convert to numbered sections where needed.
  * Used server-side before saving reports.
  */
