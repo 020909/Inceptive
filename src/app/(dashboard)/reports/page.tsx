@@ -3,9 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { PageTransition } from "@/components/ui/page-transition";
-import { Button } from "@/components/ui/button";
-import { Loader2, TrendingUp, BarChart3, Target, FileText, Share2, Zap } from "lucide-react";
+import { Loader2, BarChart3, Target, FileText, Share2, Zap, Download } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -17,6 +15,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { jsPDF } from "jspdf";
 
 interface WeeklyReport {
   id: string;
@@ -30,6 +29,30 @@ interface WeeklyReport {
   goals_active: number;
   chart_data: any[];
   created_at: string;
+}
+
+function downloadWeeklyReportPdf(report: WeeklyReport) {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const margin = 40;
+  let y = margin;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(`Inceptive Weekly Report`, margin, y);
+  y += 24;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.text(report.date_range_str, margin, y);
+  y += 24;
+  const lines = [
+    `Hours worked by AI: ${report.hours_worked}h`,
+    `Tasks completed: ${report.tasks_completed}`,
+    `Emails sent: ${report.emails_sent}`,
+    `Research reports: ${report.research_reports}`,
+    `Social posts: ${report.social_posts}`,
+    `Active goals: ${report.goals_active}`,
+  ];
+  doc.text(lines, margin, y);
+  doc.save(`inceptive_weekly_report_${report.week_start.slice(0, 10)}.pdf`);
 }
 
 
@@ -73,19 +96,21 @@ export default function ReportsPage() {
     init();
   }, [user]);
 
-  const handleGenerateSample = async () => {
+  const handleGenerateSample = async (template?: string) => {
     if (!accessToken || !user) return;
     setGenerating(true);
     try {
       const res = await fetch("/api/reports", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${accessToken}`
-        }
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ template: template || "Weekly Summary" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to generate");
-      toast.success("Report generated!");
+      toast.success(`${template || "Weekly"} report generated!`);
       if (data.report) setReports(prev => [data.report, ...prev]);
     } catch (err: any) {
       toast.error(err.message);
@@ -96,7 +121,7 @@ export default function ReportsPage() {
 
   if (loading) {
     return (
-      <PageTransition>
+      <>
         <div className="min-h-screen flex flex-col">
           <div className="h-20 shimmer rounded-xl mx-8 mt-8" />
           <div className="flex-1 p-8">
@@ -105,14 +130,14 @@ export default function ReportsPage() {
             </div>
           </div>
         </div>
-      </PageTransition>
+      </>
     );
   }
 
   const latestReport = reports.length > 0 ? reports[0] : null;
 
   return (
-    <PageTransition>
+    <>
       <div className="min-h-screen flex flex-col">
         {/* Header */}
         <header className="flex items-center justify-between px-8 py-5 border-b border-[var(--border-subtle)]">
@@ -120,16 +145,27 @@ export default function ReportsPage() {
             <h1 className="text-xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Reports</h1>
             <p className="text-[var(--fg-muted)] text-sm">AI-generated insights and analytics</p>
           </div>
-          <motion.button
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] font-medium text-sm"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleGenerateSample}
-            disabled={generating}
-          >
-            {generating ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
-            Generate Report
-          </motion.button>
+          <div className="flex items-center gap-2">
+            {latestReport && (
+              <button
+                onClick={() => downloadWeeklyReportPdf(latestReport)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--fg-primary)] font-medium text-sm"
+              >
+                <Download size={15} />
+                Download PDF
+              </button>
+            )}
+            <motion.button
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] font-medium text-sm"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleGenerateSample()}
+              disabled={generating}
+            >
+              {generating ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+              Generate Report
+            </motion.button>
+          </div>
         </header>
 
         {/* Content */}
@@ -201,12 +237,13 @@ export default function ReportsPage() {
               {['Weekly Summary', 'User Analytics', 'Performance', 'Competitor Analysis'].map((template, index) => (
                 <motion.button
                   key={template}
-                  className="px-4 py-3 rounded-xl bg-white/[0.04] border border-[var(--border-subtle)] text-[var(--fg-primary)]/70 text-sm hover:bg-[var(--bg-elevated)] hover:border-white/[0.10] hover:text-[var(--fg-primary)] transition-all"
+                  className="px-4 py-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--fg-primary)]/70 text-sm hover:bg-[var(--bg-elevated)] hover:border-[var(--border-default)] hover:text-[var(--fg-primary)] transition-all"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + index * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => handleGenerateSample(template)}
                 >
                   {template}
                 </motion.button>
@@ -232,7 +269,7 @@ export default function ReportsPage() {
                       <h2 className="text-[11px] font-bold text-[var(--fg-muted)] uppercase tracking-[0.2em] mb-3">Inceptive Weekly Report</h2>
                       <p className="text-2xl md:text-3xl font-light text-[var(--fg-primary)]">{latestReport.date_range_str}</p>
                     </div>
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.10] bg-[var(--bg-elevated)] w-fit">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--border-default)] bg-[var(--bg-elevated)] w-fit">
                       <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
                       <span className="text-xs font-semibold tracking-wide text-[var(--fg-primary)] uppercase">All systems running</span>
                     </div>
@@ -278,7 +315,7 @@ export default function ReportsPage() {
                       </div>
                       <p className="text-[var(--fg-primary)] mb-4 text-lg">{topGoal.title}</p>
                       <div className="flex items-center gap-4">
-                        <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="flex-1 h-1.5 bg-[var(--bg-elevated)] rounded-full overflow-hidden">
                           <div
                             className="h-full bg-white rounded-full"
                             style={{ width: `${topGoal.progress_percent}%` }}
@@ -345,11 +382,11 @@ export default function ReportsPage() {
                 <FileText size={20} className="text-[var(--fg-tertiary)]" />
               </div>
               <p className="text-sm text-[var(--fg-primary)] font-medium mb-1">No reports yet</p>
-              <p className="text-xs text-[var(--fg-muted)]">Click "Generate Report" to create your first weekly summary.</p>
+              <p className="text-xs text-[var(--fg-muted)]">Click &quot;Generate Report&quot; to create your first weekly summary.</p>
             </div>
           )}
         </div>
       </div>
-    </PageTransition>
+    </>
   );
 }

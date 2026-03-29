@@ -92,9 +92,9 @@
     --bg-overlay: #E5E5EA;
 
     --fg-primary: #1D1D1F;
-    --fg-secondary: #6E6E73;
-    --fg-tertiary: #86868B;
-    --fg-muted: #AEAEB2;
+    --fg-secondary: #48484A;
+    --fg-tertiary: #636366;
+    --fg-muted: #8E8E93;
 
     --border-subtle: rgba(0, 0, 0, 0.06);
     --border-default: rgba(0, 0, 0, 0.12);
@@ -216,4 +216,20 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--bg-surface) 25%,
+      var(--bg-elevated) 50%,
+      var(--bg-surface) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

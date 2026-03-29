@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,7 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, MoreVertical, Target, Loader2, Check, Pencil, Trash2, Calendar, CheckCircle2, TrendingUp, Clock, Sparkles } from "lucide-react";
+import { Plus, MoreVertical, Target, Loader2, Check, Pencil, Trash2, Calendar, CheckCircle2, TrendingUp, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -206,7 +205,7 @@ export default function GoalsPage() {
   const avgProgress = goals.length > 0 
     ? Math.round(goals.reduce((acc, g) => acc + g.progress_percent, 0) / goals.length)
     : 0;
-  const dueThisWeek = 2;
+  const dueThisWeek = activeGoals.length;
 
   function GoalCard({ goal, index }: { goal: Goal; index: number }) {
     return (
@@ -218,7 +217,7 @@ export default function GoalsPage() {
       >
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${goal.status === 'completed' ? 'bg-white/[0.08]' : 'bg-[var(--bg-elevated)]'}`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${goal.status === 'completed' ? 'bg-[var(--success-soft)]' : 'bg-[var(--bg-elevated)]'}`}>
               {goal.status === 'completed' ? (
                 <CheckCircle2 size={20} className="text-[var(--fg-primary)]" />
               ) : (
@@ -255,9 +254,9 @@ export default function GoalsPage() {
             <span className="text-[var(--fg-muted)] text-xs">Progress</span>
             <span className="text-[var(--fg-secondary)] text-xs">{goal.progress_percent}%</span>
           </div>
-          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+          <div className="h-2 bg-[var(--bg-elevated)] rounded-full overflow-hidden">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-white/60 to-white"
+              className="h-full rounded-full bg-[var(--fg-primary)]"
               initial={{ width: 0 }}
               animate={{ width: `${goal.progress_percent}%` }}
               transition={{ delay: index * 0.1 + 0.3, type: 'spring', stiffness: 100, damping: 20 }}
@@ -272,19 +271,9 @@ export default function GoalsPage() {
               {new Date(goal.created_at).toLocaleDateString()}
             </span>
           </div>
-          <button 
-            onClick={() => {
-              toast.success(`AI is analyzing "${goal.title}"...`);
-              setTimeout(() => {
-                const next = Math.min(100, goal.progress_percent + Math.floor(Math.random() * 15) + 5);
-                handleUpdateStatus(goal.id, goal.status, next);
-              }, 1500);
-            }}
-            className="flex items-center gap-1 text-[var(--fg-tertiary)] hover:text-[var(--fg-primary)] transition-colors"
-          >
-            <Sparkles size={12} />
-            Auto-track
-          </button>
+          <span className="flex items-center gap-1 text-[var(--fg-muted)] text-[11px]">
+            {goal.status === 'completed' ? 'Completed' : goal.status === 'paused' ? 'Paused' : 'Active'}
+          </span>
         </div>
       </motion.div>
     );
@@ -292,21 +281,19 @@ export default function GoalsPage() {
 
   if (loading) {
     return (
-      <PageTransition>
-        <div className="min-h-screen flex flex-col">
-          <div className="h-20 shimmer rounded-xl mx-8 mt-8" />
-          <div className="flex-1 p-8">
-            <div className="grid grid-cols-4 gap-4">
-              {[1,2,3,4].map(i => <div key={i} className="h-32 shimmer rounded-xl" />)}
-            </div>
+      <div className="min-h-screen flex flex-col">
+        <div className="h-20 shimmer rounded-xl mx-8 mt-8" />
+        <div className="flex-1 p-8">
+          <div className="grid grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => <div key={i} className="h-32 shimmer rounded-xl" />)}
           </div>
         </div>
-      </PageTransition>
+      </div>
     );
   }
 
   return (
-    <PageTransition>
+    <>
       <div className="min-h-screen flex flex-col">
         {/* Header */}
         <header className="flex items-center justify-between px-8 py-5 border-b border-[var(--border-subtle)]">
@@ -408,33 +395,6 @@ export default function GoalsPage() {
             </div>
           )}
 
-          {/* Recent Activity */}
-          {goals.length > 0 && (
-            <motion.div
-              className="mt-8 p-6 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <h3 className="text-[var(--fg-primary)] font-medium tracking-[-0.02em] mb-4">Recent Goal Activity</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                  <div className="flex items-center gap-3">
-                    <div className="h-2 w-2 rounded-full bg-white" />
-                    <span className="text-sm text-[var(--fg-secondary)]">Goal progress updated by AI</span>
-                  </div>
-                  <span className="text-xs text-[var(--fg-muted)]">2h ago</span>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                  <div className="flex items-center gap-3">
-                    <div className="h-2 w-2 rounded-full bg-white" />
-                    <span className="text-sm text-[var(--fg-secondary)]">New goal created</span>
-                  </div>
-                  <span className="text-xs text-[var(--fg-muted)]">Yesterday</span>
-                </div>
-              </div>
-            </motion.div>
-          )}
         </div>
       </div>
 
@@ -466,7 +426,7 @@ export default function GoalsPage() {
             </div>
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setIsAddModalOpen(false)} className="hover:bg-[var(--bg-elevated)] text-[var(--fg-primary)] hover:text-[var(--fg-primary)]">Cancel</Button>
-              <Button type="submit" disabled={saving} className="bg-[var(--fg-primary)] text-[var(--bg-base)] hover:bg-white/90">
+              <Button type="submit" disabled={saving} className="bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Goal"}
               </Button>
             </DialogFooter>
@@ -526,13 +486,13 @@ export default function GoalsPage() {
             </div>
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)} className="hover:bg-[var(--bg-elevated)] text-[var(--fg-primary)] hover:text-[var(--fg-primary)]">Cancel</Button>
-              <Button type="submit" disabled={saving} className="bg-[var(--fg-primary)] text-[var(--bg-base)] hover:bg-white/90">
+              <Button type="submit" disabled={saving} className="bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
-    </PageTransition>
+    </>
   );
 }

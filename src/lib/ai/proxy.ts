@@ -9,6 +9,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { embedText64, toPgVectorLiteral } from "@/lib/memory/embed";
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 const DEFAULT_MODEL = "google/gemini-2.0-flash-001";
@@ -167,6 +168,20 @@ export async function storeConversationMemory(
     tool_calls: toolCalls ? JSON.stringify(toolCalls) : null,
     created_at: new Date().toISOString(),
   });
+
+  // Long-term memory (pgvector) — best effort, never block chat path
+  try {
+    const chunk = `${messages[messages.length - 1]?.content || ""}\n${assistantResponse}`.slice(0, 4000);
+    const vec = toPgVectorLiteral(embedText64(chunk));
+    await admin.from("agent_memory").insert({
+      user_id: userId,
+      content: chunk,
+      metadata: { model, source: "chat" },
+      embedding: vec as any,
+    });
+  } catch {
+    // no-op
+  }
 }
 
 /**

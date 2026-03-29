@@ -6,6 +6,7 @@ import { Check, Zap, Crown, Rocket, Loader2, Star } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { PLANS } from "@/lib/stripe";
+import { cn } from "@/lib/utils";
 
 const PLAN_ICONS = {
   free:      <Zap className="w-5 h-5" />,
@@ -14,18 +15,18 @@ const PLAN_ICONS = {
   unlimited: <Crown className="w-5 h-5" />,
 };
 
-const PLAN_ACCENT = {
-  free:      "rgba(255,255,255,0.1)",
-  basic:     "rgba(255,255,255,0.08)",
-  pro:       "rgba(0,122,255,0.2)",
-  unlimited: "rgba(191,90,242,0.2)",
+const PLAN_CARD_BORDER: Record<string, string> = {
+  free: "border-[var(--border-subtle)]",
+  basic: "border-[var(--success-soft)]",
+  pro: "border-[var(--accent-soft)]",
+  unlimited: "border-[var(--warning-soft)]",
 };
 
-const PLAN_BORDER = {
-  free:      "rgba(255,255,255,0.08)",
-  basic:     "rgba(48,209,88,0.3)",
-  pro:       "rgba(0,122,255,0.4)",
-  unlimited: "rgba(191,90,242,0.4)",
+const PLAN_ICON_BOX_MAP: Record<string, string> = {
+  free: "bg-[var(--bg-overlay)] border-[var(--border-subtle)]",
+  basic: "bg-[var(--bg-surface)] border-[var(--success-soft)]",
+  pro: "bg-[var(--accent-muted)] border-[var(--accent-soft)]",
+  unlimited: "bg-[var(--warning-soft)] border-[var(--warning-soft)]",
 };
 
 function UpgradePageInner() {
@@ -95,28 +96,27 @@ function UpgradePageInner() {
   ];
 
   return (
-    <div className="min-h-screen px-4 py-10 sm:px-8" style={{ background: "var(--background)" }}>
+    <div className="min-h-screen px-4 py-10 sm:px-8 bg-[var(--bg-app)]">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-12"
       >
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium mb-4"
-          style={{ borderColor: "var(--border)", color: "var(--foreground-secondary)", background: "var(--background-elevated)" }}>
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--border-subtle)] text-xs font-medium mb-4 text-[var(--fg-secondary)] bg-[var(--bg-elevated)]">
           <Zap className="w-3 h-3" /> Your 24/7 AI Employee
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-[var(--fg-primary)] tracking-tight mb-3">
           Simple, transparent pricing
         </h1>
-        <p className="text-[var(--foreground-secondary)] text-base max-w-md mx-auto">
+        <p className="text-[var(--fg-secondary)] text-base max-w-md mx-auto">
           No surprise bills. Cancel anytime. Your data, your control.
         </p>
         {creditsInfo && currentPlan !== "free" && (
           <button
             onClick={handleManageBilling}
             disabled={loading === "portal"}
-            className="mt-4 text-sm text-[var(--foreground-secondary)] underline hover:text-[var(--fg-primary)] transition-colors"
+            className="mt-4 text-sm text-[var(--fg-secondary)] underline hover:text-[var(--fg-primary)] transition-colors"
           >
             {loading === "portal" ? "Opening..." : "Manage billing & invoices →"}
           </button>
@@ -134,38 +134,36 @@ function UpgradePageInner() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.07 }}
-              className="relative flex flex-col rounded-2xl border p-5"
-              style={{
-                background: (plan as any).popular
-                  ? PLAN_ACCENT[plan.id as keyof typeof PLAN_ACCENT]
-                  : "var(--background-elevated)",
-                borderColor: isCurrent
-                  ? "rgba(255,255,255,0.4)"
-                  : PLAN_BORDER[plan.id as keyof typeof PLAN_BORDER],
-              }}
+              className={cn(
+                "relative flex flex-col rounded-2xl border p-5",
+                (plan as any).popular ? "bg-[var(--accent-soft)]" : "bg-[var(--bg-elevated)]",
+                isCurrent ? "border-[var(--ring)]" : PLAN_CARD_BORDER[plan.id]
+              )}
             >
               {(plan as any).popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold text-[var(--fg-primary)]"
-                  style={{ background: "#007AFF" }}>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold text-[var(--accent-foreground)] bg-[var(--accent)]">
                   MOST POPULAR
                 </div>
               )}
               {isCurrent && (
-                <div className="absolute -top-3 right-4 px-3 py-1 rounded-full text-[10px] font-bold"
-                  style={{ background: "var(--foreground)", color: "var(--background)" }}>
+                <div className="absolute -top-3 right-4 px-3 py-1 rounded-full text-[10px] font-bold bg-[var(--fg-primary)] text-[var(--bg-base)]">
                   CURRENT
                 </div>
               )}
 
               {/* Icon + Name */}
               <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--fg-primary)]"
-                  style={{ background: PLAN_ACCENT[plan.id as keyof typeof PLAN_ACCENT], border: `1px solid ${PLAN_BORDER[plan.id as keyof typeof PLAN_BORDER]}` }}>
+                <div
+                  className={cn(
+                    "w-9 h-9 rounded-xl flex items-center justify-center text-[var(--fg-primary)] border",
+                    PLAN_ICON_BOX_MAP[plan.id]
+                  )}
+                >
                   {PLAN_ICONS[plan.id as keyof typeof PLAN_ICONS]}
                 </div>
                 <div>
                   <p className="text-[var(--fg-primary)] font-semibold text-sm">{plan.name}</p>
-                  <p className="text-[var(--foreground-tertiary)] text-[11px]">
+                  <p className="text-[var(--fg-tertiary)] text-[11px]">
                     {plan.id === "free" ? "Always free" :
                      plan.id === "basic" ? "BYOK platform fee" :
                      plan.id === "pro" ? "Hosted AI included" : "Max power"}
@@ -176,8 +174,8 @@ function UpgradePageInner() {
               {/* Price */}
               <div className="mb-5">
                 <span className="text-3xl font-bold text-[var(--fg-primary)]">${plan.price}</span>
-                <span className="text-[var(--foreground-secondary)] text-sm">/mo</span>
-                <p className="text-xs text-[var(--foreground-tertiary)] mt-1">
+                <span className="text-[var(--fg-secondary)] text-sm">/mo</span>
+                <p className="text-xs text-[var(--fg-tertiary)] mt-1">
                   {plan.id === "free" && "100 credits / day"}
                   {plan.id === "basic" && "Unlimited BYOK usage"}
                   {plan.id === "pro" && "5,000 credits / month"}
@@ -188,8 +186,8 @@ function UpgradePageInner() {
               {/* Features */}
               <ul className="flex-1 space-y-2 mb-6">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-xs text-[var(--foreground-secondary)]">
-                    <Check className="w-3.5 h-3.5 text-[#FFFFFF] shrink-0 mt-0.5" />
+                  <li key={f} className="flex items-start gap-2 text-xs text-[var(--fg-secondary)]">
+                    <Check className="w-3.5 h-3.5 text-[var(--fg-primary)] shrink-0 mt-0.5" />
                     {f}
                   </li>
                 ))}
@@ -199,15 +197,12 @@ function UpgradePageInner() {
               <button
                 disabled={!!loading || isCurrent || plan.id === "free"}
                 onClick={() => handleSubscribe(plan.id)}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: isCurrent || plan.id === "free"
-                    ? "rgba(255,255,255,0.06)"
-                    : "var(--foreground)",
-                  color: isCurrent || plan.id === "free"
-                    ? "var(--foreground-secondary)"
-                    : "var(--background)",
-                }}
+                className={cn(
+                  "w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed",
+                  isCurrent || plan.id === "free"
+                    ? "bg-[var(--border-subtle)] text-[var(--fg-secondary)]"
+                    : "bg-[var(--fg-primary)] text-[var(--bg-base)]"
+                )}
               >
                 {loading === plan.id ? (
                   <span className="flex items-center justify-center gap-2">
@@ -227,11 +222,10 @@ function UpgradePageInner() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
-        className="max-w-2xl mx-auto mt-10 p-5 rounded-2xl border text-sm"
-        style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}
+        className="max-w-2xl mx-auto mt-10 p-5 rounded-2xl border border-[var(--border-subtle)] text-sm bg-[var(--bg-elevated)]"
       >
         <p className="font-semibold text-[var(--fg-primary)] mb-2">What are Inceptive Credits?</p>
-        <p className="text-[var(--foreground-secondary)] leading-relaxed">
+        <p className="text-[var(--fg-secondary)] leading-relaxed">
           Credits are consumed when Inceptive does work for you using our hosted AI.
           A quick chat reply = 10 credits. A web search = 25. A deep research report = 100–300.
           <span className="text-[var(--fg-primary)]"> Basic plan ($9) users bring their own API key — zero credits consumed,

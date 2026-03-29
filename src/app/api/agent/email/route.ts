@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { checkCredits, deductCredits } from "@/lib/credits";
 
 export const maxDuration = 120;
 
@@ -25,6 +26,11 @@ export async function POST(request: Request) {
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await admin.auth.getUser(token);
     if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const creditCheck = await checkCredits(user.id, "email_draft");
+    if (!creditCheck.allowed && !creditCheck.unlimited) {
+      return NextResponse.json({ error: creditCheck.reason }, { status: 402 });
+    }
 
     const { data: userData } = await admin
       .from("users")
@@ -108,13 +114,22 @@ export async function POST(request: Request) {
     try {
       parsedEmail = JSON.parse(cleaned);
     } catch {
-      console.error("Failed to parse AI email JSON:", cleaned);
-      return NextResponse.json({ error: "AI returned invalid format. Please try again." }, { status: 500 });
+      // Fallback parser: accept plain-text output and derive subject/body.
+      const subjectMatch = cleaned.match(/subject\s*:\s*(.+)/i);
+      const bodyMatch = cleaned.match(/body\s*:\s*([\s\S]+)/i);
+      const subject = subjectMatch?.[1]?.trim() || `Re: ${topic}`;
+      const bodyText = bodyMatch?.[1]?.trim() || cleaned.trim();
+      if (!bodyText) {
+        console.error("Failed to parse AI email output:", cleaned);
+        return NextResponse.json({ error: "AI returned invalid format. Please try again." }, { status: 500 });
+      }
+      parsedEmail = { subject, body: bodyText };
     }
 
     if (!parsedEmail.subject || !parsedEmail.body) {
       return NextResponse.json({ error: "AI returned incomplete email data." }, { status: 500 });
     }
+    await deductCredits(user.id, "email_draft").catch(() => {});
 
     const { data: savedEmail, error: insertError } = await admin
       .from("emails")

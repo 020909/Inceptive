@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const admin = getAdmin();
+  const requestId = crypto.randomUUID();
 
   // Fetch reports - handle missing table gracefully
   let reports: any[] = [];
@@ -30,7 +31,18 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
-    if (!error) reports = data || [];
+    if (!error) {
+      reports = (data || []).map((r: any) => {
+        const extra = (r.report_json || {}) as Record<string, any>;
+        return {
+          ...r,
+          date_range_str: extra.date_range_str || '',
+          research_reports: Number(extra.research_reports || 0),
+          social_posts: Number(extra.social_posts || 0),
+          chart_data: Array.isArray(extra.chart_data) ? extra.chart_data : [],
+        };
+      });
+    }
   } catch (e) {
     console.warn('weekly_reports table may not exist yet');
   }
@@ -47,6 +59,7 @@ export async function GET(request: NextRequest) {
     topGoal = goals?.[0] || null;
   } catch (e) {}
 
+  console.log(`[reports.get][${requestId}]`, { user: user.id, reports: reports.length, hasTopGoal: Boolean(topGoal) });
   return NextResponse.json({ reports, topGoal });
 }
 
@@ -58,19 +71,28 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const admin = getAdmin();
+  const requestId = crypto.randomUUID();
+  const body = await request.json().catch(() => ({} as any));
+  const template = String((body as any)?.template || "Weekly Summary");
 
-  // Pull real stats from user's actual data
-  const [researchRes, emailsRes, socialRes, goalsRes] = await Promise.all([
+  // Pull real stats from user's actual data (tolerate partial schema mismatches)
+  const [researchRes, emailsRes, socialRes, goalsRes, reportHistoryRes] = await Promise.allSettled([
     admin.from('research_reports').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
     admin.from('emails').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
     admin.from('social_posts').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
     admin.from('goals').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'active'),
+    admin.from('weekly_reports').select('week_start,tasks_completed').eq('user_id', user.id).order('week_start', { ascending: true }).limit(8),
   ]);
 
-  const research = researchRes.count || 0;
-  const emails = emailsRes.count || 0;
-  const social = socialRes.count || 0;
-  const goals = goalsRes.count || 0;
+  const safeCount = (r: PromiseSettledResult<any>) =>
+    r.status === "fulfilled" ? (r.value.count || 0) : 0;
+  const safeData = (r: PromiseSettledResult<any>) =>
+    r.status === "fulfilled" ? (r.value.data || []) : [];
+
+  const research = safeCount(researchRes);
+  const emails = safeCount(emailsRes);
+  const social = safeCount(socialRes);
+  const goals = safeCount(goalsRes);
   const tasks = research + emails + social;
 
   const now = new Date();
@@ -78,43 +100,63 @@ export async function POST(request: NextRequest) {
   weekStart.setDate(now.getDate() - 7);
   const dateRangeStr = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
-  // Build chart data from past 8 weeks (use real totals as baseline for current week)
-  const chartData = [
-    { week: 'Week 1', tasks_completed: Math.max(1, Math.floor(tasks * 0.3)) },
-    { week: 'Week 2', tasks_completed: Math.max(1, Math.floor(tasks * 0.45)) },
-    { week: 'Week 3', tasks_completed: Math.max(1, Math.floor(tasks * 0.5)) },
-    { week: 'Week 4', tasks_completed: Math.max(1, Math.floor(tasks * 0.6)) },
-    { week: 'Week 5', tasks_completed: Math.max(1, Math.floor(tasks * 0.7)) },
-    { week: 'Week 6', tasks_completed: Math.max(1, Math.floor(tasks * 0.8)) },
-    { week: 'Week 7', tasks_completed: Math.max(1, Math.floor(tasks * 0.9)) },
-    { week: 'Current', tasks_completed: Math.max(tasks, 1) },
-  ];
+  // Build chart data from actual historical reports + current week
+  const historyRows = safeData(reportHistoryRes);
+  const chartData = historyRows.slice(-7).map((r: any, idx: number) => ({
+    week: `W${idx + 1}`,
+    tasks_completed: Number(r.tasks_completed) || 0,
+  }));
+  chartData.push({ week: 'Current', tasks_completed: Math.max(tasks, 0) });
 
-  const hoursWorked = Math.max(1, tasks * 0.5 + research * 2).toFixed(1);
+  // DB expects integer in some environments; keep this safely numeric.
+  const hoursWorked = Math.max(1, Math.round(tasks * 0.5 + research * 2));
 
   const report = {
     user_id: user.id,
     week_start: weekStart.toISOString(),
-    date_range_str: dateRangeStr,
+    week_end: now.toISOString(),
     hours_worked: hoursWorked,
     tasks_completed: tasks,
     emails_sent: emails,
-    research_reports: research,
-    social_posts: social,
     goals_active: goals,
-    chart_data: chartData,
+    report_json: {
+      template,
+      date_range_str: dateRangeStr,
+      research_reports: research,
+      social_posts: social,
+      chart_data: chartData,
+    },
     created_at: now.toISOString(),
   };
 
   try {
+    console.log(`[reports.post][${requestId}] inserting`, {
+      user: user.id,
+      template,
+      tasks,
+      emails,
+      research,
+      social,
+      goals,
+      hoursWorked,
+    });
     const { data, error } = await admin.from('weekly_reports').insert(report).select().single();
     if (error) {
-      // Table might not exist — return mock anyway so UI works
-      console.warn('[reports] Insert error (table may need migration):', error.message);
-      return NextResponse.json({ report: { ...report, id: 'mock-' + Date.now() } });
+      console.warn('[reports] Insert error:', error.message);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ report: data });
+    console.log(`[reports.post][${requestId}] success`, { reportId: data?.id });
+    const extra = (data?.report_json || {}) as Record<string, any>;
+    return NextResponse.json({
+      report: {
+        ...data,
+        date_range_str: extra.date_range_str || '',
+        research_reports: Number(extra.research_reports || 0),
+        social_posts: Number(extra.social_posts || 0),
+        chart_data: Array.isArray(extra.chart_data) ? extra.chart_data : [],
+      },
+    });
   } catch (e: any) {
-    return NextResponse.json({ report: { ...report, id: 'mock-' + Date.now() } });
+    return NextResponse.json({ error: e.message || 'Failed to generate report' }, { status: 500 });
   }
 }

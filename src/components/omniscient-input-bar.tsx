@@ -38,7 +38,7 @@ export function OmniscientInputBar() {
     >
       <div
         className={`
-          relative flex items-end gap-3 px-4 py-3 rounded-2xl
+          relative flex items-center gap-3 px-4 py-3 rounded-2xl
           bg-[var(--bg-surface)] border transition-all duration-200
           ${focused
             ? 'border-[var(--border-strong)] shadow-[0_0_0_1px_var(--border-subtle)]'

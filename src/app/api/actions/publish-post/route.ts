@@ -2,7 +2,7 @@
  * POST /api/actions/publish-post
  * Publishes a social post to the connected platform.
  * Supports: Twitter/X, LinkedIn, Facebook, Instagram, Telegram.
- * Falls back to marking as "published" in DB if platform not connected.
+ * IMPORTANT: Never pretend a post published if not actually sent.
  */
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
@@ -150,52 +150,73 @@ export async function POST(request: Request) {
     const provider = PLATFORM_TO_PROVIDER[platform];
 
     let published = false;
-    let method = "manual";
+    let method = "none";
     let externalId: string | undefined;
 
-    if (provider) {
-      const { data: account } = await admin
-        .from("connected_accounts")
-        .select("provider, access_token, account_id, metadata")
-        .eq("user_id", user.id)
-        .eq("provider", provider)
-        .single();
+    if (!provider) {
+      return NextResponse.json({ error: `Unsupported platform: ${post.platform}` }, { status: 400 });
+    }
 
-      if (account) {
-        const accessToken = decryptToken(account.access_token);
+    const { data: account } = await admin
+      .from("connected_accounts")
+      .select("provider, access_token, account_id, metadata")
+      .eq("user_id", user.id)
+      .eq("provider", provider)
+      .single();
 
-        switch (provider) {
-          case "twitter":
-            externalId = await publishToTwitter(accessToken, post.content);
-            break;
-          case "linkedin":
-            externalId = await publishToLinkedIn(accessToken, post.content, account.account_id);
-            break;
-          case "facebook":
-            externalId = await publishToFacebook(accessToken, post.content, account.metadata?.page_id);
-            break;
-          case "instagram":
-            externalId = await publishToInstagram(
-              account.metadata?.page_access_token || accessToken,
-              post.content,
-              account.account_id
-            );
-            break;
-          case "telegram":
-            const chatId = account.metadata?.chat_id;
-            if (!chatId) throw new Error("No Telegram chat_id configured. Edit your Telegram connection and add a chat ID.");
-            externalId = await publishToTelegram(accessToken, chatId, post.content);
-            break;
+    if (!account) {
+      return NextResponse.json({ error: `${provider} is not connected. Connect it in Connectors first.` }, { status: 400 });
+    }
+
+    const accessToken = decryptToken(account.access_token);
+
+    switch (provider) {
+      case "twitter": {
+        try {
+          externalId = await publishToTwitter(accessToken, post.content);
+        } catch (e: any) {
+          const msg = String(e?.message || "");
+          if (msg.toLowerCase().includes("client-not-enrolled") || msg.toLowerCase().includes("not authorized")) {
+            throw new Error("X/Twitter posting is not available on the free tier. This requires X API access/approval.");
+          }
+          throw e;
         }
-
-        published = true;
-        method = provider;
+        break;
+      }
+      case "linkedin": {
+        if (!account.account_id) throw new Error("LinkedIn connected but missing profile id. Reconnect LinkedIn.");
+        externalId = await publishToLinkedIn(accessToken, post.content, account.account_id);
+        break;
+      }
+      case "facebook": {
+        throw new Error("Facebook publishing is not enabled yet. It requires a Page selection + app review permissions.");
+      }
+      case "instagram": {
+        throw new Error("Instagram publishing is not enabled yet. It requires an Instagram Business account + page/IG user selection.");
+      }
+      case "telegram": {
+        const chatId = account.metadata?.chat_id;
+        if (!chatId) throw new Error("No Telegram chat_id configured. Edit your Telegram connection and add a chat ID.");
+        externalId = await publishToTelegram(accessToken, chatId, post.content);
+        break;
+      }
+      default: {
+        throw new Error(`${post.platform} publishing is not available yet.`);
       }
     }
 
-    // Update status (metadata column added by 005_schema_fixes.sql migration)
+    published = true;
+    method = provider;
+
+    // Only mark published if we really published.
     const updatePayload: Record<string, unknown> = { status: "published" };
-    try { updatePayload.metadata = { published_via: method, published_at: new Date().toISOString(), external_id: externalId }; } catch {}
+    try {
+      updatePayload.metadata = {
+        published_via: method,
+        published_at: new Date().toISOString(),
+        external_id: externalId,
+      };
+    } catch {}
     await admin.from("social_posts").update(updatePayload).eq("id", post_id);
 
     return NextResponse.json({
@@ -204,7 +225,7 @@ export async function POST(request: Request) {
       method,
       message: published
         ? `Published to ${post.platform}`
-        : `Post marked as published (${post.platform} not connected)`,
+        : `Not published`,
     });
   } catch (err: any) {
     console.error("[publish-post action]", err.message);

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Folder, FileText, FileCode, FileSpreadsheet, Image, File,
+  Folder, FileText, FileCode, FileSpreadsheet, ImageIcon, File,
   ChevronRight, ChevronDown, Download, Eye, Trash2, Upload,
   Plus, AlertCircle, X
 } from "lucide-react";
@@ -21,7 +21,7 @@ function getFileIcon(fileType?: string) {
     case "spreadsheet":
       return <FileSpreadsheet className="w-4 h-4 text-[var(--success)]" />;
     case "image":
-      return <Image className="w-4 h-4 text-[var(--warning)]" />;
+      return <ImageIcon className="w-4 h-4 text-[var(--warning)]" />;
     default:
       return <File className="w-4 h-4 text-[var(--foreground-muted)]" />;
   }
@@ -116,7 +116,7 @@ export function FileWorkspace() {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-  const [currentPath, setCurrentPath] = useState("/");
+  const [currentPath] = useState("/");
 
   const {
     listFiles,
@@ -128,15 +128,15 @@ export function FileWorkspace() {
     error,
   } = useFiles();
 
+  const loadFiles = useCallback(async () => {
+    const items = await listFiles(currentPath);
+    setFiles(items);
+  }, [currentPath, listFiles]);
+
   // Load files on mount
   useEffect(() => {
     loadFiles();
-  }, [currentPath]);
-
-  const loadFiles = async () => {
-    const items = await listFiles(currentPath);
-    setFiles(items);
-  };
+  }, [loadFiles]);
 
   const toggleFolder = async (id: string) => {
     setFiles((prev) => {

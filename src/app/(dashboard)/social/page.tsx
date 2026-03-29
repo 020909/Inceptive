@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import type { Session } from "@supabase/supabase-js";
 
-import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,12 +32,13 @@ interface ConnectedAccount {
 }
 
 const SOCIAL_CONNECTORS = [
-  { id: "gmail",     provider: "google",    name: "Gmail",       logo: "/logos/email/gmail.png",   users: "1.8B+",  telegramInput: false, type: "email", description: "Send and receive emails" },
+  { id: "gmail",     provider: "gmail",     name: "Gmail",       logo: "/logos/email/gmail.png",   users: "1.8B+",  telegramInput: false, type: "email", description: "Send and receive emails" },
   { id: "outlook",   provider: "outlook",   name: "Outlook",     logo: "/logos/email/outlook.png", users: "400M+",  telegramInput: false, type: "email", description: "Microsoft 365 email" },
-  { id: "x",         provider: "twitter",    name: "X (Twitter)", logo: "/logos/social/x.png",         users: "600M+",  telegramInput: false, type: "social", description: "Team messaging and notifications" },
+  { id: "x",         provider: "twitter",    name: "X (Twitter)", logo: "/logos/social/x.png",         users: "600M+",  telegramInput: false, type: "social", description: "Post tweets and read basic profile" },
   { id: "linkedin",  provider: "linkedin",  name: "LinkedIn",    logo: "/logos/social/linkedin.png",  users: "950M+",  telegramInput: false, type: "social", description: "Professional networking" },
-  { id: "facebook", provider: "facebook",  name: "Facebook",    logo: "/logos/social/facebook.png",  users: "3B+",    telegramInput: false, type: "social", description: "Social media platform" },
-  { id: "instagram", provider: "instagram", name: "Instagram",   logo: "/logos/social/instagram.png", users: "2B+",    telegramInput: false, type: "social", description: "Photo and video sharing" },
+  { id: "facebook", provider: "facebook",  name: "Facebook",    logo: "/logos/social/facebook.png",  users: "3B+",    telegramInput: false, type: "social", description: "Meta Graph API (limited without app review)" },
+  { id: "instagram", provider: "instagram", name: "Instagram",   logo: "/logos/social/instagram.png", users: "2B+",    telegramInput: false, type: "social", description: "Meta Graph API (publishing requires Business + permissions)" },
+  { id: "whatsapp",  provider: "whatsapp",  name: "WhatsApp",    logo: "/logos/social/whatsapp.png",  users: "2B+",    telegramInput: false, type: "social", description: "WhatsApp Cloud API (requires Business setup)" },
   { id: "telegram",  provider: "telegram",  name: "Telegram",    logo: "/logos/social/telegram.png",  users: "900M+",  telegramInput: true,  type: "social", description: "Messaging and channels" },
   { id: "tiktok",    provider: "tiktok",    name: "TikTok",      logo: "/logos/social/tiktok.png",    users: "1.5B+",  telegramInput: false, type: "social", description: "Short-form video" },
   { id: "youtube",   provider: "youtube",   name: "YouTube",     logo: "/logos/social/youtube.png",   users: "2.5B+",  telegramInput: false, type: "social", description: "Video hosting and streaming" },
@@ -48,7 +48,7 @@ function StatusBadge({ status }: { status: 'connected' | 'disconnected' | 'error
   const configs = {
     connected: { icon: Check, color: 'text-[var(--fg-primary)]', bg: 'bg-[var(--bg-elevated)]', label: 'Connected' },
     disconnected: { icon: Plug, color: 'text-[var(--fg-muted)]', bg: 'bg-[var(--bg-surface)]', label: 'Disconnected' },
-    error: { icon: AlertCircle, color: 'text-[var(--fg-secondary)]', bg: 'bg-white/[0.05]', label: 'Error' },
+    error: { icon: AlertCircle, color: 'text-[var(--fg-secondary)]', bg: 'bg-[var(--bg-elevated)]', label: 'Error' },
   };
   const config = configs[status];
   const Icon = config.icon;
@@ -89,6 +89,12 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
 
       <h3 className="text-[var(--fg-primary)] font-medium tracking-[-0.02em] mb-1">{connector.name}</h3>
       <p className="text-[var(--fg-muted)] text-sm mb-4">{connector.description}</p>
+      {connected && connectedAccount?.account_name && (
+        <p className="text-[var(--fg-tertiary)] text-xs mb-3">
+          ✅ Connected as {connectedAccount.account_name}
+          {connectedAccount.account_email ? ` · ${connectedAccount.account_email}` : ""}
+        </p>
+      )}
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-xs text-[var(--fg-muted)]">
@@ -115,7 +121,7 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
               </button>
             </>
           ) : (
-            <button onClick={onConnect} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] text-[var(--fg-primary)] text-xs font-medium hover:bg-white/[0.12] transition-colors">
+            <button onClick={onConnect} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] text-[var(--fg-primary)] text-xs font-medium hover:bg-[var(--bg-overlay)] transition-colors">
               <Plug size={12} />
               Connect
             </button>
@@ -200,11 +206,17 @@ export default function SocialPage() {
     if (connected || error) window.history.replaceState({}, "", "/social");
   }, [init, refreshAuth]);
 
+  const PROVIDER_AUTH_PATH: Record<string, string> = { gmail: "google", outlook: "microsoft" };
+
   const handleConnect = (connector: typeof SOCIAL_CONNECTORS[0]) => {
     if (!session?.access_token) { toast.error("Please sign in first"); return; }
     if (connector.telegramInput) { setIsTelegramModalOpen(true); return; }
-    
-    const base = connector.type === "email" ? `/api/auth/${connector.provider}/connect` : `/api/connectors/${connector.provider}/auth`;
+
+    const authSlug = PROVIDER_AUTH_PATH[connector.provider] || connector.provider;
+    const base =
+      connector.type === "email"
+        ? `/api/auth/${authSlug}/connect`
+        : `/api/connectors/${connector.provider}?mode=connect`;
     const url = `${base}?token=${encodeURIComponent(session.access_token)}&redirect_to=/social`;
     window.location.href = url;
   };
@@ -223,7 +235,7 @@ export default function SocialPage() {
     if (!botToken || !session?.access_token) return;
     setConnectingTelegram(true);
     try {
-      const res = await fetch("/api/auth/telegram/connect", {
+      const res = await fetch("/api/connectors/telegram", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ bot_token: botToken, chat_id: chatId }),
@@ -314,7 +326,7 @@ export default function SocialPage() {
   const connectedCount = connectedAccounts.length;
 
   if (loading) return (
-    <PageTransition>
+    <>
       <div className="min-h-screen flex flex-col">
         <div className="h-20 shimmer rounded-xl mx-8 mt-8" />
         <div className="flex-1 p-8">
@@ -323,11 +335,11 @@ export default function SocialPage() {
           </div>
         </div>
       </div>
-    </PageTransition>
+    </>
   );
 
   return (
-    <PageTransition>
+    <>
       <div className="min-h-screen flex flex-col">
         {/* Header */}
         <header className="flex items-center justify-between px-8 py-5 border-b border-[var(--border-subtle)]">
@@ -366,7 +378,7 @@ export default function SocialPage() {
               transition={{ delay: 0.05, type: 'spring', stiffness: 100, damping: 20 }}
             >
               <p className="text-[var(--fg-muted)] text-sm mb-1">Available</p>
-              <p className="text-3xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">24</p>
+              <p className="text-3xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{SOCIAL_CONNECTORS.length}</p>
             </motion.div>
             <motion.div
               className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
@@ -389,7 +401,7 @@ export default function SocialPage() {
                   px-4 py-2 rounded-lg text-sm capitalize transition-all duration-200
                   ${selectedCategory === category
                     ? 'bg-[var(--bg-elevated)] text-[var(--fg-primary)]'
-                    : 'text-[var(--fg-tertiary)] hover:bg-white/[0.03] hover:text-[var(--fg-primary)]'
+                    : 'text-[var(--fg-tertiary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--fg-primary)]'
                   }
                 `}
               >
@@ -450,7 +462,7 @@ export default function SocialPage() {
                         <button
                           onClick={() => handlePublish(post.id)}
                           disabled={publishing === post.id || !isPlatformConnected(post.platform)}
-                          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-[var(--bg-elevated)] text-[var(--fg-primary)] hover:bg-white/[0.12] disabled:opacity-50"
+                          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-[var(--bg-elevated)] text-[var(--fg-primary)] hover:bg-[var(--bg-overlay)] disabled:opacity-50"
                         >
                           {publishing === post.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Publish'}
                         </button>
@@ -574,6 +586,6 @@ export default function SocialPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </PageTransition>
+    </>
   );
 }

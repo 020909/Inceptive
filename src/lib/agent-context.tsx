@@ -119,6 +119,20 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
     }
   }, [status, setStatus]);
 
+  // Log management
+  const addLog = useCallback((entry: Omit<LogEntry, "id" | "timestamp">) => {
+    const newEntry: LogEntry = {
+      ...entry,
+      id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date(),
+    };
+    setLogs(prev => [...prev.slice(-99), newEntry]); // Keep last 100 logs
+  }, []);
+
+  const clearLogs = useCallback(() => {
+    setLogs([]);
+  }, []);
+
   // Auto-sleep logic for 24/7 mode
   useEffect(() => {
     if (!is24_7Mode) return;
@@ -136,7 +150,7 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
 
     const interval = setInterval(checkSleep, 30000); // Check every 30s
     return () => clearInterval(interval);
-  }, [is24_7Mode, lastActivity, sleepAfterMinutes, status]);
+  }, [is24_7Mode, lastActivity, sleepAfterMinutes, status, setStatus, addLog]);
 
   // Task management
   const addTask = useCallback((task: Omit<Task, "id">) => {
@@ -157,7 +171,7 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
     }
 
     return id;
-  }, [requiresApproval]);
+  }, [requiresApproval, addLog, setStatus]);
 
   const updateTask = useCallback((id: string, updates: Partial<Task>) => {
     setTasks(prev =>
@@ -215,20 +229,6 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
       setStatus("working");
     }
   }, [pendingApproval, updateTask, setStatus]);
-
-  // Log management
-  const addLog = useCallback((entry: Omit<LogEntry, "id" | "timestamp">) => {
-    const newEntry: LogEntry = {
-      ...entry,
-      id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: new Date(),
-    };
-    setLogs(prev => [...prev.slice(-99), newEntry]); // Keep last 100 logs
-  }, []);
-
-  const clearLogs = useCallback(() => {
-    setLogs([]);
-  }, []);
 
   // Memory management
   const addMemory = useCallback((item: Omit<MemoryItem, "id" | "timestamp">) => {

@@ -13,7 +13,6 @@ import {
   Plug,
   Target,
   FileText,
-  Zap,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -66,7 +65,7 @@ function NavItem({ item, isActive, collapsed }: { item: typeof navItems[0]; isAc
         className={`
           group relative flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer
           transition-colors duration-150
-          ${isActive ? "bg-white/[0.06]" : "hover:bg-white/[0.04]"}
+          ${isActive ? "bg-[var(--border-subtle)]" : "hover:bg-[var(--border-subtle)]"}
         `}
       >
         {isActive && (
@@ -105,37 +104,6 @@ function NavItem({ item, isActive, collapsed }: { item: typeof navItems[0]; isAc
   );
 }
 
-function PowerMeter({ collapsed }: { collapsed: boolean }) {
-  if (collapsed) return null;
-
-  return (
-    <div className="px-3 pb-1">
-      <div className="flex items-center justify-between mb-1.5">
-        <div className="flex items-center gap-1.5">
-          <Zap size={11} strokeWidth={2} className="text-[var(--fg-secondary)]" />
-          <span className="text-[11px] text-[var(--fg-secondary)] font-medium">100 credits</span>
-        </div>
-        <span className="text-[10px] text-[var(--fg-muted)]">resets daily</span>
-      </div>
-
-      <div className="relative h-[3px] bg-white/[0.06] rounded-full overflow-hidden">
-        <motion.div
-          className="absolute inset-y-0 left-0 bg-[var(--fg-primary)] rounded-full opacity-80"
-          initial={{ width: 0 }}
-          animate={{ width: "100%" }}
-          transition={{ type: "spring", stiffness: 80, damping: 20, delay: 0.5 }}
-        />
-      </div>
-
-      <Link href="/upgrade" className="block mt-2.5">
-        <div className="w-full py-1.5 rounded-lg border border-[var(--border-subtle)] text-center text-[11px] text-[var(--fg-secondary)] font-medium tracking-[-0.01em] transition-all duration-150 hover:bg-white/[0.04] hover:border-[var(--border-default)] hover:text-[var(--fg-primary)]">
-          Upgrade
-        </div>
-      </Link>
-    </div>
-  );
-}
-
 export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, setCollapsed } = useSidebar();
@@ -150,7 +118,6 @@ export function Sidebar() {
         transition-[width] duration-200 ease-out
         ${collapsed ? 'w-[60px]' : 'w-[240px]'}
       `}
-      style={{  }}
       initial={{ x: -40, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 140, damping: 22 }}
@@ -171,7 +138,7 @@ export function Sidebar() {
         {!collapsed && (
           <button
             onClick={() => setCollapsed(true)}
-            className="ml-auto p-1 rounded-md transition-colors hover:bg-white/[0.06]"
+            className="ml-auto p-1 rounded-md transition-colors hover:bg-[var(--border-subtle)]"
           >
             <ChevronLeft size={14} className="text-[var(--fg-muted)]" />
           </button>
@@ -204,8 +171,6 @@ export function Sidebar() {
       <div className="px-2 pb-2 space-y-1">
         <div className="mx-1 h-px bg-[var(--border-subtle)] mb-2" />
 
-        <PowerMeter collapsed={collapsed} />
-
         {/* Settings */}
         <div className="px-1">
           <Link href="/settings">
@@ -213,7 +178,7 @@ export function Sidebar() {
               className={`
                 group flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer
                 transition-colors duration-150
-                ${pathname === "/settings" ? "bg-white/[0.06]" : "hover:bg-white/[0.04]"}
+                ${pathname === "/settings" ? "bg-[var(--border-subtle)]" : "hover:bg-[var(--border-subtle)]"}
               `}
             >
               <Settings

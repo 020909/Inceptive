@@ -1,5 +1,21 @@
 import { createClient } from "@/lib/supabase";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
+import { extractTextWithTika } from "@/lib/files/tika-extract";
+import pdfParse from "pdf-parse/lib/pdf-parse";
+
+const TIKA_OFFICE_EXT = new Set([
+  "doc",
+  "docx",
+  "xls",
+  "xlsx",
+  "ppt",
+  "pptx",
+  "odt",
+  "ods",
+  "odp",
+  "rtf",
+  "epub",
+]);
 
 export const runtime = "nodejs";
 
@@ -52,16 +68,8 @@ export async function POST(req: Request) {
       throw new Error(`Upload failed: ${uploadError.message}`);
     }
 
-    // Extract preview for text files
-    let contentPreview = null;
-    if (fileType === "text" || fileType === "code") {
-      try {
-        const text = await file.text();
-        contentPreview = text.slice(0, 1000);
-      } catch {
-        // Ignore preview errors
-      }
-    }
+    // Extract preview for supported Node-side formats (without external parsers/services).
+    const contentPreview = await extractContentPreview(file, fileType);
 
     // Register in database
     const { data: dbFile, error: dbError } = await supabase
@@ -105,6 +113,59 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+}
+
+async function extractContentPreview(file: File, fileType: string): Promise<string | null> {
+  try {
+    const extension = file.name.split(".").pop()?.toLowerCase() || "";
+
+    if (fileType === "text" || fileType === "code") {
+      return normalizeText(await file.text(), 12000);
+    }
+
+    if (fileType === "spreadsheet") {
+      // CSV/TSV can be processed directly in Node. Binary spreadsheet formats are intentionally skipped.
+      if (extension === "csv" || extension === "tsv") {
+        return normalizeText(await file.text(), 12000);
+      }
+      return null;
+    }
+
+    if (fileType === "pdf") {
+      const buf = Buffer.from(await file.arrayBuffer());
+      const parsed = await pdfParse(buf);
+      return normalizeText(parsed.text || "", 12000);
+    }
+
+    if (TIKA_OFFICE_EXT.has(extension)) {
+      const buf = Buffer.from(await file.arrayBuffer());
+      const mime =
+        file.type ||
+        (extension === "docx"
+          ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          : extension === "xlsx"
+            ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            : extension === "pptx"
+              ? "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+              : "application/octet-stream");
+      const tika = await extractTextWithTika(buf, mime);
+      if (tika) return normalizeText(tika, 12000);
+    }
+
+    // Handle JSON/XML/HTML-like payloads that may be uploaded with "application/*" mime.
+    if (["json", "xml", "html", "md", "txt"].includes(extension) || /application\/(json|xml)/i.test(file.type)) {
+      return normalizeText(await file.text(), 12000);
+    }
+
+    return null;
+  } catch {
+    // Preview extraction is best-effort; upload should still succeed.
+    return null;
+  }
+}
+
+function normalizeText(text: string, maxChars: number): string {
+  return text.replace(/\s+\n/g, "\n").replace(/[ \t]+/g, " ").trim().slice(0, maxChars);
 }
 
 function getFileType(extension: string, mimeType: string): string {

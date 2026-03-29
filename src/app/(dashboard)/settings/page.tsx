@@ -150,6 +150,14 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [memberSince, setMemberSince] = useState("");
+  const [creditInfo, setCreditInfo] = useState<{ remaining: number; total: number; plan: string; unlimited?: boolean } | null>(null);
+
+  const [scheduledName, setScheduledName] = useState("");
+  const [scheduledCron, setScheduledCron] = useState("0 9 * * 1");
+  const [scheduledPrompt, setScheduledPrompt] = useState("");
+  const [scheduledSaving, setScheduledSaving] = useState(false);
+  const [scheduledTasks, setScheduledTasks] = useState<any[]>([]);
+  const [scheduledLoading, setScheduledLoading] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -175,6 +183,16 @@ export default function SettingsPage() {
           setSelectedProvider(data.api_provider || "");
           setSelectedModel(data.api_model || "");
         }
+        const creditsRes = await fetch("/api/credits");
+        if (creditsRes.ok) {
+          const c = await creditsRes.json();
+          setCreditInfo({
+            remaining: c.credits?.remaining ?? 0,
+            total: c.credits?.total ?? 0,
+            plan: c.plan ?? "free",
+            unlimited: c.unlimited ?? false,
+          });
+        }
       } catch (err) {
         console.error("Failed to fetch settings", err);
       } finally {
@@ -183,6 +201,20 @@ export default function SettingsPage() {
     };
     init();
   }, [session, user]);
+
+  const fetchScheduledTasks = async () => {
+    if (!session?.access_token) return;
+    setScheduledLoading(true);
+    try {
+      const res = await fetch("/api/scheduled-tasks", { headers: { Authorization: `Bearer ${session.access_token}` } });
+      const d = await res.json();
+      if (res.ok) setScheduledTasks(d.tasks || []);
+    } catch {
+      // ignore
+    } finally {
+      setScheduledLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!session?.access_token || !selectedProvider || !selectedModel || !apiKeyInput.trim()) {
@@ -254,6 +286,38 @@ export default function SettingsPage() {
     }
   };
 
+  const createScheduledTask = async () => {
+    if (!session?.access_token) return;
+    if (!scheduledName.trim() || !scheduledCron.trim() || !scheduledPrompt.trim()) {
+      toast.error("Name, cron, and prompt are required");
+      return;
+    }
+    setScheduledSaving(true);
+    try {
+      const res = await fetch("/api/scheduled-tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          name: scheduledName.trim(),
+          schedule_cron: scheduledCron.trim(),
+          prompt: scheduledPrompt.trim(),
+          timezone: "UTC",
+          enabled: true,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Failed to create");
+      toast.success("Scheduled task created");
+      setScheduledName("");
+      setScheduledPrompt("");
+      await fetchScheduledTasks();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setScheduledSaving(false);
+    }
+  };
+
   const handleResetPassword = async () => {
     if (!user?.email) return;
     const supabase = createClient();
@@ -298,7 +362,7 @@ export default function SettingsPage() {
                   onClick={() => setActiveSection(s.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-150 ${
                     i !== SECTIONS.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
-                  } ${isActive ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"}`}
+                  } ${isActive ? "bg-[var(--bg-elevated)]" : "hover:bg-[var(--bg-elevated)]"}`}
                 >
                   <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-[var(--fg-primary)]" : "text-[var(--fg-tertiary)]"}`} />
                   <span className={`text-[13px] ${isActive ? "text-[var(--fg-primary)] font-medium" : "text-[var(--fg-secondary)]"}`}>
@@ -405,6 +469,119 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </Card>
+
+                <Card>
+                  <CardHeader title="Scheduled Tasks" description="Set-and-forget automation (runs via cron). Uses credits smartly." />
+                  <div className="p-5 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Name</Label>
+                        <Input
+                          value={scheduledName}
+                          onChange={(e) => setScheduledName(e.target.value)}
+                          placeholder="e.g. Monday Inbox Summary"
+                          className="h-10 rounded-lg text-sm bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--fg-primary)]"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Cron (UTC)</Label>
+                        <Input
+                          value={scheduledCron}
+                          onChange={(e) => setScheduledCron(e.target.value)}
+                          placeholder="0 9 * * 1"
+                          className="h-10 rounded-lg text-sm bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--fg-primary)] font-mono"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Actions</Label>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={createScheduledTask}
+                            disabled={scheduledSaving}
+                            className="h-10 px-4 rounded-lg text-sm border-0 bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 disabled:opacity-40 flex items-center gap-2"
+                          >
+                            {scheduledSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                            Create
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={fetchScheduledTasks}
+                            className="h-10 px-4 rounded-lg text-sm hover:bg-[var(--bg-elevated)]"
+                          >
+                            Refresh
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Prompt</Label>
+                      <textarea
+                        value={scheduledPrompt}
+                        onChange={(e) => setScheduledPrompt(e.target.value)}
+                        rows={4}
+                        placeholder={`Example:\nEvery Monday at 9am: pull my Gmail inbox and summarize what needs a reply.\n\n(Use clear instructions. If Gmail isn't connected, the task will fail with a clear error.)`}
+                        className="w-full rounded-lg text-sm bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--fg-primary)] px-3 py-2 outline-none focus:border-[var(--border-strong)]"
+                      />
+                      <p className="text-[11px] text-[var(--fg-muted)]">
+                        Cron format: <span className="font-mono">min hour day month dayOfWeek</span> (UTC). Example:{" "}
+                        <span className="font-mono">0 9 * * 1</span> = Mondays 09:00 UTC.
+                      </p>
+                    </div>
+
+                    <div className="pt-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] text-[var(--fg-muted)] uppercase font-semibold tracking-wider">Your tasks</p>
+                        {scheduledLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--fg-muted)]" />}
+                      </div>
+                      <div className="space-y-2">
+                        {(scheduledTasks || []).length === 0 ? (
+                          <div className="px-4 py-3 rounded-xl bg-[var(--bg-app)] border border-[var(--border-subtle)] text-xs text-[var(--fg-tertiary)]">
+                            No scheduled tasks yet.
+                          </div>
+                        ) : (
+                          (scheduledTasks || []).slice(0, 8).map((t: any) => (
+                            <div key={t.id} className="px-4 py-3 rounded-xl bg-[var(--bg-app)] border border-[var(--border-subtle)] flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm text-[var(--fg-primary)] font-medium truncate">{t.name}</p>
+                                <p className="text-xs text-[var(--fg-muted)] font-mono mt-1">{t.schedule_cron} · {t.timezone || "UTC"}</p>
+                                <p className="text-[11px] text-[var(--fg-tertiary)] mt-1">
+                                  Status: {t.last_status || "—"}
+                                  {t.last_error ? ` · Error: ${t.last_error}` : ""}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Toggle
+                                  on={!!t.enabled}
+                                  onToggle={async () => {
+                                    if (!session?.access_token) return;
+                                    await fetch(`/api/scheduled-tasks/${t.id}`, {
+                                      method: "PATCH",
+                                      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+                                      body: JSON.stringify({ enabled: !t.enabled }),
+                                    });
+                                    fetchScheduledTasks();
+                                  }}
+                                />
+                                <Button
+                                  variant="ghost"
+                                  onClick={async () => {
+                                    if (!session?.access_token) return;
+                                    await fetch(`/api/scheduled-tasks/${t.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${session.access_token}` } });
+                                    fetchScheduledTasks();
+                                  }}
+                                  className="h-9 px-3 rounded-lg text-xs hover:bg-[var(--bg-elevated)]"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
               </motion.div>
             )}
 
@@ -431,7 +608,7 @@ export default function SettingsPage() {
                         <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Enter your name"
                           className="h-10 rounded-lg text-sm flex-1 bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--fg-primary)] focus:border-[var(--border-strong)] focus:ring-0" />
                         <Button onClick={handleSaveName} disabled={savingName || !displayName.trim()}
-                          className="h-10 px-4 rounded-lg text-sm border-0 bg-[var(--fg-primary)] text-[var(--bg-base)] hover:bg-white/90 disabled:opacity-40">
+                          className="h-10 px-4 rounded-lg text-sm border-0 bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 disabled:opacity-40">
                           {savingName ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
                         </Button>
                       </div>
@@ -450,7 +627,7 @@ export default function SettingsPage() {
                   <CardHeader title="Security" />
                   <div className="p-5">
                     <button onClick={handleResetPassword}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[var(--border-subtle)] text-left transition-all duration-150 hover:bg-white/[0.03]">
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[var(--border-subtle)] text-left transition-all duration-150 hover:bg-[var(--bg-elevated)]">
                       <div className="flex items-center gap-3">
                         <Shield className="w-4 h-4 text-[var(--fg-tertiary)]" />
                         <div>
@@ -460,6 +637,32 @@ export default function SettingsPage() {
                       </div>
                       <ChevronRight className="w-4 h-4 text-[var(--fg-muted)]" />
                     </button>
+                  </div>
+                </Card>
+
+                <Card>
+                  <CardHeader title="Inceptive Credits" description="Your current usage and plan limits" />
+                  <div className="p-5">
+                    <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-app)] p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-[var(--fg-tertiary)]">Remaining</span>
+                        <span className="text-lg font-semibold text-[var(--fg-primary)]">
+                          {creditInfo?.unlimited ? "Unlimited" : `${creditInfo?.remaining ?? 0} / ${creditInfo?.total ?? 0}`}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs text-[var(--fg-muted)]">Plan</span>
+                        <span className="text-xs uppercase tracking-wide text-[var(--fg-secondary)]">{creditInfo?.plan ?? "free"}</span>
+                      </div>
+                      {!creditInfo?.unlimited && (
+                        <div className="h-2 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
+                          <div
+                            className="h-full bg-[var(--fg-primary)]"
+                            style={{ width: `${Math.max(0, Math.min(100, ((creditInfo?.remaining ?? 0) / Math.max(1, creditInfo?.total ?? 1)) * 100))}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </Card>
 
@@ -485,7 +688,7 @@ export default function SettingsPage() {
                   <CardHeader title="Gmail" description="OAuth (same as Email Autopilot). Stores refresh token in Supabase." />
                   <div className="p-5">
                     <Link href="/email">
-                      <Button className="rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] hover:bg-white/90 border-0">Connect Gmail</Button>
+                      <Button className="rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 border-0">Connect Gmail</Button>
                     </Link>
                   </div>
                 </Card>
@@ -503,7 +706,7 @@ export default function SettingsPage() {
                         className="rounded-lg bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--fg-primary)]" />
                     </div>
                     <Button onClick={handleYahooConnect} disabled={yahooSaving}
-                      className="rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] hover:bg-white/90 border-0">
+                      className="rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 border-0">
                       {yahooSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Connect Yahoo"}
                     </Button>
                   </div>

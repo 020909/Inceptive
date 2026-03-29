@@ -1,11 +1,11 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useChat } from "@/lib/chat-context";
-import { PageTransition } from "@/components/ui/page-transition";
-import { motion } from "framer-motion";
-import { Zap, Search, Mail, Share2, Target, TrendingUp, Users, FileText, Rocket, ChevronRight, Play } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Zap, Search, Mail, Share2, Target, TrendingUp, Users, FileText, Rocket, ChevronRight, Play, Plus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const SKILLS = [
   { id: "investor-outreach", category: "Sales", title: "Investor Outreach", description: "Research 10 active AI investors, draft personalized cold emails, save as drafts ready to send.", icon: TrendingUp, time: "~3 min", tags: ["Research","Email"], prompt: "Research 10 active investors who fund AI startups. For each: name, fund, portfolio, contact info. Draft a personalized cold email pitching Inceptive - an AI agent for founders that beats Perplexity Computer at 1/10th the price. Save each as email draft." },
@@ -21,33 +21,148 @@ const SKILLS = [
 
 const CATS = ["All","Research","Sales","Marketing","Email","Productivity"];
 
+type UserSkill = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  tags: string[];
+  prompt: string;
+  created_at: string;
+};
+
+type SkillCard = {
+  id: string;
+  category: string;
+  title: string;
+  description: string;
+  tags: string[];
+  prompt: string;
+  icon: any;
+  time: string;
+};
+
+function iconForCategory(category: string) {
+  switch (category) {
+    case "Research":
+      return Search;
+    case "Sales":
+      return Users;
+    case "Marketing":
+      return Share2;
+    case "Email":
+      return Mail;
+    case "Productivity":
+      return Zap;
+    default:
+      return FileText;
+  }
+}
+
+function normalizeUserSkill(skill: UserSkill): SkillCard {
+  return {
+    id: skill.id,
+    category: skill.category,
+    title: skill.title,
+    description: skill.description || "",
+    tags: Array.isArray(skill.tags) && skill.tags.length > 0 ? skill.tags : [skill.category],
+    prompt: skill.prompt,
+    icon: iconForCategory(skill.category),
+    time: "~Custom",
+  };
+}
+
 export default function SkillsPage() {
   const router = useRouter();
-  const { startNewChat, setMessages } = useChat();
+  const { startNewChat } = useChat();
   const [cat, setCat] = useState("All");
   const [running, setRunning] = useState<string|null>(null);
+  const [customSkills, setCustomSkills] = useState<UserSkill[]>([]);
+  const [customLoading, setCustomLoading] = useState(false);
 
-  const filtered = cat === "All" ? SKILLS : SKILLS.filter(s => s.category === cat || s.tags.includes(cat));
+  const [addOpen, setAddOpen] = useState(false);
+  const [skillTitle, setSkillTitle] = useState("");
+  const [skillDescription, setSkillDescription] = useState("");
+  const [skillCategory, setSkillCategory] = useState<Exclude<typeof CATS[number], "All">>("Research");
+  const [skillTagsText, setSkillTagsText] = useState("");
+  const [skillPrompt, setSkillPrompt] = useState("");
+  const [savingSkill, setSavingSkill] = useState(false);
 
-  const runSkill = async (skill: typeof SKILLS[0]) => {
+  const fetchCustomSkills = useCallback(async () => {
+    setCustomLoading(true);
+    try {
+      const res = await fetch("/api/skills");
+      if (!res.ok) return;
+      const data = await res.json();
+      setCustomSkills(data.skills || []);
+    } catch {
+      /* no-op */
+    } finally {
+      setCustomLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchCustomSkills(); }, [fetchCustomSkills]);
+
+  const allSkills: SkillCard[] = [
+    ...(SKILLS as SkillCard[]),
+    ...(customSkills.map(normalizeUserSkill)),
+  ];
+
+  const filtered = cat === "All"
+    ? allSkills
+    : allSkills.filter(s => s.category === cat || s.tags.includes(cat));
+
+  const runSkill = async (skill: SkillCard) => {
     setRunning(skill.id);
     toast.success("Starting " + skill.title + "...");
     await startNewChat();
-    setMessages([{ id: Date.now().toString(), role: "user" as const, content: skill.prompt, toolCalls: [], toolResults: [] }]);
-    setTimeout(() => router.push("/dashboard"), 400);
+    const prefill = encodeURIComponent(skill.prompt);
+    router.push(`/dashboard?prefill=${prefill}`);
   };
 
   return (
-    <PageTransition>
+    <>
       <div className="max-w-5xl mx-auto p-6 md:p-8">
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-2xl font-bold text-[var(--fg-primary)] mb-1">Skills</h1>
-          <p className="text-sm" style={{ color: "var(--foreground-secondary)" }}>One-click agent workflows. Pick a skill, your AI starts working immediately.</p>
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 flex items-start justify-between gap-3"
+        >
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--fg-primary)] mb-1">Skills</h1>
+            <p className="text-sm text-[var(--fg-secondary)]">
+              Pick a skill and we will prefill your dashboard prompt for review.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setAddOpen(true);
+              setSkillTitle("");
+              setSkillDescription("");
+              setSkillCategory("Research");
+              setSkillTagsText("");
+              setSkillPrompt("");
+            }}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white text-black border border-white hover:opacity-90 transition-colors text-xs font-semibold"
+          >
+            <Plus size={14} />
+            Add Skill
+          </button>
         </motion.div>
 
         <div className="flex gap-2 mb-8 flex-wrap">
           {CATS.map(c => (
-            <button key={c} onClick={() => setCat(c)} className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all" style={{ background: cat === c ? "var(--foreground)" : "var(--background-elevated)", color: cat === c ? "var(--background)" : "var(--foreground-secondary)", border: cat === c ? "none" : "1px solid var(--border)" }}>
+            <button
+              key={c}
+              onClick={() => setCat(c)}
+              className={cn(
+                "px-4 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                cat === c
+                  ? "bg-[var(--fg-primary)] text-[var(--bg-base)] border-transparent"
+                  : "bg-[var(--bg-elevated)] text-[var(--fg-secondary)] border-[var(--border-subtle)]"
+              )}
+            >
               {c}
             </button>
           ))}
@@ -59,27 +174,26 @@ export default function SkillsPage() {
             const isRun = running === skill.id;
             return (
               <motion.div key={skill.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="flex flex-col rounded-2xl border overflow-hidden transition-all duration-200"
-                style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.2)"}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"}>
+                className="flex flex-col rounded-2xl border border-[var(--border-subtle)] overflow-hidden transition-all duration-200 bg-[var(--bg-elevated)] hover:border-[var(--border-strong)]">
                 <div className="p-5 flex-1">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "var(--background-overlay)", border: "1px solid var(--border)" }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--bg-overlay)] border border-[var(--border-subtle)]">
                       <Icon className="w-4 h-4 text-[var(--fg-primary)]" />
                     </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "var(--background-overlay)", color: "var(--foreground-secondary)", border: "1px solid var(--border)" }}>{skill.time}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--bg-overlay)] text-[var(--fg-secondary)] border border-[var(--border-subtle)]">{skill.time}</span>
                   </div>
                   <h3 className="text-sm font-bold text-[var(--fg-primary)] mb-1.5">{skill.title}</h3>
-                  <p className="text-xs leading-relaxed" style={{ color: "var(--foreground-secondary)" }}>{skill.description}</p>
+                  <p className="text-xs leading-relaxed text-[var(--fg-secondary)]">{skill.description}</p>
                   <div className="flex flex-wrap gap-1.5 mt-3">
-                    {skill.tags.map(t => <span key={t} className="text-[10px] px-2 py-0.5 rounded-md" style={{ background: "var(--background-overlay)", color: "var(--foreground-tertiary)" }}>{t}</span>)}
+                    {skill.tags.map(t => <span key={t} className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--bg-overlay)] text-[var(--fg-tertiary)]">{t}</span>)}
                   </div>
                 </div>
                 <div className="px-5 pb-5">
                   <button onClick={() => runSkill(skill)} disabled={!!running}
-                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                    style={{ background: isRun ? "var(--background-overlay)" : "var(--foreground)", color: isRun ? "var(--foreground-secondary)" : "var(--background)" }}>
+                    className={cn(
+                      "w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold transition-all",
+                      isRun ? "bg-[var(--bg-overlay)] text-[var(--fg-secondary)]" : "bg-[var(--fg-primary)] text-[var(--bg-base)]"
+                    )}>
                     <div className="flex items-center gap-2">
                       {isRun ? <motion.div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} /> : <Play className="w-3.5 h-3.5" />}
                       {isRun ? "Starting..." : "Run Skill"}
@@ -92,19 +206,185 @@ export default function SkillsPage() {
           })}
         </div>
 
-        <div className="mt-10 p-5 rounded-2xl border" style={{ background: "var(--background-elevated)", borderColor: "var(--border)" }}>
+        <div className="mt-10 p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
           <h3 className="text-sm font-bold text-[var(--fg-primary)] mb-3">Slash Commands in Dashboard</h3>
-          <p className="text-xs mb-4" style={{ color: "var(--foreground-secondary)" }}>Type these shortcuts directly in the chat:</p>
+          <p className="text-xs mb-4 text-[var(--fg-secondary)]">Type these shortcuts directly in the chat:</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {[["/inbox","Read Gmail inbox"],[" /research [topic]","Deep research + save"],[" /email [to] [topic]","Compose and send"],[" /post [content]","Schedule social post"],[" /goal [title]","Create a goal"],[" /brief","Morning briefing"]].map(([cmd,desc]) => (
               <div key={cmd} className="flex flex-col gap-1">
-                <code className="text-xs font-mono text-[var(--fg-primary)] px-2 py-1 rounded-lg" style={{ background: "var(--background-overlay)" }}>{cmd}</code>
-                <span className="text-[10px]" style={{ color: "var(--foreground-tertiary)" }}>{desc}</span>
+                <code className="text-xs font-mono text-[var(--fg-primary)] px-2 py-1 rounded-lg bg-[var(--bg-overlay)]">{cmd}</code>
+                <span className="text-[10px] text-[var(--fg-tertiary)]">{desc}</span>
               </div>
             ))}
           </div>
         </div>
+
+        {/* Add Skill modal */}
+        <AnimatePresence>
+          {addOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(8px)" }}
+              onClick={() => setAddOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.96, y: 12 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.96, y: 12 }}
+                transition={{ duration: 0.16 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-lg rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-hidden"
+              >
+                <div className="px-6 py-5 border-b border-[var(--border-subtle)] flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-[var(--fg-primary)] text-base font-semibold">Add Skill</h2>
+                    <p className="text-[var(--fg-muted)] text-xs mt-1">Save a reusable skill prompt for your workflows.</p>
+                  </div>
+                  <button
+                    className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--bg-elevated)] text-[var(--fg-tertiary)]"
+                    onClick={() => setAddOpen(false)}
+                    type="button"
+                    aria-label="Close"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+
+                <form
+                  className="px-6 py-5 space-y-4"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const title = skillTitle.trim();
+                    const description = skillDescription.trim();
+                    const prompt = skillPrompt.trim();
+
+                    if (!title) {
+                      toast.error("Skill title is required");
+                      return;
+                    }
+                    if (!prompt) {
+                      toast.error("Prompt is required");
+                      return;
+                    }
+
+                    const tagsParsed = skillTagsText
+                      .split(",")
+                      .map((t) => t.trim())
+                      .filter(Boolean);
+
+                    const tags = tagsParsed.length > 0 ? tagsParsed : [skillCategory];
+
+                    setSavingSkill(true);
+                    try {
+                      const res = await fetch("/api/skills", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          title,
+                          description,
+                          category: skillCategory,
+                          tags,
+                          prompt,
+                        }),
+                      });
+
+                      const data = await res.json().catch(() => ({}));
+                      if (!res.ok) throw new Error(data.error || "Failed to create skill");
+
+                      toast.success("Skill saved");
+                      await fetchCustomSkills();
+                      setAddOpen(false);
+                    } catch (err: any) {
+                      toast.error(err?.message || "Failed to save skill");
+                    } finally {
+                      setSavingSkill(false);
+                    }
+                  }}
+                >
+                  <div>
+                    <label className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider">Title</label>
+                    <input
+                      value={skillTitle}
+                      onChange={(e) => setSkillTitle(e.target.value)}
+                      className="mt-2 w-full px-3 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--fg-primary)] text-sm outline-none focus:border-[var(--border-strong)]"
+                      placeholder="e.g. Deal Analyzer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider">Description</label>
+                    <input
+                      value={skillDescription}
+                      onChange={(e) => setSkillDescription(e.target.value)}
+                      className="mt-2 w-full px-3 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--fg-primary)] text-sm outline-none focus:border-[var(--border-strong)]"
+                      placeholder="What does this skill do?"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider">Category</label>
+                    <select
+                      value={skillCategory}
+                      onChange={(e) => setSkillCategory(e.target.value as any)}
+                      className="mt-2 w-full px-3 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--fg-primary)] text-sm outline-none focus:border-[var(--border-strong)]"
+                    >
+                      {CATS.filter((c) => c !== "All").map((c) => (
+                        <option key={c} value={c} className="bg-black text-white">
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider">
+                      Tags (comma-separated)
+                    </label>
+                    <input
+                      value={skillTagsText}
+                      onChange={(e) => setSkillTagsText(e.target.value)}
+                      className="mt-2 w-full px-3 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--fg-primary)] text-sm outline-none focus:border-[var(--border-strong)]"
+                      placeholder="Research, Investors, Funding"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider">Prompt</label>
+                    <textarea
+                      value={skillPrompt}
+                      onChange={(e) => setSkillPrompt(e.target.value)}
+                      rows={5}
+                      className="mt-2 w-full px-3 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--fg-primary)] text-sm outline-none focus:border-[var(--border-strong)] resize-none"
+                      placeholder="Describe exactly what the skill should do. Save as prompt."
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setAddOpen(false)}
+                      className="flex-1 px-3 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--fg-secondary)] text-sm font-semibold"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingSkill}
+                      className="flex-1 px-3 py-2 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {savingSkill ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                      Save Skill
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </PageTransition>
+    </>
   );
 }

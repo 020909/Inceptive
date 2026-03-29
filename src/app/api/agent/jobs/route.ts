@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 import { enqueueJob, listJobsForUser } from "@/lib/agent/task-queue";
+import { runAgentOrchestratorTick } from "@/lib/agent/orchestrator";
 
 const ALLOWED_KINDS = new Set([
   "browser.probe",
@@ -19,6 +20,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
+    // Best-effort immediate processing so users don't wait for daily cron on Hobby.
+    await runAgentOrchestratorTick(3).catch(() => {});
     const jobs = await listJobsForUser(userId);
     return NextResponse.json({ jobs });
   } catch (e) {
@@ -50,6 +53,8 @@ export async function POST(request: Request) {
       scheduleCron: body.schedule_cron ?? null,
       nextRunAt: body.next_run_at ?? new Date().toISOString(),
     });
+    // Best-effort immediate processing for the newly queued job.
+    await runAgentOrchestratorTick(1).catch(() => {});
     return NextResponse.json({ job });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to enqueue";

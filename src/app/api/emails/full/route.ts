@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
-import { getGmailClientForUser } from "@/lib/email/gmail-api";
+import { extractPlainTextFromGmailPayload, getGmailClientForUser } from "@/lib/email/gmail-api";
 
 export const dynamic = "force-dynamic";
 
@@ -14,29 +14,16 @@ export async function GET(request: Request) {
 
   try {
     const client = await getGmailClientForUser(userId);
-    if (!client) return NextResponse.json({ error: "Gmail not connected", code: "NOT_CONNECTED" }, { status: 400 });
+    if ("error" in client) {
+      const code = client.error === "gmail_not_connected" ? "NOT_CONNECTED" : "GMAIL_TOKEN_INVALID";
+      const error = client.error === "gmail_not_connected" ? "Gmail not connected" : "Gmail token invalid";
+      return NextResponse.json({ error, code, reason: client.reason }, { status: 400 });
+    }
 
     const full = await client.gmail.users.messages.get({ userId: "me", id, format: "full" });
     const payload = full.data.payload;
 
-    const extractBody = (part: any): string => {
-      if (!part) return "";
-      if (part.mimeType === "text/plain" && part.body && part.body.data)
-        return Buffer.from(part.body.data, "base64").toString("utf8");
-      if (part.mimeType === "text/html" && part.body && part.body.data) {
-        const html = Buffer.from(part.body.data, "base64").toString("utf8");
-        return html.replace(/<[^>]+>/g, " ").replace(/[ 	]{2,}/g, " ").trim();
-      }
-      if (part.parts) {
-        for (const p of part.parts) {
-          const t = extractBody(p);
-          if (t) return t;
-        }
-      }
-      return "";
-    };
-
-    const body = (payload ? extractBody(payload) : "") || full.data.snippet || "";
+    const body = (payload ? extractPlainTextFromGmailPayload(payload) : "") || full.data.snippet || "";
     return NextResponse.json({ body, snippet: full.data.snippet });
   } catch (err: any) {
     console.error("[emails/full]", err.message);

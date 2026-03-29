@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 
       if (gmailAccount) {
         const client = await getGmailClientForUser(user.id);
-        if (client) {
+        if (!("error" in client)) {
           const { buildGmailRaw } = await import("@/lib/email/gmail-api");
           const { raw } = buildGmailRaw(emailRecord.recipient, emailRecord.subject, emailRecord.body, gmailAccount.account_email);
           

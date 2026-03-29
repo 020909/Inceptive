@@ -1,10 +1,16 @@
-import { listUnreadGmail, sendGmailReply, getGmailClientForUser } from '@/lib/email/gmail-api';
+import {
+  extractPlainTextFromGmailPayload,
+  listUnreadGmail,
+  sendGmailReply,
+  getGmailClientForUser,
+} from "@/lib/email/gmail-api";
 import { createClient } from "@supabase/supabase-js";
 import { streamText } from "ai";
 import { buildModel } from "@/lib/ai-model";
+import { routeModel } from "@/lib/ai/model-router";
 import { checkCredits, deductCredits, getUserPlan } from "@/lib/credits";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
-import { assertUrlSafeForServerFetch } from "@/lib/url-safety";
+import { browseUrlText, formatSearchResultsForPrompt, searchWeb } from "@/lib/search/provider";
 import {
   computerClick,
   computerGoto,
@@ -77,103 +83,22 @@ async function logTask(
 }
 
 /* ─────────────────────────────────────────
-   WEB SEARCH — DuckDuckGo (free, no key)
-───────────────────────────────────────── */
-async function duckDuckGoSearch(query: string): Promise<string> {
-  try {
-    const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=1&skip_disambig=1`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "InceptiveAI/1.0" },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) throw new Error("DuckDuckGo request failed");
-    const data = await res.json();
-    const results: string[] = [];
-
-    if (data.AbstractText) {
-      results.push(`**Summary:** ${data.AbstractText}`);
-      if (data.AbstractURL) results.push(`Source: ${data.AbstractURL}`);
-    }
-    if (data.Definition) results.push(`**Definition:** ${data.Definition}`);
-    if (data.RelatedTopics?.length > 0) {
-      results.push("\n**Related results:**");
-      data.RelatedTopics
-        .filter((t: any) => t.Text && !t.Topics)
-        .slice(0, 8)
-        .forEach((t: any) => results.push(`• ${t.Text}`));
-    }
-    if (data.Results?.length > 0) {
-      results.push("\n**Direct results:**");
-      data.Results.slice(0, 4).forEach((r: any) => {
-        results.push(`• ${r.Text} — ${r.FirstURL}`);
-      });
-    }
-    if (results.length === 0) {
-      return `No instant results for "${query}". Use browseURL to fetch specific pages, or answer from training knowledge.`;
-    }
-    return results.join("\n");
-  } catch (err: any) {
-    return `Search unavailable (${err.message}). Answering from training knowledge.`;
-  }
-}
-
-/* ─────────────────────────────────────────
-   BROWSE URL — fetch and extract text
-───────────────────────────────────────── */
-async function browseURL(url: string): Promise<string> {
-  try {
-    assertUrlSafeForServerFetch(url);
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; InceptiveBot/1.0; +https://inceptive.ai)",
-        "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8",
-      },
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const contentType = res.headers.get("content-type") || "";
-
-    if (contentType.includes("text/plain") || contentType.includes("application/json")) {
-      const text = await res.text();
-      return text.slice(0, 6000);
-    }
-
-    // HTML — strip tags, extract meaningful text
-    const html = await res.text();
-    const text = html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
-      .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, " ")
-      .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, " ")
-      .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s{3,}/g, "\n\n")
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/&nbsp;/g, " ")
-      .trim();
-
-    return text.slice(0, 6000) + (text.length > 6000 ? "\n\n[content truncated — first 6000 chars shown]" : "");
-  } catch (err: any) {
-    return `Could not fetch ${url}: ${err.message}`;
-  }
-}
-
-/* ─────────────────────────────────────────
    STREAM ROUTE
 ───────────────────────────────────────── */
 export async function POST(req: Request) {
   try {
+    const requestId = crypto.randomUUID();
     const user_id = await getAuthenticatedUserIdFromRequest(req);
     if (!user_id) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
     const { messages, systemOverride, attachedFiles } = await req.json();
+    console.log(`[agent.stream][${requestId}] start`, {
+      user_id,
+      messages: Array.isArray(messages) ? messages.length : 0,
+      attachedFiles: Array.isArray(attachedFiles) ? attachedFiles.length : 0,
+    });
 
     if (!messages) {
       return new Response(JSON.stringify({ error: "Missing messages" }), { status: 400 });
@@ -199,19 +124,41 @@ export async function POST(req: Request) {
       .single();
 
     let model: ReturnType<typeof buildModel>;
+    const lastUserMessage =
+      (Array.isArray(messages) ? [...messages].reverse().find((m: any) => m?.role === "user")?.content : "") || "";
+    // Free-only mode for launch: we only use free/cheap-friendly defaults.
+    // If you later add paid keys/models, router can be expanded safely.
+    const routed = routeModel({
+      lastUserMessage,
+      userPreferredProvider: coreData?.api_provider || null,
+      userPreferredModel: (coreData as any)?.api_model || null,
+      freeOnly: true,
+    });
+
     if (coreData?.api_key_encrypted) {
-      const apiProvider = coreData.api_provider ?? "openrouter";
-      const apiModel = (coreData as any)?.api_model ?? undefined;
-      model = buildModel(coreData.api_key_encrypted, apiProvider, apiModel);
+      // BYOK users: respect their key but still route model name safely.
+      model = buildModel(coreData.api_key_encrypted, routed.provider, routed.model);
     } else {
-      const defaultKey = process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY || "";
-      if (!defaultKey) {
-      return new Response(
-          JSON.stringify({ error: "AI not configured. Add your API key in Settings." }),
-        { status: 400 }
-      );
+      // No BYOK: prefer Groq for low-latency chat when configured, then OpenRouter, then Gemini.
+      const groqKey = process.env.GROQ_API_KEY?.trim();
+      const groqModel = process.env.GROQ_CHAT_MODEL?.trim() || "llama-3.3-70b-versatile";
+      const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
+      const openrouterKey = process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY || "";
+
+      if (groqKey) {
+        model = buildModel(groqKey, "groq", groqModel);
+      } else if (openrouterKey) {
+        model = buildModel(openrouterKey, "openrouter", routed.model);
+      } else if (geminiKey) {
+        model = buildModel(geminiKey, "gemini", "gemini-2.0-flash");
+      } else {
+        return new Response(
+          JSON.stringify({
+            error: "AI not configured. Add GROQ_API_KEY, OpenRouter, or Gemini in env, or BYOK in Settings.",
+          }),
+          { status: 400 }
+        );
       }
-      model = buildModel(defaultKey, "openrouter", "google/gemini-2.0-flash-001");
     }
 
         // DYNAMIC CONTEXT: fetch live connectors + goals + memory
@@ -259,7 +206,9 @@ ${_cs}
 2. ALWAYS USE TOOLS for real actions. When user says read my email -> call readGmail. When user says send email -> call sendGmail.
 3. Be direct - no filler. Lead with action.
 4. After tool calls, clearly summarize results.
-5. If connector not connected, tell user exactly: go to Email section and click Connect.`;
+5. If connector not connected, tell user exactly: go to Email section and click Connect.
+6. If file context is provided, DO NOT repeat it verbatim or show "Attached Files" scaffolding. Summarize/answer directly from the relevant parts. Only reference file names if it helps clarity.
+7. If [INCEPTIVE_FILE_CONTEXT_BEGIN] is present, treat it as real extracted file content. Never say you cannot access files or ask for a URL for those files.`;
 
 
     // ── Build valid message history ──────────────────────────────────────────
@@ -316,9 +265,9 @@ ${_cs}
       const lastMsg = validHistory[validHistory.length - 1];
       if (lastMsg.role === 'user') {
         const fileCtx = (attachedFiles as any[])
-          .map((f: any) => `[File: ${f.name}]\n${f.content}`)
-          .join('\n---\n');
-        lastMsg.content = lastMsg.content + `\n\n## Attached Files:\n${fileCtx}`;
+          .map((f: any) => `[FILE:${f.name}]\n${f.content}`)
+          .join('\n\n');
+        lastMsg.content = lastMsg.content + `\n\n[INCEPTIVE_FILE_CONTEXT_BEGIN]\n${fileCtx}\n[INCEPTIVE_FILE_CONTEXT_END]`;
       }
     }
 
@@ -344,7 +293,13 @@ ${_cs}
           execute: async ({ query }: { query: string }) => {
             console.log(`[Agent:search] ${query}`);
             await deductCredits(user_id, "web_search").catch(() => {});
-            return { query, results: await duckDuckGoSearch(query) };
+            const data = await searchWeb(query, 8);
+            return {
+              query,
+              provider: data.provider,
+              items: data.items,
+              results: formatSearchResultsForPrompt(query, data),
+            };
           },
         },
 
@@ -358,7 +313,7 @@ ${_cs}
           execute: async ({ url, reason }: { url: string; reason?: string }) => {
             console.log(`[Agent:browse] ${url}${reason ? ` — ${reason}` : ""}`);
             await deductCredits(user_id, "browse_url").catch(() => {});
-            const content = await browseURL(url);
+            const content = await browseUrlText(url, 6000);
             return { url, content };
           },
         },
@@ -519,7 +474,12 @@ ${_cs}
           execute: async (args: { max_results?: number }) => {
             await deductCredits(user_id, "web_search").catch(() => {});
             const result = await listUnreadGmail(user_id, args.max_results || 10);
-            if (result.error) return { status: "error", message: "Gmail not connected. User should connect Gmail in the Email section." };
+          if (result.error) {
+            if (result.error === "gmail_not_connected") {
+              return { status: "error", message: "Gmail not connected. User should connect Gmail in the Email section." };
+            }
+            return { status: "error", message: `Gmail error (${result.error}): ${(result as any).reason || "Unknown reason"}` };
+          }
             return { status: "success", emails: result.messages, count: result.messages.length };
           },
         },
@@ -530,16 +490,17 @@ ${_cs}
           execute: async (args: { email_id: string; subject: string; from: string }) => {
             try {
               const client = await getGmailClientForUser(user_id);
-              if (!client) return { status: "error", message: "Gmail not connected" };
+              if ("error" in client) {
+                return {
+                  status: "error",
+                  message: client.error === "gmail_not_connected" ? "Gmail not connected" : client.reason || "Gmail token invalid",
+                };
+              }
               const full = await client.gmail.users.messages.get({ userId: "me", id: args.email_id, format: "full" });
-              const extractBody = (part: any): string => {
-                if (!part) return "";
-                if (part.mimeType === "text/plain" && part.body && part.body.data)
-                  return Buffer.from(part.body.data, "base64").toString("utf8");
-                if (part.parts) { for (const p of part.parts) { const t = extractBody(p); if (t) return t; } }
-                return "";
-              };
-              const body = (full.data.payload ? extractBody(full.data.payload) : "") || full.data.snippet || "";
+              const body =
+                (full.data.payload ? extractPlainTextFromGmailPayload(full.data.payload) : "") ||
+                full.data.snippet ||
+                "";
               return { status: "success", subject: args.subject, from: args.from, body: body.slice(0, 4000) };
             } catch (e: any) { return { status: "error", message: e.message }; }
           },
@@ -698,9 +659,20 @@ ${_cs}
         const enqueue = (line: string) => {
           try { controller.enqueue(encoder.encode(line)); } catch {}
         };
-        let toolCallCount = 0;
-        let producedText = false;
+        const getTextDelta = (v: any): string => {
+          if (!v || typeof v !== "object") return "";
+          if (typeof v.textDelta === "string") return v.textDelta;
+          if (typeof v.text === "string") return v.text;
+          if (typeof v.delta === "string") return v.delta;
+          if (typeof v.content === "string") return v.content;
+          if (typeof v.output_text === "string") return v.output_text;
+          return "";
+        };
+        const normalizeToolResult = (tr: any): any => tr?.result ?? tr?.output ?? tr?.data ?? null;
+        let producedAnyText = false;
+        let producedMeaningfulText = false;
         let thinkingLogId: string | undefined;
+        let fallbackFromTools = "";
 
         try {
           // Log immediately so every message has multiple lines
@@ -708,10 +680,31 @@ ${_cs}
           enqueue(initLine);
 
           for await (const value of result.fullStream) {
+            // Some providers emit text deltas in different shapes. We only use the
+            // opportunistic extractor when this is NOT already a text-delta event,
+            // otherwise we'd double-stream the same content.
+            const isTextDeltaEvent = (value as any)?.type === "text-delta";
+            const opportunisticText = !isTextDeltaEvent ? getTextDelta(value as any) : "";
+            if (opportunisticText) {
+              const trimmed = opportunisticText.trim();
+              if (!trimmed || trimmed === "{}") {
+                continue;
+              }
+              if (!thinkingLogId) {
+                const { id, streamLine } = await logTask(user_id, "Composing response...", "running", "", agentMode);
+                thinkingLogId = id;
+                enqueue(streamLine);
+              }
+              enqueue(`0:${JSON.stringify(opportunisticText)}\n`);
+              producedAnyText = true;
+              producedMeaningfulText = true;
+            }
             switch ((value as any).type) {
               case "text-delta": {
                 const text = (value as any).text ?? (value as any).textDelta ?? "";
                 if (text) {
+                  const trimmed = text.trim();
+                  if (!trimmed || trimmed === "{}") break;
                   // Log "Thinking..." once when first text appears, save its ID
                   if (!thinkingLogId) {
                     const { id, streamLine } = await logTask(user_id, "Composing response...", "running", "", agentMode);
@@ -719,12 +712,12 @@ ${_cs}
                     enqueue(streamLine);
                   }
                   enqueue(`0:${JSON.stringify(text)}\n`);
-                  producedText = true;
+                  producedAnyText = true;
+                  producedMeaningfulText = true;
                 }
                 break;
               }
               case "tool-call": {
-                toolCallCount++;
                 enqueue(`1:${JSON.stringify(value)}\n`);
                 // Log the tool call with a human-readable label
                 const tc = value as any;
@@ -743,16 +736,66 @@ ${_cs}
                 enqueue(`2:${JSON.stringify(value)}\n`);
                 // Update the matching log to "done"
                 const tr = value as any;
+                const normalized = normalizeToolResult(tr);
+                const toolName = tr?.toolName || tr?.name || tr?.tool?.name || "";
+                if (!fallbackFromTools) {
+                  const r = normalized;
+                  if (r?.status === "success" && Array.isArray(r?.emails)) {
+                    const top = r.emails.slice(0, 5).map((e: any, i: number) => `${i + 1}. ${e.subject || "(No subject)"} — ${e.from || "Unknown sender"}`).join("\n");
+                    fallbackFromTools = `I checked your inbox and found ${r.emails.length} emails.\n${top}`;
+                  } else if (r?.status === "success" && typeof r?.results === "string") {
+                    fallbackFromTools = r.results.slice(0, 1200);
+                  } else if (r?.status === "error" && typeof r?.message === "string") {
+                    fallbackFromTools = `I hit an issue while running the tool: ${r.message}`;
+                  } else if (typeof r?.message === "string") {
+                    fallbackFromTools = r.message;
+                  }
+                }
+
+                // GUARANTEED USER-FACING OUTPUT FOR CRITICAL TOOLS
+                // If the model doesn't produce a final answer, we still show something useful.
+                if (!producedMeaningfulText) {
+                  const r = normalized;
+                  if ((toolName === "readGmail" || toolName === "searchWeb" || toolName === "browseURL") && r) {
+                    if (toolName === "readGmail" && r?.status === "success" && Array.isArray(r?.emails)) {
+                      const top = r.emails.slice(0, 10).map((e: any, i: number) => `${i + 1}. ${e.subject || "(No subject)"} — ${e.from || "Unknown sender"}`).join("\n");
+                      const msg = `Here are your latest emails (${r.emails.length}):\n${top}`;
+                      enqueue(`0:${JSON.stringify(msg)}\n`);
+                      producedAnyText = true;
+                      producedMeaningfulText = true;
+                    } else if (toolName === "searchWeb" && typeof r?.results === "string" && r.results.trim()) {
+                      const msg = r.results.slice(0, 2000);
+                      enqueue(`0:${JSON.stringify(msg)}\n`);
+                      producedAnyText = true;
+                      producedMeaningfulText = true;
+                    } else if (toolName === "browseURL" && typeof r?.content === "string" && r.content.trim()) {
+                      const msg = r.content.slice(0, 2000);
+                      enqueue(`0:${JSON.stringify(msg)}\n`);
+                      producedAnyText = true;
+                      producedMeaningfulText = true;
+                    } else if (r?.status === "error" && typeof r?.message === "string") {
+                      const msg = `I couldn’t complete that action: ${r.message}`;
+                      enqueue(`0:${JSON.stringify(msg)}\n`);
+                      producedAnyText = true;
+                      producedMeaningfulText = true;
+                    }
+                  }
+                }
                 const existingId = toolLogIds.get(tr.toolCallId);
                 if (existingId) {
-                  const resultStatus = (tr.result as any)?.status === "error" ? "error" : "done";
+                  const resultStatus = (normalized as any)?.status === "error" ? "error" : "done";
                   const { streamLine } = await logTask(
                     user_id, "", resultStatus, "", agentMode,
-                    { result: typeof tr.result === "string" ? tr.result : tr.result },
+                    { result: typeof normalized === "string" ? normalized : normalized },
                     existingId
                   );
                   enqueue(streamLine);
                 }
+                console.log(`[agent.stream][${requestId}] tool-result`, {
+                  toolName,
+                  hasFallback: Boolean(fallbackFromTools),
+                  producedMeaningfulText,
+                });
                 break;
               }
               case "error": {
@@ -771,7 +814,7 @@ ${_cs}
             }
           }
           // ── Deduct base chat credit when the model produced visible text (tools bill separately) ──
-          if (plan !== "basic" && producedText) {
+          if (plan !== "basic" && producedAnyText) {
             await deductCredits(user_id, "chat_message").catch(() => {});
           }
 
@@ -780,6 +823,18 @@ ${_cs}
             const { streamLine } = await logTask(user_id, "Composing response...", "done", "", agentMode, {}, thinkingLogId);
             enqueue(streamLine);
           }
+          // If the model only emitted "{}" or whitespace, treat it as no real answer and use tool fallback.
+          if (!producedMeaningfulText) {
+            const fallback =
+              fallbackFromTools ||
+              "I completed the action, but could not generate a final response text. Please try again.";
+            enqueue(`0:${JSON.stringify(fallback)}\n`);
+          }
+          console.log(`[agent.stream][${requestId}] complete`, {
+            producedAnyText,
+            producedMeaningfulText,
+            usedFallback: !producedMeaningfulText,
+          });
           const { streamLine: completeLine } = await logTask(user_id, "Task completed - replied to user", "done", "", agentMode);
           enqueue(completeLine);
         } catch (err: any) {

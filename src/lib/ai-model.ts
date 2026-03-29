@@ -42,6 +42,15 @@ export function buildModel(apiKey: string, provider: string, modelName?: string)
       return client.chat(modelName || "anthropic/claude-3.5-sonnet");
     }
 
+    // ── Groq (OpenAI-compatible, very fast) ─────────────────────────────
+    case "groq": {
+      const client = createOpenAI({
+        apiKey,
+        baseURL: "https://api.groq.com/openai/v1",
+      });
+      return client.chat(modelName || "llama-3.3-70b-versatile");
+    }
+
     // ── Google Gemini ──────────────────────────────────────────────────
     case "gemini":
     case "google":

@@ -13,14 +13,31 @@ export async function POST(request: NextRequest) {
   if (!goal_id) return NextResponse.json({ error: "Missing goal_id" }, { status: 400 });
   const { data: goal } = await admin.from("goals").select("*").eq("id", goal_id).eq("user_id", user.id).single();
   if (!goal) return NextResponse.json({ error: "Goal not found" }, { status: 404 });
-  const [emailsRes, researchRes] = await Promise.all([
+  const [emailsRes, researchRes, connectorsRes, memoryRes] = await Promise.all([
     admin.from("emails").select("subject, status").eq("user_id", user.id).limit(10),
     admin.from("research_reports").select("topic").eq("user_id", user.id).limit(5),
+    admin.from("connected_accounts").select("provider").eq("user_id", user.id),
+    admin.from("agent_memory").select("content,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
   ]);
-  const activityScore = (emailsRes.data?.length || 0) + (researchRes.data?.length || 0) * 2;
-  const nudge = Math.min(20, Math.max(5, activityScore));
+  const emailsCount = emailsRes.data?.length || 0;
+  const researchCount = researchRes.data?.length || 0;
+  const connectedCount = connectorsRes.data?.length || 0;
+  const memoryCount = memoryRes.data?.length || 0;
+  const activityScore = emailsCount + researchCount * 2 + connectedCount * 2 + Math.min(10, memoryCount);
+  const nudge = Math.min(25, Math.max(5, activityScore));
   const newProgress = Math.min(100, goal.progress_percent + nudge);
-  const { data: updated, error } = await admin.from("goals").update({ progress_percent: newProgress, last_updated: new Date().toISOString(), source: "ai_track" }).eq("id", goal_id).eq("user_id", user.id).select().single();
+  const { data: updated, error } = await admin
+    .from("goals")
+    .update({ progress_percent: newProgress })
+    .eq("id", goal_id)
+    .eq("user_id", user.id)
+    .select()
+    .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ goal: updated, progress: newProgress, previous_progress: goal.progress_percent, reasoning: "Progress updated based on your recent activity." });
+  return NextResponse.json({
+    goal: updated,
+    progress: newProgress,
+    previous_progress: goal.progress_percent,
+    reasoning: `Progress updated using activity from ${emailsCount} emails, ${researchCount} research reports, ${connectedCount} connected tools, and ${memoryCount} memory signals.`,
+  });
 }

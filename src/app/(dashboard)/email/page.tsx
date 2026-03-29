@@ -2,7 +2,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import { PageTransition } from "@/components/ui/page-transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +28,7 @@ function EmailRow({ email, index, onClick }: { email: InboxEmail | DraftEmail; i
 
   return (
     <motion.div
-      className="group flex items-center gap-4 px-4 py-3 border-b border-[var(--border-subtle)] cursor-pointer transition-all duration-200 hover:bg-white/[0.03]"
+      className="group flex items-center gap-4 px-4 py-3 border-b border-[var(--border-subtle)] cursor-pointer transition-all duration-200 hover:bg-[var(--bg-elevated)]"
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05, type: 'spring', stiffness: 100, damping: 20 }}
@@ -119,10 +118,28 @@ export default function EmailPage() {
     if (!token) return;
     setLoadingInbox(true);
     try {
-      const r = await fetch("/api/emails/inbox", { headers: { Authorization: "Bearer " + token } });
+      const r = await fetch("/api/emails/inbox?unread_only=0&limit=30", { headers: { Authorization: "Bearer " + token } });
       const d = await r.json();
-      if (r.ok) setInbox(d.messages || []);
-    } catch {} finally { setLoadingInbox(false); setLoading(false); }
+      if (r.ok) {
+        setInbox(d.messages || []);
+      } else {
+        const code = d?.code as string | undefined;
+        const message = d?.error || d?.message || "Failed to load inbox";
+        const reason = typeof d?.reason === "string" ? d.reason : undefined;
+        if (code === "NOT_CONNECTED") {
+          toast.error("Gmail is not connected. Go to Connectors and click Connect for Gmail.");
+        } else {
+          toast.error(reason ? `${message} ${reason}` : message);
+        }
+        setInbox([]);
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to load inbox");
+      setInbox([]);
+    } finally {
+      setLoadingInbox(false);
+      setLoading(false);
+    }
   }, [token]);
 
   const fetchDrafts = useCallback(async () => {
@@ -255,16 +272,16 @@ export default function EmailPage() {
     : drafts;
 
   if (loading) return (
-    <PageTransition>
+    <>
       <div className="min-h-screen flex flex-col">
         <div className="h-20 shimmer rounded-xl mx-8 mt-8" />
         <div className="flex-1 shimmer rounded-2xl mx-8 mt-4" />
       </div>
-    </PageTransition>
+    </>
   );
 
   return (
-    <PageTransition>
+    <>
       <div className="min-h-screen flex flex-col">
         {/* Header */}
         <header className="flex items-center justify-between px-8 py-5 border-b border-[var(--border-subtle)]">
@@ -304,8 +321,8 @@ export default function EmailPage() {
                     w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm capitalize
                     transition-all duration-200
                     ${tab === filter
-                      ? 'bg-white/[0.08] text-[var(--fg-primary)]'
-                      : 'text-[var(--fg-tertiary)] hover:bg-white/[0.03] hover:text-[var(--fg-primary)]/80'
+                      ? 'bg-[var(--bg-overlay)] text-[var(--fg-primary)]'
+                      : 'text-[var(--fg-tertiary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--fg-primary)]/80'
                     }
                   `}
                 >
@@ -318,7 +335,7 @@ export default function EmailPage() {
             </div>
 
             {/* Email Stats */}
-            <div className="mt-8 p-4 rounded-xl bg-white/[0.03] border border-[var(--border-subtle)]">
+            <div className="mt-8 p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
               <p className="text-[var(--fg-muted)] text-xs mb-3">Overview</p>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -339,28 +356,40 @@ export default function EmailPage() {
             {/* Connectors */}
             <div className="mt-8 space-y-2">
               <p className="text-[var(--fg-muted)] text-xs mb-2">Connected Accounts</p>
-              {CONNECTORS.map(c => {
-                const acc = accounts.find(a => a.provider === c.id);
-                const connected = !!acc;
-                return (
-                  <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                    <div className="w-2 h-2 rounded-full" style={{ background: connected ? "#FFFFFF" : "#333333" }} />
+              {accounts.length === 0 ? (
+                <div className="px-3 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--fg-muted)]">
+                  No connected accounts yet
+                </div>
+              ) : (
+                accounts.map((acc) => (
+                  <div key={`${acc.provider}-${acc.account_email || ""}`} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+                    <div className="w-2 h-2 rounded-full bg-[var(--success)]" />
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm text-[var(--fg-primary)]/80">{c.name}</span>
+                      <span className="text-sm text-[var(--fg-primary)]">
+                        {acc.provider === "gmail" ? "Gmail" : acc.provider === "outlook" ? "Outlook" : acc.provider}
+                      </span>
+                      {acc.account_email && <p className="text-[10px] text-[var(--fg-muted)] truncate">{acc.account_email}</p>}
                     </div>
-                    {connected ? (
-                      <button onClick={() => disconnect(c.id)} className="text-[var(--fg-muted)] hover:text-red-400 transition-colors">
-                        <Unlink size={12} />
-                      </button>
-                    ) : c.oauthPath ? (
-                      <button onClick={() => { if (!token) return; window.location.href = c.oauthPath + "?token=" + encodeURIComponent(token) + "&redirect_to=/email"; }}
-                        className="text-xs text-[var(--fg-primary)]/60 hover:text-[var(--fg-primary)]">
-                        Connect
-                      </button>
-                    ) : null}
+                    <button onClick={() => disconnect(acc.provider)} className="text-[var(--fg-muted)] hover:text-red-400 transition-colors">
+                      <Unlink size={12} />
+                    </button>
                   </div>
-                );
-              })}
+                ))
+              )}
+
+              {accounts.length === 0 && (
+                <div className="pt-2 space-y-1">
+                  {CONNECTORS.filter((c) => c.oauthPath).map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => { if (!token) return; window.location.href = `${c.oauthPath}?token=${encodeURIComponent(token)}&redirect_to=/email`; }}
+                      className="w-full text-left px-3 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-xs text-[var(--fg-secondary)] hover:text-[var(--fg-primary)]"
+                    >
+                      Connect {c.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -375,10 +404,10 @@ export default function EmailPage() {
                   placeholder="Search emails..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg bg-white/[0.03] border border-[var(--border-subtle)] text-[var(--fg-primary)] text-sm placeholder:text-[var(--fg-primary)]/30 focus:outline-none focus:border-[var(--border-default)]"
+                  className="w-full pl-10 pr-4 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--fg-primary)] text-sm placeholder:text-[var(--fg-primary)]/30 focus:outline-none focus:border-[var(--border-default)]"
                 />
               </div>
-              <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-[var(--fg-primary)]/60 hover:bg-white/[0.03]">
+              <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-[var(--fg-primary)]/60 hover:bg-[var(--bg-elevated)]">
                 <Filter size={16} />
                 <span className="text-sm">Filter</span>
               </button>
@@ -434,11 +463,11 @@ export default function EmailPage() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button onClick={summarizeEmail} disabled={summarizing || loadingBody}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.08] text-[var(--fg-primary)] border border-[var(--border-default)] hover:bg-white/[0.12] transition-colors">
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-overlay)] text-[var(--fg-primary)] border border-[var(--border-default)] hover:bg-[var(--bg-elevated)] transition-colors">
                     {summarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                     AI Summary
                   </button>
-                  <button onClick={() => setSelected(null)} className="w-7 h-7 rounded-lg flex items-center justify-center bg-[var(--bg-elevated)] text-[var(--fg-primary)]/60 hover:bg-white/[0.10]">
+                  <button onClick={() => setSelected(null)} className="w-7 h-7 rounded-lg flex items-center justify-center bg-[var(--bg-elevated)] text-[var(--fg-primary)]/60 hover:bg-[var(--bg-overlay)]">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -535,6 +564,6 @@ export default function EmailPage() {
           )}
         </DialogContent>
       </Dialog>
-    </PageTransition>
+    </>
   );
 }

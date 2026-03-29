@@ -15,7 +15,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const variants = {
       primary: 'bg-[var(--fg-primary)] hover:bg-white/90 text-[var(--bg-base)]',
       secondary: 'bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] text-[var(--fg-primary)] border border-[var(--border-subtle)]',
-      ghost: 'hover:bg-white/[0.04] text-[var(--fg-tertiary)] hover:text-[var(--fg-primary)]',
+      ghost: 'hover:bg-[var(--bg-elevated)] text-[var(--fg-tertiary)] hover:text-[var(--fg-primary)]',
       danger: 'bg-[var(--destructive-soft)] hover:bg-[var(--destructive-soft)] text-[var(--destructive)] border border-[var(--destructive-soft)]',
     };
 

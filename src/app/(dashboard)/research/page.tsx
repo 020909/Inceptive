@@ -1,104 +1,194 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Search, BookOpen, Globe, FileText, Download, Share2, Clock, Sparkles, Plus, History } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, BookOpen, Globe, FileText, Clock, History, Loader2, X, ChevronDown, ChevronUp, Download } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import { toast } from 'sonner';
+import { jsPDF } from 'jspdf';
 
-interface ResearchProject {
+interface Report {
   id: string;
-  title: string;
-  description: string;
-  status: 'in_progress' | 'completed' | 'archived';
-  sources: number;
-  lastUpdated: string;
+  topic: string;
+  content: string;
+  sources_count: number;
+  created_at: string;
 }
 
-function StatusBadge({ status }: { status: ResearchProject['status'] }) {
-  const configs = {
-    in_progress: { color: 'text-[var(--fg-secondary)]', bg: 'bg-[var(--bg-elevated)]', label: 'In Progress' },
-    completed:   { color: 'text-[var(--success)]',       bg: 'bg-[var(--success-soft)]', label: 'Completed' },
-    archived:    { color: 'text-[var(--fg-muted)]',      bg: 'bg-[var(--bg-elevated)]',  label: 'Archived' },
-  };
-  const c = configs[status];
-  return (
-    <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${c.bg} ${c.color}`}>{c.label}</span>
-  );
+interface ResearchSession {
+  id: string;
+  status: string;
+  provider_used?: string | null;
+  created_at: string;
 }
 
-function ResearchCard({ project, index }: { project: ResearchProject; index: number }) {
+function cleanReportContent(content: string): string {
+  return content
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/^\*\s+/gm, '• ')
+    .replace(/^-\s+/gm, '• ')
+    .replace(/`/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function downloadReportAsPdf(report: Report) {
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const margin = 40;
+  let y = margin;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(report.topic, margin, y);
+  y += 24;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(`Generated ${new Date(report.created_at).toLocaleString()}`, margin, y);
+  y += 18;
+  const lines = doc.splitTextToSize(cleanReportContent(report.content), 515);
+  doc.setFontSize(11);
+  doc.text(lines, margin, y);
+  doc.save(`${report.topic.replace(/[^\w\d-]+/g, '_').slice(0, 60)}.pdf`);
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function ReportCard({ report, index }: { report: Report; index: number }) {
+  const [expanded, setExpanded] = useState(false);
+
   return (
     <motion.div
-      className="group p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-colors duration-150 cursor-pointer"
+      className="group rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-colors duration-150 overflow-hidden"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06 }}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="w-9 h-9 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center">
-          <BookOpen size={16} className="text-[var(--fg-tertiary)]" />
+      <button onClick={() => setExpanded(!expanded)} className="w-full p-5 text-left">
+        <div className="flex items-start justify-between mb-2">
+          <div className="w-9 h-9 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center shrink-0">
+            <BookOpen size={16} className="text-[var(--fg-tertiary)]" />
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); downloadReportAsPdf(report); }}
+              className="h-7 w-7 rounded-md border border-[var(--border-subtle)] flex items-center justify-center text-[var(--fg-tertiary)] hover:bg-[var(--bg-elevated)]"
+              title="Download PDF"
+            >
+              <Download size={13} />
+            </button>
+            {expanded ? <ChevronUp size={16} className="text-[var(--fg-muted)]" /> : <ChevronDown size={16} className="text-[var(--fg-muted)]" />}
+          </div>
         </div>
-        <StatusBadge status={project.status} />
-      </div>
+        <h3 className="text-[var(--fg-primary)] font-medium text-sm tracking-[-0.01em] mb-1.5">{report.topic}</h3>
+        <div className="flex items-center gap-3 text-[11px] text-[var(--fg-muted)]">
+          <span className="flex items-center gap-1"><Globe size={11} />{report.sources_count} sources</span>
+          <span className="flex items-center gap-1"><Clock size={11} />{timeAgo(report.created_at)}</span>
+        </div>
+      </button>
 
-      <h3 className="text-[var(--fg-primary)] font-medium text-sm tracking-[-0.01em] mb-1.5">{project.title}</h3>
-      <p className="text-[var(--fg-muted)] text-xs mb-4 line-clamp-2">{project.description}</p>
-
-      <div className="flex items-center justify-between text-[11px] text-[var(--fg-muted)]">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1"><Globe size={11} />{project.sources} sources</span>
-          <span className="flex items-center gap-1"><Clock size={11} />{project.lastUpdated}</span>
-        </div>
-        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button className="p-1.5 rounded-lg hover:bg-[var(--bg-elevated)]"><Download size={13} className="text-[var(--fg-tertiary)]" /></button>
-          <button className="p-1.5 rounded-lg hover:bg-[var(--bg-elevated)]"><Share2 size={13} className="text-[var(--fg-tertiary)]" /></button>
-        </div>
-      </div>
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-5 pb-5 border-t border-[var(--border-subtle)] pt-4">
+              <div className="max-w-none text-[var(--fg-primary)] text-[13px] leading-relaxed whitespace-pre-wrap">
+                {cleanReportContent(report.content)}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
 
 export default function ResearchPage() {
+  const { session } = useAuth();
   const [query, setQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [sessions, setSessions] = useState<ResearchSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [depth, setDepth] = useState<'Fast' | 'Deep Research' | 'Ultra'>('Deep Research');
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
-  const handleSearch = () => {
-    if (!query.trim()) return;
-    setIsSearching(true);
-    setTimeout(() => setIsSearching(false), 2000);
+  const fetchReports = async () => {
+    if (!session?.access_token) return;
+    try {
+      const res = await fetch("/api/agent/research", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReports(data.reports || []);
+        setSessions(data.sessions || []);
+      }
+    } catch {} finally {
+      setLoading(false);
+    }
   };
 
-  const recentResearch: ResearchProject[] = [
-    { id: '1', title: 'AI Agent Market Analysis', description: 'Comprehensive analysis of the AI agent landscape, competitors, and market opportunities.', status: 'in_progress', sources: 24, lastUpdated: '2 hours ago' },
-    { id: '2', title: 'Consumer Behavior Trends 2024', description: 'Research on shifting consumer preferences in AI-powered productivity tools.', status: 'completed', sources: 156, lastUpdated: '1 day ago' },
-    { id: '3', title: 'Technical Architecture Review', description: 'Deep dive into modern AI infrastructure and scalable system design patterns.', status: 'in_progress', sources: 42, lastUpdated: '3 days ago' },
-    { id: '4', title: 'Regulatory Compliance Study', description: 'Analysis of AI regulations and compliance requirements across key markets.', status: 'archived', sources: 89, lastUpdated: '1 week ago' },
-  ];
+  useEffect(() => { fetchReports(); }, [session?.access_token]);
+
+  const handleSearch = async () => {
+    const topic = query.trim();
+    if (!topic || !session?.access_token) return;
+
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/agent/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ topic, depth }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Research failed");
+        return;
+      }
+      toast.success("Research complete!");
+      setQuery('');
+      if (data.report) {
+        setReports(prev => [data.report, ...prev]);
+      }
+      if (data.session_id) {
+        setSessions((prev) => [
+          { id: data.session_id, status: "completed", provider_used: "unknown", created_at: new Date().toISOString() },
+          ...prev,
+        ]);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Research failed");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   return (
     <div className="p-8 max-w-5xl mx-auto">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-start justify-between mb-8"
-      >
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between mb-8">
         <div>
           <h1 className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">Research</h1>
           <p className="text-[var(--fg-tertiary)] text-sm mt-0.5">AI-powered research and knowledge synthesis</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] font-medium text-sm">
-          <Plus size={15} />New Research
-        </button>
       </motion.div>
 
       {/* Search */}
-      <motion.div
-        className="max-w-2xl mx-auto mb-12"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-      >
-        <div className="relative mb-4">
+      <motion.div className="max-w-2xl mx-auto mb-12" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+        <div className="relative mb-3">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--fg-muted)]" />
           <input
             type="text"
@@ -106,39 +196,63 @@ export default function ResearchPage() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="Research any topic..."
-            className="w-full pl-12 pr-6 py-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--fg-primary)] text-base placeholder:text-[var(--fg-muted)] focus:outline-none focus:border-[var(--border-strong)] transition-colors"
+            disabled={generating}
+            className="w-full pl-12 pr-28 py-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--fg-primary)] text-base placeholder:text-[var(--fg-muted)] focus:outline-none focus:border-[var(--border-strong)] transition-colors disabled:opacity-50"
           />
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-[var(--fg-muted)]">
-            <span className="text-[11px]">Enter</span>
-            <Sparkles size={13} />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            {generating ? (
+              <Loader2 size={16} className="animate-spin text-[var(--fg-tertiary)]" />
+            ) : (
+              <button
+                onClick={handleSearch}
+                disabled={!query.trim()}
+                className="px-3 py-1.5 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] text-xs font-medium disabled:opacity-30 transition-opacity"
+              >
+                Research
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {['Market Analysis', 'Competitor Research', 'Technology Trends', 'User Insights'].map((topic) => (
-            <button
-              key={topic}
-              onClick={() => setQuery(topic)}
-              className="px-3 py-1.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--fg-tertiary)] text-xs hover:border-[var(--border-default)] hover:text-[var(--fg-secondary)] transition-colors"
-            >
-              {topic}
-            </button>
-          ))}
+        {/* Depth selector + quick topics */}
+        <div className="flex items-center justify-between">
+          <div className="flex gap-2">
+            {(['Fast', 'Deep', 'Ultra'] as const).map(d => (
+              <button
+                key={d}
+                onClick={() => setDepth((d === 'Deep' ? 'Deep Research' : d) as 'Fast' | 'Deep Research' | 'Ultra')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  (depth === 'Deep Research' ? 'Deep' : depth) === d
+                    ? 'bg-[var(--fg-primary)] text-[var(--bg-base)]'
+                    : 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--fg-tertiary)] hover:text-[var(--fg-secondary)]'
+                }`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1.5">
+            {['Market Analysis', 'Competitor Research', 'Tech Trends'].map((topic) => (
+              <button
+                key={topic}
+                onClick={() => setQuery(topic)}
+                className="px-2.5 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--fg-muted)] text-[11px] hover:text-[var(--fg-secondary)] transition-colors"
+              >
+                {topic}
+              </button>
+            ))}
+          </div>
         </div>
       </motion.div>
 
       {/* Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-4 gap-3 mb-8"
-      >
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-5 gap-3 mb-8">
         {[
-          { label: 'Active', value: '4', icon: BookOpen },
-          { label: 'Sources', value: '311', icon: Globe },
-          { label: 'Reports', value: '12', icon: FileText },
-          { label: 'Hours Saved', value: '48', icon: Clock },
+          { label: 'Reports', value: String(reports.length), icon: FileText },
+          { label: 'Total Sources', value: String(reports.reduce((sum, r) => sum + (r.sources_count || 0), 0)), icon: Globe },
+          { label: 'Runs', value: String(sessions.length), icon: History },
+          { label: 'Last Engine', value: sessions[0]?.provider_used || '—', icon: Search },
+          { label: 'Latest', value: reports.length > 0 ? timeAgo(reports[0].created_at) : '—', icon: Clock },
         ].map((s) => (
           <div key={s.label} className="flex items-center gap-3 p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
             <div className="w-9 h-9 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center">
@@ -152,17 +266,79 @@ export default function ResearchPage() {
         ))}
       </motion.div>
 
-      {/* Recent */}
+      {/* Reports */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-medium text-[var(--fg-secondary)] flex items-center gap-2">
-          <History size={15} className="text-[var(--fg-tertiary)]" />Recent Research
+          <History size={15} className="text-[var(--fg-tertiary)]" />Research Reports
         </h2>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        {recentResearch.map((p, i) => (
-          <ResearchCard key={p.id} project={p} index={i} />
-        ))}
-      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-2 gap-3">
+          {[1,2,3,4].map(i => <div key={i} className="h-32 rounded-xl shimmer" />)}
+        </div>
+      ) : reports.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+          <div className="w-12 h-12 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] flex items-center justify-center mb-4">
+            <Search size={20} className="text-[var(--fg-tertiary)]" />
+          </div>
+          <p className="text-sm text-[var(--fg-primary)] font-medium mb-1">No research yet</p>
+          <p className="text-xs text-[var(--fg-muted)]">Enter a topic above to generate your first AI research report.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {reports.map((r, i) => (
+            <button key={r.id} onClick={() => setSelectedReport(r)} className="text-left">
+              <ReportCard report={r} index={i} />
+            </button>
+          ))}
+        </div>
+      )}
+
+      <AnimatePresence>
+        {selectedReport && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}
+            onClick={() => setSelectedReport(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.96, y: 12 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.96, y: 12 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-4xl rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] max-h-[88vh] flex flex-col overflow-hidden"
+            >
+              <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
+                <div>
+                  <h3 className="text-[var(--fg-primary)] font-medium">{selectedReport.topic}</h3>
+                  <p className="text-xs text-[var(--fg-muted)] mt-1">{new Date(selectedReport.created_at).toLocaleString()}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => downloadReportAsPdf(selectedReport)}
+                    className="h-8 px-3 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] text-xs font-medium flex items-center gap-1.5"
+                  >
+                    <Download size={13} />
+                    Download PDF
+                  </button>
+                  <button onClick={() => setSelectedReport(null)} className="h-8 w-8 rounded-lg border border-[var(--border-subtle)] flex items-center justify-center text-[var(--fg-tertiary)]">
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+              <div className="p-6 overflow-y-auto">
+                <div className="text-[var(--fg-primary)] whitespace-pre-wrap leading-relaxed text-sm">
+                  {cleanReportContent(selectedReport.content)}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
