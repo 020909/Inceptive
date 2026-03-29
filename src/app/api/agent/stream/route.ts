@@ -10,6 +10,10 @@ import { buildModel } from "@/lib/ai-model";
 import { routeModel } from "@/lib/ai/model-router";
 import { checkCredits, deductCredits, getUserPlan } from "@/lib/credits";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
+import { geocodePlaceQuery } from "@/lib/data/geocode";
+import { fetchAggregatedNews } from "@/lib/data/news-fetch";
+import { fetchWeatherForCoords } from "@/lib/data/weather-fetch";
+import { getStockQuote } from "@/lib/tools/finance-tools";
 import { browseUrlText, formatSearchResultsForPrompt, searchWeb } from "@/lib/search/provider";
 import {
   computerClick,
@@ -39,6 +43,9 @@ const admin = getAdmin();
 const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string }> = {
   searchWeb:           { icon: "", label: (a) => `Searching "${a.query}"` },
   browseURL:           { icon: "", label: (a) => `Reading ${new URL(a.url).hostname}` },
+  getWeather:          { icon: "", label: (a) => `Weather: ${a.location || "location"}` },
+  getStockQuote:       { icon: "", label: (a) => `Quote: ${a.symbol}` },
+  getNewsHeadlines:    { icon: "", label: (a) => `News: ${String(a.query || "headlines").slice(0, 48)}` },
   computerUse:         { icon: "", label: (a) => `Browser: ${a.action}${a.url ? ` → ${a.url}` : ""}` },
   readGmail:           { icon: "", label: () => `Scanning Gmail inbox` },
   summarizeEmail:      { icon: "", label: (a) => `Reading email: "${a.subject}"` },
@@ -191,6 +198,9 @@ ${_cs}
 ## TOOLS
 - searchWeb: real-time search
 - browseURL: read any webpage
+- getWeather: current weather by city or region name (e.g. "Tokyo", "Austin TX")
+- getStockQuote: live stock quote by ticker (e.g. TSLA, AAPL)
+- getNewsHeadlines: news headlines for a topic (aggregates configured sources)
 - readGmail: read Gmail inbox (only if Gmail CONNECTED above)
 - summarizeEmail: get full email body by ID
 - sendGmail: send email via Gmail (only if Gmail CONNECTED)
@@ -203,7 +213,7 @@ ${_cs}
 
 ## RULES
 1. CHECK CONNECTED ACCOUNTS above - if Gmail shows CONNECTED, use readGmail immediately when asked about email. Never say you cannot access email if Gmail is connected.
-2. ALWAYS USE TOOLS for real actions. When user says read my email -> call readGmail. When user says send email -> call sendGmail.
+2. ALWAYS USE TOOLS for real actions. When user says read my email -> call readGmail. When user says send email -> call sendGmail. For weather use getWeather; for a stock price use getStockQuote; for news headlines use getNewsHeadlines — do not invent numbers.
 3. Be direct - no filler. Lead with action.
 4. After tool calls, clearly summarize results.
 5. If connector not connected, tell user exactly: go to Email section and click Connect.
@@ -315,6 +325,73 @@ ${_cs}
             await deductCredits(user_id, "browse_url").catch(() => {});
             const content = await browseUrlText(url, 6000);
             return { url, content };
+          },
+        },
+
+        getWeather: {
+          description:
+            "Get current weather for a location. Pass a city, region, or address (e.g. 'San Francisco', 'Mumbai'). Uses the same backend as the dashboard weather widget.",
+          parameters: z.object({
+            location: z.string().describe("City, region, or place name (English is fine)"),
+          }),
+          execute: async ({ location }: { location: string }) => {
+            await deductCredits(user_id, "web_search").catch(() => {});
+            let lat = 19.076;
+            let lon = 72.8777;
+            const q = location.trim();
+            if (q) {
+              const g = await geocodePlaceQuery(q);
+              if (g) {
+                lat = g.lat;
+                lon = g.lon;
+              }
+            }
+            const w = await fetchWeatherForCoords(lat, lon);
+            return {
+              location: q || "default",
+              lat,
+              lon,
+              current: w.current,
+              source: w.source,
+            };
+          },
+        },
+
+        getStockQuote: {
+          description:
+            "Get a live stock quote by ticker symbol (e.g. TSLA, MSFT, AAPL). Uses Alpha Vantage when configured, else a public fallback.",
+          parameters: z.object({
+            symbol: z.string().describe("Ticker symbol, e.g. TSLA"),
+          }),
+          execute: async ({ symbol }: { symbol: string }) => {
+            await deductCredits(user_id, "web_search").catch(() => {});
+            const quote = await getStockQuote(symbol.trim());
+            return {
+              symbol: quote.symbol,
+              price: quote.price,
+              currency: quote.currency || null,
+              source: quote.source,
+            };
+          },
+        },
+
+        getNewsHeadlines: {
+          description:
+            "Get recent news headlines for a topic or keyword (e.g. 'AI startups', 'climate'). Uses GNews when API key is set plus Hacker News.",
+          parameters: z.object({
+            query: z.string().optional().describe("Topic or keywords; default broad tech/business"),
+            max: z.number().optional().describe("Max articles per source (1–15, default 8)"),
+          }),
+          execute: async (args: { query?: string; max?: number }) => {
+            await deductCredits(user_id, "web_search").catch(() => {});
+            const max = Math.min(15, Math.max(1, args.max ?? 8));
+            const { gnews, hackernews } = await fetchAggregatedNews(args.query?.trim() || "technology", max);
+            return {
+              query: args.query?.trim() || "technology",
+              gnews,
+              hackernews,
+              hasGNewsKey: Boolean(process.env.GNEWS_API_KEY?.trim()),
+            };
           },
         },
 
@@ -745,6 +822,31 @@ ${_cs}
                     fallbackFromTools = `I checked your inbox and found ${r.emails.length} emails.\n${top}`;
                   } else if (r?.status === "success" && typeof r?.results === "string") {
                     fallbackFromTools = r.results.slice(0, 1200);
+                  } else if (toolName === "getWeather" && r?.current) {
+                    const c = r.current as Record<string, unknown>;
+                    const temp = c.temperature_2m ?? c.temp;
+                    fallbackFromTools = [
+                      r.location && `Place: ${r.location}`,
+                      temp != null && `Temperature: ${String(temp)}° (metric)`,
+                      c.description != null && String(c.description),
+                      r.source && `Source: ${r.source}`,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
+                      .slice(0, 1200);
+                  } else if (toolName === "getStockQuote" && r != null && (r as any).price != null) {
+                    fallbackFromTools = `${(r as any).symbol}: ${(r as any).price} ${(r as any).currency || ""} (via ${(r as any).source})`.trim();
+                  } else if (
+                    toolName === "getNewsHeadlines" &&
+                    r &&
+                    (Array.isArray((r as any).gnews) || Array.isArray((r as any).hackernews))
+                  ) {
+                    const gn = ((r as any).gnews || []).slice(0, 5).map((x: any) => `• ${x.title} — ${x.url}`).join("\n");
+                    const hn = ((r as any).hackernews || []).slice(0, 5).map((x: any) => `• ${x.title} — ${x.url}`).join("\n");
+                    fallbackFromTools = [`Headlines (${(r as any).query}):`, gn && `GNews:\n${gn}`, hn && `Hacker News:\n${hn}`]
+                      .filter(Boolean)
+                      .join("\n\n")
+                      .slice(0, 2000);
                   } else if (r?.status === "error" && typeof r?.message === "string") {
                     fallbackFromTools = `I hit an issue while running the tool: ${r.message}`;
                   } else if (typeof r?.message === "string") {
@@ -756,7 +858,14 @@ ${_cs}
                 // If the model doesn't produce a final answer, we still show something useful.
                 if (!producedMeaningfulText) {
                   const r = normalized;
-                  if ((toolName === "readGmail" || toolName === "searchWeb" || toolName === "browseURL") && r) {
+                  const dataTools =
+                    toolName === "readGmail" ||
+                    toolName === "searchWeb" ||
+                    toolName === "browseURL" ||
+                    toolName === "getWeather" ||
+                    toolName === "getStockQuote" ||
+                    toolName === "getNewsHeadlines";
+                  if (dataTools && r) {
                     if (toolName === "readGmail" && r?.status === "success" && Array.isArray(r?.emails)) {
                       const top = r.emails.slice(0, 10).map((e: any, i: number) => `${i + 1}. ${e.subject || "(No subject)"} — ${e.from || "Unknown sender"}`).join("\n");
                       const msg = `Here are your latest emails (${r.emails.length}):\n${top}`;
@@ -771,6 +880,37 @@ ${_cs}
                     } else if (toolName === "browseURL" && typeof r?.content === "string" && r.content.trim()) {
                       const msg = r.content.slice(0, 2000);
                       enqueue(`0:${JSON.stringify(msg)}\n`);
+                      producedAnyText = true;
+                      producedMeaningfulText = true;
+                    } else if (toolName === "getWeather" && r?.current) {
+                      const c = r.current as Record<string, unknown>;
+                      const temp = c.temperature_2m ?? c.temp;
+                      const msg = [
+                        `Weather for ${r.location}:`,
+                        temp != null && `Temperature: ${String(temp)}°`,
+                        c.description != null && String(c.description),
+                        `(data: ${r.source})`,
+                      ]
+                        .filter(Boolean)
+                        .join(" ");
+                      enqueue(`0:${JSON.stringify(msg)}\n`);
+                      producedAnyText = true;
+                      producedMeaningfulText = true;
+                    } else if (toolName === "getStockQuote" && (r as any)?.price != null) {
+                      const msg = `${(r as any).symbol}: ${(r as any).price} ${(r as any).currency || ""} (source: ${(r as any).source})`;
+                      enqueue(`0:${JSON.stringify(msg)}\n`);
+                      producedAnyText = true;
+                      producedMeaningfulText = true;
+                    } else if (
+                      toolName === "getNewsHeadlines" &&
+                      (Array.isArray((r as any).gnews) || Array.isArray((r as any).hackernews))
+                    ) {
+                      const gn = ((r as any).gnews || []).slice(0, 6).map((x: any) => `• ${x.title}`).join("\n");
+                      const hn = ((r as any).hackernews || []).slice(0, 6).map((x: any) => `• ${x.title}`).join("\n");
+                      const msg = [`News for "${(r as any).query}":`, gn && `GNews:\n${gn}`, hn && `Hacker News:\n${hn}`]
+                        .filter(Boolean)
+                        .join("\n\n");
+                      enqueue(`0:${JSON.stringify(msg.slice(0, 2000))}\n`);
                       producedAnyText = true;
                       producedMeaningfulText = true;
                     } else if (r?.status === "error" && typeof r?.message === "string") {
