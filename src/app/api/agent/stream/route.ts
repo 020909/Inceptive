@@ -799,6 +799,193 @@ ${_cs}
         let producedMeaningfulText = false;
         let thinkingLogId: string | undefined;
         let fallbackFromTools = "";
+        /** AI SDK v6 uses tool-input-available / tool-output-available; map id → name */
+        const toolNameByCallId = new Map<string, string>();
+
+        const inferToolNameFromOutput = (normalized: any): string => {
+          if (!normalized || typeof normalized !== "object") return "";
+          const o = normalized as any;
+          if (typeof o.symbol === "string" && "price" in o && typeof o.source === "string") return "getStockQuote";
+          if (o.current != null && o.source && (o.location !== undefined || o.lat !== undefined)) return "getWeather";
+          if (Array.isArray(o.gnews) || Array.isArray(o.hackernews)) return "getNewsHeadlines";
+          if (o.status === "success" && Array.isArray(o.emails)) return "readGmail";
+          if (typeof o.results === "string") return "searchWeb";
+          if (typeof o.content === "string" && o.url) return "browseURL";
+          return "";
+        };
+
+        const handleToolFinished = async (tr: any) => {
+          const normalized = normalizeToolResult(tr);
+          let toolName =
+            (tr?.toolName || tr?.name || tr?.tool?.name || toolNameByCallId.get(tr?.toolCallId) || "") as string;
+          if (!toolName) toolName = inferToolNameFromOutput(normalized);
+
+          if (!fallbackFromTools) {
+            const r = normalized;
+            if (r?.status === "success" && Array.isArray(r?.emails)) {
+              const top = r.emails
+                .slice(0, 5)
+                .map((e: any, i: number) => `${i + 1}. ${e.subject || "(No subject)"} — ${e.from || "Unknown sender"}`)
+                .join("\n");
+              fallbackFromTools = `I checked your inbox and found ${r.emails.length} emails.\n${top}`;
+            } else if (r?.status === "success" && typeof r?.results === "string") {
+              fallbackFromTools = r.results.slice(0, 1200);
+            } else if (toolName === "getWeather" && r?.current) {
+              const c = r.current as Record<string, unknown>;
+              const temp = c.temperature_2m ?? c.temp;
+              fallbackFromTools = [
+                r.location && `Place: ${r.location}`,
+                temp != null && `Temperature: ${String(temp)}° (metric)`,
+                c.description != null && String(c.description),
+                r.source && `Source: ${r.source}`,
+              ]
+                .filter(Boolean)
+                .join(" · ")
+                .slice(0, 1200);
+            } else if (
+              (toolName === "getStockQuote" ||
+                (r &&
+                  typeof r === "object" &&
+                  typeof (r as any).symbol === "string" &&
+                  "price" in (r as any) &&
+                  typeof (r as any).source === "string")) &&
+              r &&
+              typeof r === "object"
+            ) {
+              const sym = (r as any).symbol;
+              const pr = (r as any).price;
+              if (pr != null && Number.isFinite(Number(pr))) {
+                fallbackFromTools = `${sym}: ${pr} ${(r as any).currency || "USD"} (via ${(r as any).source})`.trim();
+              } else {
+                fallbackFromTools = `Could not fetch a live price for ${sym} (${(r as any).source}).`;
+              }
+            } else if (
+              toolName === "getNewsHeadlines" &&
+              r &&
+              (Array.isArray((r as any).gnews) || Array.isArray((r as any).hackernews))
+            ) {
+              const gn = ((r as any).gnews || []).slice(0, 5).map((x: any) => `• ${x.title} — ${x.url}`).join("\n");
+              const hn = ((r as any).hackernews || []).slice(0, 5).map((x: any) => `• ${x.title} — ${x.url}`).join("\n");
+              fallbackFromTools = [`Headlines (${(r as any).query}):`, gn && `GNews:\n${gn}`, hn && `Hacker News:\n${hn}`]
+                .filter(Boolean)
+                .join("\n\n")
+                .slice(0, 2000);
+            } else if (r?.status === "error" && typeof r?.message === "string") {
+              fallbackFromTools = `I hit an issue while running the tool: ${r.message}`;
+            } else if (typeof r?.message === "string") {
+              fallbackFromTools = r.message;
+            }
+          }
+
+          if (!producedMeaningfulText) {
+            const r = normalized;
+            const inferred = inferToolNameFromOutput(r);
+            const dataTools =
+              toolName === "readGmail" ||
+              toolName === "searchWeb" ||
+              toolName === "browseURL" ||
+              toolName === "getWeather" ||
+              toolName === "getStockQuote" ||
+              toolName === "getNewsHeadlines" ||
+              inferred === "readGmail" ||
+              inferred === "searchWeb" ||
+              inferred === "browseURL" ||
+              inferred === "getWeather" ||
+              inferred === "getStockQuote" ||
+              inferred === "getNewsHeadlines";
+            if (dataTools && r) {
+              const tn = toolName || inferred;
+              if (tn === "readGmail" && r?.status === "success" && Array.isArray(r?.emails)) {
+                const top = r.emails
+                  .slice(0, 10)
+                  .map((e: any, i: number) => `${i + 1}. ${e.subject || "(No subject)"} — ${e.from || "Unknown sender"}`)
+                  .join("\n");
+                const msg = `Here are your latest emails (${r.emails.length}):\n${top}`;
+                enqueue(`0:${JSON.stringify(msg)}\n`);
+                producedAnyText = true;
+                producedMeaningfulText = true;
+              } else if (tn === "searchWeb" && typeof r?.results === "string" && r.results.trim()) {
+                const msg = r.results.slice(0, 2000);
+                enqueue(`0:${JSON.stringify(msg)}\n`);
+                producedAnyText = true;
+                producedMeaningfulText = true;
+              } else if (tn === "browseURL" && typeof r?.content === "string" && r.content.trim()) {
+                const msg = r.content.slice(0, 2000);
+                enqueue(`0:${JSON.stringify(msg)}\n`);
+                producedAnyText = true;
+                producedMeaningfulText = true;
+              } else if (tn === "getWeather" && r?.current) {
+                const c = r.current as Record<string, unknown>;
+                const temp = c.temperature_2m ?? c.temp;
+                const msg = [
+                  `Weather for ${r.location}:`,
+                  temp != null && `Temperature: ${String(temp)}°`,
+                  c.description != null && String(c.description),
+                  `(data: ${r.source})`,
+                ]
+                  .filter(Boolean)
+                  .join(" ");
+                enqueue(`0:${JSON.stringify(msg)}\n`);
+                producedAnyText = true;
+                producedMeaningfulText = true;
+              } else if (
+                (tn === "getStockQuote" ||
+                  (r &&
+                    typeof r === "object" &&
+                    typeof (r as any).symbol === "string" &&
+                    "price" in (r as any))) &&
+                r &&
+                typeof r === "object"
+              ) {
+                const pr = (r as any).price;
+                const msg =
+                  pr != null && Number.isFinite(Number(pr))
+                    ? `${(r as any).symbol}: ${pr} ${(r as any).currency || "USD"} (source: ${(r as any).source})`
+                    : `Could not fetch a live price for ${(r as any).symbol} (${(r as any).source}).`;
+                enqueue(`0:${JSON.stringify(msg)}\n`);
+                producedAnyText = true;
+                producedMeaningfulText = true;
+              } else if (
+                tn === "getNewsHeadlines" &&
+                (Array.isArray((r as any).gnews) || Array.isArray((r as any).hackernews))
+              ) {
+                const gn = ((r as any).gnews || []).slice(0, 6).map((x: any) => `• ${x.title}`).join("\n");
+                const hn = ((r as any).hackernews || []).slice(0, 6).map((x: any) => `• ${x.title}`).join("\n");
+                const msg = [`News for "${(r as any).query}":`, gn && `GNews:\n${gn}`, hn && `Hacker News:\n${hn}`]
+                  .filter(Boolean)
+                  .join("\n\n");
+                enqueue(`0:${JSON.stringify(msg.slice(0, 2000))}\n`);
+                producedAnyText = true;
+                producedMeaningfulText = true;
+              } else if (r?.status === "error" && typeof r?.message === "string") {
+                const msg = `I couldn’t complete that action: ${r.message}`;
+                enqueue(`0:${JSON.stringify(msg)}\n`);
+                producedAnyText = true;
+                producedMeaningfulText = true;
+              }
+            }
+          }
+
+          const existingId = toolLogIds.get(tr.toolCallId);
+          if (existingId) {
+            const resultStatus = (normalized as any)?.status === "error" ? "error" : "done";
+            const { streamLine } = await logTask(
+              user_id,
+              "",
+              resultStatus,
+              "",
+              agentMode,
+              { result: typeof normalized === "string" ? normalized : normalized },
+              existingId
+            );
+            enqueue(streamLine);
+          }
+          console.log(`[agent.stream][${requestId}] tool-output`, {
+            toolName,
+            hasFallback: Boolean(fallbackFromTools),
+            producedMeaningfulText,
+          });
+        };
 
         try {
           // Log immediately so every message has multiple lines
@@ -845,9 +1032,9 @@ ${_cs}
                 break;
               }
               case "tool-call": {
-                enqueue(`1:${JSON.stringify(value)}\n`);
-                // Log the tool call with a human-readable label
                 const tc = value as any;
+                if (tc.toolCallId && tc.toolName) toolNameByCallId.set(tc.toolCallId, tc.toolName);
+                enqueue(`1:${JSON.stringify(value)}\n`);
                 const display = TOOL_DISPLAY[tc.toolName];
                 const action = display ? display.label(tc.args || {}) : tc.toolName;
                 const icon = display?.icon || "⚡";
@@ -859,160 +1046,37 @@ ${_cs}
                 enqueue(streamLine);
                 break;
               }
+              case "tool-input-available": {
+                const v = value as any;
+                if (v.toolCallId && v.toolName) toolNameByCallId.set(v.toolCallId, v.toolName);
+                enqueue(`1:${JSON.stringify({ toolCallId: v.toolCallId, toolName: v.toolName, args: v.input })}\n`);
+                const display = TOOL_DISPLAY[v.toolName];
+                const action = display ? display.label(v.input || {}) : v.toolName;
+                const icon = display?.icon || "⚡";
+                const { id: logId, streamLine } = await logTask(
+                  user_id, action, "running", icon, agentMode,
+                  { toolName: v.toolName, args: v.input }
+                );
+                toolLogIds.set(v.toolCallId, logId);
+                enqueue(streamLine);
+                break;
+              }
+              case "tool-output-available": {
+                const v = value as any;
+                enqueue(`2:${JSON.stringify(value)}\n`);
+                await handleToolFinished({
+                  toolCallId: v.toolCallId,
+                  toolName: toolNameByCallId.get(v.toolCallId) || "",
+                  output: v.output,
+                  result: v.output,
+                });
+                break;
+              }
               case "tool-result": {
                 enqueue(`2:${JSON.stringify(value)}\n`);
-                // Update the matching log to "done"
                 const tr = value as any;
-                const normalized = normalizeToolResult(tr);
-                const toolName = tr?.toolName || tr?.name || tr?.tool?.name || "";
-                if (!fallbackFromTools) {
-                  const r = normalized;
-                  if (r?.status === "success" && Array.isArray(r?.emails)) {
-                    const top = r.emails.slice(0, 5).map((e: any, i: number) => `${i + 1}. ${e.subject || "(No subject)"} — ${e.from || "Unknown sender"}`).join("\n");
-                    fallbackFromTools = `I checked your inbox and found ${r.emails.length} emails.\n${top}`;
-                  } else if (r?.status === "success" && typeof r?.results === "string") {
-                    fallbackFromTools = r.results.slice(0, 1200);
-                  } else if (toolName === "getWeather" && r?.current) {
-                    const c = r.current as Record<string, unknown>;
-                    const temp = c.temperature_2m ?? c.temp;
-                    fallbackFromTools = [
-                      r.location && `Place: ${r.location}`,
-                      temp != null && `Temperature: ${String(temp)}° (metric)`,
-                      c.description != null && String(c.description),
-                      r.source && `Source: ${r.source}`,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")
-                      .slice(0, 1200);
-                  } else if (
-                    (toolName === "getStockQuote" ||
-                      (r &&
-                        typeof r === "object" &&
-                        typeof (r as any).symbol === "string" &&
-                        "price" in (r as any) &&
-                        typeof (r as any).source === "string")) &&
-                    r &&
-                    typeof r === "object"
-                  ) {
-                    const sym = (r as any).symbol;
-                    const pr = (r as any).price;
-                    if (pr != null && Number.isFinite(Number(pr))) {
-                      fallbackFromTools = `${sym}: ${pr} ${(r as any).currency || "USD"} (via ${(r as any).source})`.trim();
-                    } else {
-                      fallbackFromTools = `Could not fetch a live price for ${sym} (${(r as any).source}).`;
-                    }
-                  } else if (
-                    toolName === "getNewsHeadlines" &&
-                    r &&
-                    (Array.isArray((r as any).gnews) || Array.isArray((r as any).hackernews))
-                  ) {
-                    const gn = ((r as any).gnews || []).slice(0, 5).map((x: any) => `• ${x.title} — ${x.url}`).join("\n");
-                    const hn = ((r as any).hackernews || []).slice(0, 5).map((x: any) => `• ${x.title} — ${x.url}`).join("\n");
-                    fallbackFromTools = [`Headlines (${(r as any).query}):`, gn && `GNews:\n${gn}`, hn && `Hacker News:\n${hn}`]
-                      .filter(Boolean)
-                      .join("\n\n")
-                      .slice(0, 2000);
-                  } else if (r?.status === "error" && typeof r?.message === "string") {
-                    fallbackFromTools = `I hit an issue while running the tool: ${r.message}`;
-                  } else if (typeof r?.message === "string") {
-                    fallbackFromTools = r.message;
-                  }
-                }
-
-                // GUARANTEED USER-FACING OUTPUT FOR CRITICAL TOOLS
-                // If the model doesn't produce a final answer, we still show something useful.
-                if (!producedMeaningfulText) {
-                  const r = normalized;
-                  const dataTools =
-                    toolName === "readGmail" ||
-                    toolName === "searchWeb" ||
-                    toolName === "browseURL" ||
-                    toolName === "getWeather" ||
-                    toolName === "getStockQuote" ||
-                    toolName === "getNewsHeadlines";
-                  if (dataTools && r) {
-                    if (toolName === "readGmail" && r?.status === "success" && Array.isArray(r?.emails)) {
-                      const top = r.emails.slice(0, 10).map((e: any, i: number) => `${i + 1}. ${e.subject || "(No subject)"} — ${e.from || "Unknown sender"}`).join("\n");
-                      const msg = `Here are your latest emails (${r.emails.length}):\n${top}`;
-                      enqueue(`0:${JSON.stringify(msg)}\n`);
-                      producedAnyText = true;
-                      producedMeaningfulText = true;
-                    } else if (toolName === "searchWeb" && typeof r?.results === "string" && r.results.trim()) {
-                      const msg = r.results.slice(0, 2000);
-                      enqueue(`0:${JSON.stringify(msg)}\n`);
-                      producedAnyText = true;
-                      producedMeaningfulText = true;
-                    } else if (toolName === "browseURL" && typeof r?.content === "string" && r.content.trim()) {
-                      const msg = r.content.slice(0, 2000);
-                      enqueue(`0:${JSON.stringify(msg)}\n`);
-                      producedAnyText = true;
-                      producedMeaningfulText = true;
-                    } else if (toolName === "getWeather" && r?.current) {
-                      const c = r.current as Record<string, unknown>;
-                      const temp = c.temperature_2m ?? c.temp;
-                      const msg = [
-                        `Weather for ${r.location}:`,
-                        temp != null && `Temperature: ${String(temp)}°`,
-                        c.description != null && String(c.description),
-                        `(data: ${r.source})`,
-                      ]
-                        .filter(Boolean)
-                        .join(" ");
-                      enqueue(`0:${JSON.stringify(msg)}\n`);
-                      producedAnyText = true;
-                      producedMeaningfulText = true;
-                    } else if (
-                      (toolName === "getStockQuote" ||
-                        (r &&
-                          typeof r === "object" &&
-                          typeof (r as any).symbol === "string" &&
-                          "price" in (r as any))) &&
-                      r &&
-                      typeof r === "object"
-                    ) {
-                      const pr = (r as any).price;
-                      const msg =
-                        pr != null && Number.isFinite(Number(pr))
-                          ? `${(r as any).symbol}: ${pr} ${(r as any).currency || "USD"} (source: ${(r as any).source})`
-                          : `Could not fetch a live price for ${(r as any).symbol} (${(r as any).source}).`;
-                      enqueue(`0:${JSON.stringify(msg)}\n`);
-                      producedAnyText = true;
-                      producedMeaningfulText = true;
-                    } else if (
-                      toolName === "getNewsHeadlines" &&
-                      (Array.isArray((r as any).gnews) || Array.isArray((r as any).hackernews))
-                    ) {
-                      const gn = ((r as any).gnews || []).slice(0, 6).map((x: any) => `• ${x.title}`).join("\n");
-                      const hn = ((r as any).hackernews || []).slice(0, 6).map((x: any) => `• ${x.title}`).join("\n");
-                      const msg = [`News for "${(r as any).query}":`, gn && `GNews:\n${gn}`, hn && `Hacker News:\n${hn}`]
-                        .filter(Boolean)
-                        .join("\n\n");
-                      enqueue(`0:${JSON.stringify(msg.slice(0, 2000))}\n`);
-                      producedAnyText = true;
-                      producedMeaningfulText = true;
-                    } else if (r?.status === "error" && typeof r?.message === "string") {
-                      const msg = `I couldn’t complete that action: ${r.message}`;
-                      enqueue(`0:${JSON.stringify(msg)}\n`);
-                      producedAnyText = true;
-                      producedMeaningfulText = true;
-                    }
-                  }
-                }
-                const existingId = toolLogIds.get(tr.toolCallId);
-                if (existingId) {
-                  const resultStatus = (normalized as any)?.status === "error" ? "error" : "done";
-                  const { streamLine } = await logTask(
-                    user_id, "", resultStatus, "", agentMode,
-                    { result: typeof normalized === "string" ? normalized : normalized },
-                    existingId
-                  );
-                  enqueue(streamLine);
-                }
-                console.log(`[agent.stream][${requestId}] tool-result`, {
-                  toolName,
-                  hasFallback: Boolean(fallbackFromTools),
-                  producedMeaningfulText,
-                });
+                if (tr.toolCallId && tr.toolName) toolNameByCallId.set(tr.toolCallId, tr.toolName);
+                await handleToolFinished(tr);
                 break;
               }
               case "error": {

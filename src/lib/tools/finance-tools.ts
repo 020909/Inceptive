@@ -24,8 +24,8 @@ export async function getStockQuote(symbol: string): Promise<StockQuote> {
   }
 
   // Free source: Stooq CSV endpoint (no key)
-  try {
-    const res = await fetch(`https://stooq.com/q/l/?s=${encodeURIComponent(s.toLowerCase())}&f=sd2t2ohlcv&h&e=csv`, {
+  const tryStooq = async (ticker: string) => {
+    const res = await fetch(`https://stooq.com/q/l/?s=${encodeURIComponent(ticker.toLowerCase())}&f=sd2t2ohlcv&h&e=csv`, {
       headers: { "User-Agent": "InceptiveAI/1.0 (finance)" },
       signal: AbortSignal.timeout(6000),
     });
@@ -34,8 +34,21 @@ export async function getStockQuote(symbol: string): Promise<StockQuote> {
     const lines = csv.trim().split("\n");
     if (lines.length < 2) throw new Error("No quote rows");
     const vals = lines[1].split(",");
-    const close = Number(vals[6]); // close
-    return { symbol: s, price: Number.isFinite(close) ? close : null, source: "stooq.com", currency: "USD" };
+    const close = Number(vals[6]);
+    return Number.isFinite(close) ? close : null;
+  };
+
+  try {
+    let close = await tryStooq(s);
+    // US listings often need .us suffix on Stooq (e.g. APLD → apld.us)
+    if (close == null && /^[A-Z]{1,5}$/.test(s)) {
+      try {
+        close = await tryStooq(`${s}.US`);
+      } catch {
+        /* keep null */
+      }
+    }
+    return { symbol: s, price: close, source: "stooq.com", currency: "USD" };
   } catch {
     return { symbol: s, price: null, source: "stooq.com" };
   }
