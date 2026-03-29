@@ -7,13 +7,14 @@ import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 import { checkCredits, deductCredits } from "@/lib/credits";
 import { browseUrlText, extractUrls, formatSearchResultsForPrompt, searchWeb } from "@/lib/search/provider";
 import { gatherResearchEnrichment } from "@/lib/research/enrichment";
+import { normalizeReportFormatting } from "@/lib/research/report-format";
 
 export const maxDuration = 120;
 
 /** Model must answer even when automated retrieval is thin (fixes “sources contain nothing” refusals). */
 const ANSWER_POLICY = `
 
-## Answer policy (mandatory)
+Answer policy (mandatory)
 - If SOURCES (web retrieval) or ENRICHMENT blocks are empty, incomplete, or missing specific facts, you MUST still answer using well-established general knowledge.
 - Put uncited factual claims under a heading: GENERAL KNOWLEDGE (not from retrieved URLs).
 - Never refuse the entire question only because automated retrieval returned little or no text.
@@ -78,11 +79,20 @@ function isEntertainmentQuery(topic: string): boolean {
   return /(cast|box office|movie|film|actor|actress|director|release date|collection|trailer|bollywood|hollywood)/i.test(topic);
 }
 
+const REPORT_FORMAT = `
+
+FORMATTING (mandatory — professional report, no markdown hashes):
+- Do NOT use #, ##, or ###. Never start a line with #.
+- Number every major section: "1. Executive Summary", "2. Key Findings", etc. Put the number and title on its own line.
+- Section titles use the same font size as body text in the UI but are shown bold — write them as plain numbered lines only.
+- Use • for bullet points. You may use **short labels** for emphasis inside bullets.
+- CITATIONS: When a fact comes from SOURCE N below, add an inline marker [N] right after the sentence or clause. Match N to the SOURCE number in the SOURCES block.`;
+
 function buildPrompt(topic: string, depth: string) {
   const entertainment = isEntertainmentQuery(topic);
   if (entertainment) {
     return {
-      system: withAnswerPolicy(`You are a factual entertainment research analyst.
+      system: withAnswerPolicy(`You are a factual entertainment research analyst.${REPORT_FORMAT}
 
 For movie/actor/cast queries, provide:
 DIRECT ANSWER (1-2 lines)
@@ -99,7 +109,7 @@ Rules:
   }
   if (depth === "Fast") {
     return {
-      system: withAnswerPolicy(`You are a professional research analyst. Given a topic, produce a concise research brief with these sections:
+      system: withAnswerPolicy(`You are a professional research analyst. Given a topic, produce a concise research brief with these sections:${REPORT_FORMAT}
 
 EXECUTIVE SUMMARY (2 sentences)
 KEY FINDINGS (3 bullet points starting with •)
@@ -113,7 +123,7 @@ Be direct and factual. No padding.`),
 
   if (depth === "Ultra") {
     return {
-      system: withAnswerPolicy(`You are a senior research analyst at a top-tier strategy firm. Given a topic, produce the most comprehensive research report possible with these sections:
+      system: withAnswerPolicy(`You are a senior research analyst at a top-tier strategy firm. Given a topic, produce the most comprehensive research report possible with these sections:${REPORT_FORMAT}
 
 EXECUTIVE SUMMARY (3-4 sentences)
 KEY FINDINGS (7 bullet points starting with •)
@@ -133,7 +143,7 @@ Be exhaustive, data-driven, and professional.`),
 
   // Default: Deep
   return {
-    system: withAnswerPolicy(`You are a professional research analyst working for Inceptive, a 24/7 AI agent platform. Given a research topic, produce a detailed structured research report with these clearly labeled sections:
+    system: withAnswerPolicy(`You are a professional research analyst working for Inceptive, a 24/7 AI agent platform. Given a research topic, produce a detailed structured research report with these clearly labeled sections:${REPORT_FORMAT}
 
 EXECUTIVE SUMMARY (2-3 sentences)
 KEY FINDINGS (exactly 5 bullet points starting with •)
@@ -267,15 +277,18 @@ export async function POST(request: Request) {
       if (wiki) browsed.push(wiki);
       const arxiv = await fetchArxiv(topic);
       if (arxiv) browsed.push(arxiv);
-      for (const url of urls) {
-        try {
-          const content = await browseUrlText(url, 5000);
+
+      const pageReads = await Promise.allSettled(
+        urls.map(async (url) => {
+          const content = await browseUrlText(url, 5500);
           if (content && !content.startsWith("Could not fetch")) {
-            browsed.push({ url, content: content.slice(0, 5000) });
+            return { url, content: content.slice(0, 5500) };
           }
-        } catch {
-          // ignore browse errors
-        }
+          throw new Error("skip");
+        })
+      );
+      for (const r of pageReads) {
+        if (r.status === "fulfilled") browsed.push(r.value);
       }
 
       sourcesCount = browsed.length;
@@ -303,7 +316,7 @@ export async function POST(request: Request) {
       // enrichment is optional
     }
 
-    const retrievalRules = `\n\nIMPORTANT:\n- Use SOURCES (web retrieval) and ENRICHMENT when they help.\n- For claims tied to a URL in those sections, cite the URL in parentheses.\n- If a specific fact is missing from retrieved text, you may still answer from general knowledge under GENERAL KNOWLEDGE (see system policy).\n- Do NOT claim something is fictional just because it is unfamiliar.\n`;
+    const retrievalRules = `\n\nIMPORTANT:\n- Use SOURCES (web retrieval) and ENRICHMENT when they help.\n- Cite facts from SOURCE N using inline [N] markers (see FORMATTING rules).\n- If a specific fact is missing from retrieved text, you may still answer from general knowledge under a section titled "GENERAL KNOWLEDGE" (not from retrieved URLs).\n- Do NOT claim something is fictional just because it is unfamiliar.\n`;
 
     let responseText = "";
 
@@ -437,8 +450,7 @@ export async function POST(request: Request) {
 }
 
 function sanitizeReport(content: string) {
-  return content
-    .replace(/\*\*(.*?)\*\*/g, "$1")
+  return normalizeReportFormatting(content)
     .replace(/^\*\s+/gm, "• ")
     .replace(/^-\s+/gm, "• ")
     .replace(/`/g, "")

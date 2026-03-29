@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, BookOpen, Globe, FileText, Clock, History, Loader2, X, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
@@ -22,14 +22,71 @@ interface ResearchSession {
   created_at: string;
 }
 
+/** Plain preview for PDF and collapsed cards (no rich layout). */
 function cleanReportContent(content: string): string {
   return content
-    .replace(/\*\*(.*?)\*\*/g, '$1')
-    .replace(/^\*\s+/gm, '• ')
-    .replace(/^-\s+/gm, '• ')
-    .replace(/`/g, '')
-    .replace(/\n{3,}/g, '\n\n')
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/^\*\s+/gm, "• ")
+    .replace(/^-\s+/gm, "• ")
+    .replace(/`/g, "")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+function renderInlineSegments(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*|https?:\/\/[^\s)]+)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return (
+        <strong key={i} className="font-semibold text-[var(--fg-primary)]">
+          {p.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (/^https?:\/\//.test(p)) {
+      return (
+        <a
+          key={i}
+          href={p}
+          className="text-blue-400 hover:underline break-all"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {p}
+        </a>
+      );
+    }
+    return <span key={i}>{p}</span>;
+  });
+}
+
+function ReportBody({ content }: { content: string }) {
+  const lines = content.split("\n");
+  return (
+    <div className="space-y-0">
+      {lines.map((line, i) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={i} className="h-2" />;
+        const numbered = trimmed.match(/^(\d+)\.\s+(.+)$/);
+        if (numbered) {
+          return (
+            <p
+              key={i}
+              className="font-semibold text-[15px] leading-snug text-[var(--fg-primary)] mt-5 first:mt-0 mb-2 tracking-[-0.02em]"
+            >
+              {trimmed}
+            </p>
+          );
+        }
+        return (
+          <p key={i} className="text-[15px] leading-relaxed text-[var(--fg-secondary)] mb-2">
+            {renderInlineSegments(trimmed)}
+          </p>
+        );
+      })}
+    </div>
+  );
 }
 
 function downloadReportAsPdf(report: Report) {
@@ -61,30 +118,54 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
-function ReportCard({ report, index }: { report: Report; index: number }) {
+function ReportCard({ report, index, onOpen }: { report: Report; index: number; onOpen: () => void }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
     <motion.div
-      className="group rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-colors duration-150 overflow-hidden"
+      className="group rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-colors duration-150 overflow-hidden cursor-pointer"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06 }}
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
     >
-      <button onClick={() => setExpanded(!expanded)} className="w-full p-5 text-left">
+      <div className="w-full p-5 text-left">
         <div className="flex items-start justify-between mb-2">
           <div className="w-9 h-9 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center shrink-0">
             <BookOpen size={16} className="text-[var(--fg-tertiary)]" />
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={(e) => { e.stopPropagation(); downloadReportAsPdf(report); }}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                downloadReportAsPdf(report);
+              }}
               className="h-7 w-7 rounded-md border border-[var(--border-subtle)] flex items-center justify-center text-[var(--fg-tertiary)] hover:bg-[var(--bg-elevated)]"
               title="Download PDF"
             >
               <Download size={13} />
             </button>
-            {expanded ? <ChevronUp size={16} className="text-[var(--fg-muted)]" /> : <ChevronDown size={16} className="text-[var(--fg-muted)]" />}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded((v) => !v);
+              }}
+              className="h-7 w-7 rounded-md border border-[var(--border-subtle)] flex items-center justify-center text-[var(--fg-muted)] hover:bg-[var(--bg-elevated)]"
+              title={expanded ? "Collapse preview" : "Expand preview"}
+              aria-expanded={expanded}
+            >
+              {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
           </div>
         </div>
         <h3 className="text-[var(--fg-primary)] font-medium text-sm tracking-[-0.01em] mb-1.5">{report.topic}</h3>
@@ -92,7 +173,7 @@ function ReportCard({ report, index }: { report: Report; index: number }) {
           <span className="flex items-center gap-1"><Globe size={11} />{report.sources_count} sources</span>
           <span className="flex items-center gap-1"><Clock size={11} />{timeAgo(report.created_at)}</span>
         </div>
-      </button>
+      </div>
 
       <AnimatePresence>
         {expanded && (
@@ -104,8 +185,8 @@ function ReportCard({ report, index }: { report: Report; index: number }) {
             className="overflow-hidden"
           >
             <div className="px-5 pb-5 border-t border-[var(--border-subtle)] pt-4">
-              <div className="max-w-none text-[var(--fg-primary)] text-[13px] leading-relaxed whitespace-pre-wrap">
-                {cleanReportContent(report.content)}
+              <div className="max-w-none text-[13px] leading-relaxed">
+                <ReportBody content={report.content} />
               </div>
             </div>
           </motion.div>
@@ -162,7 +243,8 @@ export default function ResearchPage() {
       toast.success("Research complete!");
       setQuery('');
       if (data.report) {
-        setReports(prev => [data.report, ...prev]);
+        setReports((prev) => [data.report, ...prev]);
+        setSelectedReport(data.report);
       }
       if (data.session_id) {
         setSessions((prev) => [
@@ -288,9 +370,7 @@ export default function ResearchPage() {
       ) : (
         <div className="grid grid-cols-2 gap-3">
           {reports.map((r, i) => (
-            <button key={r.id} onClick={() => setSelectedReport(r)} className="text-left">
-              <ReportCard report={r} index={i} />
-            </button>
+            <ReportCard key={r.id} report={r} index={i} onOpen={() => setSelectedReport(r)} />
           ))}
         </div>
       )}
@@ -310,12 +390,16 @@ export default function ResearchPage() {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.96, y: 12 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-4xl rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] max-h-[88vh] flex flex-col overflow-hidden"
+              className="w-full max-w-4xl rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
             >
-              <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
-                <div>
-                  <h3 className="text-[var(--fg-primary)] font-medium">{selectedReport.topic}</h3>
-                  <p className="text-xs text-[var(--fg-muted)] mt-1">{new Date(selectedReport.created_at).toLocaleString()}</p>
+              <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between shrink-0">
+                <div className="min-w-0 pr-4">
+                  <h3 className="text-xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em] leading-tight">
+                    {selectedReport.topic}
+                  </h3>
+                  <p className="text-xs text-[var(--fg-muted)] mt-2">
+                    {new Date(selectedReport.created_at).toLocaleString()} · {selectedReport.sources_count} sources
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -330,10 +414,8 @@ export default function ResearchPage() {
                   </button>
                 </div>
               </div>
-              <div className="p-6 overflow-y-auto">
-                <div className="text-[var(--fg-primary)] whitespace-pre-wrap leading-relaxed text-sm">
-                  {cleanReportContent(selectedReport.content)}
-                </div>
+              <div className="p-6 overflow-y-auto flex-1 min-h-0">
+                <ReportBody content={selectedReport.content} />
               </div>
             </motion.div>
           </motion.div>
