@@ -31,6 +31,28 @@ function extractTextFromHtml(html: string): string {
     .trim();
 }
 
+async function browseViaJinaReader(originalUrl: string, maxChars: number): Promise<string | null> {
+  try {
+    // Safety: validate the original URL; Jina fetches it server-side.
+    assertUrlSafeForServerFetch(originalUrl);
+    const jinaUrl = `https://r.jina.ai/${originalUrl}`;
+    const res = await fetch(jinaUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; InceptiveBot/1.0; +https://inceptive.ai)",
+        Accept: "text/plain,*/*;q=0.8",
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const text = (await res.text()).trim();
+    if (!text) return null;
+    // Jina often includes header-ish lines; keep it simple and just truncate.
+    return text.slice(0, maxChars);
+  } catch {
+    return null;
+  }
+}
+
 export async function browseUrlText(url: string, maxChars = 8000): Promise<string> {
   try {
     assertUrlSafeForServerFetch(url);
@@ -41,7 +63,11 @@ export async function browseUrlText(url: string, maxChars = 8000): Promise<strin
       },
       signal: AbortSignal.timeout(7000),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const fallback = await browseViaJinaReader(url, maxChars);
+      if (fallback) return fallback;
+      throw new Error(`HTTP ${res.status}`);
+    }
 
     const contentType = res.headers.get("content-type") || "";
     if (contentType.includes("text/plain") || contentType.includes("application/json")) {
@@ -49,7 +75,13 @@ export async function browseUrlText(url: string, maxChars = 8000): Promise<strin
     }
 
     const html = await res.text();
-    return extractTextFromHtml(html).slice(0, maxChars);
+    const extracted = extractTextFromHtml(html);
+    // If extraction is too shallow (common with heavy JS sites), fallback to Jina reader.
+    if (extracted.replace(/\s+/g, " ").trim().length < 600) {
+      const fallback = await browseViaJinaReader(url, maxChars);
+      if (fallback) return fallback;
+    }
+    return extracted.slice(0, maxChars);
   } catch (err: any) {
     return `Could not fetch ${url}: ${err?.message || "Unknown error"}`;
   }
