@@ -382,6 +382,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
   if (!body.bot_token?.trim()) {
     return NextResponse.json({ error: "bot_token required" }, { status: 400 });
   }
+  if (!body.chat_id?.trim()) {
+    return NextResponse.json(
+      { error: "chat_id required — use your channel/group numeric ID or @username the bot can message" },
+      { status: 400 }
+    );
+  }
 
   // Validate token by calling getMe
   const me = await fetch(`https://api.telegram.org/bot${body.bot_token}/getMe`).then((r) => r.json());
@@ -396,7 +402,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
     accountEmail: null,
     accountName: `@${me.result?.username || "telegram-bot"}`,
     accountId: String(me.result?.id || ""),
-    metadata: { chat_id: body.chat_id || null },
+    metadata: { chat_id: body.chat_id.trim() },
   });
 
   return NextResponse.json({ ok: true, bot: me.result });

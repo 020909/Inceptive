@@ -166,8 +166,12 @@ export default function SocialPage() {
     try {
       const res = await fetch("/api/connectors", { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load connectors");
       setConnectedAccounts(data.accounts || []);
-    } catch (err) { console.error(err); }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Could not load connected accounts");
+    }
   }, []);
 
   const init = useCallback(async () => {
@@ -232,13 +236,17 @@ export default function SocialPage() {
 
   const handleTelegramConnect = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!botToken || !session?.access_token) return;
+    if (!botToken?.trim() || !session?.access_token) return;
+    if (!chatId.trim()) {
+      toast.error("Chat ID is required so we know where to send posts.");
+      return;
+    }
     setConnectingTelegram(true);
     try {
       const res = await fetch("/api/connectors/telegram", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ bot_token: botToken, chat_id: chatId }),
+        body: JSON.stringify({ bot_token: botToken.trim(), chat_id: chatId.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to connect");
@@ -253,6 +261,11 @@ export default function SocialPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session?.access_token || !user) return;
+    const pk = platform.toLowerCase();
+    if (!isPlatformConnected(pk)) {
+      toast.error(`Connect ${platform} in Connectors before scheduling a post.`);
+      return;
+    }
     setSaving(true);
     try {
       if (generateWithAi) {
@@ -288,6 +301,11 @@ export default function SocialPage() {
 
   const handlePublish = async (postId: string) => {
     if (!session?.access_token) return;
+    const post = posts.find((p) => p.id === postId);
+    if (post && !isPlatformConnected(post.platform)) {
+      toast.error(`Connect ${post.platform} in Connectors before publishing.`);
+      return;
+    }
     setPublishing(postId);
     try {
       const res = await fetch("/api/actions/publish-post", {
@@ -571,10 +589,12 @@ export default function SocialPage() {
                 className="text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] font-mono text-xs focus-visible:ring-white/20 bg-[var(--bg-app)] border border-[var(--border-subtle)]" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[var(--fg-secondary)] text-xs uppercase tracking-wide">Chat ID (channel or group)</Label>
+              <Label className="text-[var(--fg-secondary)] text-xs uppercase tracking-wide">Chat ID (required)</Label>
               <Input value={chatId} onChange={e => setChatId(e.target.value)}
                 placeholder="-1001234567890 or @channelname"
-                className="text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] font-mono text-xs focus-visible:ring-white/20 bg-[var(--bg-app)] border border-[var(--border-subtle)]" />
+                className="text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] font-mono text-xs focus-visible:ring-white/20 bg-[var(--bg-app)] border border-[var(--border-subtle)]"
+                required
+              />
             </div>
             <DialogFooter className="pt-2">
               <Button type="button" variant="ghost" onClick={() => setIsTelegramModalOpen(false)}

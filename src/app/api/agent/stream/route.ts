@@ -24,6 +24,7 @@ import {
   computerMoveMouse,
 } from "@/lib/computer-use/session";
 import { describeScreenshotBase64 } from "@/lib/vision/describe-screenshot";
+import { isJudge0Configured, runJudge0Submission, JUDGE0_LANGUAGE_IDS } from "@/lib/code/judge0-client";
 import { z } from "zod";
 
 export const maxDuration = 120;
@@ -53,6 +54,7 @@ const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string 
   draftEmail:          { icon: "", label: (a) => `Drafting email: "${a.subject}"` },
   saveResearchReport:  { icon: "", label: (a) => `Saving report: "${a.topic}"` },
   scheduleSocialPost:  { icon: "", label: (a) => `Scheduling ${a.platform} post` },
+  runCode:             { icon: "", label: (a) => `Running ${a.language || "code"}` },
   createGoal:          { icon: "", label: (a) => `Creating goal: "${a.title}"` },
   createTask:          { icon: "", label: (a) => `Adding task: "${a.title}"` },
   updateGoalProgress:  { icon: "", label: (a) => `Updating goal to ${a.progress_percent}%` },
@@ -209,11 +211,12 @@ ${_cs}
 - saveResearchReport: save research report
 - createGoal/createTask/updateGoalProgress: manage goals
 - analyzeData: calculations
+- runCode: execute Python or JavaScript in a sandbox (requires server code execution to be configured)
 - generateOutline: plans and roadmaps
 
 ## RULES
 1. CHECK CONNECTED ACCOUNTS above - if Gmail shows CONNECTED, use readGmail immediately when asked about email. Never say you cannot access email if Gmail is connected.
-2. ALWAYS USE TOOLS for real actions. When user says read my email -> call readGmail. When user says send email -> call sendGmail. For weather use getWeather; for a stock price use getStockQuote; for news headlines use getNewsHeadlines — do not invent numbers.
+2. ALWAYS USE TOOLS for real actions. When user says read my email -> call readGmail. When user says send email -> call sendGmail. For weather use getWeather; for a stock price use getStockQuote; for news headlines use getNewsHeadlines — do not invent numbers. When the user asks to run, execute, or verify code output, use runCode (Python/JavaScript) instead of inventing program output.
 3. Be direct - no filler. Lead with action.
 4. After tool calls, clearly summarize results.
 5. If connector not connected, tell user exactly: go to Email section and click Connect.
@@ -286,7 +289,7 @@ ${_cs}
       model,
       system: systemOverride || systemPrompt,
       messages: finalHistory,
-      maxSteps: 5,
+      maxSteps: 8,
       // Disable sending reasoning/thinking blocks back in history —
       // they're stripped from client-side state anyway, so including them
       // would cause a mismatch and trigger "Invalid Responses API request"
@@ -699,6 +702,55 @@ ${_cs}
           },
         },
 
+        /* ── RUN CODE (Judge0) ── */
+        runCode: {
+          description:
+            "Execute Python or JavaScript in a sandboxed runner (Judge0). Use when the user asks to run code, verify output, or compute something programmatically.",
+          parameters: z.object({
+            language: z.enum(["python", "javascript"]).describe("Programming language"),
+            code: z.string().describe("Full source to execute"),
+            stdin: z.string().optional().describe("Standard input for the program, if any"),
+          }),
+          execute: async (args: { language: "python" | "javascript"; code: string; stdin?: string }) => {
+            await deductCredits(user_id, "tool_small").catch(() => {});
+            if (!isJudge0Configured()) {
+              return {
+                status: "error" as const,
+                run_code: true as const,
+                message:
+                  "Code execution is not configured on this deployment (JUDGE0_URL). Tell the user to enable it or use analyzeData for math without running code.",
+              };
+            }
+            const language_id = JUDGE0_LANGUAGE_IDS[args.language];
+            const r = await runJudge0Submission({
+              source_code: args.code,
+              language_id,
+              stdin: args.stdin,
+              cpu_time_limit: 5,
+              memory_limit: 256000,
+              wait: true,
+            });
+            if (!r.ok) {
+              return {
+                status: "error" as const,
+                run_code: true as const,
+                language: args.language,
+                message: r.error || "Code run failed",
+              };
+            }
+            return {
+              status: "success" as const,
+              run_code: true as const,
+              language: args.language,
+              stdout: r.stdout ?? "",
+              stderr: r.stderr ?? "",
+              compile_output: r.compile_output ?? "",
+              time: r.time ?? null,
+              memory: r.memory ?? null,
+            };
+          },
+        },
+
         /* ── GENERATE OUTLINE ── */
         generateOutline: {
           description: "Create a structured outline or step-by-step plan for a project, article, business plan, marketing strategy, product roadmap, or any complex topic.",
@@ -776,6 +828,8 @@ ${_cs}
               "stdin",
               "language_id",
               "source_code",
+              "language",
+              "code",
             ]);
             if (keys.length === 0 || keys.length > 10) return false;
             return keys.every((k) => toolArgKeys.has(k));
@@ -811,6 +865,7 @@ ${_cs}
           if (o.status === "success" && Array.isArray(o.emails)) return "readGmail";
           if (typeof o.results === "string") return "searchWeb";
           if (typeof o.content === "string" && o.url) return "browseURL";
+          if (o.run_code === true) return "runCode";
           return "";
         };
 
@@ -870,6 +925,22 @@ ${_cs}
                 .filter(Boolean)
                 .join("\n\n")
                 .slice(0, 2000);
+            } else if (
+              (toolName === "runCode" || (r as any)?.run_code === true) &&
+              r &&
+              typeof r === "object"
+            ) {
+              const rr = r as any;
+              if (rr.status === "error" && typeof rr.message === "string") {
+                fallbackFromTools = rr.message.slice(0, 1200);
+              } else {
+                const parts = [
+                  rr.stdout && `stdout:\n${String(rr.stdout)}`,
+                  rr.stderr && `stderr:\n${String(rr.stderr)}`,
+                  rr.compile_output && `compile:\n${String(rr.compile_output)}`,
+                ].filter(Boolean);
+                fallbackFromTools = (parts.length ? parts.join("\n\n") : "(no output)").slice(0, 2000);
+              }
             } else if (r?.status === "error" && typeof r?.message === "string") {
               fallbackFromTools = `I hit an issue while running the tool: ${r.message}`;
             } else if (typeof r?.message === "string") {
@@ -887,12 +958,14 @@ ${_cs}
               toolName === "getWeather" ||
               toolName === "getStockQuote" ||
               toolName === "getNewsHeadlines" ||
+              toolName === "runCode" ||
               inferred === "readGmail" ||
               inferred === "searchWeb" ||
               inferred === "browseURL" ||
               inferred === "getWeather" ||
               inferred === "getStockQuote" ||
-              inferred === "getNewsHeadlines";
+              inferred === "getNewsHeadlines" ||
+              inferred === "runCode";
             if (dataTools && r) {
               const tn = toolName || inferred;
               if (tn === "readGmail" && r?.status === "success" && Array.isArray(r?.emails)) {
@@ -954,6 +1027,25 @@ ${_cs}
                 const msg = [`News for "${(r as any).query}":`, gn && `GNews:\n${gn}`, hn && `Hacker News:\n${hn}`]
                   .filter(Boolean)
                   .join("\n\n");
+                enqueue(`0:${JSON.stringify(msg.slice(0, 2000))}\n`);
+                producedAnyText = true;
+                producedMeaningfulText = true;
+              } else if (tn === "runCode" || (r as any)?.run_code === true) {
+                const rr = r as any;
+                let msg: string;
+                if (rr.status === "error" && typeof rr.message === "string") {
+                  msg = `Code run failed: ${rr.message}`;
+                } else {
+                  const bits = [
+                    `Ran ${rr.language || "code"}:`,
+                    rr.stdout != null && String(rr.stdout).trim() && `Output:\n${String(rr.stdout).trim()}`,
+                    rr.stderr != null && String(rr.stderr).trim() && `Errors:\n${String(rr.stderr).trim()}`,
+                    rr.compile_output != null &&
+                      String(rr.compile_output).trim() &&
+                      `Compile:\n${String(rr.compile_output).trim()}`,
+                  ].filter(Boolean);
+                  msg = bits.length > 1 ? bits.join("\n\n") : bits[0] || "Code finished with no output.";
+                }
                 enqueue(`0:${JSON.stringify(msg.slice(0, 2000))}\n`);
                 producedAnyText = true;
                 producedMeaningfulText = true;

@@ -105,7 +105,7 @@ async function publishToTelegram(botToken: string, chatId: string, content: stri
   const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text: content, parse_mode: "HTML" }),
+    body: JSON.stringify({ chat_id: chatId, text: content }),
   });
   const data = await res.json();
   if (!data.ok) throw new Error(`Telegram error: ${data.description}`);
