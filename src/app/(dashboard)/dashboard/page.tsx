@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Mail, Search, Bot, Sparkles, ArrowUp, Loader2, Globe, FileText, Target, Send as SendIcon, Plus, Paperclip, X } from 'lucide-react';
+import { ArrowRight, Mail, Search, Bot, Sparkles, ArrowUp, Loader2, FileText, Target, Send as SendIcon, Plus, Paperclip, X } from 'lucide-react';
 import { useChat, type Message } from '@/lib/chat-context';
 import { useAuth } from '@/lib/auth-context';
 
@@ -52,30 +52,47 @@ function QuickAction({ icon: Icon, label, description, href }: {
   );
 }
 
-const TOOL_ICONS: Record<string, { icon: typeof Globe; label: string }> = {
-  searchWeb: { icon: Globe, label: "Searching the web" },
-  browseURL: { icon: Globe, label: "Reading a page" },
-  readGmail: { icon: Mail, label: "Scanning Gmail" },
-  sendGmail: { icon: SendIcon, label: "Sending email" },
-  draftEmail: { icon: Mail, label: "Drafting email" },
-  saveResearchReport: { icon: FileText, label: "Saving research" },
-  createGoal: { icon: Target, label: "Creating goal" },
-  scheduleSocialPost: { icon: SendIcon, label: "Scheduling post" },
-};
-
-function ToolCallBadge({ name }: { name: string }) {
-  const info = TOOL_ICONS[name] || { icon: Sparkles, label: name };
-  const Icon = info.icon;
-  return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--accent-soft)] text-[var(--accent)] text-xs font-medium">
-      <Icon size={12} />
-      {info.label}
-    </span>
-  );
+/** Model sometimes echoed tool JSON before the stream fix — hide it while streaming */
+function isLikelyRawToolArgsJson(s: string): boolean {
+  const t = s.trim();
+  if (t.length < 2 || t.length > 600) return false;
+  if (!t.startsWith("{") || !t.endsWith("}")) return false;
+  try {
+    const j = JSON.parse(t) as Record<string, unknown>;
+    if (typeof j !== "object" || j === null) return false;
+    const keys = Object.keys(j);
+    const toolish = new Set(["location", "symbol", "query", "max", "reason", "url"]);
+    return keys.length > 0 && keys.length <= 8 && keys.every((k) => toolish.has(k));
+  } catch {
+    return false;
+  }
 }
 
-function ChatMessage({ msg }: { msg: Message }) {
+function GeneratingEllipsis({ className }: { className?: string }) {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setPhase((p) => (p + 1) % 3), 450);
+    return () => clearInterval(id);
+  }, []);
+  const dots = phase === 0 ? "." : phase === 1 ? ".." : "...";
+  return <span className={className}>Generating{dots}</span>;
+}
+
+function ChatMessage({
+  msg,
+  isLastAssistant,
+  streaming,
+}: {
+  msg: Message;
+  isLastAssistant: boolean;
+  streaming: boolean;
+}) {
   const isUser = msg.role === "user";
+  const showGenerating =
+    !isUser &&
+    isLastAssistant &&
+    streaming &&
+    (!msg.content?.trim() || isLikelyRawToolArgsJson(msg.content));
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -83,17 +100,16 @@ function ChatMessage({ msg }: { msg: Message }) {
       className={`flex ${isUser ? "justify-end" : "justify-start"}`}
     >
       <div className={`max-w-[80%] ${isUser ? "ml-12" : "mr-12"}`}>
-        {msg.toolCalls && msg.toolCalls.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {msg.toolCalls.map(tc => <ToolCallBadge key={tc.toolCallId} name={tc.toolName} />)}
-          </div>
-        )}
         <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
           isUser
             ? "bg-[var(--fg-primary)] text-[var(--bg-base)] rounded-br-md"
             : "bg-[var(--bg-surface)] text-[var(--fg-primary)] border border-[var(--border-subtle)] rounded-bl-md"
         }`}>
-          {msg.content}
+          {showGenerating ? (
+            <GeneratingEllipsis className="text-[var(--fg-tertiary)]" />
+          ) : (
+            msg.content
+          )}
         </div>
       </div>
     </motion.div>
@@ -119,7 +135,6 @@ function ChatView() {
   const { session } = useAuth();
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
-  const [activeTool, setActiveTool] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<AttachedFile[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -205,7 +220,6 @@ function ChatView() {
     setInput('');
     setPendingFiles([]);
     setStreaming(true);
-    setActiveTool(null);
 
     const assistantId = `a_${Date.now()}`;
     setMessages(prev => [...prev, { id: assistantId, role: "assistant", content: "", toolCalls: [], toolResults: [] }]);
@@ -244,7 +258,6 @@ function ChatView() {
       const decoder = new TextDecoder();
       let buffer = '';
       let fullContent = '';
-      const toolCalls: Message['toolCalls'] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -265,14 +278,7 @@ function ChatView() {
               setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
             } catch {}
           } else if (line.startsWith('1:')) {
-            try {
-              const tc = JSON.parse(line.slice(2));
-              if (tc.toolName) {
-                toolCalls.push({ toolName: tc.toolName, args: tc.args, toolCallId: tc.toolCallId || '' });
-                setActiveTool(tc.toolName);
-                setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, toolCalls: [...toolCalls] } : m));
-              }
-            } catch {}
+            /* tool-call: do not surface tool names in the UI */
           } else if (line.startsWith('3:')) {
             try {
               const errText = JSON.parse(line.slice(2));
@@ -280,10 +286,7 @@ function ChatView() {
               setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullContent } : m));
             } catch {}
           } else if (line.startsWith('4:')) {
-            try {
-              const log = JSON.parse(line.slice(2));
-              if (log.action) setActiveTool(log.action);
-            } catch {}
+            /* task log — ignore for chat UI */
           }
         }
       }
@@ -292,7 +295,6 @@ function ChatView() {
     } finally {
       clearTimeout(safetyTimer);
       setStreaming(false);
-      setActiveTool(null);
       sendLockRef.current = false;
     }
   }, [messages, session, streaming, setMessages, pendingFiles]);
@@ -345,14 +347,13 @@ function ChatView() {
       <div className="flex items-center justify-between px-8 py-4 border-b border-[var(--border-subtle)]">
         <div className="flex items-center gap-3">
           <h1 className="text-sm font-medium text-[var(--fg-primary)]">Chat</h1>
-          {activeTool && (
+          {streaming && (
             <motion.span
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-xs text-[var(--accent)] flex items-center gap-1.5"
+              className="text-xs text-[var(--fg-muted)]"
             >
-              <Loader2 size={12} className="animate-spin" />
-              {TOOL_ICONS[activeTool]?.label || activeTool}
+              <GeneratingEllipsis />
             </motion.span>
           )}
         </div>
@@ -368,17 +369,18 @@ function ChatView() {
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-8 py-6">
         <div className="max-w-3xl mx-auto space-y-4">
-          {messages.map(msg => <ChatMessage key={msg.id} msg={msg} />)}
-          {streaming && messages[messages.length - 1]?.content === '' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-              <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-bl-md">
-                <Loader2 size={14} className="animate-spin text-[var(--fg-tertiary)]" />
-                <span className="text-sm text-[var(--fg-tertiary)]">
-                  {activeTool ? (TOOL_ICONS[activeTool]?.label || "Working...") : "Thinking..."}
-                </span>
-              </div>
-            </motion.div>
-          )}
+          {messages.map((msg, i) => {
+            const isLast = i === messages.length - 1;
+            const isLastAssistant = isLast && msg.role === "assistant";
+            return (
+              <ChatMessage
+                key={msg.id}
+                msg={msg}
+                isLastAssistant={isLastAssistant}
+                streaming={streaming}
+              />
+            );
+          })}
         </div>
       </div>
 

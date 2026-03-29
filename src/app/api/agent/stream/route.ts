@@ -218,7 +218,8 @@ ${_cs}
 4. After tool calls, clearly summarize results.
 5. If connector not connected, tell user exactly: go to Email section and click Connect.
 6. If file context is provided, DO NOT repeat it verbatim or show "Attached Files" scaffolding. Summarize/answer directly from the relevant parts. Only reference file names if it helps clarity.
-7. If [INCEPTIVE_FILE_CONTEXT_BEGIN] is present, treat it as real extracted file content. Never say you cannot access files or ask for a URL for those files.`;
+7. If [INCEPTIVE_FILE_CONTEXT_BEGIN] is present, treat it as real extracted file content. Never say you cannot access files or ask for a URL for those files.
+8. Never print raw JSON tool arguments (e.g. {"location":"..."}) as your reply — answer in plain English after tools run.`;
 
 
     // ── Build valid message history ──────────────────────────────────────────
@@ -745,7 +746,55 @@ ${_cs}
           if (typeof v.output_text === "string") return v.output_text;
           return "";
         };
-        const normalizeToolResult = (tr: any): any => tr?.result ?? tr?.output ?? tr?.data ?? null;
+
+        /** AI SDK may wrap execute() output as { type: "json", value: {...} } */
+        const unwrapToolOutput = (o: any): any => {
+          if (o == null) return null;
+          if (typeof o === "object" && (o as any).type === "json" && "value" in o) return (o as any).value;
+          return o;
+        };
+
+        const normalizeToolResult = (tr: any): any =>
+          unwrapToolOutput(tr?.result ?? tr?.output ?? tr?.data ?? null);
+
+        /** Model sometimes echoes tool arguments as "text" — never show that as the answer */
+        const isGarbageUserFacingText = (s: string): boolean => {
+          const t = s.trim();
+          if (t.length < 2 || t.length > 800) return false;
+          if (!t.startsWith("{") || !t.endsWith("}")) return false;
+          try {
+            const j = JSON.parse(t) as Record<string, unknown>;
+            if (typeof j !== "object" || j === null) return false;
+            const keys = Object.keys(j);
+            const toolArgKeys = new Set([
+              "location",
+              "symbol",
+              "query",
+              "max",
+              "reason",
+              "url",
+              "stdin",
+              "language_id",
+              "source_code",
+            ]);
+            if (keys.length === 0 || keys.length > 10) return false;
+            return keys.every((k) => toolArgKeys.has(k));
+          } catch {
+            return false;
+          }
+        };
+
+        const SKIP_OPPORTUNISTIC_TYPES = new Set([
+          "tool-call",
+          "tool-result",
+          "tool-error",
+          "tool-input-start",
+          "tool-input-delta",
+          "tool-input-end",
+          "start-step",
+          "finish-step",
+          "file",
+        ]);
         let producedAnyText = false;
         let producedMeaningfulText = false;
         let thinkingLogId: string | undefined;
@@ -757,14 +806,15 @@ ${_cs}
           enqueue(initLine);
 
           for await (const value of result.fullStream) {
-            // Some providers emit text deltas in different shapes. We only use the
-            // opportunistic extractor when this is NOT already a text-delta event,
-            // otherwise we'd double-stream the same content.
+            // Some providers emit text deltas in different shapes. Never treat tool-* stream
+            // events as user-facing text (avoids leaking tool args JSON into the chat).
             const isTextDeltaEvent = (value as any)?.type === "text-delta";
-            const opportunisticText = !isTextDeltaEvent ? getTextDelta(value as any) : "";
+            const evtType = String((value as any)?.type || "");
+            const opportunisticText =
+              !isTextDeltaEvent && !SKIP_OPPORTUNISTIC_TYPES.has(evtType) ? getTextDelta(value as any) : "";
             if (opportunisticText) {
               const trimmed = opportunisticText.trim();
-              if (!trimmed || trimmed === "{}") {
+              if (!trimmed || trimmed === "{}" || isGarbageUserFacingText(trimmed)) {
                 continue;
               }
               if (!thinkingLogId) {
@@ -781,7 +831,7 @@ ${_cs}
                 const text = (value as any).text ?? (value as any).textDelta ?? "";
                 if (text) {
                   const trimmed = text.trim();
-                  if (!trimmed || trimmed === "{}") break;
+                  if (!trimmed || trimmed === "{}" || isGarbageUserFacingText(trimmed)) break;
                   // Log "Thinking..." once when first text appears, save its ID
                   if (!thinkingLogId) {
                     const { id, streamLine } = await logTask(user_id, "Composing response...", "running", "", agentMode);
@@ -834,8 +884,23 @@ ${_cs}
                       .filter(Boolean)
                       .join(" · ")
                       .slice(0, 1200);
-                  } else if (toolName === "getStockQuote" && r != null && (r as any).price != null) {
-                    fallbackFromTools = `${(r as any).symbol}: ${(r as any).price} ${(r as any).currency || ""} (via ${(r as any).source})`.trim();
+                  } else if (
+                    (toolName === "getStockQuote" ||
+                      (r &&
+                        typeof r === "object" &&
+                        typeof (r as any).symbol === "string" &&
+                        "price" in (r as any) &&
+                        typeof (r as any).source === "string")) &&
+                    r &&
+                    typeof r === "object"
+                  ) {
+                    const sym = (r as any).symbol;
+                    const pr = (r as any).price;
+                    if (pr != null && Number.isFinite(Number(pr))) {
+                      fallbackFromTools = `${sym}: ${pr} ${(r as any).currency || "USD"} (via ${(r as any).source})`.trim();
+                    } else {
+                      fallbackFromTools = `Could not fetch a live price for ${sym} (${(r as any).source}).`;
+                    }
                   } else if (
                     toolName === "getNewsHeadlines" &&
                     r &&
@@ -896,8 +961,20 @@ ${_cs}
                       enqueue(`0:${JSON.stringify(msg)}\n`);
                       producedAnyText = true;
                       producedMeaningfulText = true;
-                    } else if (toolName === "getStockQuote" && (r as any)?.price != null) {
-                      const msg = `${(r as any).symbol}: ${(r as any).price} ${(r as any).currency || ""} (source: ${(r as any).source})`;
+                    } else if (
+                      (toolName === "getStockQuote" ||
+                        (r &&
+                          typeof r === "object" &&
+                          typeof (r as any).symbol === "string" &&
+                          "price" in (r as any))) &&
+                      r &&
+                      typeof r === "object"
+                    ) {
+                      const pr = (r as any).price;
+                      const msg =
+                        pr != null && Number.isFinite(Number(pr))
+                          ? `${(r as any).symbol}: ${pr} ${(r as any).currency || "USD"} (source: ${(r as any).source})`
+                          : `Could not fetch a live price for ${(r as any).symbol} (${(r as any).source}).`;
                       enqueue(`0:${JSON.stringify(msg)}\n`);
                       producedAnyText = true;
                       producedMeaningfulText = true;
