@@ -364,19 +364,19 @@ function DashboardExperience() {
             type="button"
             onClick={() => setIncognito(!incognito)}
             className={[
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-colors",
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-opacity hover:opacity-95",
               incognito
-                ? "border-white/40 bg-white/[0.14]"
-                : "border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-[var(--border-default)]",
+                ? "border-violet-400/70 bg-white ring-1 ring-violet-400/35"
+                : "border-black/10 bg-white",
             ].join(" ")}
             title="Incognito: chats are not saved to history or session"
           >
             <Image
-              src="/incognito-spy.png"
+              src="/incognito-spy.jpg"
               alt=""
-              width={20}
-              height={20}
-              className="h-[18px] w-[18px] object-contain brightness-0 invert opacity-[0.92]"
+              width={22}
+              height={22}
+              className="h-[22px] w-[22px] object-contain"
             />
             <span className="sr-only">Incognito mode</span>
           </button>
