@@ -781,12 +781,12 @@ ${_cs}
         generateExcel: {
           description: "Create an Excel (.xlsx) file with data. Use when user asks to create spreadsheet, Excel file, export data to Excel, make a table in Excel, etc.",
           parameters: z.object({
-            data: z.array(z.record(z.any())).describe("Array of objects - each object is a row. Example: [{name: 'John', age: 30}, {name: 'Jane', age: 25}]"),
+            data: z.array(z.record(z.string(), z.any())).describe("Array of objects - each object is a row. Example: [{name: 'John', age: 30}, {name: 'Jane', age: 25}]"),
             sheetName: z.string().optional().describe("Name of the sheet (default: Sheet1)"),
             filename: z.string().optional().describe("Output filename (default: export.xlsx)"),
           }),
           execute: async (args: { data: Record<string, any>[]; sheetName?: string; filename?: string }) => {
-            await deductCredits(user_id, "tool_medium").catch(() => {});
+            await deductCredits(user_id, "tool_small").catch(() => {});
             try {
               const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com"}/api/generate/excel`, {
                 method: "POST",
@@ -828,7 +828,7 @@ ${_cs}
             filename: z.string().optional().describe("Output filename (default: presentation.pptx)"),
           }),
           execute: async (args: { slides: any[]; title?: string; filename?: string }) => {
-            await deductCredits(user_id, "tool_medium").catch(() => {});
+            await deductCredits(user_id, "tool_small").catch(() => {});
             try {
               const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com"}/api/generate/powerpoint`, {
                 method: "POST",
@@ -866,7 +866,7 @@ ${_cs}
             filename: z.string().optional().describe("Output filename (default: document.pdf)"),
           }),
           execute: async (args: { content: string; title?: string; filename?: string }) => {
-            await deductCredits(user_id, "tool_medium").catch(() => {});
+            await deductCredits(user_id, "tool_small").catch(() => {});
             try {
               const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com"}/api/generate/pdf`, {
                 method: "POST",

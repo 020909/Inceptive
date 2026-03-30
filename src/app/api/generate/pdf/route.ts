@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import PDFKit from "pdfkit";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 
 export const runtime = "nodejs";
