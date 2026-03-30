@@ -81,8 +81,14 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="flex items-start justify-between mb-4">
-        <div className="w-12 h-12 rounded-xl bg-[var(--bg-elevated)] flex items-center justify-center text-2xl">
-          <img src={connector.logo} alt={connector.name} width={28} height={28} className="object-contain" />
+        <div className="h-12 w-12 flex items-center justify-center">
+          <img
+            src={connector.logo}
+            alt={connector.name}
+            width={34}
+            height={34}
+            className="h-[34px] w-[34px] object-contain"
+          />
         </div>
         <StatusBadge status={connected ? 'connected' : 'disconnected'} />
       </div>
