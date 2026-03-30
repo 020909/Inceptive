@@ -62,7 +62,7 @@ export function InceptiveV0ActionButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2 px-4 py-2 rounded-full border transition-colors text-xs font-medium",
+        "flex items-center gap-2 px-5 py-2.5 rounded-[9999px] border transition-colors text-xs font-medium",
         "bg-[var(--bg-surface)] border-[var(--border-subtle)]",
         "text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:border-[var(--border-default)] hover:bg-[var(--bg-elevated)]"
       )}

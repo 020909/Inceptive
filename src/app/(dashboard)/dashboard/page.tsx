@@ -3,10 +3,11 @@
 import React, { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Bot, FileText, Mail, Plus, Search, Sparkles, Target, X } from "lucide-react";
+import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X } from "lucide-react";
 import { useChat, type Message } from "@/lib/chat-context";
 import { useAuth } from "@/lib/auth-context";
-import { InceptiveV0ActionRow, InceptiveV0Composer } from "@/components/ui/inceptive-v0-chat";
+import { InceptiveV0ActionRow } from "@/components/ui/inceptive-v0-chat";
+import { DashboardAiPrompt } from "@/components/ui/ai-prompt-box";
 
 type AttachedFile = { name: string; content: string };
 
@@ -101,6 +102,7 @@ function DashboardExperience() {
   const [pendingFiles, setPendingFiles] = useState<AttachedFile[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingFilesRef = useRef<AttachedFile[]>([]);
   const sendLockRef = useRef(false);
   const lastSentRef = useRef<{ text: string; ts: number }>({ text: "", ts: 0 });
   const prefillConsumedRef = useRef(false);
@@ -128,10 +130,14 @@ function DashboardExperience() {
     }
   }, [searchParams, input]);
 
+  useEffect(() => {
+    pendingFilesRef.current = pendingFiles;
+  }, [pendingFiles]);
+
   const uploadFiles = useCallback(
-    async (files: File[]) => {
+    async (files: File[]): Promise<AttachedFile[]> => {
       const token = session?.access_token;
-      if (!token || files.length === 0) return;
+      if (!token || files.length === 0) return [];
       const uploaded: AttachedFile[] = [];
       for (const file of files) {
         const form = new FormData();
@@ -159,13 +165,19 @@ function DashboardExperience() {
           });
         }
       }
-      setPendingFiles((prev) => [...prev, ...uploaded]);
+      setPendingFiles((prev) => {
+        const next = [...prev, ...uploaded];
+        pendingFilesRef.current = next;
+        return next;
+      });
+      return uploaded;
     },
     [session?.access_token]
   );
 
   const sendMessage = useCallback(
-    async (text: string, attachments: AttachedFile[] = pendingFiles, baseMessages?: Message[]) => {
+    async (text: string, attachments?: AttachedFile[], baseMessages?: Message[]) => {
+      const attach: AttachedFile[] = attachments ?? pendingFilesRef.current;
       if (!text.trim() || streaming || sendLockRef.current) return;
       const now = Date.now();
       const last = lastSentRef.current;
@@ -194,6 +206,7 @@ function DashboardExperience() {
       setMessages(allMessages);
       setInput("");
       setPendingFiles([]);
+      pendingFilesRef.current = [];
       setStreaming(true);
 
       const assistantId = `a_${Date.now()}`;
@@ -221,7 +234,7 @@ function DashboardExperience() {
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
             messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
-            attachedFiles: attachments.map((f) => ({ name: f.name, content: f.content })),
+            attachedFiles: attach.map((f) => ({ name: f.name, content: f.content })),
           }),
         });
 
@@ -295,21 +308,33 @@ function DashboardExperience() {
         });
       }
     },
-    [messages, session, streaming, setMessages, pendingFiles]
+    [messages, session, streaming, setMessages]
   );
 
-  const handleComposerSubmit = () => {
-    if (!input.trim() || streaming) return;
-    sendMessage(input.trim());
-  };
+  const handlePromptSend = useCallback(
+    async (text: string, boxFiles?: File[]) => {
+      if (streaming || sendLockRef.current) return;
+      if (boxFiles?.length) await uploadFiles(boxFiles);
+      await sendMessage(text);
+    },
+    [streaming, uploadFiles, sendMessage]
+  );
 
   const actionItems = [
-    { icon: Search, label: "Deep Research", onClick: () => router.push("/research") },
-    { icon: Mail, label: "Email", onClick: () => router.push("/email") },
-    { icon: Bot, label: "Agent", onClick: () => router.push("/agent") },
-    { icon: Sparkles, label: "Skills", onClick: () => router.push("/skills") },
-    { icon: FileText, label: "Reports", onClick: () => router.push("/reports") },
-    { icon: Target, label: "Goals", onClick: () => router.push("/goals") },
+    { icon: Code2, label: "</> Code", onClick: () => router.push("/puter-test") },
+    {
+      icon: PenLine,
+      label: "Write",
+      onClick: () =>
+        router.push(`/dashboard?prefill=${encodeURIComponent("Help me write ")}`),
+    },
+    {
+      icon: ImageIcon,
+      label: "Image",
+      onClick: () =>
+        router.push(`/dashboard?prefill=${encodeURIComponent("Create or refine an image concept: ")}`),
+    },
+    { icon: FolderUp, label: "Upload Project", onClick: () => fileInputRef.current?.click() },
   ];
 
   return (
@@ -328,84 +353,135 @@ function DashboardExperience() {
         </button>
       </header>
 
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6">
-          <div className="max-w-4xl mx-auto pt-8 sm:pt-12 pb-4">
-            {!hasChat ? (
-              <>
-                <h1 className="text-3xl sm:text-4xl font-bold text-center text-[var(--fg-primary)] tracking-tight mb-3">
-                  What can I help you ship?
-                </h1>
-                <p className="text-center text-[var(--fg-muted)] text-sm mb-6 max-w-md mx-auto">
-                  Research, write, automate — Inceptive runs beside you 24/7.
-                </p>
-              </>
-            ) : (
-              <div className="space-y-4 pb-4">
-                {messages.map((msg, i) => {
-                  const isLast = i === messages.length - 1;
-                  const isLastAssistant = isLast && msg.role === "assistant";
-                  return (
-                    <ChatMessage
-                      key={msg.id}
-                      msg={msg}
-                      isLastAssistant={isLastAssistant}
-                      streaming={streaming}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={async (e) => {
+          const files = Array.from(e.target.files || []);
+          if (files.length > 0) await uploadFiles(files);
+          e.currentTarget.value = "";
+        }}
+      />
 
-        <div className="shrink-0 px-4 sm:px-6 pb-6 pt-3 border-t border-[var(--border-subtle)] bg-[var(--bg-base)]">
-          <div className="max-w-4xl mx-auto w-full space-y-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={async (e) => {
-                const files = Array.from(e.target.files || []);
-                if (files.length > 0) await uploadFiles(files);
-                e.currentTarget.value = "";
-              }}
-            />
-            {pendingFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {pendingFiles.map((f, idx) => (
-                  <AttachmentChip
-                    key={`${f.name}-${idx}`}
-                    name={f.name}
-                    onRemove={() => setPendingFiles((prev) => prev.filter((_, i) => i !== idx))}
-                  />
-                ))}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {!hasChat ? (
+          <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 py-10 sm:px-6">
+            <div className="mx-auto w-full max-w-4xl">
+              <h1 className="mb-3 text-center text-3xl font-bold tracking-tight text-[var(--fg-primary)] sm:text-4xl">
+                What can I help you ship?
+              </h1>
+              <p className="mx-auto mb-8 max-w-md text-center text-sm text-[var(--fg-muted)]">
+                Research, write, automate — Inceptive runs beside you 24/7.
+              </p>
+              <div className="space-y-3">
+                {pendingFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {pendingFiles.map((f, idx) => (
+                      <AttachmentChip
+                        key={`${f.name}-${idx}`}
+                        name={f.name}
+                        onRemove={() =>
+                          setPendingFiles((prev) => {
+                            const next = prev.filter((_, i) => i !== idx);
+                            pendingFilesRef.current = next;
+                            return next;
+                          })
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
+                <DashboardAiPrompt
+                  value={input}
+                  onChange={setInput}
+                  onSend={handlePromptSend}
+                  isLoading={streaming}
+                  placeholder="Ask Inceptive anything…"
+                  onAttachClick={() => fileInputRef.current?.click()}
+                  dragOver={dragOver}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOver(true);
+                  }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    setDragOver(false);
+                    const files = Array.from(e.dataTransfer.files || []);
+                    if (files.length > 0) await uploadFiles(files);
+                  }}
+                />
+                <InceptiveV0ActionRow items={actionItems} />
               </div>
-            )}
-            <InceptiveV0Composer
-              value={input}
-              onChange={setInput}
-              onSubmit={handleComposerSubmit}
-              disabled={streaming}
-              placeholder="Ask Inceptive anything…"
-              onAttachClick={() => fileInputRef.current?.click()}
-              dragOver={dragOver}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragOver(true);
-              }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={async (e) => {
-                e.preventDefault();
-                setDragOver(false);
-                const files = Array.from(e.dataTransfer.files || []);
-                if (files.length > 0) await uploadFiles(files);
-              }}
-            />
-            <InceptiveV0ActionRow items={actionItems} />
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6">
+              <div className="mx-auto max-w-4xl pb-4 pt-8 sm:pt-12">
+                <div className="space-y-4 pb-4">
+                  {messages.map((msg, i) => {
+                    const isLast = i === messages.length - 1;
+                    const isLastAssistant = isLast && msg.role === "assistant";
+                    return (
+                      <ChatMessage
+                        key={msg.id}
+                        msg={msg}
+                        isLastAssistant={isLastAssistant}
+                        streaming={streaming}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="shrink-0 bg-[var(--bg-base)] px-4 pt-3 pb-6 sm:px-6">
+              <div className="mx-auto w-full max-w-4xl space-y-3">
+                {pendingFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {pendingFiles.map((f, idx) => (
+                      <AttachmentChip
+                        key={`${f.name}-${idx}`}
+                        name={f.name}
+                        onRemove={() =>
+                          setPendingFiles((prev) => {
+                            const next = prev.filter((_, i) => i !== idx);
+                            pendingFilesRef.current = next;
+                            return next;
+                          })
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
+                <DashboardAiPrompt
+                  value={input}
+                  onChange={setInput}
+                  onSend={handlePromptSend}
+                  isLoading={streaming}
+                  placeholder="Ask Inceptive anything…"
+                  onAttachClick={() => fileInputRef.current?.click()}
+                  dragOver={dragOver}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOver(true);
+                  }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    setDragOver(false);
+                    const files = Array.from(e.dataTransfer.files || []);
+                    if (files.length > 0) await uploadFiles(files);
+                  }}
+                />
+                <InceptiveV0ActionRow items={actionItems} />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
