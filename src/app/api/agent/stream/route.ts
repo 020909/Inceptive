@@ -60,6 +60,10 @@ const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string 
   updateGoalProgress:  { icon: "", label: (a) => `Updating goal to ${a.progress_percent}%` },
   analyzeData:         { icon: "", label: (a) => `Analyzing: ${a.question?.slice(0, 50)}` },
   generateOutline:     { icon: "", label: (a) => `Generating ${a.type} outline` },
+  generateExcel:       { icon: "", label: (a) => `Creating Excel file with ${a.data?.length || 0} rows` },
+  generatePowerPoint:  { icon: "", label: (a) => `Creating PowerPoint with ${a.slides?.length || 0} slides` },
+  generatePDF:         { icon: "", label: (a) => `Generating PDF: "${a.title || "Document"}"` },
+  generateImage:       { icon: "", label: (a) => `Generating AI image: "${a.prompt?.slice(0, 30) || "..."}"` },
 };
 
 /**
@@ -213,6 +217,10 @@ ${_cs}
 - analyzeData: calculations
 - runCode: execute Python or JavaScript in a sandbox (requires server code execution to be configured)
 - generateOutline: plans and roadmaps
+- generateExcel: create Excel (.xlsx) files - use when user asks to create spreadsheet, Excel file, export to Excel, make table
+- generatePowerPoint: create PowerPoint (.pptx) presentations - use when user asks to create presentation, pitch deck, slides
+- generatePDF: create PDF documents - use when user asks to create PDF, invoice, report in PDF
+- generateImage: generate AI images - use when user asks to create an image, generate a picture, make art, create a photo, draw something, generate image of anything. THIS TOOL ACTUALLY WORKS - just call it with a prompt like "a cat" or "sunset over ocean"
 
 ## RULES
 1. CHECK CONNECTED ACCOUNTS above - if Gmail shows CONNECTED, use readGmail immediately when asked about email. Never say you cannot access email if Gmail is connected.
@@ -766,6 +774,166 @@ ${_cs}
               detail_level: args.detail_level,
               instruction: `Generate a comprehensive ${args.detail_level} ${args.type} outline for: ${args.topic}. Include specific action items, metrics, and timelines where relevant.`,
             };
+          },
+        },
+
+        /* ── GENERATE EXCEL ── */
+        generateExcel: {
+          description: "Create an Excel (.xlsx) file with data. Use when user asks to create spreadsheet, Excel file, export data to Excel, make a table in Excel, etc.",
+          parameters: z.object({
+            data: z.array(z.record(z.any())).describe("Array of objects - each object is a row. Example: [{name: 'John', age: 30}, {name: 'Jane', age: 25}]"),
+            sheetName: z.string().optional().describe("Name of the sheet (default: Sheet1)"),
+            filename: z.string().optional().describe("Output filename (default: export.xlsx)"),
+          }),
+          execute: async (args: { data: Record<string, any>[]; sheetName?: string; filename?: string }) => {
+            await deductCredits(user_id, "tool_medium").catch(() => {});
+            try {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com"}/api/generate/excel`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  data: args.data,
+                  sheetName: args.sheetName || "Sheet1",
+                  filename: args.filename || "export.xlsx",
+                }),
+              });
+              const result = await response.json();
+              if (!result.success) {
+                return { status: "error", message: result.error || "Failed to generate Excel" };
+              }
+              return {
+                status: "success",
+                filename: result.filename,
+                content: result.content,
+                rowCount: result.rowCount,
+                message: `Excel file "${result.filename}" created with ${result.rowCount} rows. The file is ready for download.`,
+              };
+            } catch (err: any) {
+              return { status: "error", message: err.message || "Failed to generate Excel" };
+            }
+          },
+        },
+
+        /* ── GENERATE POWERPOINT ── */
+        generatePowerPoint: {
+          description: "Create a PowerPoint (.pptx) presentation. Use when user asks to create a presentation, slide deck, pitch deck, PowerPoint, etc.",
+          parameters: z.object({
+            slides: z.array(z.object({
+              title: z.string().optional().describe("Slide title"),
+              content: z.union([z.array(z.string()), z.string()]).optional().describe("Slide content - either array of bullet points or plain text"),
+              notes: z.string().optional().describe("Speaker notes for this slide"),
+              backgroundColor: z.string().optional().describe("Optional background color (hex)"),
+            })).describe("Array of slides"),
+            title: z.string().optional().describe("Presentation title"),
+            filename: z.string().optional().describe("Output filename (default: presentation.pptx)"),
+          }),
+          execute: async (args: { slides: any[]; title?: string; filename?: string }) => {
+            await deductCredits(user_id, "tool_medium").catch(() => {});
+            try {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com"}/api/generate/powerpoint`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  slides: args.slides,
+                  title: args.title || "Presentation",
+                  filename: args.filename || "presentation.pptx",
+                }),
+              });
+              const result = await response.json();
+              if (!result.success) {
+                return { status: "error", message: result.error || "Failed to generate PowerPoint" };
+              }
+              return {
+                status: "success",
+                filename: result.filename,
+                title: result.title,
+                slideCount: result.slideCount,
+                content: result.content,
+                message: `PowerPoint "${result.filename}" created with ${result.slideCount} slides. The file is ready for download.`,
+              };
+            } catch (err: any) {
+              return { status: "error", message: err.message || "Failed to generate PowerPoint" };
+            }
+          },
+        },
+
+        /* ── GENERATE PDF ── */
+        generatePDF: {
+          description: "Create a PDF document. Use when user asks to create PDF, generate invoice, make PDF report, etc.",
+          parameters: z.object({
+            content: z.string().describe("The text content to put in the PDF"),
+            title: z.string().optional().describe("Document title (appears at top)"),
+            filename: z.string().optional().describe("Output filename (default: document.pdf)"),
+          }),
+          execute: async (args: { content: string; title?: string; filename?: string }) => {
+            await deductCredits(user_id, "tool_medium").catch(() => {});
+            try {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com"}/api/generate/pdf`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  content: args.content,
+                  title: args.title || "Document",
+                  filename: args.filename || "document.pdf",
+                }),
+              });
+              const result = await response.json();
+              if (!result.success) {
+                return { status: "error", message: result.error || "Failed to generate PDF" };
+              }
+              return {
+                status: "success",
+                filename: result.filename,
+                title: result.title,
+                content: result.content,
+                pageCount: result.pageCount,
+                message: `PDF "${result.filename}" created. The file is ready for download.`,
+              };
+            } catch (err: any) {
+              return { status: "error", message: err.message || "Failed to generate PDF" };
+            }
+          },
+        },
+
+        /* ── GENERATE IMAGE ── */
+        generateImage: {
+          description: "Generate AI images from text prompts. Use when user asks to create an image, generate a picture, make art, create a photo, generate image of something, etc. The AI will create a real image file that can be viewed or downloaded.",
+          parameters: z.object({
+            prompt: z.string().describe("What to draw - be descriptive like 'a cute orange cat sitting on a windowsill' or 'a futuristic city with flying cars at sunset'"),
+          }),
+          execute: async (args: { prompt: string }) => {
+            console.log("[generateImage] Called with prompt:", args.prompt);
+            await deductCredits(user_id, "tool_small").catch(() => {});
+            try {
+              const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com";
+              console.log("[generateImage] Calling API at:", appUrl + "/api/generate/image");
+              
+              const response = await fetch(`${appUrl}/api/generate/image`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  prompt: args.prompt,
+                  width: 1024,
+                  height: 1024,
+                }),
+              });
+              
+              const result = await response.json();
+              console.log("[generateImage] Result:", JSON.stringify(result).slice(0, 500));
+              
+              if (!result.success) {
+                return { status: "error", message: result.error || "Image generation failed. Make sure HUGGING_FACE_API_KEY is set in Vercel." };
+              }
+              return {
+                status: "success",
+                image: result.image,
+                prompt: result.prompt,
+                message: `Generated image: ${args.prompt}. The AI-generated image is ready!`,
+              };
+            } catch (err: any) {
+              console.error("[generateImage] Error:", err);
+              return { status: "error", message: "Image generation failed: " + err.message };
+            }
           },
         },
 
