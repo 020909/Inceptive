@@ -138,40 +138,46 @@ export function Sidebar() {
       animate={{ x: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 140, damping: 22 }}
     >
-      {/* Logo */}
-      <div className="relative px-3 pt-4 pb-3 flex items-center gap-2.5">
-        <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0">
-          <div className="w-7 h-7 relative rounded-md overflow-hidden shrink-0">
-            <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
-          </div>
-          {!collapsed && (
-            <span className="text-[16px] font-semibold tracking-[-0.03em] text-[var(--fg-primary)]">
-              Inceptive
-            </span>
-          )}
-        </Link>
-
-        {!collapsed && (
-          <button
-            type="button"
-            onClick={() => setCollapsed(true)}
-            title="Collapse sidebar"
-            className="ml-auto rounded-md p-1.5 text-white/90 transition-colors hover:bg-[var(--border-subtle)]"
-          >
-            <SidebarToggleIcon className="opacity-90" />
-          </button>
-        )}
-        {collapsed && (
+      {/* Logo + collapse — full width row so toggle never overlaps the mark */}
+      {collapsed ? (
+        <div className="flex flex-col items-center gap-2 px-2 pb-3 pt-4">
+          <Link href="/dashboard" className="flex shrink-0 justify-center">
+            <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-md">
+              <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
+            </div>
+          </Link>
           <button
             type="button"
             onClick={() => setCollapsed(false)}
             title="Expand sidebar"
-            className="absolute -right-3 top-5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-1.5 text-white/90 transition-colors hover:bg-[var(--bg-overlay)]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/90 transition-colors hover:bg-[var(--border-subtle)]"
           >
-            <SidebarToggleIcon className="h-3.5 w-auto opacity-90" />
+            <SidebarToggleIcon className="opacity-90" />
           </button>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="flex min-w-0 items-center gap-2 px-3 pb-3 pt-4">
+          <Link
+            href="/dashboard"
+            className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden"
+          >
+            <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-md">
+              <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
+            </div>
+            <span className="truncate text-[16px] font-semibold tracking-[-0.03em] text-[var(--fg-primary)]">
+              Inceptive
+            </span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            title="Collapse sidebar"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/90 transition-colors hover:bg-[var(--border-subtle)]"
+          >
+            <SidebarToggleIcon className="opacity-90" />
+          </button>
+        </div>
+      )}
 
       <div className="mx-3 h-px bg-[var(--border-subtle)]" />
 

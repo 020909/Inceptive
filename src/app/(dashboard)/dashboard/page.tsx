@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState, Suspense } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X } from "lucide-react";
@@ -350,11 +351,11 @@ function DashboardExperience() {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={startNewChat}
-            className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-medium text-black transition-opacity hover:opacity-90"
+            className="flex h-8 items-center gap-1.5 rounded-xl bg-white px-3 text-xs font-medium text-black transition-opacity hover:opacity-90"
           >
             <Plus size={14} className="text-black" />
             New chat
@@ -362,17 +363,22 @@ function DashboardExperience() {
           <button
             type="button"
             onClick={() => setIncognito(!incognito)}
-            className={`
-              rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors
-              ${
-                incognito
-                  ? "border-white/35 bg-white/[0.12] text-[#E8E8EE]"
-                  : "border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--fg-secondary)] hover:border-[var(--border-default)] hover:text-[var(--fg-primary)]"
-              }
-            `}
-            title="Chats are not saved to history or session while Incognito is on"
+            className={[
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-colors",
+              incognito
+                ? "border-white/40 bg-white/[0.14]"
+                : "border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-[var(--border-default)]",
+            ].join(" ")}
+            title="Incognito: chats are not saved to history or session"
           >
-            Incognito
+            <Image
+              src="/incognito-spy.png"
+              alt=""
+              width={20}
+              height={20}
+              className="h-[18px] w-[18px] object-contain brightness-0 invert opacity-[0.92]"
+            />
+            <span className="sr-only">Incognito mode</span>
           </button>
         </div>
       </header>
