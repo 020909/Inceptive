@@ -173,10 +173,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     if (v) {
       sessionStorage.setItem(INCOGNITO_FLAG_KEY, "1");
       sessionStorage.removeItem(SESSION_KEY);
+      setMessages([]);
     } else {
       sessionStorage.removeItem(INCOGNITO_FLAG_KEY);
     }
-  }, []);
+  }, [setMessages]);
 
   /* ── persist messages to sessionStorage on every change ── */
   useEffect(() => {
