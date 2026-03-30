@@ -24,7 +24,7 @@ import {
   computerMoveMouse,
 } from "@/lib/computer-use/session";
 import { describeScreenshotBase64 } from "@/lib/vision/describe-screenshot";
-import { isJudge0Configured, runJudge0Submission, JUDGE0_LANGUAGE_IDS } from "@/lib/code/judge0-client";
+import { isPistonConfigured, runPistonSubmission, PISTON_LANGUAGE_IDS } from "@/lib/code/piston-client";
 import { z } from "zod";
 
 export const maxDuration = 120;
@@ -731,10 +731,10 @@ ${_cs}
           },
         },
 
-        /* ── RUN CODE (Judge0) ── */
+        /* ── RUN CODE (Piston) ── */
         runCode: {
           description:
-            "Execute Python or JavaScript in a sandboxed runner (Judge0). Use when the user asks to run code, verify output, or compute something programmatically.",
+            "Execute Python or JavaScript in a sandboxed runner (Piston). Use when the user asks to run code, verify output, or compute something programmatically.",
           parameters: z.object({
             language: z.enum(["python", "javascript"]).describe("Programming language"),
             code: z.string().describe("Full source to execute"),
@@ -742,22 +742,19 @@ ${_cs}
           }),
           execute: async (args: { language: "python" | "javascript"; code: string; stdin?: string }) => {
             await deductCredits(user_id, "tool_small").catch(() => {});
-            if (!isJudge0Configured()) {
+            if (!isPistonConfigured()) {
               return {
                 status: "error" as const,
                 run_code: true as const,
                 message:
-                  "Code execution is not configured on this deployment (JUDGE0_URL). Tell the user to enable it or use analyzeData for math without running code.",
+                  "Code execution is not configured.",
               };
             }
-            const language_id = JUDGE0_LANGUAGE_IDS[args.language];
-            const r = await runJudge0Submission({
+            const language_id = PISTON_LANGUAGE_IDS[args.language];
+            const r = await runPistonSubmission({
               source_code: args.code,
               language_id,
               stdin: args.stdin,
-              cpu_time_limit: 5,
-              memory_limit: 256000,
-              wait: true,
             });
             if (!r.ok) {
               return {
@@ -774,8 +771,8 @@ ${_cs}
               stdout: r.stdout ?? "",
               stderr: r.stderr ?? "",
               compile_output: r.compile_output ?? "",
-              time: r.time ?? null,
-              memory: r.memory ?? null,
+              time: null,
+              memory: null,
             };
           },
         },
