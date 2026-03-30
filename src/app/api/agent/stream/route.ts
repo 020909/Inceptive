@@ -42,8 +42,9 @@ const admin = getAdmin();
    TOOL DISPLAY MAP — human-readable actions for Live Task Feed
 ───────────────────────────────────────── */
 const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string }> = {
-  searchWeb:           { icon: "", label: (a) => `Searching "${a.query}"` },
-  browseURL:           { icon: "", label: (a) => `Reading ${new URL(a.url).hostname}` },
+  searchWeb:           { icon: "🌐", label: (a) => `Searching "${a.query}"` },
+  deepResearch:        { icon: "🔬", label: (a) => `Deep Research: "${a.query}"` },
+  browseURL:           { icon: "📄", label: (a) => `Reading ${new URL(a.url).hostname}` },
   getWeather:          { icon: "", label: (a) => `Weather: ${a.location || "location"}` },
   getStockQuote:       { icon: "", label: (a) => `Quote: ${a.symbol}` },
   getNewsHeadlines:    { icon: "", label: (a) => `News: ${String(a.query || "headlines").slice(0, 48)}` },
@@ -311,16 +312,36 @@ ${_cs}
           description: "Search the web for current information, news, companies, people, market data, or any real-time facts.",
           parameters: z.object({
             query: z.string().describe("The search query — be specific and descriptive"),
+            depth: z.enum(["basic", "advanced"]).optional().default("basic").describe("Search depth: 'basic' for quick results, 'advanced' for deeper research"),
+          }),
+          execute: async (args: { query: string; depth?: "basic" | "advanced" }) => {
+            console.log(`[Agent:search] ${args.query} (${args.depth || "basic"})`);
+            await deductCredits(user_id, args.depth === "advanced" ? "research_deep" : "web_search").catch(() => {});
+            const data = await searchWeb(args.query, 8, args.depth || "basic");
+            return {
+              query: args.query,
+              provider: data.provider,
+              items: data.items,
+              results: formatSearchResultsForPrompt(args.query, data),
+            };
+          },
+        },
+
+        deepResearch: {
+          description: "Perform an exhaustive, multi-source deep research study on a topic. Use this when the user asks for 'wide research', 'deep dive', or 'thorough analysis'.",
+          parameters: z.object({
+            query: z.string().describe("The comprehensive research topic or question"),
           }),
           execute: async ({ query }: { query: string }) => {
-            console.log(`[Agent:search] ${query}`);
-            await deductCredits(user_id, "web_search").catch(() => {});
-            const data = await searchWeb(query, 8);
+            console.log(`[Agent:deepResearch] ${query}`);
+            await deductCredits(user_id, "research_deep").catch(() => {});
+            const data = await searchWeb(query, 12, "advanced");
             return {
               query,
               provider: data.provider,
               items: data.items,
               results: formatSearchResultsForPrompt(query, data),
+              instruction: "This is a deep research result. Analyze all sources, synthesize the findings, and provide a comprehensive structured report with citations.",
             };
           },
         },
@@ -795,6 +816,7 @@ ${_cs}
                   data: args.data,
                   sheetName: args.sheetName || "Sheet1",
                   filename: args.filename || "export.xlsx",
+                  user_id: user_id,  // Pass user_id for authentication
                 }),
               });
               const result = await response.json();
@@ -837,6 +859,7 @@ ${_cs}
                   slides: args.slides,
                   title: args.title || "Presentation",
                   filename: args.filename || "presentation.pptx",
+                  user_id: user_id,  // Pass user_id for authentication
                 }),
               });
               const result = await response.json();
@@ -875,6 +898,7 @@ ${_cs}
                   content: args.content,
                   title: args.title || "Document",
                   filename: args.filename || "document.pdf",
+                  user_id: user_id,  // Pass user_id for authentication
                 }),
               });
               const result = await response.json();
@@ -915,6 +939,7 @@ ${_cs}
                   prompt: args.prompt,
                   width: 1024,
                   height: 1024,
+                  user_id: user_id,  // Pass user_id for authentication
                 }),
               });
               

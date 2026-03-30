@@ -5,6 +5,7 @@ export type SearchResultItem = {
   url: string;
   snippet?: string;
   source: "tavily" | "brave" | "searxng" | "duckduckgo";
+  raw_content?: string;
 };
 
 function normalizeSearxBaseUrl(): string | null {
@@ -87,7 +88,7 @@ export async function browseUrlText(url: string, maxChars = 8000): Promise<strin
   }
 }
 
-async function searchTavily(query: string, limit = 8): Promise<SearchResultItem[] | null> {
+async function searchTavily(query: string, limit = 8, depth: "basic" | "advanced" = "basic"): Promise<SearchResultItem[] | null> {
   const key = process.env.TAVILY_API_KEY?.trim();
   if (!key) return null;
   try {
@@ -98,10 +99,11 @@ async function searchTavily(query: string, limit = 8): Promise<SearchResultItem[
         api_key: key,
         query,
         max_results: Math.min(Math.max(limit, 1), 15),
-        search_depth: "basic",
+        search_depth: depth,
+        include_raw_content: depth === "advanced",
         topic: "general",
       }),
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -112,7 +114,8 @@ async function searchTavily(query: string, limit = 8): Promise<SearchResultItem[
       .map((r: any) => ({
         title: String(r?.title || "Result"),
         url: String(r?.url || ""),
-        snippet: r?.content ? String(r.content).slice(0, 500) : undefined,
+        snippet: r?.content ? String(r.content).slice(0, 800) : undefined,
+        raw_content: r?.raw_content ? String(r.raw_content).slice(0, 2000) : undefined,
         source: "tavily" as const,
       }))
       .filter((r: SearchResultItem) => Boolean(r.url));
@@ -220,9 +223,10 @@ async function searchDuckDuckGo(query: string, limit = 8): Promise<SearchResultI
 
 export async function searchWeb(
   query: string,
-  limit = 8
+  limit = 8,
+  depth: "basic" | "advanced" = "basic"
 ): Promise<{ provider: "tavily" | "brave" | "searxng" | "duckduckgo"; items: SearchResultItem[] }> {
-  const tavilyItems = await searchTavily(query, limit);
+  const tavilyItems = await searchTavily(query, limit, depth);
   if (tavilyItems && tavilyItems.length > 0) return { provider: "tavily", items: tavilyItems };
 
   const braveItems = await searchBrave(query, limit);

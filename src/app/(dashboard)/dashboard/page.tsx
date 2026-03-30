@@ -4,14 +4,87 @@ import React, { useCallback, useEffect, useRef, useState, Suspense } from "react
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X } from "lucide-react";
-import { useChat, type Message } from "@/lib/chat-context";
+import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X, FileSpreadsheet, Presentation, FileText, Download } from "lucide-react";
+import { useChat, type Message, type ToolResult, type TaskLog } from "@/lib/chat-context";
 import { useAuth } from "@/lib/auth-context";
 import { InceptiveV0ActionRow } from "@/components/ui/inceptive-v0-chat";
 import { DashboardAiPrompt } from "@/components/ui/ai-prompt-box";
 import { DashboardCodePanel } from "@/components/dashboard/dashboard-code-panel";
+import { HtmlPreview } from "@/components/ui/html-preview";
+import { ProgressIndicator } from "@/components/ui/progress-indicator";
 
 type AttachedFile = { name: string; content: string };
+
+function GeneratedFileCard({ result, toolName }: { result: any; toolName: string }) {
+  if (!result || result.status !== "success") return null;
+
+  let Icon = FileText;
+  let bgClass = "bg-zinc-800/40";
+  let borderClass = "border-zinc-700/50";
+  let title = result.filename || "Document";
+  let description = "";
+
+  if (toolName === "generateExcel") {
+    Icon = FileSpreadsheet;
+    bgClass = "bg-green-900/20";
+    borderClass = "border-green-800/40";
+    description = `${result.rowCount || 0} rows exported`;
+  } else if (toolName === "generatePowerPoint") {
+    Icon = Presentation;
+    bgClass = "bg-orange-900/20";
+    borderClass = "border-orange-800/40";
+    description = `${result.slideCount || 0} slides generated`;
+  } else if (toolName === "generatePDF") {
+    Icon = FileText;
+    bgClass = "bg-red-900/20";
+    borderClass = "border-red-800/40";
+    description = `${result.pageCount || 1} page document`;
+  } else if (toolName === "generateImage") {
+    Icon = ImageIcon;
+    bgClass = "bg-indigo-900/20";
+    borderClass = "border-indigo-800/40";
+    title = "Generated Image";
+    description = result.prompt || "AI generated image";
+  }
+
+  const handleDownload = () => {
+    if (toolName === "generateImage") {
+      if (result.image) {
+        const a = document.createElement("a");
+        a.href = `data:image/jpeg;base64,${result.image}`;
+        a.download = "generated_image.jpg";
+        a.click();
+      }
+    } else if (result.content) {
+      let mime = "application/octet-stream";
+      if (toolName === "generateExcel") mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      if (toolName === "generatePowerPoint") mime = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+      if (toolName === "generatePDF") mime = "application/pdf";
+      
+      const a = document.createElement("a");
+      a.href = `data:${mime};base64,${result.content}`;
+      a.download = result.filename || "download";
+      a.click();
+    }
+  };
+
+  return (
+    <div className={`mt-3 flex items-center justify-between p-3 rounded-xl border ${bgClass} ${borderClass} hover-lift cursor-pointer`} onClick={handleDownload}>
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-black/20 rounded-lg shrink-0">
+          <Icon size={18} className="text-[var(--fg-primary)]" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-[var(--fg-primary)] truncate max-w-[180px] sm:max-w-[250px]">{title}</p>
+          <p className="text-xs text-[var(--fg-secondary)] truncate">{description}</p>
+        </div>
+      </div>
+      <button className="p-2 hover:bg-black/20 rounded-lg transition-colors text-[var(--fg-primary)] shrink-0">
+        <Download size={16} />
+      </button>
+    </div>
+  );
+}
 
 function isLikelyRawToolArgsJson(s: string): boolean {
   const t = s.trim();
@@ -53,15 +126,33 @@ function ChatMessage({
     isLastAssistant &&
     streaming &&
     (!msg.content?.trim() || isLikelyRawToolArgsJson(msg.content));
+
+  // Extract HTML blocks to render standard text + the preview sandbox
+  const renderContent = (content: string) => {
+    if (isUser) return content;
+    const parts = content.split(/```html\n([\s\S]*?)\n```/g);
+    
+    if (parts.length === 1) return content; // No HTML blocks
+    
+    return parts.map((part, index) => {
+      // Every odd index in split with a capture group is the captured group (the code itself)
+      if (index % 2 === 1) {
+        return <HtmlPreview key={index} code={part} />;
+      }
+      return part.trim() ? <span key={index}>{part}</span> : null;
+    });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={`flex ${isUser ? "justify-end" : "justify-start"}`}
     >
-      <div className={`max-w-[85%] sm:max-w-[80%] ${isUser ? "ml-8" : "mr-8"}`}>
+      <div className={`max-w-[85%] sm:max-w-[80%] ${isUser ? "ml-8" : "mr-8"} w-full`}>
+        {!isUser && msg.taskLogs && msg.taskLogs.length > 0 && <ProgressIndicator logs={msg.taskLogs} />}
         <div
-          className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+          className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap w-full overflow-hidden ${
             isUser
               ? "bg-[var(--fg-primary)] text-[var(--bg-base)] rounded-br-md"
               : "bg-[var(--bg-surface)] text-[var(--fg-primary)] border border-[var(--border-subtle)] rounded-bl-md"
@@ -70,7 +161,14 @@ function ChatMessage({
           {showGenerating ? (
             <GeneratingEllipsis className="text-[var(--fg-tertiary)]" />
           ) : (
-            msg.content
+            renderContent(msg.content)
+          )}
+          {msg.toolResults && msg.toolResults.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {msg.toolResults.map((tr, idx) => (
+                <GeneratedFileCard key={idx} result={tr.result} toolName={tr.toolName} />
+              ))}
+            </div>
           )}
         </div>
       </div>
@@ -261,6 +359,8 @@ function DashboardExperience() {
         const decoder = new TextDecoder();
         let buffer = "";
         let fullContent = "";
+        let currentToolResults: ToolResult[] = [];
+        let currentTaskLogs: TaskLog[] = [];
 
         while (true) {
           const { done, value } = await reader.read();
@@ -277,7 +377,41 @@ function DashboardExperience() {
                 const chunk = JSON.parse(line.slice(2));
                 fullContent += chunk;
                 setMessages((prev) =>
-                  prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m))
+                  prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent, toolResults: currentToolResults } : m))
+                );
+              } catch {
+                /* ignore */
+              }
+            } else if (line.startsWith("2:")) {
+              try {
+                const tr = JSON.parse(line.slice(2));
+                // Only capture the generation tools to display custom UI cards
+                if (
+                  tr.toolName === "generateExcel" || 
+                  tr.toolName === "generatePowerPoint" || 
+                  tr.toolName === "generatePDF" || 
+                  tr.toolName === "generateImage"
+                ) {
+                   currentToolResults = [...currentToolResults, { toolCallId: tr.toolCallId || Date.now().toString(), toolName: tr.toolName, result: tr.result || tr.output }];
+                   setMessages((prev) =>
+                     prev.map((m) => (m.id === assistantId ? { ...m, toolResults: currentToolResults } : m))
+                   );
+                }
+              } catch {
+                /* ignore */
+              }
+            } else if (line.startsWith("4:")) {
+              try {
+                const log = JSON.parse(line.slice(2)) as TaskLog;
+                currentTaskLogs = [...currentTaskLogs];
+                const existingIdx = currentTaskLogs.findIndex(l => l.id === log.id);
+                if (existingIdx >= 0) {
+                    currentTaskLogs[existingIdx] = { ...currentTaskLogs[existingIdx], ...log };
+                } else {
+                    currentTaskLogs.push(log);
+                }
+                setMessages((prev) =>
+                  prev.map((m) => (m.id === assistantId ? { ...m, taskLogs: currentTaskLogs } : m))
                 );
               } catch {
                 /* ignore */

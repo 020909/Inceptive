@@ -29,6 +29,7 @@ import type { Session } from "@supabase/supabase-js";
 /* ─── types ─── */
 export type ToolCall = { toolName: string; args: any; toolCallId: string };
 export type ToolResult = { toolName: string; result: any; toolCallId: string };
+export type TaskLog = { id: string; action: string; status: "running" | "done" | "error"; icon: string; details?: any };
 
 export type Message = {
   id: string;
@@ -36,6 +37,7 @@ export type Message = {
   content: string;
   toolCalls?: ToolCall[];
   toolResults?: ToolResult[];
+  taskLogs?: TaskLog[];
 };
 
 export type ChatSession = {

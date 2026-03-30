@@ -5,14 +5,25 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const userId = await getAuthenticatedUserIdFromRequest(req);
+  // Try auth header first, then accept user_id from body (for internal agent calls)
+  let userId = await getAuthenticatedUserIdFromRequest(req);
+  
+  if (!userId) {
+    // Check if user_id is passed in body (from internal agent calls)
+    const body = await req.json().catch(() => ({}));
+    userId = body.user_id;
+  }
+  
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const body = await req.json();
-    const { data, filename = "export.xlsx" } = body;
+    const { data, filename = "export.xlsx", user_id: passedUserId } = body;
+    
+    // Use passed user_id if present (internal agent call)
+    const effectiveUserId = passedUserId || userId;
 
     if (!data || !Array.isArray(data)) {
       return NextResponse.json({ error: "Invalid data" }, { status: 400 });

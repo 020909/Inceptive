@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Loader2, Play, X } from "lucide-react";
-import { JUDGE0_LANGUAGE_IDS } from "@/lib/code/judge0-client";
+import { PISTON_LANGUAGE_IDS } from "@/lib/code/piston-client";
 import type { Message } from "@/lib/chat-context";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +49,7 @@ export function DashboardCodePanel({
         },
         body: JSON.stringify({
           source_code: code,
-          language_id: JUDGE0_LANGUAGE_IDS[lang],
+          language_id: PISTON_LANGUAGE_IDS[lang],
           stdin: stdin || undefined,
           wait: true,
         }),
@@ -61,7 +61,7 @@ export function DashboardCodePanel({
         out =
           typeof data.error === "string"
             ? data.error
-            : "Code execution is not configured. Add **JUDGE0_URL** (and optional **JUDGE0_API_KEY**) in your environment, then redeploy.";
+            : "Code execution is not configured or failed.";
       } else if (!res.ok) {
         out = typeof data.error === "string" ? data.error : `Request failed (${res.status})`;
         if (data.details) out += `\n\n\`\`\`json\n${JSON.stringify(data.details, null, 2).slice(0, 2000)}\n\`\`\``;
