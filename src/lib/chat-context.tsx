@@ -62,12 +62,17 @@ type ChatContextValue = {
   /* memory setting */
   memoryEnabled: boolean;
   setMemoryEnabled: (v: boolean) => Promise<void>;
+
+  /** Ephemeral tab: no session persistence, no archive to recents/Supabase */
+  incognito: boolean;
+  setIncognito: (v: boolean) => void;
 };
 
 const ChatContext = createContext<ChatContextValue | null>(null);
 
 const SESSION_KEY = "inceptive_current_chat";   // current live chat
 const RECENTS_KEY = "inceptive_recent_chats";   // local recents (memory OFF)
+const INCOGNITO_FLAG_KEY = "inceptive_incognito_mode";
 
 /* ─── helpers ─── */
 function makeTitle(msgs: Message[]): string {
@@ -127,6 +132,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [recentChats, setRecentChats] = useState<ChatSession[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
   const [memoryEnabled, setMemoryEnabledState] = useState(false);
+  const [incognito, setIncognitoState] = useState(false);
   const initRef = useRef(false);
 
   /* ── on mount: restore current chat + fetch memory setting ── */
@@ -134,9 +140,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     if (initRef.current) return;
     initRef.current = true;
 
-    // Restore current chat from sessionStorage
-    const saved = loadFromSession();
-    if (saved.length > 0) setMessages(saved);
+    const wasIncognito =
+      typeof window !== "undefined" && sessionStorage.getItem(INCOGNITO_FLAG_KEY) === "1";
+    if (wasIncognito) setIncognitoState(true);
+    else {
+      const saved = loadFromSession();
+      if (saved.length > 0) setMessages(saved);
+    }
 
     // Get access token + memory setting from Supabase
     const init = async () => {
@@ -157,10 +167,22 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     init();
   }, []);
 
+  const setIncognito = useCallback((v: boolean) => {
+    setIncognitoState(v);
+    if (typeof window === "undefined") return;
+    if (v) {
+      sessionStorage.setItem(INCOGNITO_FLAG_KEY, "1");
+      sessionStorage.removeItem(SESSION_KEY);
+    } else {
+      sessionStorage.removeItem(INCOGNITO_FLAG_KEY);
+    }
+  }, []);
+
   /* ── persist messages to sessionStorage on every change ── */
   useEffect(() => {
+    if (incognito) return;
     saveToSession(messages);
-  }, [messages]);
+  }, [messages, incognito]);
 
   /* ── load recent chats ── */
   const refreshRecents = useCallback(async () => {
@@ -203,6 +225,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     // Only save if there's at least one user message
     const hasContent = currentMsgs.some((m) => m.role === "user" && m.content.trim());
 
+    if (incognito) {
+      setMessages([]);
+      if (typeof window !== "undefined") sessionStorage.removeItem(SESSION_KEY);
+      await refreshRecents();
+      return;
+    }
+
     if (hasContent) {
       const chatSession: ChatSession = {
         id: `local_${Date.now()}`,
@@ -240,13 +269,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setMessages([]);
     sessionStorage.removeItem(SESSION_KEY);
     await refreshRecents();
-  }, [messages, memoryEnabled, session, refreshRecents]);
+  }, [messages, memoryEnabled, session, refreshRecents, incognito]);
 
   /* ── load a past chat ── */
-  const loadChat = useCallback((session: ChatSession) => {
-    setMessages(session.messages);
-    saveToSession(session.messages);
-  }, []);
+  const loadChat = useCallback(
+    (s: ChatSession) => {
+      setMessages(s.messages);
+      if (!incognito) saveToSession(s.messages);
+    },
+    [incognito]
+  );
 
   /* ── toggle memory setting ── */
   const setMemoryEnabled = useCallback(async (enabled: boolean) => {
@@ -276,6 +308,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         refreshRecents,
         memoryEnabled,
         setMemoryEnabled,
+        incognito,
+        setIncognito,
       }}
     >
       {children}

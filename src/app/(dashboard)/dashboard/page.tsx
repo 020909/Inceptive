@@ -8,6 +8,7 @@ import { useChat, type Message } from "@/lib/chat-context";
 import { useAuth } from "@/lib/auth-context";
 import { InceptiveV0ActionRow } from "@/components/ui/inceptive-v0-chat";
 import { DashboardAiPrompt } from "@/components/ui/ai-prompt-box";
+import { DashboardCodePanel } from "@/components/dashboard/dashboard-code-panel";
 
 type AttachedFile = { name: string; content: string };
 
@@ -92,7 +93,7 @@ function AttachmentChip({ name, onRemove }: { name: string; onRemove?: () => voi
 function DashboardExperience() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { messages, setMessages, startNewChat } = useChat();
+  const { messages, setMessages, startNewChat, incognito, setIncognito } = useChat();
   const { session } = useAuth();
   const hasChat = messages.length > 0;
 
@@ -106,6 +107,7 @@ function DashboardExperience() {
   const sendLockRef = useRef(false);
   const lastSentRef = useRef<{ text: string; ts: number }>({ text: "", ts: 0 });
   const prefillConsumedRef = useRef(false);
+  const [codePanelOpen, setCodePanelOpen] = useState(false);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -321,7 +323,7 @@ function DashboardExperience() {
   );
 
   const actionItems = [
-    { icon: Code2, label: "</> Code", onClick: () => router.push("/puter-test") },
+    { icon: Code2, label: "</> Code", onClick: () => setCodePanelOpen(true) },
     {
       icon: PenLine,
       label: "Write",
@@ -338,19 +340,41 @@ function DashboardExperience() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--bg-base)] text-[var(--fg-primary)]">
-      <header className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-[var(--border-subtle)] shrink-0">
-        <div className="min-w-[120px] flex items-center gap-2">
+    <div className="flex min-h-screen flex-col bg-[var(--bg-app)] text-[var(--fg-primary)]">
+      <header className="flex shrink-0 items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3 sm:px-6">
+        <div className="flex min-w-[120px] items-center gap-2">
           {streaming && <GeneratingEllipsis className="text-xs text-[var(--fg-muted)]" />}
+          {incognito && (
+            <span className="rounded-full border border-white/20 bg-white/[0.08] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#D8D8E0]">
+              Incognito
+            </span>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={startNewChat}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)]"
-        >
-          <Plus size={14} />
-          New chat
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={startNewChat}
+            className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-medium text-black transition-opacity hover:opacity-90"
+          >
+            <Plus size={14} className="text-black" />
+            New chat
+          </button>
+          <button
+            type="button"
+            onClick={() => setIncognito(!incognito)}
+            className={`
+              rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors
+              ${
+                incognito
+                  ? "border-white/35 bg-white/[0.12] text-[#E8E8EE]"
+                  : "border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--fg-secondary)] hover:border-[var(--border-default)] hover:text-[var(--fg-primary)]"
+              }
+            `}
+            title="Chats are not saved to history or session while Incognito is on"
+          >
+            Incognito
+          </button>
+        </div>
       </header>
 
       <input
@@ -369,13 +393,16 @@ function DashboardExperience() {
         {!hasChat ? (
           <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 py-10 sm:px-6">
             <div className="mx-auto w-full max-w-4xl">
-              <h1 className="mb-3 text-center text-3xl font-bold tracking-tight text-[var(--fg-primary)] sm:text-4xl">
-                What can I help you ship?
+              <h1 className="mb-8 text-center text-3xl font-bold tracking-tight text-[var(--fg-primary)] sm:text-4xl">
+                How can I help you today?
               </h1>
-              <p className="mx-auto mb-8 max-w-md text-center text-sm text-[var(--fg-muted)]">
-                Research, write, automate — Inceptive runs beside you 24/7.
-              </p>
               <div className="space-y-3">
+                <DashboardCodePanel
+                  open={codePanelOpen}
+                  onClose={() => setCodePanelOpen(false)}
+                  sessionToken={session?.access_token}
+                  setMessages={setMessages}
+                />
                 {pendingFiles.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {pendingFiles.map((f, idx) => (
@@ -438,8 +465,14 @@ function DashboardExperience() {
               </div>
             </div>
 
-            <div className="shrink-0 bg-[var(--bg-base)] px-4 pt-3 pb-6 sm:px-6">
+            <div className="shrink-0 bg-[var(--bg-app)] px-4 pt-3 pb-6 sm:px-6">
               <div className="mx-auto w-full max-w-4xl space-y-3">
+                <DashboardCodePanel
+                  open={codePanelOpen}
+                  onClose={() => setCodePanelOpen(false)}
+                  sessionToken={session?.access_token}
+                  setMessages={setMessages}
+                />
                 {pendingFiles.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {pendingFiles.map((f, idx) => (

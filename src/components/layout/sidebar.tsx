@@ -14,10 +14,26 @@ import {
   Target,
   FileText,
   Settings,
-  ChevronLeft,
-  ChevronRight,
   Sparkles,
 } from "lucide-react";
+
+/** Rounded rectangle with inner vertical rule (sidebar layout cue), white stroke */
+function SidebarToggleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      width="16"
+      height="14"
+      viewBox="0 0 16 14"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden
+    >
+      <rect x="1" y="1" width="14" height="12" rx="3" stroke="currentColor" strokeWidth="1.25" />
+      <line x1="5.25" y1="2.75" x2="5.25" y2="11.25" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 // ── Sidebar context so layout can react to collapse ──
 const SidebarContext = createContext({ collapsed: false, setCollapsed: (_: boolean) => {} });
@@ -77,17 +93,17 @@ function NavItem({ item, isActive, collapsed }: { item: typeof navItems[0]; isAc
         )}
 
         <Icon
-          size={17}
+          size={18}
           strokeWidth={1.5}
           className={`shrink-0 transition-colors duration-150 ${
-            isActive ? "text-[var(--fg-primary)]" : "text-[var(--fg-tertiary)] group-hover:text-[var(--fg-secondary)]"
+            isActive ? "text-[var(--fg-primary)]" : "text-[#B4B4C0] group-hover:text-[#D0D0D8]"
           }`}
         />
 
         {!collapsed && (
           <span
-            className={`text-[13px] tracking-[-0.01em] transition-colors duration-150 ${
-              isActive ? "text-[var(--fg-primary)] font-medium" : "text-[var(--fg-secondary)] group-hover:text-[var(--fg-primary)]"
+            className={`text-sm tracking-[-0.01em] transition-colors duration-150 ${
+              isActive ? "text-[var(--fg-primary)] font-medium" : "text-[#C8C8D0] group-hover:text-[var(--fg-primary)]"
             }`}
           >
             {item.label}
@@ -129,7 +145,7 @@ export function Sidebar() {
             <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
           </div>
           {!collapsed && (
-            <span className="text-[var(--fg-primary)] font-semibold text-[15px] tracking-[-0.03em]">
+            <span className="text-[16px] font-semibold tracking-[-0.03em] text-[var(--fg-primary)]">
               Inceptive
             </span>
           )}
@@ -137,18 +153,22 @@ export function Sidebar() {
 
         {!collapsed && (
           <button
+            type="button"
             onClick={() => setCollapsed(true)}
-            className="ml-auto p-1 rounded-md transition-colors hover:bg-[var(--border-subtle)]"
+            title="Collapse sidebar"
+            className="ml-auto rounded-md p-1.5 text-white/90 transition-colors hover:bg-[var(--border-subtle)]"
           >
-            <ChevronLeft size={14} className="text-[var(--fg-muted)]" />
+            <SidebarToggleIcon className="opacity-90" />
           </button>
         )}
         {collapsed && (
           <button
+            type="button"
             onClick={() => setCollapsed(false)}
-            className="absolute -right-3 top-5 p-1 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] transition-colors hover:bg-[var(--bg-overlay)]"
+            title="Expand sidebar"
+            className="absolute -right-3 top-5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-1.5 text-white/90 transition-colors hover:bg-[var(--bg-overlay)]"
           >
-            <ChevronRight size={10} className="text-[var(--fg-tertiary)]" />
+            <SidebarToggleIcon className="h-3.5 w-auto opacity-90" />
           </button>
         )}
       </div>
@@ -182,15 +202,15 @@ export function Sidebar() {
               `}
             >
               <Settings
-                size={17}
+                size={18}
                 strokeWidth={1.5}
                 className={`shrink-0 transition-colors ${
-                  pathname === "/settings" ? "text-[var(--fg-primary)]" : "text-[var(--fg-tertiary)] group-hover:text-[var(--fg-secondary)]"
+                  pathname === "/settings" ? "text-[var(--fg-primary)]" : "text-[#B4B4C0] group-hover:text-[#D0D0D8]"
                 }`}
               />
               {!collapsed && (
-                <span className={`text-[13px] tracking-[-0.01em] transition-colors ${
-                  pathname === "/settings" ? "text-[var(--fg-primary)] font-medium" : "text-[var(--fg-secondary)] group-hover:text-[var(--fg-primary)]"
+                <span className={`text-sm tracking-[-0.01em] transition-colors ${
+                  pathname === "/settings" ? "text-[var(--fg-primary)] font-medium" : "text-[#C8C8D0] group-hover:text-[var(--fg-primary)]"
                 }`}>
                   Settings
                 </span>
