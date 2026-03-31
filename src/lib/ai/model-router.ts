@@ -7,7 +7,7 @@ export type RoutedModel = {
 function classify(text: string) {
   const t = (text || "").toLowerCase();
   const wantsCode =
-    /\b(code|bug|typescript|javascript|python|react|next\.js|tailwind|supabase|sql|api route|compile|build|function|algorithm|sort|debug|refactor)\b/.test(t) ||
+    /\b(code|bug|typescript|javascript|python|react|next\.js|tailwind|supabase|sql|prisma|api route|compile|build|function|algorithm|sort|debug|refactor|implement|fix|architecture|database|schema|deploy|component|hook)\b/.test(t) ||
     /```/.test(t);
   const wantsResearch =
     /\b(research|sources|citations|cite|links|market|landscape|box office|verify|fact check)\b/.test(t);
@@ -49,7 +49,8 @@ export function routeModel(params: {
 
   // Smart routing by task type
   if (wantsCode) {
-    return { provider: "openrouter", model: "qwen/qwen-2.5-coder-32b-instruct", reason: "Code/engineering → Qwen Coder" };
+    // Gemini 2.0 Flash has much better tool-use stability than Qwen on OpenRouter for now.
+    return { provider: "openrouter", model: "google/gemini-2.0-flash-001", reason: "Code/engineering → Gemini 2.0 Flash (Reliable Tool User)" };
   }
   if (wantsResearch) {
     return { provider: "openrouter", model: "google/gemini-2.0-flash-001", reason: "Research/query answering" };

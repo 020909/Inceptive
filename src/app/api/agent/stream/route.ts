@@ -4,6 +4,7 @@ import {
   sendGmailReply,
   getGmailClientForUser,
 } from "@/lib/email/gmail-api";
+import { YoutubeTranscript } from "youtube-transcript";
 import { createClient } from "@supabase/supabase-js";
 import { streamText } from "ai";
 import { buildModel } from "@/lib/ai-model";
@@ -26,6 +27,13 @@ import {
 import { describeScreenshotBase64 } from "@/lib/vision/describe-screenshot";
 import { isPistonConfigured, runPistonSubmission, PISTON_LANGUAGE_IDS } from "@/lib/code/piston-client";
 import { z } from "zod";
+import fs from "fs";
+import path from "path";
+import { promisify } from "util";
+
+const readdir = promisify(fs.readdir);
+const stat = promisify(fs.stat);
+const readFile = promisify(fs.readFile);
 
 export const maxDuration = 60;
 export const runtime = "nodejs";
@@ -66,6 +74,9 @@ const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string 
   generatePowerPoint:  { icon: "", label: () => "Creating PowerPoint presentation..." },
   generatePDF:         { icon: "", label: () => "Creating PDF document..." },
   generateImage:       { icon: "", label: () => "Generating AI image..." },
+  projectMap:          { icon: "📁", label: () => "Mapping project structure..." },
+  codeGrep:            { icon: "🔍", label: (args: any) => `Searching for "${args.query}"...` },
+  readProjectFile:     { icon: "📄", label: (args: any) => `Reading ${args.path.split('/').pop()}...` },
 };
 
 /**
@@ -219,24 +230,16 @@ ${_cs}
 ## TOOLS
 - searchWeb: real-time search
 - browseURL: read any webpage
-- summarizeURL: fetch + deeply summarize any URL, PDF link, or article — use when user pastes a link and asks to summarize, explain, or analyze it
-- getWeather: current weather by city or region name (e.g. "Tokyo", "Austin TX")
-- getStockQuote: live stock quote by ticker (e.g. TSLA, AAPL)
-- getNewsHeadlines: news headlines for a topic (aggregates configured sources)
-- readGmail: read Gmail inbox (only if Gmail CONNECTED above)
-- summarizeEmail: get full email body by ID
-- sendGmail: send email via Gmail (only if Gmail CONNECTED)
-- draftEmail: save email draft
-- scheduleSocialPost: post to social media
-- saveResearchReport: save research report
-- createGoal/createTask/updateGoalProgress: manage goals
-- analyzeData: calculations
-- runCode: execute Python or JavaScript in a sandbox
-- generateOutline: plans and roadmaps
-- generateExcel: create Excel (.xlsx) files - use when user asks to create spreadsheet, Excel file, export to Excel, make table
-- generatePowerPoint: create PowerPoint (.pptx) presentations - use when user asks to create presentation, pitch deck, slides
-- generatePDF: create PDF documents - use when user asks to create PDF, invoice, report in PDF
-- generateImage: generate AI images - use when user asks to create an image, generate a picture, make art, create a photo, draw something, generate image of anything. THIS TOOL ACTUALLY WORKS - just call it with a prompt like "a cat" or "sunset over ocean"
+- summarizeURL: fetch + deeply summarize any URL, PDF link, or article
+- projectMap: list all files in the current codebase to understand project structure
+- codeGrep: search for patterns or strings (functions, variables) across the entire project
+- readProjectFile: read the full content of any file in the project
+- runCode: execute Python or JavaScript in a sandbox to verify logic or perform calculations
+- getStockQuote/getWeather/getNewsHeadlines: live data
+- createGoal/createTask/updateGoalProgress: manage dashboard goals
+- analyzeData/generateOutline: strategy and data tools
+- generateExcel/generatePowerPoint/generatePDF/generateImage: file generation tools
+- computerUse: control a headless browser with vision 
 
 ## QUALITY STANDARDS (CRITICAL)
 13. Be thorough and detailed. For factual questions (history, science, finance, tech), provide comprehensive answers with context, nuance, and examples — not 2-sentence replies.
@@ -247,9 +250,14 @@ ${_cs}
 
 ## RULES
 1. CHECK CONNECTED ACCOUNTS above - if Gmail shows CONNECTED, use readGmail immediately when asked about email. Never say you cannot access email if Gmail is connected.
-2. ALWAYS USE TOOLS for real actions. When user says read my email → call readGmail. When user says send email → call sendGmail. For weather use getWeather; for a stock price use getStockQuote; for news headlines use getNewsHeadlines — do not invent numbers. When the user asks to run, execute, or verify code output, use runCode (Python/JavaScript) instead of inventing program output.
-3. Be direct - no filler. Lead with action or the key insight.
-4. After tool calls, clearly summarize results in a well-structured way.
+2. SUPERCODED AGENT WORKFLOW (CRITICAL):
+   - For all coding, debugging, or architectural tasks, ALWAYS follow this 4-step loop:
+     1. **REASON**: Determine what needs to be changed.
+     2. **MAP**: Use \`projectMap\` to find relevant files and \`readProjectFile\` to understand their contents.
+     3. **EXECUTE**: Use \`runCode\` to test your logic or verify your assumptions if possible.
+     4. **VERIFY**: Check the output of your tools. If it fails, fix and repeat until correct.
+3. ALWAYS USE TOOLS for real actions. When user says read my email → call readGmail. When user says send email → call sendGmail. For weather use getWeather; for a stock price use getStockQuote; for news headlines use getNewsHeadlines — do not invent numbers. 
+4. Be direct - no filler. Lead with action or the key insight.
 5. If connector not connected, tell user exactly: go to Email section and click Connect.
 6. If file context is provided, DO NOT repeat it verbatim or show "Attached Files" scaffolding. Summarize/answer directly from the relevant parts.
 7. If [INCEPTIVE_FILE_CONTEXT_BEGIN] is present, treat it as real extracted file content. Never say you cannot access files.
@@ -361,7 +369,8 @@ The chat interface will automatically render this as an interactive chart. Use v
       model,
       system: systemOverride || systemPrompt,
       messages: finalHistory,
-      maxSteps: 8,
+      maxSteps: 10,
+      maxTokens: 8000,
       // Disable sending reasoning/thinking blocks back in history —
       // they're stripped from client-side state anyway, so including them
       // would cause a mismatch and trigger "Invalid Responses API request"
@@ -369,6 +378,116 @@ The chat interface will automatically render this as an interactive chart. Use v
         anthropic: { sendReasoning: false },
       },
       tools: {
+
+        /* ── REPOSITORY ANALYSIS ── */
+        projectMap: {
+          description: "List all files in the current project to understand the structure. Use this as as a first step to find relevant files.",
+          parameters: z.object({
+            directory: z.string().optional().describe("Directory to list (relative to project root). Default is root."),
+            depth: z.number().optional().default(2).describe("How many levels deep to list"),
+          }),
+          execute: async ({ directory, depth }: { directory?: string; depth?: number }) => {
+            const root = process.cwd();
+            const target = path.join(root, directory || "");
+            
+            // Security: ensure target is within root
+            if (!target.startsWith(root)) {
+              return { status: "error", message: "Access denied: outside project root" };
+            }
+
+            const ignore = ['.git', 'node_modules', '.next', 'dist', '.vercel', 'logs', 'tmp'];
+            
+            const listFiles = async (dir: string, currentDepth: number): Promise<string[]> => {
+              if (currentDepth > (depth || 2)) return [];
+              try {
+                const entries = await readdir(dir, { withFileTypes: true });
+                let results: string[] = [];
+                for (const entry of entries) {
+                  if (ignore.includes(entry.name)) continue;
+                  const res = path.resolve(dir, entry.name);
+                  const rel = path.relative(root, res);
+                  if (entry.isDirectory()) {
+                    results.push(rel + "/");
+                    results.push(...(await listFiles(res, currentDepth + 1)));
+                  } else {
+                    results.push(rel);
+                  }
+                }
+                return results;
+              } catch (e) {
+                return [];
+              }
+            };
+
+            const files = await listFiles(target, 0);
+            return { status: "success", files: files.slice(0, 500) };
+          },
+        },
+
+        codeGrep: {
+          description: "Search for a specific string or pattern across all project files. Use this to find where functions or variables are defined or used.",
+          parameters: z.object({
+            query: z.string().describe("The string or regex to search for"),
+            include: z.string().optional().describe("Glob pattern to limit search (e.g. 'src/**/*.ts')"),
+          }),
+          execute: async ({ query, include }: { query: string; include?: string }) => {
+            const root = process.cwd();
+            const ignore = ['.git', 'node_modules', '.next', 'dist', '.vercel', 'logs', 'tmp'];
+            
+            const results: { path: string; line: number; content: string }[] = [];
+            const searchDir = async (dir: string) => {
+              const entries = await readdir(dir, { withFileTypes: true });
+              for (const entry of entries) {
+                if (ignore.includes(entry.name)) continue;
+                const fullPath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                  await searchDir(fullPath);
+                } else {
+                  // Only search text files
+                  if (/\.(ts|tsx|js|jsx|json|md|css|html|txt)$/i.test(entry.name)) {
+                    const content = await readFile(fullPath, 'utf8');
+                    const lines = content.split('\n');
+                    lines.forEach((line, i) => {
+                      if (line.includes(query)) {
+                        results.push({
+                          path: path.relative(root, fullPath),
+                          line: i + 1,
+                          content: line.trim().slice(0, 200),
+                        });
+                      }
+                    });
+                  }
+                }
+                if (results.length > 50) break;
+              }
+            };
+
+            await searchDir(root);
+            return { status: "success", matches: results.slice(0, 50) };
+          },
+        },
+
+        readProjectFile: {
+          description: "Read the full content of a specific file in the project. Use this before editing a file or to understand implementation details.",
+          parameters: z.object({
+            path: z.string().describe("Relative path to the file from project root"),
+          }),
+          execute: async (args: { path: string }) => {
+            const root = process.cwd();
+            const fullPath = path.join(root, args.path);
+            
+            if (!fullPath.startsWith(root)) {
+              return { status: "error", message: "Access denied" };
+            }
+
+            try {
+              const content = await readFile(fullPath, 'utf8');
+              return { status: "success", path: args.path, content };
+            } catch (e: any) {
+              return { status: "error", message: e.message };
+            }
+          },
+        },
 
         /* ── SEARCH ── */
         searchWeb: {
@@ -432,11 +551,28 @@ The chat interface will automatically render this as an interactive chart. Use v
           execute: async ({ url }: { url: string }) => {
             await deductCredits(user_id, "browse_url").catch(() => {});
             try {
-              const rawContent = await browseUrlText(url, 8000);
-              if (!rawContent || rawContent.trim().length < 50) {
-                return { url, summary: "Could not extract content from this URL.", keyPoints: [], wordCount: 0 };
+              let rawContent = "";
+              let isYouTube = false;
+
+              // Specialized YouTube Transcript extraction
+              if (url.includes("youtube.com") || url.includes("youtu.be")) {
+                isYouTube = true;
+                try {
+                  const transcript = await YoutubeTranscript.fetchTranscript(url);
+                  rawContent = transcript.map(t => t.text).join(" ");
+                } catch (ytErr) {
+                  console.error("[Agent:summarizeURL] YT Transcript failed, falling back to browse", ytErr);
+                }
               }
-              // Extract key points heuristically (first 5 substantial sentences)
+
+              if (!rawContent) {
+                rawContent = await browseUrlText(url, 8000);
+              }
+
+              if (!rawContent || rawContent.trim().length < 50) {
+                return { url, summary: "Could not extract content from this URL or video.", keyPoints: [], wordCount: 0 };
+              }
+              // Extract key points heuristically (first 6 substantial sentences)
               const sentences = rawContent
                 .split(/[.!?]\s+/)
                 .map((s: string) => s.trim())
@@ -446,10 +582,13 @@ The chat interface will automatically render this as an interactive chart. Use v
               // Return full content so the AI model can produce a comprehensive summary
               return {
                 url,
-                rawContent: rawContent.slice(0, 7000),
+                isYouTube,
+                rawContent: rawContent.slice(0, 10000),
                 keyPoints: sentences,
                 wordCount,
-                instruction: "IMPORTANT: Based on the rawContent above, write a comprehensive structured summary with: (1) a 2-3 sentence overview, (2) bullet-point key insights, (3) any numbers/data mentioned, (4) your analysis/opinion if relevant.",
+                instruction: isYouTube 
+                  ? "Based on the VIDEO TRANSCRIPT above, write a detailed summary. Mention specific parts of the video, the speaker's main points, and any key takeaways."
+                  : "Based on the rawContent above, write a comprehensive structured summary with: (1) a 2-3 sentence overview, (2) bullet-point key insights, (3) any numbers/data mentioned, (4) your analysis/opinion if relevant.",
               };
             } catch (err: any) {
               return { url, summary: `Failed to fetch URL: ${err.message}`, keyPoints: [], wordCount: 0 };
