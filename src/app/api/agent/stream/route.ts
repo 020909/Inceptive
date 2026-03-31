@@ -42,29 +42,29 @@ const admin = getAdmin();
    TOOL DISPLAY MAP — human-readable actions for Live Task Feed
 ───────────────────────────────────────── */
 const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string }> = {
-  searchWeb:           { icon: "🌐", label: (a) => `Searching "${a.query}"` },
-  deepResearch:        { icon: "🔬", label: (a) => `Deep Research: "${a.query}"` },
-  browseURL:           { icon: "📄", label: (a) => `Reading ${new URL(a.url).hostname}` },
-  getWeather:          { icon: "", label: (a) => `Weather: ${a.location || "location"}` },
-  getStockQuote:       { icon: "", label: (a) => `Quote: ${a.symbol}` },
-  getNewsHeadlines:    { icon: "", label: (a) => `News: ${String(a.query || "headlines").slice(0, 48)}` },
-  computerUse:         { icon: "", label: (a) => `Browser: ${a.action}${a.url ? ` → ${a.url}` : ""}` },
-  readGmail:           { icon: "", label: () => `Scanning Gmail inbox` },
-  summarizeEmail:      { icon: "", label: (a) => `Reading email: "${a.subject}"` },
-  sendGmail:           { icon: "", label: (a) => `Sending email to ${a.to}` },
-  draftEmail:          { icon: "", label: (a) => `Drafting email: "${a.subject}"` },
-  saveResearchReport:  { icon: "", label: (a) => `Saving report: "${a.topic}"` },
-  scheduleSocialPost:  { icon: "", label: (a) => `Scheduling ${a.platform} post` },
-  runCode:             { icon: "", label: (a) => `Running ${a.language || "code"}` },
-  createGoal:          { icon: "", label: (a) => `Creating goal: "${a.title}"` },
-  createTask:          { icon: "", label: (a) => `Adding task: "${a.title}"` },
-  updateGoalProgress:  { icon: "", label: (a) => `Updating goal to ${a.progress_percent}%` },
-  analyzeData:         { icon: "", label: (a) => `Analyzing: ${a.question?.slice(0, 50)}` },
-  generateOutline:     { icon: "", label: (a) => `Generating ${a.type} outline` },
-  generateExcel:       { icon: "", label: (a) => `Creating Excel file with ${a.data?.length || 0} rows` },
-  generatePowerPoint:  { icon: "", label: (a) => `Creating PowerPoint with ${a.slides?.length || 0} slides` },
-  generatePDF:         { icon: "", label: (a) => `Generating PDF: "${a.title || "Document"}"` },
-  generateImage:       { icon: "", label: (a) => `Generating AI image: "${a.prompt?.slice(0, 30) || "..."}"` },
+  searchWeb:           { icon: "", label: () => "Searching the web..." },
+  deepResearch:        { icon: "", label: () => "Running deep research..." },
+  browseURL:           { icon: "", label: () => "Reading webpage..." },
+  getWeather:          { icon: "", label: () => "Checking weather..." },
+  getStockQuote:       { icon: "", label: () => "Fetching stock price..." },
+  getNewsHeadlines:    { icon: "", label: () => "Fetching latest news..." },
+  computerUse:         { icon: "", label: () => "Using the browser..." },
+  readGmail:           { icon: "", label: () => "Scanning Gmail inbox..." },
+  summarizeEmail:      { icon: "", label: () => "Reading email..." },
+  sendGmail:           { icon: "", label: () => "Sending email..." },
+  draftEmail:          { icon: "", label: () => "Drafting email..." },
+  saveResearchReport:  { icon: "", label: () => "Saving report..." },
+  scheduleSocialPost:  { icon: "", label: () => "Scheduling social post..." },
+  runCode:             { icon: "", label: () => "Executing code..." },
+  createGoal:          { icon: "", label: () => "Creating goal..." },
+  createTask:          { icon: "", label: () => "Adding task..." },
+  updateGoalProgress:  { icon: "", label: () => "Updating goal progress..." },
+  analyzeData:         { icon: "", label: () => "Analyzing data..." },
+  generateOutline:     { icon: "", label: () => "Generating outline..." },
+  generateExcel:       { icon: "", label: () => "Creating Excel spreadsheet..." },
+  generatePowerPoint:  { icon: "", label: () => "Creating PowerPoint presentation..." },
+  generatePDF:         { icon: "", label: () => "Creating PDF document..." },
+  generateImage:       { icon: "", label: () => "Generating AI image..." },
 };
 
 /**
@@ -898,20 +898,21 @@ The chat interface will automatically render this as an interactive chart. Use v
 
         /* ── GENERATE PDF ── */
         generatePDF: {
-          description: "Create a PDF document. Use when user asks to create PDF, generate invoice, make PDF report, etc.",
+          description: "Create a PDF document. Use when user asks to create PDF, generate invoice, make PDF report, etc. YOU MUST PROVIDE EXTENSIVE TEXT CONTENT, DO NOT LEAVE CONTENT BLANK.",
           parameters: z.object({
-            content: z.string().describe("The text content to put in the PDF"),
-            title: z.string().optional().describe("Document title (appears at top)"),
-            filename: z.string().optional().describe("Output filename (default: document.pdf)"),
+            content: z.string().describe("The full dense text content to put in the PDF. Do not summarize, include everything here."),
+            title: z.string().optional().describe("Document title (appears at top, e.g. 'Top 10 Richest People 2025')"),
+            filename: z.string().optional().describe("Output filename (e.g. 'report.pdf')"),
           }),
           execute: async (args: { content: string; title?: string; filename?: string }) => {
             await deductCredits(user_id, "tool_small").catch(() => {});
             try {
+              const safeContent = args.content && args.content.trim().length > 0 ? args.content : "Document generation requested without body content.";
               const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com"}/api/generate/pdf`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  content: args.content,
+                  content: safeContent,
                   title: args.title || "Document",
                   filename: args.filename || "document.pdf",
                   user_id: user_id,  // Pass user_id for authentication
