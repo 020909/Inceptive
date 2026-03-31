@@ -435,6 +435,8 @@ function DashboardExperience() {
         let fullContent = "";
         let currentToolResults: ToolResult[] = [];
         let currentTaskLogs: TaskLog[] = [];
+        // Map toolCallId -> toolName so we can match tool-output-available events
+        const toolCallIdToName = new Map<string, string>();
 
         while (true) {
           const { done, value } = await reader.read();
@@ -456,17 +458,28 @@ function DashboardExperience() {
               } catch {
                 /* ignore */
               }
+            } else if (line.startsWith("1:")) {
+              // 1: = tool-call event. Capture toolCallId -> toolName mapping.
+              try {
+                const tc = JSON.parse(line.slice(2));
+                if (tc.toolCallId && tc.toolName) {
+                  toolCallIdToName.set(tc.toolCallId, tc.toolName);
+                }
+              } catch { /* ignore */ }
             } else if (line.startsWith("2:")) {
               try {
                 const tr = JSON.parse(line.slice(2));
+                // Resolve toolName from the event itself or from our callId->name map
+                const toolName = tr.toolName || toolCallIdToName.get(tr.toolCallId) || "";
+                const result = tr.result ?? tr.output;
                 // Only capture the generation tools to display custom UI cards
                 if (
-                  tr.toolName === "generateExcel" || 
-                  tr.toolName === "generatePowerPoint" || 
-                  tr.toolName === "generatePDF" || 
-                  tr.toolName === "generateImage"
+                  toolName === "generateExcel" || 
+                  toolName === "generatePowerPoint" || 
+                  toolName === "generatePDF" || 
+                  toolName === "generateImage"
                 ) {
-                   currentToolResults = [...currentToolResults, { toolCallId: tr.toolCallId || Date.now().toString(), toolName: tr.toolName, result: tr.result || tr.output }];
+                   currentToolResults = [...currentToolResults, { toolCallId: tr.toolCallId || Date.now().toString(), toolName, result }];
                    setMessages((prev) =>
                      prev.map((m) => (m.id === assistantId ? { ...m, toolResults: currentToolResults } : m))
                    );
