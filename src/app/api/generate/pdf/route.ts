@@ -20,6 +20,13 @@ function stripMarkdown(text: string): string {
     .replace(/^>\s+/, "") // Remove blockquotes
     .replace(/\[(.+?)\]\(.*?\)/g, "$1") // Convert links to plain text
     .replace(/!\[.*?\]\(.*?\)/g, "") // Remove images
+    .replace(/₹/g, "Rs. ") // Convert Indian Rupee
+    .replace(/[“”]/g, '"') // Normalize smart quotes
+    .replace(/[‘’]/g, "'") // Normalize single quotes
+    .replace(/–/g, "-") // Normal dash (en-dash)
+    .replace(/—/g, "-") // Normal dash (em-dash)
+    .replace(/…/g, "...") // Normal ellipsis
+    .replace(/[^\x00-\x7F]/g, "") // STRIP ALL REMAINING NON-ASCII (fixes jsPDF kerning corruption)
     .trim();
 }
 

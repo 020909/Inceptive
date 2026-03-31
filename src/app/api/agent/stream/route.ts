@@ -911,10 +911,10 @@ The chat interface will automatically render this as an interactive chart. Use v
           description: "Create a PDF document. Use when user asks to create PDF, generate invoice, make PDF report, etc. DO NOT CALL THIS TOOL IF YOU ARE ASKING THE USER A CLARIFICATION QUESTION. ONLY CALL IT WHEN YOU HAVE FULL DATA.",
           parameters: z.object({
             content: z.string().describe("The dense text/markdown content to put in the PDF. MUST BE FULLY POPULATED with data. Do not summarize."),
-            title: z.string().optional().describe("Document title (appears at top, e.g. 'Top 10 Richest People 2025')"),
-            filename: z.string().optional().describe("Output filename (e.g. 'report.pdf')"),
+            title: z.string().describe("Document title (appears at top, e.g. 'Top 10 Richest People 2025')"),
+            filename: z.string().describe("Output filename (e.g. 'report.pdf')"),
           }),
-          execute: async (args: { content: string; title?: string; filename?: string }) => {
+          execute: async (args: { content: string; title: string; filename: string }) => {
             await deductCredits(user_id, "tool_small").catch(() => {});
             try {
               if (!args.content || args.content.trim().length < 5) {
