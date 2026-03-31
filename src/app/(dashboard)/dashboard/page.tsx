@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X, FileSpreadsheet, Presentation, FileText, Download } from "lucide-react";
 import { useChat, type Message, type ToolResult, type TaskLog } from "@/lib/chat-context";
 import { useAuth } from "@/lib/auth-context";
+import { useSidebar } from "@/components/layout/sidebar";
 import { InceptiveV0ActionRow } from "@/components/ui/inceptive-v0-chat";
 import { DashboardAiPrompt } from "@/components/ui/ai-prompt-box";
 import { DashboardCodePanel } from "@/components/dashboard/dashboard-code-panel";
@@ -210,6 +211,8 @@ function DashboardExperience() {
   const searchParams = useSearchParams();
   const { messages, setMessages, startNewChat, incognito, setIncognito } = useChat();
   const { session } = useAuth();
+  const { collapsed: sidebarCollapsed, setCollapsed: setSidebarCollapsed } = useSidebar();
+  const sidebarWasCollapsedRef = useRef(sidebarCollapsed);
   const hasChat = messages.length > 0;
 
   const [input, setInput] = useState("");
@@ -224,6 +227,16 @@ function DashboardExperience() {
   const prefillConsumedRef = useRef(false);
   const [codePanelOpen, setCodePanelOpen] = useState(false);
   const [previewCode, setPreviewCode] = useState<string | null>(null);
+
+  // Auto-collapse sidebar when preview opens, restore when it closes
+  useEffect(() => {
+    if (previewCode) {
+      sidebarWasCollapsedRef.current = sidebarCollapsed;
+      setSidebarCollapsed(true);
+    } else {
+      setSidebarCollapsed(sidebarWasCollapsedRef.current);
+    }
+  }, [!!previewCode]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });

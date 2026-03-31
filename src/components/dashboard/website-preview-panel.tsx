@@ -38,7 +38,6 @@ export function WebsitePreviewPanel({
   const [copied, setCopied] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Sync external code changes
   useEffect(() => {
     setEditableCode(code);
   }, [code]);
@@ -54,7 +53,6 @@ export function WebsitePreviewPanel({
     }
   }, [editableCode]);
 
-  // Auto-refresh preview when code changes (debounced)
   useEffect(() => {
     const timer = setTimeout(refreshPreview, 300);
     return () => clearTimeout(timer);
@@ -84,9 +82,9 @@ export function WebsitePreviewPanel({
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg-base)] border-l border-[var(--border-subtle)]">
-      {/* ── Top Bar ── */}
+      {/* ── Top Bar: Tabs + Actions + Device Toggles ── */}
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] shrink-0">
-        {/* View Tabs */}
+        {/* Left: View Tabs */}
         <div className="flex items-center gap-1">
           <button
             onClick={() => setView("preview")}
@@ -110,7 +108,7 @@ export function WebsitePreviewPanel({
           </button>
         </div>
 
-        {/* Device Toggles */}
+        {/* Center: Device Toggles (preview mode only) */}
         {view === "preview" && (
           <div className="flex items-center gap-1 bg-[var(--bg-elevated)] rounded-lg p-0.5">
             {([
@@ -134,14 +132,45 @@ export function WebsitePreviewPanel({
           </div>
         )}
 
-        {/* Close */}
-        <button
-          onClick={onClose}
-          className="p-1.5 rounded-lg text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
-          title="Close preview"
-        >
-          <X size={16} />
-        </button>
+        {/* Right: Action Buttons + Close */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={refreshPreview}
+            className="p-1.5 rounded-md text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw size={14} />
+          </button>
+          <button
+            onClick={handleOpenInBrowser}
+            className="p-1.5 rounded-md text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
+            title="Open in new tab"
+          >
+            <ExternalLink size={14} />
+          </button>
+          <button
+            onClick={handleDownload}
+            className="p-1.5 rounded-md text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
+            title="Download HTML"
+          >
+            <Download size={14} />
+          </button>
+          <button
+            onClick={handleCopy}
+            className="p-1.5 rounded-md text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
+            title={copied ? "Copied!" : "Copy code"}
+          >
+            <Copy size={14} />
+          </button>
+          <div className="w-px h-4 bg-[var(--border-subtle)] mx-1" />
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
+            title="Close preview"
+          >
+            <X size={14} />
+          </button>
+        </div>
       </div>
 
       {/* ── Main Content ── */}
@@ -180,34 +209,6 @@ export function WebsitePreviewPanel({
             />
           </div>
         )}
-      </div>
-
-      {/* ── Bottom Action Bar ── */}
-      <div className="flex items-center gap-2 px-3 py-2 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] shrink-0">
-        <button
-          onClick={refreshPreview}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
-        >
-          <RefreshCw size={13} /> Refresh
-        </button>
-        <button
-          onClick={handleOpenInBrowser}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
-        >
-          <ExternalLink size={13} /> Open
-        </button>
-        <button
-          onClick={handleDownload}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
-        >
-          <Download size={13} /> Download
-        </button>
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
-        >
-          <Copy size={13} /> {copied ? "Copied!" : "Copy"}
-        </button>
       </div>
     </div>
   );

@@ -232,7 +232,20 @@ ${_cs}
 6. If file context is provided, DO NOT repeat it verbatim or show "Attached Files" scaffolding. Summarize/answer directly from the relevant parts. Only reference file names if it helps clarity.
 7. If [INCEPTIVE_FILE_CONTEXT_BEGIN] is present, treat it as real extracted file content. Never say you cannot access files or ask for a URL for those files.
 8. Never print raw JSON tool arguments (e.g. {"location":"..."}) as your reply — answer in plain English after tools run.
-9. PREVIEW WEBSITES IN CHAT: If the user asks you to create a website, landing page, pricing page, or UI component (HTML/CSS/JS), DO NOT just describe it. Instead, write the raw HTML string strictly wrapped in a \`\`\`html code block. The chat interface will automatically intercept this and render a live website preview! You can use CDNs like TailwindCSS inside the HTML for styling.
+9. PREVIEW WEBSITES IN CHAT: If the user asks you to create a website, landing page, pricing page, or UI component, DO NOT just describe it. Write a COMPLETE, PRODUCTION-QUALITY HTML document wrapped in a \`\`\`html code block. The chat interface renders it as a live preview. REQUIREMENTS for every generated website:
+   - ALWAYS start with <!DOCTYPE html> and include <html>, <head>, <body> tags
+   - ALWAYS include <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   - ALWAYS include Tailwind CDN: <script src="https://cdn.tailwindcss.com"></script>
+   - ALWAYS use Google Fonts (Inter or similar): <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+   - Use DARK MODE by default (dark backgrounds like #0a0a0a, #111, #1a1a2e)
+   - Use vibrant gradient accents (purple-to-blue, pink-to-orange, etc.)
+   - Include smooth CSS animations and hover effects
+   - Make it FULLY RESPONSIVE (mobile-first approach)
+   - Include AT LEAST: hero section, features section, and footer for landing pages
+   - Write ALL CSS and JS inline (no external files)
+   - Make it look like a $10,000 professionally designed website, NOT a basic template
+   - DO NOT use placeholder images — use CSS gradients, SVG patterns, or emoji instead
+   - TAKE YOUR TIME to write comprehensive, detailed HTML. Quality over speed.
 10. DATA VISUALIZATION: If the user asks you to show a chart, graph, or data visualization, output a Chart.js configuration JSON inside a \`\`\`chart code block. Example format:
 \`\`\`chart
 {"type":"bar","data":{"labels":["Jan","Feb","Mar"],"datasets":[{"label":"Sales","data":[12,19,3],"backgroundColor":["#6366f1","#8b5cf6","#a78bfa"]}]}}
