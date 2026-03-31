@@ -10,8 +10,8 @@ export async function POST(req: Request) {
   
   if (!userId) {
     // Check if user_id is passed in body (from internal agent calls)
-    const body = await req.json().catch(() => ({}));
-    userId = body.user_id;
+    const bodyClone = await req.clone().json().catch(() => ({}));
+    userId = bodyClone.user_id;
   }
   
   if (!userId) {

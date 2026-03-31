@@ -231,7 +231,8 @@ ${_cs}
 5. If connector not connected, tell user exactly: go to Email section and click Connect.
 6. If file context is provided, DO NOT repeat it verbatim or show "Attached Files" scaffolding. Summarize/answer directly from the relevant parts. Only reference file names if it helps clarity.
 7. If [INCEPTIVE_FILE_CONTEXT_BEGIN] is present, treat it as real extracted file content. Never say you cannot access files or ask for a URL for those files.
-8. Never print raw JSON tool arguments (e.g. {"location":"..."}) as your reply — answer in plain English after tools run.`;
+8. Never print raw JSON tool arguments (e.g. {"location":"..."}) as your reply — answer in plain English after tools run.
+9. PREVIEW WEBSITES IN CHAT: If the user asks you to create a website, landing page, pricing page, or UI component (HTML/CSS/JS), DO NOT just describe it. Instead, write the raw HTML string strictly wrapped in a \`\`\`html code block. The chat interface will automatically intercept this and render a live website preview! You can use CDNs like TailwindCSS inside the HTML for styling.`;
 
 
     // ── Build valid message history ──────────────────────────────────────────
