@@ -7,7 +7,7 @@ export type RoutedModel = {
 function classify(text: string) {
   const t = (text || "").toLowerCase();
   const wantsCode =
-    /\b(code|bug|typescript|javascript|react|next\.js|tailwind|supabase|sql|api route|compile|build)\b/.test(t) ||
+    /\b(code|bug|typescript|javascript|python|react|next\.js|tailwind|supabase|sql|api route|compile|build|function|algorithm|sort|debug|refactor)\b/.test(t) ||
     /```/.test(t);
   const wantsResearch =
     /\b(research|sources|citations|cite|links|market|landscape|box office|verify|fact check)\b/.test(t);
@@ -19,9 +19,13 @@ function classify(text: string) {
 /**
  * Route a request to a best-fit model.
  *
- * NOTE (free-only mode):
- * - Prefer Gemini Flash for most tasks (cheap/free-tier friendly).
- * - Keep hooks for OpenAI/Claude/OpenRouter so you can upgrade later without refactors.
+ * Smart routing:
+ * - Code tasks → Qwen 2.5 Coder (specialized for coding, free via OpenRouter)
+ * - Research → Gemini 2.0 Flash (fast, great context)
+ * - Writing → Gemini 2.0 Flash
+ * - Default → Gemini 2.0 Flash
+ *
+ * If GROQ_API_KEY is set, stream/route.ts overrides with Groq for non-BYOK users.
  */
 export function routeModel(params: {
   lastUserMessage: string;
@@ -31,7 +35,7 @@ export function routeModel(params: {
 }): RoutedModel {
   const { wantsCode, wantsResearch, wantsWriting } = classify(params.lastUserMessage);
 
-  // If the user explicitly set a model/provider, respect it unless we must force free-only.
+  // If the user explicitly set a model/provider, respect it.
   const preferredProvider = (params.userPreferredProvider || "").toLowerCase().trim();
   const preferredModel = (params.userPreferredModel || "").trim();
 
@@ -43,14 +47,12 @@ export function routeModel(params: {
     };
   }
 
-  // Free-only: route by task type.
-  // Note: non-BYOK chat already prefers Groq in the stream route when GROQ_API_KEY is present.
+  // Smart routing by task type
+  if (wantsCode) {
+    return { provider: "openrouter", model: "qwen/qwen-2.5-coder-32b-instruct", reason: "Code/engineering → Qwen Coder" };
+  }
   if (wantsResearch) {
     return { provider: "openrouter", model: "google/gemini-2.0-flash-001", reason: "Research/query answering" };
-  }
-  if (wantsCode) {
-    // Code tends to be more reliable on Gemini Flash via OpenRouter in this stack.
-    return { provider: "openrouter", model: "google/gemini-2.0-flash-001", reason: "Code/engineering" };
   }
   if (wantsWriting) {
     return { provider: "openrouter", model: "google/gemini-2.0-flash-001", reason: "Writing/drafting" };
@@ -58,4 +60,3 @@ export function routeModel(params: {
 
   return { provider: "openrouter", model: "google/gemini-2.0-flash-001", reason: "Default" };
 }
-

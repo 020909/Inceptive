@@ -13,6 +13,8 @@ import { DashboardCodePanel } from "@/components/dashboard/dashboard-code-panel"
 import { HtmlPreview } from "@/components/ui/html-preview";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
 import { WebsitePreviewPanel } from "@/components/dashboard/website-preview-panel";
+import { TTSButton } from "@/components/ui/tts-button";
+import { ChartPreview } from "@/components/ui/chart-preview";
 
 type AttachedFile = { name: string; content: string };
 
@@ -130,17 +132,23 @@ function ChatMessage({
     streaming &&
     (!msg.content?.trim() || isLikelyRawToolArgsJson(msg.content));
 
-  // Extract HTML blocks to render standard text + the preview sandbox
+  // Extract HTML and chart blocks to render rich content
   const renderContent = (content: string) => {
     if (isUser) return content;
-    const parts = content.split(/```html\n([\s\S]*?)\n```/g);
     
-    if (parts.length === 1) return content; // No HTML blocks
+    // Split on both ```html and ```chart blocks
+    const parts = content.split(/(```(?:html|chart)\n[\s\S]*?\n```)/g);
+    
+    if (parts.length === 1) return content; // No special blocks
     
     return parts.map((part, index) => {
-      // Every odd index in split with a capture group is the captured group (the code itself)
-      if (index % 2 === 1) {
-        return <HtmlPreview key={index} code={part} onOpenSplitScreen={onOpenPreview} />;
+      const htmlMatch = part.match(/^```html\n([\s\S]*?)\n```$/);
+      if (htmlMatch) {
+        return <HtmlPreview key={index} code={htmlMatch[1]} onOpenSplitScreen={onOpenPreview} />;
+      }
+      const chartMatch = part.match(/^```chart\n([\s\S]*?)\n```$/);
+      if (chartMatch) {
+        return <ChartPreview key={index} config={chartMatch[1]} />;
       }
       return part.trim() ? <span key={index}>{part}</span> : null;
     });
@@ -174,6 +182,11 @@ function ChatMessage({
             </div>
           )}
         </div>
+        {!isUser && msg.content && msg.content.length > 20 && !showGenerating && (
+          <div className="mt-1 flex items-center gap-1">
+            <TTSButton text={msg.content} />
+          </div>
+        )}
       </div>
     </motion.div>
   );

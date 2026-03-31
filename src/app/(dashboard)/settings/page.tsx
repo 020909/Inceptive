@@ -74,8 +74,23 @@ const PROVIDERS = [
       { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet", description: "Via OpenRouter · Recommended" },
       { id: "openai/gpt-4o", name: "GPT-4o", description: "Via OpenRouter" },
       { id: "google/gemini-2.0-flash-001", name: "Gemini 2.0 Flash", description: "Via OpenRouter" },
+      { id: "qwen/qwen-2.5-coder-32b-instruct", name: "Qwen 2.5 Coder 32B", description: "Free · Best for coding" },
       { id: "meta-llama/llama-3.1-405b-instruct", name: "Llama 3.1 405B", description: "Open source · Free tier" },
       { id: "mistralai/mistral-large", name: "Mistral Large", description: "Via OpenRouter" },
+    ],
+  },
+  {
+    id: "groq",
+    name: "Groq",
+    description: "Ultra-fast inference — free tier available",
+    logo: "/logos/ai/openrouter.png",
+    keyPrefix: "gsk_",
+    keyHint: "Starts with gsk_",
+    keyUrl: "https://console.groq.com/keys",
+    models: [
+      { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B", description: "Fast · Free tier · Recommended" },
+      { id: "llama-3.1-8b-instant", name: "Llama 3.1 8B", description: "Fastest · Free tier" },
+      { id: "gemma2-9b-it", name: "Gemma 2 9B", description: "Google · Free tier" },
     ],
   },
 ];
