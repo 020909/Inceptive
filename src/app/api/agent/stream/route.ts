@@ -962,8 +962,8 @@ The chat interface will automatically render this as an interactive chart. Use v
               const result = await response.json();
               console.log("[generateImage] Result:", JSON.stringify(result).slice(0, 500));
               
-              if (!result.success) {
-                return { status: "error", message: result.error || "Image generation failed. Make sure HUGGING_FACE_API_KEY is set in Vercel." };
+              if (result.status !== "success") {
+                return { status: "error", message: result.error || "Image generation failed." };
               }
               return {
                 status: "success",
