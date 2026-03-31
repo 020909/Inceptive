@@ -73,12 +73,13 @@ function GeneratedFileCard({ result, toolName }: { result: any; toolName: string
 
   if (toolName === "generateImage") {
     return (
-      <div className="mt-3 relative group rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-elevated)] inline-block max-w-[500px] w-full">
-        {/* The actual image loads instantly from URL */}
+      <div className="mt-3 relative group rounded-xl overflow-hidden border border-[var(--border-subtle)] inline-block">
+        {/* Image perfectly hugs the generated content */}
         <img 
           src={result.image} 
           alt={result.prompt || "Generated AI image"} 
-          className="w-full h-auto object-contain block max-h-[500px]"
+          className="block max-w-[480px] w-auto h-auto max-h-[500px] object-contain"
+          style={{ display: 'block' }}
         />
         {/* Overlay download button */}
         <button 
@@ -171,11 +172,15 @@ function ChatMessage({
   onOpenPreview?: (code: string) => void;
 }) {
   const isUser = msg.role === "user";
+  const isDone = !streaming || !isLastAssistant;
   const showGenerating =
     !isUser &&
     isLastAssistant &&
     streaming &&
     (!msg.content?.trim() || isLikelyRawToolArgsJson(msg.content));
+
+  // Only show task logs while streaming; hide once done
+  const visibleLogs = isDone ? [] : (msg.taskLogs || []);
 
   // Extract HTML and chart blocks to render rich content
   const renderContent = (content: string) => {
@@ -206,7 +211,7 @@ function ChatMessage({
       className={`flex ${isUser ? "justify-end" : "justify-start"}`}
     >
       <div className={`max-w-[85%] sm:max-w-[80%] ${isUser ? "ml-8" : "mr-8"} w-full`}>
-        {!isUser && msg.taskLogs && msg.taskLogs.length > 0 && <ProgressIndicator logs={msg.taskLogs} />}
+        {!isUser && visibleLogs && visibleLogs.length > 0 && <ProgressIndicator logs={visibleLogs} />}
         <div
           className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap w-full overflow-hidden ${
             isUser
@@ -401,7 +406,7 @@ function DashboardExperience() {
             sendLockRef.current = false;
           })
         );
-      }, 35000);
+      }, 55000);
 
       try {
         const res = await fetch("/api/agent/stream", {
@@ -572,9 +577,9 @@ function DashboardExperience() {
   }, [messages]);
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg-app)] text-[var(--fg-primary)]">
+    <div className="flex h-screen bg-[var(--bg-app)] text-[var(--fg-primary)] overflow-hidden">
     {/* ── LEFT PANEL (Chat) ── */}
-    <div className={`flex flex-col min-h-screen transition-all duration-300 ${previewCode ? 'w-1/2' : 'w-full'}`}>
+    <div className={`flex flex-col h-screen transition-all duration-300 ${previewCode ? 'w-1/2' : 'w-full'} overflow-hidden`}>
       <header className="flex shrink-0 items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3 sm:px-6">
         <div className="flex min-w-[120px] items-center gap-2">
           {streaming && <GeneratingEllipsis className="text-xs text-[var(--fg-muted)]" />}
@@ -628,9 +633,9 @@ function DashboardExperience() {
         }}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden">
         {!hasChat ? (
-          <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 py-10 sm:px-6">
+          <div className="flex flex-1 flex-col justify-center overflow-y-auto px-4 py-10 sm:px-6">
             <div className="mx-auto w-full max-w-4xl">
               <h1 className="mb-8 text-center text-3xl font-bold tracking-tight text-[var(--fg-primary)] sm:text-4xl">
                 How can I help you today?
@@ -685,8 +690,8 @@ function DashboardExperience() {
           </div>
         ) : (
           <>
-            <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6">
-              <div className="mx-auto max-w-4xl pb-4 pt-8 sm:pt-12">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6">
+              <div className="mx-auto max-w-4xl pb-6 pt-8 sm:pt-12">
                 <div className="space-y-4 pb-4">
                   {messages.map((msg, i) => {
                     const isLast = i === messages.length - 1;
@@ -759,7 +764,7 @@ function DashboardExperience() {
     </div>
     {/* ── RIGHT PANEL (Live Preview) ── */}
     {previewCode && (
-      <div className="w-1/2 min-h-screen border-l border-[var(--border-subtle)]">
+      <div className="w-1/2 h-screen border-l border-[var(--border-subtle)] overflow-hidden">
         <WebsitePreviewPanel
           code={previewCode}
           onClose={() => setPreviewCode(null)}

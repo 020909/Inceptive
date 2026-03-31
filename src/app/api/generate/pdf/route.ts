@@ -5,6 +5,24 @@ import { jsPDF } from "jspdf";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** Strip markdown formatting symbols from a line of text */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/^#{1,6}\s+/, "") // Remove # heading prefixes
+    .replace(/\*\*(.+?)\*\*/g, "$1") // Remove **bold**
+    .replace(/\*(.+?)\*/g, "$1") // Remove *italic*
+    .replace(/__(.+?)__/g, "$1") // Remove __underline__
+    .replace(/_(.+?)_/g, "$1") // Remove _italic_
+    .replace(/~~(.+?)~~/g, "$1") // Remove ~~strikethrough~~
+    .replace(/`(.+?)`/g, "$1") // Remove `inline code`
+    .replace(/^[-*+]\s+/, "") // Remove list bullets
+    .replace(/^\d+\.\s+/, "") // Remove numbered list prefixes
+    .replace(/^>\s+/, "") // Remove blockquotes
+    .replace(/\[(.+?)\]\(.*?\)/g, "$1") // Convert links to plain text
+    .replace(/!\[.*?\]\(.*?\)/g, "") // Remove images
+    .trim();
+}
+
 export async function POST(req: Request) {
   let userId = await getAuthenticatedUserIdFromRequest(req);
 
@@ -19,7 +37,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { content = "", title = "Document", filename = "document.pdf", user_id: passedUserId } = body;
+    const { content = "", title = "Document", filename = "document.pdf" } = body;
 
     if (!content || typeof content !== "string") {
       return NextResponse.json({ error: "Invalid content" }, { status: 400 });
@@ -28,35 +46,64 @@ export async function POST(req: Request) {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
     // Title
-    doc.setFontSize(22);
+    doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
+    doc.setTextColor(20, 20, 20);
     doc.text(title, 20, 25);
 
     // Divider line
     doc.setDrawColor(200, 200, 200);
-    doc.line(20, 30, 190, 30);
+    doc.line(20, 31, 190, 31);
 
-    // Body content — split into lines that fit the page
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-
-    const pageWidth = 170; // usable width in mm
+    const pageWidth = 170;
     const lineHeight = 7;
-    const maxY = 280; // bottom margin
-    let y = 40;
+    const maxY = 278;
+    let y = 42;
 
     const paragraphs = content.split("\n");
-    for (const paragraph of paragraphs) {
-      const lines = doc.splitTextToSize(paragraph || " ", pageWidth);
-      for (const line of lines) {
-        if (y > maxY) {
-          doc.addPage();
-          y = 20;
-        }
-        doc.text(line, 20, y);
-        y += lineHeight;
+    for (const rawParagraph of paragraphs) {
+      const paragraph = rawParagraph.trim();
+      if (!paragraph) {
+        y += 3; // Small gap for blank lines
+        continue;
       }
-      y += 3; // paragraph spacing
+
+      // Detect section headings (lines starting with #)
+      const isHeading = /^#{1,6}\s/.test(paragraph);
+      // Detect list items
+      const isBullet = /^[-*+•\d]\s/.test(paragraph);
+
+      const cleanText = stripMarkdown(paragraph);
+      if (!cleanText) continue;
+
+      if (isHeading) {
+        // Render as bold subheading
+        if (y > maxY) { doc.addPage(); y = 20; }
+        doc.setFontSize(13);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(30, 30, 30);
+        y += 3;
+        const lines = doc.splitTextToSize(cleanText, pageWidth);
+        for (const line of lines) {
+          if (y > maxY) { doc.addPage(); y = 20; }
+          doc.text(line, 20, y);
+          y += lineHeight;
+        }
+        y += 2;
+      } else {
+        // Normal body text
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(60, 60, 60);
+        const prefix = isBullet ? "  • " : "";
+        const lines = doc.splitTextToSize((prefix + cleanText), pageWidth);
+        for (const line of lines) {
+          if (y > maxY) { doc.addPage(); y = 20; }
+          doc.text(line, 20, y);
+          y += lineHeight - 1;
+        }
+        y += 2;
+      }
     }
 
     const pageCount = doc.getNumberOfPages();
