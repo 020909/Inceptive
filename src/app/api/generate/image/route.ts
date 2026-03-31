@@ -3,6 +3,7 @@ import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // Allow up to 60s to prevent Vercel timeouts for image generation
 
 // Primary: Pollinations.ai (free, no API key needed)
 const POLLINATIONS_URL = "https://image.pollinations.ai/prompt";
@@ -62,7 +63,19 @@ export async function POST(req: Request) {
         }
         console.log(`[ImageGen] HF model ${model} failed: ${result.error}`);
       }
+      return NextResponse.json(
+        { error: "Image generation failed on both Pollinations and Hugging Face." },
+        { status: 500 }
+      );
     }
+
+    // If we reach here, Pollinations failed (e.g., 429) and user has no HF token configured
+    const isRateLimited = pollinationsResult.error?.includes("429");
+    const errorMessage = isRateLimited
+        ? "The free image generator is temporarily rate-limited. Please wait a minute, or add a HUGGING_FACE_API_KEY in Settings to use dedicated models."
+        : pollinationsResult.error || "Image generation failed. Please try again.";
+
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
 
     return NextResponse.json(
       { error: pollinationsResult.error || "Image generation failed. Please try again." },

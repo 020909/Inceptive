@@ -27,7 +27,7 @@ import { describeScreenshotBase64 } from "@/lib/vision/describe-screenshot";
 import { isPistonConfigured, runPistonSubmission, PISTON_LANGUAGE_IDS } from "@/lib/code/piston-client";
 import { z } from "zod";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 export const runtime = "nodejs";
 
 const getAdmin = () => {
@@ -836,7 +836,7 @@ The chat interface will automatically render this as an interactive chart. Use v
                 }),
               });
               const result = await response.json();
-              if (!result.success) {
+              if (result.status !== "success") {
                 return { status: "error", message: result.error || "Failed to generate Excel" };
               }
               return {
@@ -879,7 +879,7 @@ The chat interface will automatically render this as an interactive chart. Use v
                 }),
               });
               const result = await response.json();
-              if (!result.success) {
+              if (result.status !== "success") {
                 return { status: "error", message: result.error || "Failed to generate PowerPoint" };
               }
               return {
@@ -918,7 +918,7 @@ The chat interface will automatically render this as an interactive chart. Use v
                 }),
               });
               const result = await response.json();
-              if (!result.success) {
+              if (result.status !== "success") {
                 return { status: "error", message: result.error || "Failed to generate PDF" };
               }
               return {
