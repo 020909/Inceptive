@@ -22,6 +22,55 @@ type AttachedFile = { name: string; content: string };
 function GeneratedFileCard({ result, toolName }: { result: any; toolName: string }) {
   if (!result || result.status !== "success") return null;
 
+  const handleDownloadImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (result.image) {
+      const a = document.createElement("a");
+      // result.image from the API already includes the data:image/...;base64, prefix
+      a.href = result.image.startsWith("data:") ? result.image : `data:image/jpeg;base64,${result.image}`;
+      a.download = `generated_image_${Date.now()}.jpg`;
+      a.click();
+    }
+  };
+
+  const handleDownloadDoc = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (result.content) {
+      let mime = "application/octet-stream";
+      if (toolName === "generateExcel") mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      if (toolName === "generatePowerPoint") mime = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+      if (toolName === "generatePDF") mime = "application/pdf";
+      
+      const a = document.createElement("a");
+      // Check if it already has data prefix just in case
+      a.href = result.content.startsWith("data:") ? result.content : `data:${mime};base64,${result.content}`;
+      a.download = result.filename || "download";
+      a.click();
+    }
+  };
+
+  if (toolName === "generateImage") {
+    return (
+      <div className="mt-3 relative group rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-elevated)] inline-block max-w-full">
+        {/* The actual image */}
+        <img 
+          src={result.image.startsWith("data:") ? result.image : `data:image/jpeg;base64,${result.image}`} 
+          alt={result.prompt || "Generated AI image"} 
+          className="w-full h-auto max-h-[500px] object-contain block"
+        />
+        {/* Overlay download button */}
+        <button 
+          onClick={handleDownloadImage}
+          className="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-lg text-white opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
+          title="Download Image"
+        >
+          <Download size={16} />
+        </button>
+      </div>
+    );
+  }
+
+  // Fallback for Document types
   let Icon = FileText;
   let bgClass = "bg-zinc-800/40";
   let borderClass = "border-zinc-700/50";
@@ -43,37 +92,10 @@ function GeneratedFileCard({ result, toolName }: { result: any; toolName: string
     bgClass = "bg-red-900/20";
     borderClass = "border-red-800/40";
     description = `${result.pageCount || 1} page document`;
-  } else if (toolName === "generateImage") {
-    Icon = ImageIcon;
-    bgClass = "bg-indigo-900/20";
-    borderClass = "border-indigo-800/40";
-    title = "Generated Image";
-    description = result.prompt || "AI generated image";
   }
 
-  const handleDownload = () => {
-    if (toolName === "generateImage") {
-      if (result.image) {
-        const a = document.createElement("a");
-        a.href = `data:image/jpeg;base64,${result.image}`;
-        a.download = "generated_image.jpg";
-        a.click();
-      }
-    } else if (result.content) {
-      let mime = "application/octet-stream";
-      if (toolName === "generateExcel") mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-      if (toolName === "generatePowerPoint") mime = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-      if (toolName === "generatePDF") mime = "application/pdf";
-      
-      const a = document.createElement("a");
-      a.href = `data:${mime};base64,${result.content}`;
-      a.download = result.filename || "download";
-      a.click();
-    }
-  };
-
   return (
-    <div className={`mt-3 flex items-center justify-between p-3 rounded-xl border ${bgClass} ${borderClass} hover-lift cursor-pointer`} onClick={handleDownload}>
+    <div className={`mt-3 flex items-center justify-between p-3 rounded-xl border ${bgClass} ${borderClass} hover-lift cursor-pointer`} onClick={handleDownloadDoc}>
       <div className="flex items-center gap-3">
         <div className="p-2 bg-black/20 rounded-lg shrink-0">
           <Icon size={18} className="text-[var(--fg-primary)]" />
