@@ -26,24 +26,46 @@ function GeneratedFileCard({ result, toolName }: { result: any; toolName: string
     e.stopPropagation();
     if (result.image) {
       const a = document.createElement("a");
-      // result.image from the API already includes the data:image/...;base64, prefix
       a.href = result.image.startsWith("data:") ? result.image : `data:image/jpeg;base64,${result.image}`;
-      a.download = `generated_image_${Date.now()}.jpg`;
+      a.download = `generated_image_${Date.now()}.jpeg`;
       a.click();
+    }
+  };
+
+  const getDocDataUrl = () => {
+    let mime = "application/octet-stream";
+    if (toolName === "generateExcel") mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    if (toolName === "generatePowerPoint") mime = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    if (toolName === "generatePDF") mime = "application/pdf";
+    return result.content.startsWith("data:") ? result.content : `data:${mime};base64,${result.content}`;
+  };
+
+  const handlePreviewDoc = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (result.content) {
+      const dataUrl = getDocDataUrl();
+      // For PDF, we can use the base64 string directly in an iframe or new tab, but for
+      // large files a Blob URL is better.
+      const arr = dataUrl.split(",");
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const mime = dataUrl.match(/:(.*?);/)?.[1] || "application/octet-stream";
+      const blob = new Blob([u8arr], { type: mime });
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
     }
   };
 
   const handleDownloadDoc = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (result.content) {
-      let mime = "application/octet-stream";
-      if (toolName === "generateExcel") mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-      if (toolName === "generatePowerPoint") mime = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-      if (toolName === "generatePDF") mime = "application/pdf";
-      
       const a = document.createElement("a");
-      // Check if it already has data prefix just in case
-      a.href = result.content.startsWith("data:") ? result.content : `data:${mime};base64,${result.content}`;
+      a.href = getDocDataUrl();
       a.download = result.filename || "download";
       a.click();
     }
@@ -51,12 +73,12 @@ function GeneratedFileCard({ result, toolName }: { result: any; toolName: string
 
   if (toolName === "generateImage") {
     return (
-      <div className="mt-3 relative group rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-elevated)] inline-block max-w-full">
-        {/* The actual image */}
+      <div className="mt-3 relative group rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-elevated)] inline-block max-w-[500px] w-full">
+        {/* The actual image loads instantly from URL */}
         <img 
-          src={result.image.startsWith("data:") ? result.image : `data:image/jpeg;base64,${result.image}`} 
+          src={result.image} 
           alt={result.prompt || "Generated AI image"} 
-          className="w-full h-auto max-h-[500px] object-contain block"
+          className="w-full h-auto object-contain block max-h-[500px]"
         />
         {/* Overlay download button */}
         <button 
@@ -70,42 +92,42 @@ function GeneratedFileCard({ result, toolName }: { result: any; toolName: string
     );
   }
 
-  // Fallback for Document types
+  // Fallback for Document types (Excel, PPT, PDF)
   let Icon = FileText;
-  let bgClass = "bg-zinc-800/40";
-  let borderClass = "border-zinc-700/50";
   let title = result.filename || "Document";
   let description = "";
 
   if (toolName === "generateExcel") {
     Icon = FileSpreadsheet;
-    bgClass = "bg-green-900/20";
-    borderClass = "border-green-800/40";
     description = `${result.rowCount || 0} rows exported`;
   } else if (toolName === "generatePowerPoint") {
     Icon = Presentation;
-    bgClass = "bg-orange-900/20";
-    borderClass = "border-orange-800/40";
     description = `${result.slideCount || 0} slides generated`;
   } else if (toolName === "generatePDF") {
     Icon = FileText;
-    bgClass = "bg-red-900/20";
-    borderClass = "border-red-800/40";
     description = `${result.pageCount || 1} page document`;
   }
 
   return (
-    <div className={`mt-3 flex items-center justify-between p-3 rounded-xl border ${bgClass} ${borderClass} hover-lift cursor-pointer`} onClick={handleDownloadDoc}>
+    <div 
+      className="mt-3 flex items-center justify-between p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover-lift cursor-pointer hover:border-[var(--border-default)] transition-colors" 
+      onClick={handlePreviewDoc}
+      title="Click to preview in new tab"
+    >
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-black/20 rounded-lg shrink-0">
+        <div className="p-2 border border-[var(--border-subtle)] bg-[var(--bg-surface)] rounded-lg shrink-0 shadow-sm">
           <Icon size={18} className="text-[var(--fg-primary)]" />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-medium text-[var(--fg-primary)] truncate max-w-[180px] sm:max-w-[250px]">{title}</p>
-          <p className="text-xs text-[var(--fg-secondary)] truncate">{description}</p>
+          <p className="text-sm font-medium text-[var(--fg-primary)] truncate max-w-[180px] sm:max-w-[250px] leading-tight">{title}</p>
+          <p className="text-[11px] mt-0.5 text-[var(--fg-secondary)] truncate">{description}</p>
         </div>
       </div>
-      <button className="p-2 hover:bg-black/20 rounded-lg transition-colors text-[var(--fg-primary)] shrink-0">
+      <button 
+        onClick={handleDownloadDoc}
+        className="p-2 hover:bg-[var(--bg-surface)] border border-transparent hover:border-[var(--border-subtle)] rounded-lg transition-colors text-[var(--fg-secondary)] hover:text-[var(--fg-primary)] shrink-0 shadow-sm"
+        title="Download File"
+      >
         <Download size={16} />
       </button>
     </div>

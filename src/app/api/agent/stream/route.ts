@@ -816,20 +816,24 @@ The chat interface will automatically render this as an interactive chart. Use v
 
         /* ── GENERATE EXCEL ── */
         generateExcel: {
-          description: "Create an Excel (.xlsx) file with data. Use when user asks to create spreadsheet, Excel file, export data to Excel, make a table in Excel, etc.",
+          description: "Create an Excel (.xlsx) file with data. Use when user asks to create spreadsheet, Excel file, export data to Excel, make a table in Excel, etc. DO NOT CALL THIS TOOL IF YOU ARE ASKING A QUESTION. ONLY CALL WITH FULL DATA.",
           parameters: z.object({
-            data: z.array(z.record(z.string(), z.any())).describe("Array of objects - each object is a row. Example: [{name: 'John', age: 30}, {name: 'Jane', age: 25}]"),
+            data: z.array(z.record(z.string(), z.any())).describe("Array of objects - each object is a row. MUST BE FULLY POPULATED with data."),
             sheetName: z.string().optional().describe("Name of the sheet (default: Sheet1)"),
             filename: z.string().optional().describe("Output filename (default: export.xlsx)"),
           }),
           execute: async (args: { data: Record<string, any>[]; sheetName?: string; filename?: string }) => {
             await deductCredits(user_id, "tool_small").catch(() => {});
             try {
+              if (!args.data || args.data.length === 0) {
+                 return { status: "error", message: "Excel generation aborted: No data provided." };
+              }
+              const safeData = args.data;
               const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com"}/api/generate/excel`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  data: args.data,
+                  data: safeData,
                   sheetName: args.sheetName || "Sheet1",
                   filename: args.filename || "export.xlsx",
                   user_id: user_id,  // Pass user_id for authentication
@@ -854,20 +858,24 @@ The chat interface will automatically render this as an interactive chart. Use v
 
         /* ── GENERATE POWERPOINT ── */
         generatePowerPoint: {
-          description: "Create a PowerPoint (.pptx) presentation. Use when user asks to create a presentation, slide deck, pitch deck, PowerPoint, etc.",
+          description: "Create a PowerPoint (.pptx) presentation. Use when user asks to create a presentation, slide deck, pitch deck, PowerPoint, etc. DO NOT CALL THIS TOOL IF YOU ARE ASKING A QUESTION. ONLY CALL WITH FULL DATA.",
           parameters: z.object({
             slides: z.array(z.object({
               title: z.string().optional().describe("Slide title"),
               content: z.union([z.array(z.string()), z.string()]).optional().describe("Slide content - either array of bullet points or plain text"),
               notes: z.string().optional().describe("Speaker notes for this slide"),
               backgroundColor: z.string().optional().describe("Optional background color (hex)"),
-            })).describe("Array of slides"),
+            })).describe("Array of slides. MUST BE FULLY POPULATED with data."),
             title: z.string().optional().describe("Presentation title"),
             filename: z.string().optional().describe("Output filename (default: presentation.pptx)"),
           }),
           execute: async (args: { slides: any[]; title?: string; filename?: string }) => {
             await deductCredits(user_id, "tool_small").catch(() => {});
             try {
+              if (!args.slides || args.slides.length === 0) {
+                 return { status: "error", message: "PowerPoint generation aborted: No slides provided." };
+              }
+              const safeSlides = args.slides;
               const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com"}/api/generate/powerpoint`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -898,16 +906,19 @@ The chat interface will automatically render this as an interactive chart. Use v
 
         /* ── GENERATE PDF ── */
         generatePDF: {
-          description: "Create a PDF document. Use when user asks to create PDF, generate invoice, make PDF report, etc. YOU MUST PROVIDE EXTENSIVE TEXT CONTENT, DO NOT LEAVE CONTENT BLANK.",
+          description: "Create a PDF document. Use when user asks to create PDF, generate invoice, make PDF report, etc. DO NOT CALL THIS TOOL IF YOU ARE ASKING THE USER A CLARIFICATION QUESTION. ONLY CALL IT WHEN YOU HAVE FULL DATA.",
           parameters: z.object({
-            content: z.string().describe("The full dense text content to put in the PDF. Do not summarize, include everything here."),
+            content: z.string().describe("The dense text/markdown content to put in the PDF. MUST BE FULLY POPULATED with data. Do not summarize."),
             title: z.string().optional().describe("Document title (appears at top, e.g. 'Top 10 Richest People 2025')"),
             filename: z.string().optional().describe("Output filename (e.g. 'report.pdf')"),
           }),
           execute: async (args: { content: string; title?: string; filename?: string }) => {
             await deductCredits(user_id, "tool_small").catch(() => {});
             try {
-              const safeContent = args.content && args.content.trim().length > 0 ? args.content : "Document generation requested without body content.";
+              if (!args.content || args.content.trim().length < 5) {
+                return { status: "error", message: "PDF generation aborted: No content provided by the AI." };
+              }
+              const safeContent = args.content;
               const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com"}/api/generate/pdf`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -938,44 +949,21 @@ The chat interface will automatically render this as an interactive chart. Use v
 
         /* ── GENERATE IMAGE ── */
         generateImage: {
-          description: "Generate AI images from text prompts. Use when user asks to create an image, generate a picture, make art, create a photo, generate image of something, etc. The AI will create a real image file that can be viewed or downloaded.",
+          description: "Generate AI images from text prompts. Use when user asks to create an image, generate a picture, make art, create a photo, generate image of something, etc.",
           parameters: z.object({
-            prompt: z.string().describe("What to draw - be descriptive like 'a cute orange cat sitting on a windowsill' or 'a futuristic city with flying cars at sunset'"),
+            prompt: z.string().describe("Extremely detailed visual prompt - e.g., 'a cinematic photorealistic shot of a young European male in his 40s driving a red sports car in Monaco'"),
           }),
           execute: async (args: { prompt: string }) => {
-            console.log("[generateImage] Called with prompt:", args.prompt);
             await deductCredits(user_id, "tool_small").catch(() => {});
-            try {
-              const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com";
-              console.log("[generateImage] Calling API at:", appUrl + "/api/generate/image");
-              
-              const response = await fetch(`${appUrl}/api/generate/image`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  prompt: args.prompt,
-                  width: 1024,
-                  height: 1024,
-                  user_id: user_id,  // Pass user_id for authentication
-                }),
-              });
-              
-              const result = await response.json();
-              console.log("[generateImage] Result:", JSON.stringify(result).slice(0, 500));
-              
-              if (result.status !== "success") {
-                return { status: "error", message: result.error || "Image generation failed." };
-              }
-              return {
-                status: "success",
-                image: result.image,
-                prompt: result.prompt,
-                message: `Generated image: ${args.prompt}. The AI-generated image is ready!`,
-              };
-            } catch (err: any) {
-              console.error("[generateImage] Error:", err);
-              return { status: "error", message: "Image generation failed: " + err.message };
-            }
+            // Directly return the Pollinations URL. This completely bypasses Vercel Serverless Timeouts!
+            // The browser will load the image instantly without proxying through our API route.
+            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(args.prompt)}?nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
+            return {
+              status: "success",
+              image: imageUrl, // Pass direct URL
+              prompt: args.prompt,
+              message: "Image generated successfully.",
+            };
           },
         },
 
