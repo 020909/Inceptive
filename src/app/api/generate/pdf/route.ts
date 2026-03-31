@@ -46,8 +46,8 @@ export async function POST(req: Request) {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
     // Title
-    doc.setFontSize(20);
-    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setFont("times", "bold");
     doc.setTextColor(20, 20, 20);
     doc.text(title, 20, 25);
 
@@ -79,8 +79,8 @@ export async function POST(req: Request) {
       if (isHeading) {
         // Render as bold subheading
         if (y > maxY) { doc.addPage(); y = 20; }
-        doc.setFontSize(13);
-        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setFont("times", "bold");
         doc.setTextColor(30, 30, 30);
         y += 3;
         const lines = doc.splitTextToSize(cleanText, pageWidth);
@@ -92,8 +92,8 @@ export async function POST(req: Request) {
         y += 2;
       } else {
         // Normal body text
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "normal");
+        doc.setFontSize(12);
+        doc.setFont("times", "normal");
         doc.setTextColor(60, 60, 60);
         const prefix = isBullet ? "  • " : "";
         const lines = doc.splitTextToSize((prefix + cleanText), pageWidth);
@@ -111,7 +111,8 @@ export async function POST(req: Request) {
     // Add page numbers
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.setFontSize(9);
+      doc.setFontSize(10);
+      doc.setFont("times", "normal");
       doc.setTextColor(150);
       doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: "center" });
     }

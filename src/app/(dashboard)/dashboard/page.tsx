@@ -19,6 +19,47 @@ import { ChartPreview } from "@/components/ui/chart-preview";
 
 type AttachedFile = { name: string; content: string };
 
+function AsyncImage({ src, alt, onDownload }: { src: string; alt: string; onDownload: (e: React.MouseEvent) => void }) {
+  const [loaded, setLoaded] = useState(false);
+  const [phase, setPhase] = useState(0);
+
+  useEffect(() => {
+    if (loaded) return;
+    const interval = setInterval(() => {
+      setPhase((p) => (p + 1) % 3);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [loaded]);
+
+  const messages = ["Generating...", "This may take a while...", "Working on it..."];
+
+  return (
+    <div className={`mt-3 relative group rounded-xl overflow-hidden border border-[var(--border-subtle)] inline-flex flex-col bg-[var(--bg-elevated)] items-center justify-center ${loaded ? 'w-max' : 'min-w-[280px] min-h-[160px]'}`}>
+      {!loaded && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--bg-elevated)] z-10 gap-3 p-6 text-center">
+          <div className="w-5 h-5 border-2 border-[var(--fg-muted)] border-t-[var(--fg-primary)] rounded-full animate-spin"></div>
+          <p className="text-sm text-[var(--fg-secondary)] animate-pulse">{messages[phase]}</p>
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        onLoad={() => setLoaded(true)}
+        className={`block max-w-[480px] w-auto h-auto max-h-[500px] object-contain transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+      />
+      {loaded && (
+        <button 
+          onClick={onDownload}
+          className="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-lg text-white opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm z-20"
+          title="Download Image"
+        >
+          <Download size={16} />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function GeneratedFileCard({ result, toolName }: { result: any; toolName: string }) {
   if (!result || result.status !== "success") return null;
 
@@ -72,25 +113,7 @@ function GeneratedFileCard({ result, toolName }: { result: any; toolName: string
   };
 
   if (toolName === "generateImage") {
-    return (
-      <div className="mt-3 relative group rounded-xl overflow-hidden border border-[var(--border-subtle)] inline-block">
-        {/* Image perfectly hugs the generated content */}
-        <img 
-          src={result.image} 
-          alt={result.prompt || "Generated AI image"} 
-          className="block max-w-[480px] w-auto h-auto max-h-[500px] object-contain"
-          style={{ display: 'block' }}
-        />
-        {/* Overlay download button */}
-        <button 
-          onClick={handleDownloadImage}
-          className="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-lg text-white opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
-          title="Download Image"
-        >
-          <Download size={16} />
-        </button>
-      </div>
-    );
+    return <AsyncImage src={result.image} alt={result.prompt || "Generated AI image"} onDownload={handleDownloadImage} />;
   }
 
   // Fallback for Document types (Excel, PPT, PDF)
@@ -392,21 +415,27 @@ function DashboardExperience() {
       const assistantId = `a_${Date.now()}`;
       setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", toolCalls: [], toolResults: [] }]);
 
-      const safetyTimer = setTimeout(() => {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId && !m.content.trim()
-              ? { ...m, content: "I hit a timeout while processing this. Please try once more." }
-              : m
-          )
-        );
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => {
-            setStreaming(false);
-            sendLockRef.current = false;
-          })
-        );
-      }, 55000);
+      let safetyTimer: ReturnType<typeof setTimeout> | undefined;
+      const resetSafetyTimer = () => {
+        if (safetyTimer) clearTimeout(safetyTimer);
+        safetyTimer = setTimeout(() => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId && !m.content.trim()
+                ? { ...m, content: "The connection was lost or timed out. Please try once more." }
+                : m
+            )
+          );
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+              setStreaming(false);
+              sendLockRef.current = false;
+            })
+          );
+        }, 35000); // 35 seconds of IDLE time (no chunks)
+      };
+
+      resetSafetyTimer();
 
       try {
         const res = await fetch("/api/agent/stream", {
@@ -444,6 +473,7 @@ function DashboardExperience() {
         const toolCallIdToName = new Map<string, string>();
 
         while (true) {
+          resetSafetyTimer();
           const { done, value } = await reader.read();
           if (done) break;
 
