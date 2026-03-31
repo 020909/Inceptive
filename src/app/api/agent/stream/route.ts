@@ -45,6 +45,7 @@ const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string 
   searchWeb:           { icon: "", label: () => "Searching the web..." },
   deepResearch:        { icon: "", label: () => "Running deep research..." },
   browseURL:           { icon: "", label: () => "Reading webpage..." },
+  summarizeURL:        { icon: "📋", label: () => "Summarizing URL content..." },
   getWeather:          { icon: "", label: () => "Checking weather..." },
   getStockQuote:       { icon: "", label: () => "Fetching stock price..." },
   getNewsHeadlines:    { icon: "", label: () => "Fetching latest news..." },
@@ -205,6 +206,7 @@ ${_cs}
 ## TOOLS
 - searchWeb: real-time search
 - browseURL: read any webpage
+- summarizeURL: fetch + deeply summarize any URL, PDF link, or article — use when user pastes a link and asks to summarize, explain, or analyze it
 - getWeather: current weather by city or region name (e.g. "Tokyo", "Austin TX")
 - getStockQuote: live stock quote by ticker (e.g. TSLA, AAPL)
 - getNewsHeadlines: news headlines for a topic (aggregates configured sources)
@@ -216,25 +218,32 @@ ${_cs}
 - saveResearchReport: save research report
 - createGoal/createTask/updateGoalProgress: manage goals
 - analyzeData: calculations
-- runCode: execute Python or JavaScript in a sandbox (requires server code execution to be configured)
+- runCode: execute Python or JavaScript in a sandbox
 - generateOutline: plans and roadmaps
 - generateExcel: create Excel (.xlsx) files - use when user asks to create spreadsheet, Excel file, export to Excel, make table
 - generatePowerPoint: create PowerPoint (.pptx) presentations - use when user asks to create presentation, pitch deck, slides
 - generatePDF: create PDF documents - use when user asks to create PDF, invoice, report in PDF
 - generateImage: generate AI images - use when user asks to create an image, generate a picture, make art, create a photo, draw something, generate image of anything. THIS TOOL ACTUALLY WORKS - just call it with a prompt like "a cat" or "sunset over ocean"
 
+## QUALITY STANDARDS (CRITICAL)
+13. Be thorough and detailed. For factual questions (history, science, finance, tech), provide comprehensive answers with context, nuance, and examples — not 2-sentence replies.
+14. Structure long answers with ## headers, bullet points, or numbered lists so they're easy to scan.
+15. When doing research or analysis, reason step-by-step before concluding. Show your thinking.
+16. Use your extensive training knowledge confidently. You know an enormous amount — demonstrate it.
+17. When the user asks "what do you think" or for an opinion, give a confident, specific answer, not hedged non-answers.
+
 ## RULES
 1. CHECK CONNECTED ACCOUNTS above - if Gmail shows CONNECTED, use readGmail immediately when asked about email. Never say you cannot access email if Gmail is connected.
-2. ALWAYS USE TOOLS for real actions. When user says read my email -> call readGmail. When user says send email -> call sendGmail. For weather use getWeather; for a stock price use getStockQuote; for news headlines use getNewsHeadlines — do not invent numbers. When the user asks to run, execute, or verify code output, use runCode (Python/JavaScript) instead of inventing program output.
-3. Be direct - no filler. Lead with action.
-4. After tool calls, clearly summarize results.
+2. ALWAYS USE TOOLS for real actions. When user says read my email → call readGmail. When user says send email → call sendGmail. For weather use getWeather; for a stock price use getStockQuote; for news headlines use getNewsHeadlines — do not invent numbers. When the user asks to run, execute, or verify code output, use runCode (Python/JavaScript) instead of inventing program output.
+3. Be direct - no filler. Lead with action or the key insight.
+4. After tool calls, clearly summarize results in a well-structured way.
 5. If connector not connected, tell user exactly: go to Email section and click Connect.
-6. If file context is provided, DO NOT repeat it verbatim or show "Attached Files" scaffolding. Summarize/answer directly from the relevant parts. Only reference file names if it helps clarity.
-7. If [INCEPTIVE_FILE_CONTEXT_BEGIN] is present, treat it as real extracted file content. Never say you cannot access files or ask for a URL for those files.
-8. Never print raw JSON tool arguments (e.g. {"location":"..."}) as your reply — answer in plain English after tools run.
-11. DOCUMENT GENERATION (CRITICAL): When asked to generate Excel, PDF, or PowerPoint: NEVER refuse, NEVER say you cannot guarantee accuracy, NEVER ask for clarification unless something truly ambiguous. You have FULL knowledge in training data - use it. For "top 10 richest people PDF" → use your knowledge of billionaires and call generatePDF immediately with that data in the 'content' field. The content MUST contain the actual data (names, numbers, etc.) not placeholder text.
-12. IMAGE GENERATION (CRITICAL): When asked to generate an image → call generateImage IMMEDIATELY with a detailed descriptive prompt. Never say "I'll generate" without actually calling the tool.
-9. PREVIEW WEBSITES IN CHAT: If the user asks you to create a website, landing page, pricing page, or UI component, DO NOT just describe it. Write a COMPLETE, PRODUCTION-QUALITY HTML document wrapped in a \`\`\`html code block. The chat interface renders it as a live preview. REQUIREMENTS for every generated website:
+6. If file context is provided, DO NOT repeat it verbatim or show "Attached Files" scaffolding. Summarize/answer directly from the relevant parts.
+7. If [INCEPTIVE_FILE_CONTEXT_BEGIN] is present, treat it as real extracted file content. Never say you cannot access files.
+8. Never print raw JSON tool arguments as your reply — answer in plain English after tools run.
+11. DOCUMENT GENERATION (CRITICAL): When asked to generate Excel, PDF, or PowerPoint: NEVER refuse, NEVER say you cannot guarantee accuracy, NEVER ask for clarification unless something truly ambiguous. You have FULL knowledge in training data - use it. The content MUST contain actual data (names, numbers, etc.) not placeholder text.
+12. IMAGE GENERATION (CRITICAL): When asked to generate an image → call generateImage IMMEDIATELY with a detailed descriptive prompt.
+9. PREVIEW WEBSITES IN CHAT: If the user asks you to create a website, landing page, pricing page, or UI component, write a COMPLETE, PRODUCTION-QUALITY HTML document wrapped in a \`\`\`html code block.
    - ALWAYS start with <!DOCTYPE html> and include <html>, <head>, <body> tags
    - ALWAYS include <meta name="viewport" content="width=device-width, initial-scale=1.0">
    - ALWAYS include Tailwind CDN: <script src="https://cdn.tailwindcss.com"></script>
@@ -379,6 +388,39 @@ The chat interface will automatically render this as an interactive chart. Use v
             await deductCredits(user_id, "browse_url").catch(() => {});
             const content = await browseUrlText(url, 6000);
             return { url, content };
+          },
+        },
+
+        summarizeURL: {
+          description: "Fetch and deeply summarize any URL, article, or webpage. Use when the user pastes a link and asks to summarize, explain, analyze, or understand it.",
+          parameters: z.object({
+            url: z.string().describe("The full URL to fetch and summarize (must start with http:// or https://)"),
+          }),
+          execute: async ({ url }: { url: string }) => {
+            await deductCredits(user_id, "browse_url").catch(() => {});
+            try {
+              const rawContent = await browseUrlText(url, 8000);
+              if (!rawContent || rawContent.trim().length < 50) {
+                return { url, summary: "Could not extract content from this URL.", keyPoints: [], wordCount: 0 };
+              }
+              // Extract key points heuristically (first 5 substantial sentences)
+              const sentences = rawContent
+                .split(/[.!?]\s+/)
+                .map((s: string) => s.trim())
+                .filter((s: string) => s.length > 40 && s.length < 300)
+                .slice(0, 6);
+              const wordCount = rawContent.split(/\s+/).length;
+              // Return full content so the AI model can produce a comprehensive summary
+              return {
+                url,
+                rawContent: rawContent.slice(0, 7000),
+                keyPoints: sentences,
+                wordCount,
+                instruction: "IMPORTANT: Based on the rawContent above, write a comprehensive structured summary with: (1) a 2-3 sentence overview, (2) bullet-point key insights, (3) any numbers/data mentioned, (4) your analysis/opinion if relevant.",
+              };
+            } catch (err: any) {
+              return { url, summary: `Failed to fetch URL: ${err.message}`, keyPoints: [], wordCount: 0 };
+            }
           },
         },
 

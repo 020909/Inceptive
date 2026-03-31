@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState, Suspense } from "react
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X, FileSpreadsheet, Presentation, FileText, Download } from "lucide-react";
+import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X, FileSpreadsheet, Presentation, FileText, Download, Mic, MicOff } from "lucide-react";
 import { useChat, type Message, type ToolResult, type TaskLog } from "@/lib/chat-context";
 import { useAuth } from "@/lib/auth-context";
 import { useSidebar } from "@/components/layout/sidebar";
@@ -299,6 +299,34 @@ function DashboardExperience() {
   const prefillConsumedRef = useRef(false);
   const [codePanelOpen, setCodePanelOpen] = useState(false);
   const [previewCode, setPreviewCode] = useState<string | null>(null);
+  const [isMicListening, setIsMicListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const startMic = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) { alert("Voice input is not supported in this browser. Try Chrome."); return; }
+    if (isMicListening) {
+      recognitionRef.current?.stop();
+      setIsMicListening(false);
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    recognitionRef.current = recognition;
+    recognition.onresult = (event: any) => {
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(transcript);
+    };
+    recognition.onerror = () => { setIsMicListening(false); };
+    recognition.onend = () => { setIsMicListening(false); };
+    recognition.start();
+    setIsMicListening(true);
+  }, [isMicListening]);
 
   // Auto-collapse sidebar when preview opens, restore when it closes
   useEffect(() => {
@@ -714,6 +742,22 @@ function DashboardExperience() {
                     if (files.length > 0) await uploadFiles(files);
                   }}
                 />
+                {/* Mic button for voice dictation */}
+                <div className="flex justify-end -mt-1">
+                  <button
+                    type="button"
+                    onClick={startMic}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200 ${
+                      isMicListening
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse'
+                        : 'text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--border-subtle)]'
+                    }`}
+                    title={isMicListening ? 'Stop voice input' : 'Start voice input'}
+                  >
+                    {isMicListening ? <MicOff size={13} /> : <Mic size={13} />}
+                    <span>{isMicListening ? 'Stop' : 'Voice'}</span>
+                  </button>
+                </div>
                 <InceptiveV0ActionRow items={actionItems} />
               </div>
             </div>
@@ -785,6 +829,22 @@ function DashboardExperience() {
                     if (files.length > 0) await uploadFiles(files);
                   }}
                 />
+                {/* Voice mic button */}
+                <div className="flex justify-end -mt-1">
+                  <button
+                    type="button"
+                    onClick={startMic}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200 ${
+                      isMicListening
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse'
+                        : 'text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--border-subtle)]'
+                    }`}
+                    title={isMicListening ? 'Stop voice input' : 'Start voice input'}
+                  >
+                    {isMicListening ? <MicOff size={13} /> : <Mic size={13} />}
+                    <span>{isMicListening ? 'Stop' : 'Voice'}</span>
+                  </button>
+                </div>
                 <InceptiveV0ActionRow items={actionItems} />
               </div>
             </div>
