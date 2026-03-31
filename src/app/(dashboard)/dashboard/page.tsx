@@ -12,6 +12,7 @@ import { DashboardAiPrompt } from "@/components/ui/ai-prompt-box";
 import { DashboardCodePanel } from "@/components/dashboard/dashboard-code-panel";
 import { HtmlPreview } from "@/components/ui/html-preview";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
+import { WebsitePreviewPanel } from "@/components/dashboard/website-preview-panel";
 
 type AttachedFile = { name: string; content: string };
 
@@ -115,10 +116,12 @@ function ChatMessage({
   msg,
   isLastAssistant,
   streaming,
+  onOpenPreview,
 }: {
   msg: Message;
   isLastAssistant: boolean;
   streaming: boolean;
+  onOpenPreview?: (code: string) => void;
 }) {
   const isUser = msg.role === "user";
   const showGenerating =
@@ -137,7 +140,7 @@ function ChatMessage({
     return parts.map((part, index) => {
       // Every odd index in split with a capture group is the captured group (the code itself)
       if (index % 2 === 1) {
-        return <HtmlPreview key={index} code={part} />;
+        return <HtmlPreview key={index} code={part} onOpenSplitScreen={onOpenPreview} />;
       }
       return part.trim() ? <span key={index}>{part}</span> : null;
     });
@@ -207,6 +210,7 @@ function DashboardExperience() {
   const lastSentRef = useRef<{ text: string; ts: number }>({ text: "", ts: 0 });
   const prefillConsumedRef = useRef(false);
   const [codePanelOpen, setCodePanelOpen] = useState(false);
+  const [previewCode, setPreviewCode] = useState<string | null>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -474,8 +478,20 @@ function DashboardExperience() {
     { icon: FolderUp, label: "Upload Project", onClick: () => fileInputRef.current?.click() },
   ];
 
+  // Auto-detect HTML code in latest assistant message for split-screen
+  useEffect(() => {
+    const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+    if (!lastAssistant?.content) return;
+    const match = lastAssistant.content.match(/```html\n([\s\S]*?)\n```/);
+    if (match?.[1] && match[1].length > 50) {
+      setPreviewCode(match[1]);
+    }
+  }, [messages]);
+
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--bg-app)] text-[var(--fg-primary)]">
+    <div className="flex min-h-screen bg-[var(--bg-app)] text-[var(--fg-primary)]">
+    {/* ── LEFT PANEL (Chat) ── */}
+    <div className={`flex flex-col min-h-screen transition-all duration-300 ${previewCode ? 'w-1/2' : 'w-full'}`}>
       <header className="flex shrink-0 items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3 sm:px-6">
         <div className="flex min-w-[120px] items-center gap-2">
           {streaming && <GeneratingEllipsis className="text-xs text-[var(--fg-muted)]" />}
@@ -598,6 +614,7 @@ function DashboardExperience() {
                         msg={msg}
                         isLastAssistant={isLastAssistant}
                         streaming={streaming}
+                        onOpenPreview={(code) => setPreviewCode(code)}
                       />
                     );
                   })}
@@ -656,6 +673,17 @@ function DashboardExperience() {
           </>
         )}
       </div>
+    </div>
+    {/* ── RIGHT PANEL (Live Preview) ── */}
+    {previewCode && (
+      <div className="w-1/2 min-h-screen border-l border-[var(--border-subtle)]">
+        <WebsitePreviewPanel
+          code={previewCode}
+          onClose={() => setPreviewCode(null)}
+          onCodeChange={(newCode) => setPreviewCode(newCode)}
+        />
+      </div>
+    )}
     </div>
   );
 }

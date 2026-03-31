@@ -1,9 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { Code2, MonitorPlay } from "lucide-react";
+import { Code2, Maximize2, MonitorPlay } from "lucide-react";
 
-export function HtmlPreview({ code }: { code: string }) {
+export function HtmlPreview({
+  code,
+  onOpenSplitScreen,
+}: {
+  code: string;
+  onOpenSplitScreen?: (code: string) => void;
+}) {
   const [view, setView] = useState<"code" | "preview">("preview");
 
   return (
@@ -29,6 +35,15 @@ export function HtmlPreview({ code }: { code: string }) {
         >
           <Code2 size={16} /> Code
         </button>
+        {onOpenSplitScreen && (
+          <button
+            onClick={() => onOpenSplitScreen(code)}
+            className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-overlay)] transition-colors"
+            title="Open in split-screen"
+          >
+            <Maximize2 size={14} /> Expand
+          </button>
+        )}
       </div>
       <div className="relative w-full">
         {view === "preview" ? (

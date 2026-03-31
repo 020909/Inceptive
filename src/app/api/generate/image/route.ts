@@ -4,36 +4,31 @@ import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Hugging Face Inference API endpoint for text-to-image
-// Using Stability AI model which is more reliable on free tier
-const HF_API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0";
+// New HF Router endpoint (api-inference.huggingface.co is deprecated/410)
+const HF_ROUTER_URL = "https://router.huggingface.co/hf-inference/models";
 
-// Alternative models to try if the first one fails
-const FALLBACK_MODELS = [
+// Models to try in order — FLUX.1-schnell is fast and free-tier friendly
+const MODELS = [
+  "black-forest-labs/FLUX.1-schnell",
+  "stabilityai/stable-diffusion-xl-base-1.0",
   "runwayml/stable-diffusion-v1-5",
-  "CompVis/stable-diffusion-v1-4",
 ];
 
 export async function POST(req: Request) {
-  // Try auth header first, then accept user_id from body (for internal agent calls)
   let userId = await getAuthenticatedUserIdFromRequest(req);
-  
+
   if (!userId) {
-    // Check if user_id is passed in body (from internal agent calls)
     const bodyClone = await req.clone().json().catch(() => ({}));
     userId = bodyClone.user_id;
   }
-  
+
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const body = await req.json();
-    const { prompt, model, width = 1024, height = 1024, num_inference_steps = 20, guidance_scale = 3.5, user_id: passedUserId } = body;
-    
-    // Use passed user_id if present (internal agent call)
-    const effectiveUserId = passedUserId || userId;
+    const { prompt, width = 1024, height = 1024, num_inference_steps = 4, guidance_scale = 3.5 } = body;
 
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json({ error: "Missing or invalid prompt" }, { status: 400 });
@@ -42,21 +37,18 @@ export async function POST(req: Request) {
     const hfToken = process.env.HUGGING_FACE_API_KEY?.trim();
     if (!hfToken) {
       return NextResponse.json(
-        { error: "HUGGING_FACE_API_KEY not configured. Add it in Vercel env variables." },
+        { error: "HUGGING_FACE_API_KEY not configured." },
         { status: 501 }
       );
     }
 
-    // Try primary model first
-    let result = await generateImage(hfToken, HF_API_URL, prompt, width, height, num_inference_steps, guidance_scale);
-    
-    // Try fallback models if primary fails
-    if (!result.success && result.error) {
-      for (const fallbackModel of FALLBACK_MODELS) {
-        const fallbackUrl = `https://api-inference.huggingface.co/models/${fallbackModel}`;
-        result = await generateImage(hfToken, fallbackUrl, prompt, width, height, num_inference_steps, guidance_scale);
-        if (result.success) break;
-      }
+    let result: { success: boolean; image?: string; error?: string } = { success: false };
+
+    for (const model of MODELS) {
+      const apiUrl = `${HF_ROUTER_URL}/${model}`;
+      result = await generateImage(hfToken, apiUrl, prompt, width, height, num_inference_steps, guidance_scale);
+      if (result.success) break;
+      console.log(`[ImageGen] Model ${model} failed: ${result.error}, trying next...`);
     }
 
     if (!result.success) {
@@ -64,10 +56,9 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
-      success: true,
+      status: "success",
       image: result.image,
       prompt,
-      model: "FLUX.1-schnell",
       width,
       height,
     });
@@ -96,27 +87,24 @@ async function generateImage(
       body: JSON.stringify({
         inputs: prompt,
         parameters: {
-          width,
-          height,
+          width: Math.min(width, 1024),
+          height: Math.min(height, 1024),
           num_inference_steps,
           guidance_scale,
         },
       }),
-      signal: AbortSignal.timeout(120000), // 2 minute timeout for image generation
+      signal: AbortSignal.timeout(120000),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      return { success: false, error: `HF API error: ${response.status} - ${errorText}` };
+      const errorText = await response.text().catch(() => "Unknown error");
+      return { success: false, error: `HF API error: ${response.status} - ${errorText.slice(0, 200)}` };
     }
 
-    // Response is a binary image - convert to base64
     const buffer = await response.arrayBuffer();
     const base64 = Buffer.from(buffer).toString("base64");
-    
-    // Determine content type
     const contentType = response.headers.get("content-type") || "image/png";
-    
+
     return {
       success: true,
       image: `data:${contentType};base64,${base64}`,
@@ -126,17 +114,9 @@ async function generateImage(
   }
 }
 
-// Simple GET endpoint for testing
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const prompt = searchParams.get("prompt") || "A beautiful sunset over the ocean";
-
+export async function GET() {
   return NextResponse.json({
     message: "Use POST method with {prompt: 'your prompt'} to generate images",
-    example: {
-      prompt: "A cute cat sitting on a chair",
-      width: 1024,
-      height: 1024,
-    },
+    example: { prompt: "A cute cat sitting on a chair", width: 1024, height: 1024 },
   });
 }
