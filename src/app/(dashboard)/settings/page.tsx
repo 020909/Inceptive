@@ -145,7 +145,14 @@ export default function SettingsPage() {
   const { user, session, refresh: refreshAuth } = useAuth();
   const { theme, setTheme } = useTheme();
   const { memoryEnabled, setMemoryEnabled } = useChat();
-  const { is24_7Mode, toggle24_7Mode, requiresApproval, setRequiresApproval, sleepAfterMinutes, setSleepAfterMinutes } = useAgent();
+  const { 
+    is24_7Mode, toggle24_7Mode, 
+    requiresApproval, setRequiresApproval, 
+    sleepAfterMinutes, setSleepAfterMinutes,
+    aiName, setAiName,
+    aiPersonality, setAiPersonality,
+    aiTone, setAiTone
+  } = useAgent();
   const [savingMemory, setSavingMemory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -424,6 +431,58 @@ export default function SettingsPage() {
             {/* Agent Settings */}
             {activeSection === "agent" && (
               <motion.div key="agent" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
+                <Card>
+                  <CardHeader title="AI Personality" description="Define how your agent identifies and speaks" />
+                  <div className="p-5 space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                      <div className="space-y-1.5 flex flex-col">
+                        <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Name</Label>
+                        <select
+                          value={aiName}
+                          onChange={(e) => setAiName(e.target.value)}
+                          className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--fg-primary)] outline-none focus:border-[var(--fg-tertiary)] transition-colors h-10"
+                        >
+                          <option value="Inceptive">Inceptive (Default)</option>
+                          <option value="Jarvis">Jarvis</option>
+                          <option value="Aria">Aria</option>
+                          <option value="Nexus">Nexus</option>
+                          <option value="Assistant">Assistant</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5 flex flex-col">
+                        <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Personality</Label>
+                        <select
+                          value={aiPersonality}
+                          onChange={(e) => setAiPersonality(e.target.value)}
+                          className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--fg-primary)] outline-none focus:border-[var(--fg-tertiary)] transition-colors h-10"
+                        >
+                          <option value="Professional">Professional (Default)</option>
+                          <option value="Friendly">Friendly & Approachable</option>
+                          <option value="Witty">Witty & Sarcastic</option>
+                          <option value="Direct">Direct & Concise</option>
+                          <option value="Academic">Academic & Analytical</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5 flex flex-col">
+                        <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Tone</Label>
+                        <select
+                          value={aiTone}
+                          onChange={(e) => setAiTone(e.target.value)}
+                          className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--fg-primary)] outline-none focus:border-[var(--fg-tertiary)] transition-colors h-10"
+                        >
+                          <option value="Helpful">Helpful (Default)</option>
+                          <option value="Formal">Formal</option>
+                          <option value="Casual">Casual</option>
+                          <option value="Enthusiastic">Enthusiastic</option>
+                          <option value="Dry">Dry</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
                 <Card>
                   <CardHeader title="24/7 Autonomous Mode" description="Keep your agent working around the clock" />
                   <div className="p-5 space-y-5">

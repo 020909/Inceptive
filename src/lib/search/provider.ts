@@ -1,4 +1,5 @@
 import { assertUrlSafeForServerFetch } from "@/lib/url-safety";
+import { YoutubeTranscript } from "youtube-transcript";
 
 export type SearchResultItem = {
   title: string;
@@ -57,6 +58,21 @@ async function browseViaJinaReader(originalUrl: string, maxChars: number): Promi
 export async function browseUrlText(url: string, maxChars = 8000): Promise<string> {
   try {
     assertUrlSafeForServerFetch(url);
+
+    // Special handling for YouTube videos: fetch the transcript directly
+    if (url.includes("youtube.com/watch") || url.includes("youtu.be/")) {
+      try {
+        const transcript = await YoutubeTranscript.fetchTranscript(url);
+        if (transcript && transcript.length > 0) {
+          const fullText = transcript.map((t: any) => t.text).join(" ");
+          return `[YOUTUBE VIDEO TRANSCRIPT]\n${fullText.slice(0, maxChars)}`;
+        }
+      } catch (ytErr) {
+        console.warn(`[browseUrlText] Failed to fetch YouTube transcript for ${url}:`, ytErr);
+        // Fall back to normal fetch if transcript fails (e.g. no captions)
+      }
+    }
+
     const res = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; InceptiveBot/1.0; +https://inceptive.ai)",

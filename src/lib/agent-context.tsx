@@ -73,6 +73,14 @@ interface AgentContextValue {
   lastActivity: Date;
   sleepAfterMinutes: number;
   setSleepAfterMinutes: (minutes: number) => void;
+
+  // AI Personality Settings
+  aiName: string;
+  setAiName: (name: string) => void;
+  aiPersonality: string;
+  setAiPersonality: (personality: string) => void;
+  aiTone: string;
+  setAiTone: (tone: string) => void;
 }
 
 const AgentContext = createContext<AgentContextValue | null>(null);
@@ -100,6 +108,12 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
   const [lastActivity, setLastActivity] = useState(new Date());
   const [sleepAfterMinutes, setSleepAfterMinutes] = useState(5);
 
+  // AI Personality
+  const [aiName, setAiName] = useState("Inceptive");
+  const [aiPersonality, setAiPersonality] = useState("Professional");
+  const [aiTone, setAiTone] = useState("Helpful");
+
+  const fullPrefsRef = useRef<any>({});
   const activityTimeoutRef = useRef<NodeJS.Timeout>(null);
 
   // Derived status based on state
@@ -274,9 +288,13 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
 
       if (data?.agent_preferences) {
         const prefs = data.agent_preferences;
+        fullPrefsRef.current = prefs;
         setIs24_7Mode(prefs.is24_7Mode ?? false);
         setRequiresApproval(prefs.requiresApproval ?? false);
         setSleepAfterMinutes(prefs.sleepAfterMinutes ?? 5);
+        if (prefs.aiName) setAiName(prefs.aiName);
+        if (prefs.aiPersonality) setAiPersonality(prefs.aiPersonality);
+        if (prefs.aiTone) setAiTone(prefs.aiTone);
       }
     };
 
@@ -289,21 +307,26 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
 
     const savePreferences = async () => {
       const supabase = createClient();
+      const updatedPrefs = {
+        ...fullPrefsRef.current,
+        is24_7Mode,
+        requiresApproval,
+        sleepAfterMinutes,
+        aiName,
+        aiPersonality,
+        aiTone,
+      };
+      fullPrefsRef.current = updatedPrefs;
+      
       await supabase
         .from("users")
-        .update({
-          agent_preferences: {
-            is24_7Mode,
-            requiresApproval,
-            sleepAfterMinutes,
-          },
-        })
+        .update({ agent_preferences: updatedPrefs })
         .eq("id", user.id);
     };
 
     const timeout = setTimeout(savePreferences, 1000);
     return () => clearTimeout(timeout);
-  }, [user, is24_7Mode, requiresApproval, sleepAfterMinutes]);
+  }, [user, is24_7Mode, requiresApproval, sleepAfterMinutes, aiName, aiPersonality, aiTone]);
 
   const value: AgentContextValue = {
     status,
@@ -331,6 +354,12 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
     lastActivity,
     sleepAfterMinutes,
     setSleepAfterMinutes,
+    aiName,
+    setAiName,
+    aiPersonality,
+    setAiPersonality,
+    aiTone,
+    setAiTone,
   };
 
   return (

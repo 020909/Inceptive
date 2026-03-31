@@ -38,15 +38,41 @@ export async function POST(req: NextRequest) {
   if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { title, messages } = body;
+  const { title: clientTitle, messages } = body;
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return Response.json({ error: "No messages to save" }, { status: 400 });
   }
 
+  let finalTitle = clientTitle || "New Chat";
+  try {
+    const { generateText } = await import("ai");
+    const { createOpenRouter } = await import("@openrouter/ai-sdk-provider");
+    const key = process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY;
+    if (key) {
+      const or = createOpenRouter({ apiKey: key });
+      const contextStr = messages
+        .filter((m: any) => m.role === "user" || m.role === "assistant")
+        .map((m: any) => `${m.role}: ${typeof m.content === "string" ? m.content : "[Multipart Content]"}`)
+        .join("\n")
+        .slice(0, 2500);
+
+      const res = await generateText({
+        model: or("google/gemini-2.5-flash"), 
+        system: "Generate an extremely concise 3-5 word title for this conversation. Only output the title itself. Do not use quotes or special characters.",
+        prompt: `Generate a short title for this conversation:\n\n${contextStr}`
+      });
+      if (res.text && res.text.trim()) {
+        finalTitle = res.text.replace(/["']/g, "").trim();
+      }
+    }
+  } catch (err) {
+    console.warn("[POST /api/chat] Failed to generate AI title, using fallback:", err);
+  }
+
   const { data, error } = await getAdmin()
     .from("chat_sessions")
-    .insert({ user_id: userId, title: title || "Chat", messages })
+    .insert({ user_id: userId, title: finalTitle, messages })
     .select("id")
     .single();
 

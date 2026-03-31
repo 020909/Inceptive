@@ -177,6 +177,14 @@ export async function POST(req: Request) {
     }
 
         // DYNAMIC CONTEXT: fetch live connectors + goals + memory
+    const { data: userData } = await getAdmin()
+      .from('users').select('agent_preferences, raw_user_meta_data').eq('id', user_id).single();
+    const prefs = userData?.agent_preferences || {};
+    const aiName = prefs.aiName || "Inceptive";
+    const aiPersonality = prefs.aiPersonality || "Professional";
+    const aiTone = prefs.aiTone || "Helpful";
+    const userName = userData?.raw_user_meta_data?.display_name || "User";
+
     const { data: _conns } = await getAdmin()
       .from('connected_accounts').select('provider, account_email').eq('user_id', user_id);
     const _ca = (_conns || []) as any[];
@@ -196,7 +204,12 @@ export async function POST(req: Request) {
     const { data: _gl } = await getAdmin()
       .from('goals').select('title,progress_percent').eq('user_id',user_id).eq('status','active').limit(3);
     const _gs = (_gl||[]).map((g:any)=>g.title+'('+g.progress_percent+'%)').join(', ') || 'none';
-    const systemPrompt = `You are Inceptive - a powerful AI agent for entrepreneurs and founders.
+    const systemPrompt = `You are ${aiName} - a powerful AI agent for entrepreneurs and founders.
+The user you are speaking to is named: ${userName}. Address them appropriately.
+Your Personality is: ${aiPersonality}.
+Your Tone is: ${aiTone}.
+
+Adopt this persona and tone throughout the entire conversation. Be helpful, deeply intelligent, and direct.
 
 ## CONNECTED ACCOUNTS (LIVE)
 ${_cs}
@@ -314,13 +327,33 @@ The chat interface will automatically render this as an interactive chart. Use v
     const finalHistory = validHistory.slice(-16);
 
     // Inject file contents into last user message if files attached
-    if (attachedFiles && (attachedFiles as any[]).length > 0 && validHistory.length > 0) {
+    if (attachedFiles && Array.isArray(attachedFiles) && attachedFiles.length > 0 && validHistory.length > 0) {
       const lastMsg = validHistory[validHistory.length - 1];
       if (lastMsg.role === 'user') {
-        const fileCtx = (attachedFiles as any[])
-          .map((f: any) => `[FILE:${f.name}]\n${f.content}`)
+        const fileCtx = attachedFiles
+          .map((f: any) => `[FILE:${f.name}]\n${f.content || "(No text preview available)"}`)
           .join('\n\n');
-        lastMsg.content = lastMsg.content + `\n\n[INCEPTIVE_FILE_CONTEXT_BEGIN]\n${fileCtx}\n[INCEPTIVE_FILE_CONTEXT_END]`;
+        
+        const imageUrls = attachedFiles
+          .filter((f: any) => f.content && typeof f.content === 'string' && f.content.includes("Signed URL: https://") && (f.name.match(/\.(png|jpg|jpeg|webp|gif|svg)$/i) || f.content.includes("image/")))
+          .map((f: any) => {
+            const match = f.content.match(/Signed URL: (https:\/\/[^\s\)]+)/);
+            return match ? match[1] : null;
+          })
+          .filter(Boolean);
+
+        const newTextContent = lastMsg.content + `\n\n[INCEPTIVE_FILE_CONTEXT_BEGIN]\n${fileCtx}\n[INCEPTIVE_FILE_CONTEXT_END]`;
+
+        if (imageUrls.length > 0) {
+          // Convert the last message to an array of parts for multimodal parsing
+          const parts: any[] = [{ type: 'text', text: newTextContent }];
+          for (const url of imageUrls) {
+            parts.push({ type: 'image', image: url });
+          }
+          lastMsg.content = parts as any;
+        } else {
+          lastMsg.content = newTextContent as any;
+        }
       }
     }
 
@@ -1139,6 +1172,11 @@ The chat interface will automatically render this as an interactive chart. Use v
                 .filter(Boolean)
                 .join(" · ")
                 .slice(0, 1200);
+            } else if (toolName === "summarizeURL" && r) {
+              const kc = Array.isArray(r.keyPoints) && r.keyPoints.length > 0 
+                ? r.keyPoints.map((k: string) => `• ${k}`).join("\n") 
+                : "";
+              fallbackFromTools = r.summary || `I've analyzed the URL (${r.wordCount || 0} words).\n\nKey Insights:\n${kc}`;
             } else if (
               (toolName === "getStockQuote" ||
                 (r &&
