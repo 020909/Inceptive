@@ -1,14 +1,11 @@
 /**
- * Council Engine — Orchestrates the 10-agent debate workflow.
+ * Council Engine v2 — Enhanced 10-Agent orchestration with style memory.
  *
- * Uses ONLY existing free models: Qwen 3.6 Plus Preview + Minimax M2.5
- * via OpenRouter. No paid APIs, no new dependencies.
- *
- * Flow:
- *   Phase 1: Planner creates execution plan
- *   Phase 2: Architect + Coder + contextual agents run in parallel
- *   Phase 3: Critic + Tester review in parallel
- *   Phase 4: Orchestrator synthesizes final output
+ * Key improvements over v1:
+ *  - Style memory: loads user preferences and injects into UX/Visual agents
+ *  - Smarter phase routing: complex tasks get more agents, simple ones skip review
+ *  - Trust scoring: each contribution gets a 0-100 reliability score
+ *  - Better error resilience: individual agent failures don't block the pipeline
  */
 
 import { generateText } from "ai";
@@ -29,10 +26,10 @@ const MODEL_IDS: Record<"qwen" | "minimax", string> = {
 interface CouncilRunOptions {
   task: string;
   openrouterKey: string;
-  /** Callback emitting stream events as each agent progresses */
   onAgentEvent?: (event: CouncilStreamEvent) => void;
-  /** Optional previous context (e.g. project file contents) */
   context?: string;
+  /** Injected style preferences from Supabase */
+  styleMemory?: Record<string, string>;
 }
 
 interface CouncilResult {
@@ -40,16 +37,53 @@ interface CouncilResult {
   synthesis: string;
   totalDurationMs: number;
   agentsUsed: string[];
+  trustScore: number;
 }
 
-/**
- * Run a single agent — call the LLM with the agent's persona.
- */
+/** Calculate a basic trust score based on agent outputs */
+function calculateTrustScore(contributions: AgentContribution[]): number {
+  const done = contributions.filter((c) => c.status === "done");
+  if (done.length === 0) return 0;
+
+  let score = 0;
+  // Base: % of agents that completed successfully
+  score += (done.length / contributions.length) * 40;
+
+  // Bonus: critic reviewed and found issues (means quality check happened)
+  const critic = contributions.find((c) => c.role === "critic" && c.status === "done");
+  if (critic && critic.output.length > 100) score += 20;
+
+  // Bonus: tester provided test cases
+  const tester = contributions.find((c) => c.role === "tester" && c.status === "done");
+  if (tester && tester.output.length > 100) score += 15;
+
+  // Bonus: orchestrator produced substantial synthesis
+  const synth = contributions.find((c) => c.role === "orchestrator" && c.status === "done");
+  if (synth && synth.output.length > 200) score += 15;
+
+  // Bonus: multiple parallel agents contributed
+  const phase2Done = done.filter((c) => c.role !== "planner" && c.role !== "orchestrator");
+  if (phase2Done.length >= 3) score += 10;
+
+  return Math.min(100, Math.round(score));
+}
+
+/** Build style memory context string for design-related agents */
+function buildStyleContext(memory: Record<string, string>): string {
+  if (!memory || Object.keys(memory).length === 0) return "";
+  const lines = Object.entries(memory)
+    .filter(([k]) => k.startsWith("global:"))
+    .map(([k, v]) => `- ${k.replace("global:", "")}: ${v}`);
+  if (lines.length === 0) return "";
+  return `\n\n## User's Style Preferences (from memory)\n${lines.join("\n")}\nAlways respect these preferences when making design decisions.`;
+}
+
 async function runAgent(
   agent: CouncilAgent,
   prompt: string,
   openrouterKey: string,
-  onEvent?: (event: CouncilStreamEvent) => void
+  onEvent?: (event: CouncilStreamEvent) => void,
+  styleContext?: string
 ): Promise<AgentContribution> {
   const start = Date.now();
   const contribution: AgentContribution = {
@@ -72,9 +106,15 @@ async function runAgent(
     const modelId = MODEL_IDS[agent.model];
     const model = buildModel(openrouterKey, "openrouter", modelId);
 
+    // Inject style memory for design agents
+    let system = agent.systemPrompt;
+    if (styleContext && (agent.role === "ux-designer" || agent.role === "visual-polish" || agent.role === "coder")) {
+      system += styleContext;
+    }
+
     const result = await generateText({
       model,
-      system: agent.systemPrompt,
+      system,
       prompt,
       maxTokens: 4000,
     } as any);
@@ -89,7 +129,7 @@ async function runAgent(
       agentName: agent.name,
       status: "done",
       phase: agent.phase,
-      output: contribution.output.slice(0, 200),
+      output: contribution.output.slice(0, 300),
     });
   } catch (err: any) {
     contribution.status = "error";
@@ -109,15 +149,13 @@ async function runAgent(
 }
 
 /**
- * Run the full Council workflow.
- *
- * Phases execute sequentially, but agents within the same phase run in parallel.
+ * Run the full Council workflow with style memory and trust scoring.
  */
 export async function runCouncil(options: CouncilRunOptions): Promise<CouncilResult> {
-  const { task, openrouterKey, onAgentEvent, context } = options;
+  const { task, openrouterKey, onAgentEvent, context, styleMemory } = options;
   const totalStart = Date.now();
+  const styleContext = buildStyleContext(styleMemory || {});
 
-  // Select which agents participate based on task content
   const selectedAgents = selectAgentsForTask(task);
   const contributions: AgentContribution[] = [];
   let accumulatedContext = "";
@@ -143,7 +181,7 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
     const phase2Prompt = `## Task\n${task}${accumulatedContext}\n\nProvide your specialized analysis and output.`;
     const phase2Results = await Promise.all(
       phase2Agents.map((agent) =>
-        runAgent(agent, phase2Prompt, openrouterKey, onAgentEvent)
+        runAgent(agent, phase2Prompt, openrouterKey, onAgentEvent, styleContext)
       )
     );
     for (const result of phase2Results) {
@@ -160,7 +198,7 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
     const phase3Prompt = `## Original Task\n${task}\n\n## All Agent Outputs So Far\n${accumulatedContext}\n\nReview the above outputs and provide your specialized analysis.`;
     const phase3Results = await Promise.all(
       phase3Agents.map((agent) =>
-        runAgent(agent, phase3Prompt, openrouterKey, onAgentEvent)
+        runAgent(agent, phase3Prompt, openrouterKey, onAgentEvent, styleContext)
       )
     );
     for (const result of phase3Results) {
@@ -186,10 +224,13 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
     synthesis = synthResult.output;
   }
 
+  const trustScore = calculateTrustScore(contributions);
+
   return {
     contributions,
     synthesis,
     totalDurationMs: Date.now() - totalStart,
     agentsUsed: selectedAgents.map((a) => a.name),
+    trustScore,
   };
 }

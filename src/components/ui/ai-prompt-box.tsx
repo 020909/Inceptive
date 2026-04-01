@@ -301,9 +301,9 @@ export function DashboardAiPrompt({
               handleSend();
             }}
             className={cn(
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all",
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-200 btn-premium",
               hasContent && !isLoading
-                ? "bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90"
+                ? "bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 glow-accent-hover"
                 : "bg-[var(--bg-elevated)] text-[var(--fg-muted)]",
               isLoading && "animate-pulse"
             )}

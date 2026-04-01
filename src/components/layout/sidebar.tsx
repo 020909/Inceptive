@@ -18,6 +18,8 @@ import {
   MessageSquare,
   Plus,
   Clock,
+  FolderKanban,
+  Github,
 } from "lucide-react";
 import { useChat } from "@/lib/chat-context";
 
@@ -55,12 +57,14 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
   { label: "Agent",     href: "/agent",     icon: Bot },
+  { label: "Projects",  href: "/projects",  icon: FolderKanban },
   { label: "Skills",    href: "/skills",    icon: Sparkles },
   { label: "Email",     href: "/email",     icon: Mail },
   { label: "Research",  href: "/research",  icon: Search },
   { label: "Connectors",href: "/social",    icon: Plug },
   { label: "Goals",     href: "/goals",     icon: Target },
   { label: "Reports",   href: "/reports",   icon: FileText },
+  { label: "GitHub",    href: "/github",    icon: Github },
 ];
 
 function BreathingDot() {

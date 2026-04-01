@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Code2,
   Copy,
@@ -12,6 +13,8 @@ import {
   Tablet,
   Monitor,
   X,
+  Check,
+  Play,
 } from "lucide-react";
 
 type ViewMode = "preview" | "code";
@@ -81,9 +84,13 @@ export function WebsitePreviewPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[var(--bg-base)] border-l border-[var(--border-subtle)]">
+    <div className="flex flex-col h-full bg-[var(--bg-base)] glass-panel overflow-hidden">
       {/* ── Top Bar: Tabs + Actions + Device Toggles ── */}
-      <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] shrink-0">
+      <motion.div
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] shrink-0"
+      >
         {/* Left: View Tabs */}
         <div className="flex items-center gap-1">
           <button
@@ -134,33 +141,35 @@ export function WebsitePreviewPanel({
 
         {/* Right: Action Buttons + Close */}
         <div className="flex items-center gap-1">
-          <button
+          <motion.button
+            whileTap={{ scale: 0.92 }}
             onClick={refreshPreview}
-            className="p-1.5 rounded-md text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
-            title="Refresh"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-[var(--accent-soft)] text-[var(--accent)] hover:bg-[var(--accent-muted)] transition-all btn-premium"
+            title="Run Preview"
           >
-            <RefreshCw size={14} />
-          </button>
+            <Play size={11} fill="currentColor" />
+            Run
+          </motion.button>
           <button
             onClick={handleOpenInBrowser}
-            className="p-1.5 rounded-md text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
+            className="p-1.5 rounded-lg text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
             title="Open in new tab"
           >
             <ExternalLink size={14} />
           </button>
           <button
             onClick={handleDownload}
-            className="p-1.5 rounded-md text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
+            className="p-1.5 rounded-lg text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
             title="Download HTML"
           >
             <Download size={14} />
           </button>
           <button
             onClick={handleCopy}
-            className="p-1.5 rounded-md text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
+            className="p-1.5 rounded-lg text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
             title={copied ? "Copied!" : "Copy code"}
           >
-            <Copy size={14} />
+            {copied ? <Check size={14} className="text-[var(--success)]" /> : <Copy size={14} />}
           </button>
           <div className="w-px h-4 bg-[var(--border-subtle)] mx-1" />
           <button
@@ -171,44 +180,62 @@ export function WebsitePreviewPanel({
             <X size={14} />
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Main Content ── */}
       <div className="flex-1 overflow-hidden relative">
-        {view === "preview" ? (
-          <div className="w-full h-full flex items-start justify-center bg-[#0d0d0d] p-4 overflow-auto">
-            <div
-              className="bg-white rounded-xl overflow-hidden shadow-2xl transition-all duration-300"
-              style={{
-                width: DEVICE_WIDTHS[device],
-                maxWidth: "100%",
-                height: device === "desktop" ? "100%" : "auto",
-                minHeight: device !== "desktop" ? "600px" : undefined,
-              }}
+        <AnimatePresence mode="wait">
+          {view === "preview" ? (
+            <motion.div
+              key="preview"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="w-full h-full flex items-start justify-center bg-[#0d0d0d] p-4 overflow-auto"
             >
-              <iframe
-                ref={iframeRef}
-                title="Website Preview"
-                srcDoc={editableCode}
-                sandbox="allow-scripts allow-modals allow-forms"
-                className="w-full border-none"
-                style={{ height: device === "desktop" ? "100%" : "600px" }}
+              <motion.div
+                layout
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="bg-white rounded-xl overflow-hidden shadow-2xl"
+                style={{
+                  width: DEVICE_WIDTHS[device],
+                  maxWidth: "100%",
+                  height: device === "desktop" ? "100%" : "auto",
+                  minHeight: device !== "desktop" ? "600px" : undefined,
+                }}
+              >
+                <iframe
+                  ref={iframeRef}
+                  title="Website Preview"
+                  srcDoc={editableCode}
+                  sandbox="allow-scripts allow-modals allow-forms"
+                  className="w-full border-none"
+                  style={{ height: device === "desktop" ? "100%" : "600px" }}
+                />
+              </motion.div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="code"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="w-full h-full"
+            >
+              <textarea
+                value={editableCode}
+                onChange={(e) => {
+                  setEditableCode(e.target.value);
+                  onCodeChange?.(e.target.value);
+                }}
+                spellCheck={false}
+                className="w-full h-full resize-none bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm p-4 focus:outline-none leading-relaxed"
               />
-            </div>
-          </div>
-        ) : (
-          <div className="w-full h-full">
-            <textarea
-              value={editableCode}
-              onChange={(e) => {
-                setEditableCode(e.target.value);
-                onCodeChange?.(e.target.value);
-              }}
-              spellCheck={false}
-              className="w-full h-full resize-none bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm p-4 focus:outline-none leading-relaxed"
-            />
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

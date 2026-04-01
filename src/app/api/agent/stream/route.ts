@@ -78,6 +78,9 @@ const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string 
   codeGrep:            { icon: "🔍", label: (args: any) => `Searching for "${args.query}"...` },
   readProjectFile:     { icon: "📄", label: (args: any) => `Reading ${args.path.split('/').pop()}...` },
   multiAgentDebate:    { icon: "🧠", label: () => `Running 10-Agent Council Protocol...` },
+  saveStylePreference: { icon: "🎨", label: () => "Saving style preference..." },
+  createProject:       { icon: "📁", label: () => "Creating new project..." },
+  fetchUrl:            { icon: "🌐", label: (args: any) => `Fetching ${args.url?.slice(0, 40)}...` },
 };
 
 /**
@@ -238,6 +241,7 @@ ${_cs}
 
 ## TOOLS
 - searchWeb: real-time search
+- fetchUrl: read, extract, and analyze ANY URL, webpage, article, or YouTube video transcript
 - browseURL: read any webpage
 - summarizeURL: fetch + deeply summarize any URL, PDF link, or article
 - projectMap: list all files in the current codebase to understand project structure
@@ -248,7 +252,10 @@ ${_cs}
 - createGoal/createTask/updateGoalProgress: manage dashboard goals
 - analyzeData/generateOutline: strategy and data tools
 - generateExcel/generatePowerPoint/generatePDF/generateImage: file generation tools
-- computerUse: control a headless browser with vision 
+- computerUse: control a headless browser with vision
+- multiAgentDebate: the 10-Agent Council Protocol (Planner, UX Designer, Architect, Coder, Critic, Tester, Doc Specialist, Visual Polish, Deployer, Orchestrator)
+- saveStylePreference: remember user's design/coding preferences across sessions
+- createProject: create a new organized project for the user
 
 ## QUALITY STANDARDS (CRITICAL)
 13. Be thorough and detailed. For factual questions (history, science, finance, tech), provide comprehensive answers with context, nuance, and examples — not 2-sentence replies.
@@ -268,6 +275,8 @@ ${_cs}
 6. If file context is provided, DO NOT repeat it verbatim or show "Attached Files" scaffolding. Summarize/answer directly from the relevant parts.
 7. If [INCEPTIVE_FILE_CONTEXT_BEGIN] is present, treat it as real extracted file content. Never say you cannot access files.
 8. Never print raw JSON tool arguments as your reply — answer in plain English after tools run.
+9. STYLE MEMORY: When a user mentions a design preference (e.g. "I like rounded corners", "always use Inter font", "dark mode only"), call \`saveStylePreference\` to remember it. The 10-Agent Council will use these preferences in future sessions.
+10. URL ANALYSIS: When user shares a URL or asks to read/analyze/summarize any webpage, article, or YouTube video, use the \`fetchUrl\` tool IMMEDIATELY. Never say you cannot access URLs.
 11. DOCUMENT GENERATION (CRITICAL): When asked to generate Excel, PDF, or PowerPoint: NEVER refuse, NEVER say you cannot guarantee accuracy, NEVER ask for clarification unless something truly ambiguous. You have FULL knowledge in training data - use it. The content MUST contain actual data (names, numbers, etc.) not placeholder text.
 12. IMAGE GENERATION (CRITICAL): When asked to generate an image → call generateImage IMMEDIATELY with a detailed descriptive prompt.
 9. PREVIEW WEBSITES IN CHAT (ULTIMATE QUALITY): If the user asks you to create a website, landing page, pricing page, or UI component:
@@ -448,12 +457,25 @@ The chat interface will automatically render this as an interactive chart. Use v
             try {
               const { runCouncil } = await import("@/lib/agent/council");
 
-              // Stream council events as task logs
+              // Load user's style memory for design agents
+              let styleMemory: Record<string, string> = {};
+              try {
+                const { data: prefs } = await admin
+                  .from("style_preferences")
+                  .select("preference_key, preference_value, context")
+                  .eq("user_id", user_id);
+                if (prefs) {
+                  for (const p of prefs) {
+                    styleMemory[`${p.context}:${p.preference_key}`] = p.preference_value;
+                  }
+                }
+              } catch {} // Style memory is optional
+
               const councilResult = await runCouncil({
                 task: codingRequest,
                 openrouterKey,
+                styleMemory,
                 onAgentEvent: (event) => {
-                  // Stream council event to frontend in real-time
                   const logEntry = {
                     id: `council-${event.agentRole}-${Date.now()}`,
                     action: `${event.agentName}: ${event.status === "thinking" ? "analyzing..." : event.status}`,
@@ -471,14 +493,24 @@ The chat interface will automatically render this as an interactive chart. Use v
                     updated_at: new Date().toISOString(),
                   };
                   const streamLine = `4:${JSON.stringify(logEntry)}\n`;
-                  // Push to response stream if available
                   if (streamEnqueue) streamEnqueue(streamLine);
-                  // Also persist to Supabase (fire-and-forget)
                   void (async () => { try { await admin.from("task_logs").insert({ ...logEntry, user_id }); } catch {} })();
                 },
               });
 
-              // Build a summary of contributions
+              // Emit trust score as a final council event
+              const trustEvent = {
+                id: `council-trust-${Date.now()}`,
+                action: `Trust Score: ${councilResult.trustScore}/100`,
+                status: "done" as const,
+                icon: "🛡️",
+                agent_mode: "council",
+                details: { trustScore: councilResult.trustScore, agentsUsed: councilResult.agentsUsed.length },
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              };
+              if (streamEnqueue) streamEnqueue(`4:${JSON.stringify(trustEvent)}\n`);
+
               const contributionSummary = councilResult.contributions
                 .filter((c) => c.status === "done")
                 .map((c) => `### ${c.name}\n${c.output}`)
@@ -486,15 +518,61 @@ The chat interface will automatically render this as an interactive chart. Use v
 
               return {
                 status: "success",
-                message: `10-Agent Council completed in ${(councilResult.totalDurationMs / 1000).toFixed(1)}s. ${councilResult.agentsUsed.length} agents participated.`,
+                message: `10-Agent Council completed in ${(councilResult.totalDurationMs / 1000).toFixed(1)}s. ${councilResult.agentsUsed.length} agents. Trust: ${councilResult.trustScore}/100.`,
                 agentsUsed: councilResult.agentsUsed,
                 totalDurationMs: councilResult.totalDurationMs,
+                trustScore: councilResult.trustScore,
                 synthesis: councilResult.synthesis,
                 fullDeliberation: contributionSummary,
               };
             } catch (err: any) {
               return { error: `Council Protocol failed: ${err.message}` };
             }
+          },
+        },
+
+        /* ── SAVE STYLE PREFERENCE ── */
+        saveStylePreference: {
+          description: "Remember a user's design/code style preference. Call this when the user says things like 'I prefer dark mode', 'use rounded corners', 'I like Inter font', etc.",
+          parameters: z.object({
+            key: z.string().describe("Preference key, e.g. 'font', 'border-radius', 'color-scheme', 'framework', 'coding-style'"),
+            value: z.string().describe("Preference value, e.g. 'Inter', '12px', 'dark', 'React with TypeScript'"),
+          }),
+          execute: async ({ key, value }: { key: string; value: string }) => {
+            try {
+              await admin.from("style_preferences").upsert({
+                user_id,
+                preference_key: key,
+                preference_value: value,
+                context: "global",
+                updated_at: new Date().toISOString(),
+              }, { onConflict: "user_id,preference_key,context" });
+              return { status: "success", message: `Style preference saved: ${key} = ${value}. I'll remember this for future sessions.` };
+            } catch (err: any) {
+              return { status: "success", message: `Noted: ${key} = ${value}. (Could not persist to DB: ${err.message})` };
+            }
+          },
+        },
+
+        /* ── CREATE PROJECT ── */
+        createProject: {
+          description: "Create a new project for organizing code, documents, or any creative work. Use when user says 'start a new project', 'create a project', etc.",
+          parameters: z.object({
+            name: z.string().describe("Project name"),
+            description: z.string().optional().describe("Brief project description"),
+            template: z.enum(["blank", "nextjs", "react", "landing-page", "api", "document"]).optional(),
+          }),
+          execute: async ({ name, description, template }: { name: string; description?: string; template?: string }) => {
+            const { data, error } = await admin.from("projects").insert({
+              user_id,
+              name,
+              description: description || "",
+              template: template || "blank",
+              files: [],
+              settings: {},
+            }).select().single();
+            if (error) return { status: "error", message: `Failed to create project: ${error.message}` };
+            return { status: "success", project_id: data.id, message: `Project "${name}" created! Find it in your Projects section.` };
           },
         },
 
@@ -559,6 +637,120 @@ The chat interface will automatically render this as an interactive chart. Use v
               return { status: "success", path: args.path, content };
             } catch (e: any) {
               return { status: "error", message: e.message };
+            }
+          },
+        },
+
+        /* ── FETCH & ANALYZE URL ── */
+        fetchUrl: {
+          description: "Fetch and extract clean text content from any URL, webpage, article, or YouTube video. Use when user asks to read, analyze, or summarize a URL or YouTube link.",
+          parameters: z.object({
+            url: z.string().describe("The full URL to fetch (supports any webpage, article, blog, YouTube video, etc.)"),
+            extractType: z.enum(["text", "summary", "full"]).optional().describe("Type of extraction: text (plain text), summary (key points), full (everything)"),
+          }),
+          execute: async ({ url, extractType }: { url: string; extractType?: string }) => {
+            await deductCredits(user_id, "web_search").catch(() => {});
+
+            try {
+              // YouTube handling
+              const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+              if (youtubeMatch) {
+                const videoId = youtubeMatch[1];
+                // Try to get transcript via free API
+                try {
+                  const transcriptRes = await fetch(
+                    `https://yt-transcript-api.vercel.app/api/transcript?videoId=${videoId}`,
+                    { signal: AbortSignal.timeout(10000) }
+                  );
+                  if (transcriptRes.ok) {
+                    const transcriptData = await transcriptRes.json();
+                    const transcript = Array.isArray(transcriptData)
+                      ? transcriptData.map((t: any) => t.text || t.snippet || "").join(" ")
+                      : typeof transcriptData === "string" ? transcriptData : JSON.stringify(transcriptData);
+                    return {
+                      status: "success",
+                      type: "youtube",
+                      videoId,
+                      url,
+                      transcript: transcript.slice(0, 8000),
+                      message: `YouTube transcript extracted (${transcript.length} chars). Analyze and summarize this content.`,
+                    };
+                  }
+                } catch {}
+                // Fallback: return video info
+                return {
+                  status: "partial",
+                  type: "youtube",
+                  videoId,
+                  url,
+                  message: "Could not extract YouTube transcript. The user may need to paste the content or use a different approach.",
+                  embedUrl: `https://www.youtube.com/embed/${videoId}`,
+                };
+              }
+
+              // General webpage fetching
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 15000);
+
+              const res = await fetch(url, {
+                headers: {
+                  "User-Agent": "Mozilla/5.0 (compatible; InceptiveBot/1.0)",
+                  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                },
+                signal: controller.signal,
+                redirect: "follow",
+              });
+              clearTimeout(timeout);
+
+              if (!res.ok) {
+                return { status: "error", message: `Failed to fetch URL: HTTP ${res.status}` };
+              }
+
+              const contentType = res.headers.get("content-type") || "";
+              if (contentType.includes("application/json")) {
+                const json = await res.json();
+                return { status: "success", type: "json", url, content: JSON.stringify(json, null, 2).slice(0, 8000) };
+              }
+
+              const html = await res.text();
+
+              // Simple but effective HTML to text extraction
+              let text = html
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+                .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, "")
+                .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, "")
+                .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, "")
+                .replace(/<[^>]+>/g, " ")
+                .replace(/&nbsp;/g, " ")
+                .replace(/&amp;/g, "&")
+                .replace(/&lt;/g, "<")
+                .replace(/&gt;/g, ">")
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/\s+/g, " ")
+                .trim();
+
+              // Extract title
+              const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+              const title = titleMatch ? titleMatch[1].trim() : url;
+
+              // Extract meta description
+              const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+              const description = descMatch ? descMatch[1].trim() : "";
+
+              return {
+                status: "success",
+                type: "webpage",
+                url,
+                title,
+                description,
+                content: text.slice(0, 8000),
+                contentLength: text.length,
+                message: `Webpage content extracted from "${title}" (${text.length} chars). Analyze this content as requested.`,
+              };
+            } catch (err: any) {
+              return { status: "error", message: `Failed to fetch URL: ${err.message}` };
             }
           },
         },
