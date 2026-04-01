@@ -77,7 +77,7 @@ const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string 
   projectMap:          { icon: "📁", label: () => "Mapping project structure..." },
   codeGrep:            { icon: "🔍", label: (args: any) => `Searching for "${args.query}"...` },
   readProjectFile:     { icon: "📄", label: (args: any) => `Reading ${args.path.split('/').pop()}...` },
-  multiAgentDebate:    { icon: "🧠", label: () => `Running Multi-Agent Debate Protocol...` },
+  multiAgentDebate:    { icon: "🧠", label: () => `Running 10-Agent Council Protocol...` },
 };
 
 /**
@@ -258,8 +258,8 @@ ${_cs}
    - For all coding, debugging, or architectural tasks, ALWAYS follow this 4-step loop. Never summarize or skip steps.
      1. **REASON & PLAN**: Take at least 60 seconds of internal 'thinking' time to architect the entire solution. Do not rush.
      2. **MAP REPOSITORY**: Use \`projectMap\` and \`codeGrep\` to find every relevant file. Use \`readProjectFile\` to understand the existing implementation before suggesting changes.
-     3. **ELITE DEBATE**: You MUST call the \`multiAgentDebate\` tool for all code generation. Engage Qwen 3.6 and Minimax M2.5 simultaneously. Do not write code yourself unless it's a 1-line trivial fix. 
-     4. **PERFECTIONIST SYNTHESIS**: Take the outputs from and synthesize the ULTIMATE, bug-free, 100% production-ready code. 
+     3. **10-AGENT COUNCIL**: You MUST call the \`multiAgentDebate\` tool for all code generation. This activates the full 10-Agent Council: Planner, UX Designer, Architect, Coder (Qwen 3.6 + Minimax M2.5), Critic, Tester, Doc Specialist, Visual Polish, Deployer, and Orchestrator. Do not write code yourself unless it's a 1-line trivial fix. 
+     4. **PERFECTIONIST SYNTHESIS**: The Council's Orchestrator will synthesize the ULTIMATE, bug-free, 100% production-ready code from all 10 agents. Present it to the user. 
    - **NO LAZINESS**: If asked for a "full web app", you must provide at least 400-600 lines of comprehensive HTML/CSS/JS. Include complex layouts, landing pages, footers, animations, and interactive logic. NEVER use placeholders like "additional code here...".
    - **QUALITY OVER SPEED**: You are being judged on the quality and thoroughness of your result, not how fast you finish. Take the full 10 steps if necessary.
 3. ALWAYS USE TOOLS for real actions. When user says read my email → call readGmail. When user says send email → call sendGmail. For weather use getWeather; for a stock price use getStockQuote; for news headlines use getNewsHeadlines — do not invent numbers. 
@@ -370,6 +370,10 @@ The chat interface will automatically render this as an interactive chart. Use v
       }
     }
 
+    // Shared enqueue ref — lets tools stream events to the response in real-time.
+    // Set inside the ReadableStream start() closure, captured by tool execute closures.
+    let streamEnqueue: ((line: string) => void) | null = null;
+
     const result = streamText({
       model,
       system: systemOverride || systemPrompt,
@@ -429,49 +433,67 @@ The chat interface will automatically render this as an interactive chart. Use v
           },
         },
 
-        /* ── MULTI-AGENT DEBATE ── */
+        /* ── MULTI-AGENT COUNCIL (10 Agents) ── */
         multiAgentDebate: {
-          description: "Runs a simultaneous code-generation session with two elite AI models (Qwen 3.6 Plus & Minimax M2.5) to solve a coding request. Use this for all complex programming tasks immediately to get the best possible architecture.",
+          description: "Runs the full 10-Agent Council Protocol: Planner, Architect, UX Designer, Coder (Qwen 3.6 + Minimax M2.5), Critic, Tester, Doc Specialist, Visual Polish, Deployer, and Orchestrator. Use this for ALL complex programming, design, and document tasks.",
           parameters: z.object({
-            codingRequest: z.string().describe("The comprehensive coding task, prompt, or bug to solve. Provide full context."),
+            codingRequest: z.string().describe("The comprehensive task, prompt, or bug to solve. Provide full context including file contents."),
           }),
           execute: async ({ codingRequest }: { codingRequest: string }) => {
             const openrouterKey = process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY || "";
             if (!openrouterKey) {
-              return { error: "OpenRouter key missing, cannot run Multi-Agent Debate." };
+              return { error: "OpenRouter key missing, cannot run Council Protocol." };
             }
 
             try {
-              const { generateText } = await import("ai");
-              
-              // Build the two elite models via OpenRouter using valid platform IDs
-              const qwenModel = buildModel(openrouterKey, "openrouter", "qwen/qwen-plus");
-              const minimaxModel = buildModel(openrouterKey, "openrouter", "minimax/minimax-01");
+              const { runCouncil } = await import("@/lib/agent/council");
 
-              const systemContext = "You are an elite software engineer. Write the best, bug-free, production-ready code to solve the prompt. Do not ask for clarification; make the best technical decisions and provide the code.";
+              // Stream council events as task logs
+              const councilResult = await runCouncil({
+                task: codingRequest,
+                openrouterKey,
+                onAgentEvent: (event) => {
+                  // Stream council event to frontend in real-time
+                  const logEntry = {
+                    id: `council-${event.agentRole}-${Date.now()}`,
+                    action: `${event.agentName}: ${event.status === "thinking" ? "analyzing..." : event.status}`,
+                    status: event.status === "done" ? "done" as const : event.status === "error" ? "error" as const : "running" as const,
+                    icon: "🧠",
+                    agent_mode: "council",
+                    details: {
+                      agentRole: event.agentRole,
+                      agentName: event.agentName,
+                      agentStatus: event.status,
+                      phase: event.phase,
+                      agentOutput: event.output || "",
+                    },
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  };
+                  const streamLine = `4:${JSON.stringify(logEntry)}\n`;
+                  // Push to response stream if available
+                  if (streamEnqueue) streamEnqueue(streamLine);
+                  // Also persist to Supabase (fire-and-forget)
+                  void (async () => { try { await admin.from("task_logs").insert({ ...logEntry, user_id }); } catch {} })();
+                },
+              });
 
-              // Fire both models simultaneously
-              const [qwenDraft, minimaxDraft] = await Promise.all([
-                generateText({
-                  model: qwenModel,
-                  system: systemContext,
-                  prompt: codingRequest,
-                }).catch(e => ({ text: `Qwen failed: ${e.message}` })),
-                generateText({
-                  model: minimaxModel,
-                  system: systemContext,
-                  prompt: codingRequest,
-                }).catch(e => ({ text: `Minimax failed: ${e.message}` }))
-              ]);
+              // Build a summary of contributions
+              const contributionSummary = councilResult.contributions
+                .filter((c) => c.status === "done")
+                .map((c) => `### ${c.name}\n${c.output}`)
+                .join("\n\n---\n\n");
 
               return {
                 status: "success",
-                message: "Both elite agents have returned their solutions. Review both and synthesize them into the ultimate correct codebase.",
-                qwen3_6_Draft: qwenDraft.text,
-                minimax_M2_5_Draft: minimaxDraft.text,
+                message: `10-Agent Council completed in ${(councilResult.totalDurationMs / 1000).toFixed(1)}s. ${councilResult.agentsUsed.length} agents participated.`,
+                agentsUsed: councilResult.agentsUsed,
+                totalDurationMs: councilResult.totalDurationMs,
+                synthesis: councilResult.synthesis,
+                fullDeliberation: contributionSummary,
               };
             } catch (err: any) {
-              return { error: `Multi-Agent pipeline failed: ${err.message}` };
+              return { error: `Council Protocol failed: ${err.message}` };
             }
           },
         },
@@ -1256,6 +1278,8 @@ The chat interface will automatically render this as an interactive chart. Use v
         const enqueue = (line: string) => {
           try { controller.enqueue(encoder.encode(line)); } catch {}
         };
+        // Wire shared enqueue so tools can stream events
+        streamEnqueue = enqueue;
         const getTextDelta = (v: any): string => {
           if (!v || typeof v !== "object") return "";
           if (typeof v.textDelta === "string") return v.textDelta;
@@ -1417,6 +1441,10 @@ The chat interface will automatically render this as an interactive chart. Use v
               fallbackFromTools = `I hit an issue while running the tool: ${r.message}`;
             } else if (typeof r?.message === "string") {
               fallbackFromTools = r.message;
+            }
+            // Council synthesis fallback — capture the full synthesis as text
+            if (toolName === "multiAgentDebate" && r?.synthesis) {
+              fallbackFromTools = r.synthesis;
             }
           }
 

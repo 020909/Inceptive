@@ -65,7 +65,7 @@ export function buildModel(apiKey: string, provider: string, modelName?: string)
       return client.chat(modelName || "nvidia/nemotron-4-340b-instruct");
     }
 
-    // ── Multi-Agent Debate Orchestrator ────────────────────────────────
+    // ── 10-Agent Council Orchestrator ────────────────────────────────
     case "debate": {
       const client = createOpenAI({
         apiKey,
@@ -76,7 +76,7 @@ export function buildModel(apiKey: string, provider: string, modelName?: string)
         },
       });
       // The orchestrator must be a stable tool-user like Gemini 2.0 Flash.
-      // It will handle the multiAgentDebate tool call.
+      // It handles calling the 10-Agent Council via the multiAgentDebate tool.
       return client.chat("google/gemini-2.0-flash-001");
     }
 

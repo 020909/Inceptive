@@ -49,8 +49,8 @@ export function routeModel(params: {
 
   // Smart routing by task type
   if (wantsCode) {
-    // Route to the new custom Multi-Agent Debate workflow
-    return { provider: "debate", model: "qwen+minimax", reason: "Code/engineering → Multi-Agent Debate (Qwen 3.6 + Minimax M2.5)" };
+    // Route to the 10-Agent Council workflow (Qwen 3.6 + Minimax M2.5 debate)
+    return { provider: "debate", model: "qwen+minimax", reason: "Code/engineering → 10-Agent Council (Qwen 3.6 + Minimax M2.5)" };
   }
   if (wantsResearch) {
     // Use NVIDIA Nemotron Nano or 3 Super for extreme reasoning/search

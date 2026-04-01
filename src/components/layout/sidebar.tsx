@@ -84,7 +84,7 @@ function NavItem({ item, isActive, collapsed }: { item: typeof navItems[0]; isAc
       <div
         className={`
           group relative flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer
-          transition-colors duration-150
+          transition-all duration-200 ease-out
           ${isActive ? "bg-[var(--border-subtle)]" : "hover:bg-[var(--border-subtle)]"}
         `}
       >
@@ -92,26 +92,28 @@ function NavItem({ item, isActive, collapsed }: { item: typeof navItems[0]; isAc
           <motion.div
             layoutId="nav-active"
             className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-full bg-[var(--fg-primary)]"
-            transition={{ type: "spring", stiffness: 300, damping: 28 }}
+            transition={{ type: "spring", stiffness: 380, damping: 30 }}
           />
         )}
 
         <Icon
           size={18}
           strokeWidth={1.5}
-          className={`shrink-0 transition-colors duration-150 ${
+          className={`shrink-0 transition-colors duration-200 ${
             isActive ? "text-[var(--fg-primary)]" : "text-[#B4B4C0] group-hover:text-[#D0D0D8]"
           }`}
         />
 
         {!collapsed && (
-          <span
-            className={`text-sm tracking-[-0.01em] transition-colors duration-150 ${
+          <motion.span
+            initial={false}
+            animate={{ opacity: 1, x: 0 }}
+            className={`text-sm tracking-[-0.01em] transition-colors duration-200 ${
               isActive ? "text-[var(--fg-primary)] font-medium" : "text-[#C8C8D0] group-hover:text-[var(--fg-primary)]"
             }`}
           >
             {item.label}
-          </span>
+          </motion.span>
         )}
 
         {isActive && !collapsed && (

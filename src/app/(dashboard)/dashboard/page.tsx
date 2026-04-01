@@ -3,8 +3,8 @@
 import React, { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
-import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X, FileSpreadsheet, Presentation, FileText, Download, Mic, MicOff } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X, FileSpreadsheet, Presentation, FileText, Download, Mic, MicOff, GripVertical } from "lucide-react";
 import { useChat, type Message, type ToolResult, type TaskLog } from "@/lib/chat-context";
 import { useAuth } from "@/lib/auth-context";
 import { useSidebar } from "@/components/layout/sidebar";
@@ -16,8 +16,56 @@ import { ProgressIndicator } from "@/components/ui/progress-indicator";
 import { WebsitePreviewPanel } from "@/components/dashboard/website-preview-panel";
 import { TTSButton } from "@/components/ui/tts-button";
 import { ChartPreview } from "@/components/ui/chart-preview";
+import { StudioModeToggle, StudioModePanel } from "@/components/agent/StudioModePanel";
 
 type AttachedFile = { name: string; content: string };
+
+/**
+ * Drag-to-resize handle for the split-screen layout.
+ */
+function ResizeHandle({ onDrag }: { onDrag: (deltaX: number) => void }) {
+  const isDragging = useRef(false);
+  const lastX = useRef(0);
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      isDragging.current = true;
+      lastX.current = e.clientX;
+
+      const handleMouseMove = (ev: MouseEvent) => {
+        if (!isDragging.current) return;
+        const delta = ev.clientX - lastX.current;
+        lastX.current = ev.clientX;
+        onDrag(delta);
+      };
+
+      const handleMouseUp = () => {
+        isDragging.current = false;
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    },
+    [onDrag]
+  );
+
+  return (
+    <div
+      onMouseDown={handleMouseDown}
+      className="group relative flex items-center justify-center w-[6px] cursor-col-resize z-10 hover:bg-[var(--accent-soft)] transition-colors shrink-0"
+      title="Drag to resize"
+    >
+      <div className="w-[2px] h-8 rounded-full bg-[var(--border-default)] group-hover:bg-[var(--accent)] transition-colors" />
+    </div>
+  );
+}
 
 function AsyncImage({ src, alt, onDownload }: { src: string; alt: string; onDownload: (e: React.MouseEvent) => void }) {
   const [loaded, setLoaded] = useState(false);
@@ -231,11 +279,15 @@ function ChatMessage({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 260, damping: 24 }}
       className={`flex ${isUser ? "justify-end" : "justify-start"}`}
     >
       <div className={`max-w-[85%] sm:max-w-[80%] ${isUser ? "ml-8" : "mr-8"} w-full`}>
         {!isUser && visibleLogs && visibleLogs.length > 0 && <ProgressIndicator logs={visibleLogs} />}
-        <div
+        <motion.div
+          initial={{ scale: 0.97, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
           className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap w-full overflow-hidden ${
             isUser
               ? "bg-[var(--fg-primary)] text-[var(--bg-base)] rounded-br-md"
@@ -254,11 +306,16 @@ function ChatMessage({
               ))}
             </div>
           )}
-        </div>
+        </motion.div>
         {!isUser && msg.content && msg.content.length > 20 && !showGenerating && (
-          <div className="mt-1 flex items-center gap-1">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mt-1 flex items-center gap-1"
+          >
             <TTSButton text={msg.content} />
-          </div>
+          </motion.div>
         )}
       </div>
     </motion.div>
@@ -301,6 +358,16 @@ function DashboardExperience() {
   const [previewCode, setPreviewCode] = useState<string | null>(null);
   const [isMicListening, setIsMicListening] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const [splitRatio, setSplitRatio] = useState(50); // percentage for left panel
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [studioMode, setStudioMode] = useState(false);
+
+  const handleResizeDrag = useCallback((deltaX: number) => {
+    if (!containerRef.current) return;
+    const containerWidth = containerRef.current.offsetWidth;
+    const deltaPercent = (deltaX / containerWidth) * 100;
+    setSplitRatio((prev) => Math.min(75, Math.max(25, prev + deltaPercent)));
+  }, []);
 
   const startMic = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -635,9 +702,14 @@ function DashboardExperience() {
   }, [messages]);
 
   return (
-    <div className="flex h-screen bg-[var(--bg-app)] text-[var(--fg-primary)] overflow-hidden">
+    <div ref={containerRef} className="flex h-screen bg-[var(--bg-app)] text-[var(--fg-primary)] overflow-hidden">
     {/* ── LEFT PANEL (Chat) ── */}
-    <div className={`flex flex-col h-screen transition-all duration-300 ${previewCode ? 'w-1/2' : 'w-full'} overflow-hidden`}>
+    <motion.div
+      className="flex flex-col h-screen overflow-hidden"
+      style={{ width: previewCode ? `${splitRatio}%` : "100%" }}
+      layout
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
       <header className="flex shrink-0 items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3 sm:px-6">
         <div className="flex min-w-[120px] items-center gap-2">
           {streaming && <GeneratingEllipsis className="text-xs text-[var(--fg-muted)]" />}
@@ -648,6 +720,17 @@ function DashboardExperience() {
           )}
         </div>
         <div className="flex items-center gap-3">
+          {/* Studio Mode toggle */}
+          <StudioModeToggle
+            isOpen={studioMode}
+            onToggle={() => setStudioMode(!studioMode)}
+            eventCount={messages.reduce((acc, m) => {
+              const councilLogs = (m.taskLogs || []).filter(
+                (l) => l.details && typeof l.details === "object" && (l.details as any).agentRole
+              );
+              return acc + councilLogs.length;
+            }, 0)}
+          />
           <button
             type="button"
             onClick={startNewChat}
@@ -851,17 +934,35 @@ function DashboardExperience() {
           </>
         )}
       </div>
-    </div>
+    </motion.div>
+    {/* ── RESIZE HANDLE ── */}
+    <AnimatePresence>
+      {previewCode && <ResizeHandle onDrag={handleResizeDrag} />}
+    </AnimatePresence>
     {/* ── RIGHT PANEL (Live Preview) ── */}
-    {previewCode && (
-      <div className="w-1/2 h-screen border-l border-[var(--border-subtle)] overflow-hidden">
-        <WebsitePreviewPanel
-          code={previewCode}
-          onClose={() => setPreviewCode(null)}
-          onCodeChange={(newCode) => setPreviewCode(newCode)}
-        />
-      </div>
-    )}
+    <AnimatePresence>
+      {previewCode && (
+        <motion.div
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 40 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className="h-screen overflow-hidden"
+          style={{ width: `${100 - splitRatio}%` }}
+        >
+          <WebsitePreviewPanel
+            code={previewCode}
+            onClose={() => { setPreviewCode(null); setSplitRatio(50); }}
+            onCodeChange={(newCode) => setPreviewCode(newCode)}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
+    {/* ── STUDIO MODE PANEL ── */}
+    <StudioModePanel
+      logs={messages.flatMap((m) => m.taskLogs || [])}
+      isOpen={studioMode && !previewCode}
+    />
     </div>
   );
 }
