@@ -65,6 +65,21 @@ export function buildModel(apiKey: string, provider: string, modelName?: string)
       return client.chat(modelName || "nvidia/nemotron-4-340b-instruct");
     }
 
+    // ── Multi-Agent Debate Orchestrator ────────────────────────────────
+    case "debate": {
+      const client = createOpenAI({
+        apiKey,
+        baseURL: "https://openrouter.ai/api/v1",
+        headers: {
+          "HTTP-Referer": APP_URL,
+          "X-Title": "Inceptive AI",
+        },
+      });
+      // The orchestrator must be a stable tool-user like Gemini 2.0 Flash.
+      // It will handle the multiAgentDebate tool call.
+      return client.chat("google/gemini-2.0-flash-001");
+    }
+
     // ── Fallback: try OpenRouter (most permissive) ─────────────────────
     default: {
       console.warn(`[buildModel] Unknown provider "${p}" — falling back to OpenRouter`);

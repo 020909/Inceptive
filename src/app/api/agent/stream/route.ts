@@ -162,23 +162,25 @@ export async function POST(req: Request) {
       freeOnly: true,
     });
 
-    if (coreData?.api_key_encrypted) {
+    const nvidiaKey = process.env.NVIDIA_NIM_API_KEY || "";
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
+    const openrouterKey = process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY || "";
+    const groqKey = process.env.GROQ_API_KEY?.trim();
+    const groqModel = process.env.GROQ_CHAT_MODEL?.trim() || "llama-3.3-70b-versatile";
+
+    if (routed.provider === "debate") {
+      // Orchestrator for debate requires extremely stable tool calling (Gemini 2.0 Flash)
+      const key = coreData?.api_key_encrypted || openrouterKey || geminiKey;
+      model = buildModel(key, "debate", routed.model);
+    } else if (routed.provider === "nvidia") {
+      const key = coreData?.api_key_encrypted || nvidiaKey;
+      model = buildModel(key, "nvidia", routed.model);
+    } else if (coreData?.api_key_encrypted) {
       // BYOK users: respect their key but still route model name safely.
       model = buildModel(coreData.api_key_encrypted, routed.provider, routed.model);
     } else {
-      // No BYOK: prefer Groq for low-latency chat when configured, then OpenRouter, then Gemini.
-      const groqKey = process.env.GROQ_API_KEY?.trim();
-      const groqModel = process.env.GROQ_CHAT_MODEL?.trim() || "llama-3.3-70b-versatile";
-      const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
-      const openrouterKey = process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY || "";
-      const nvidiaKey = process.env.NVIDIA_NIM_API_KEY || "";
-
-      if (routed.provider === "nvidia" && nvidiaKey) {
-        model = buildModel(nvidiaKey, "nvidia", routed.model);
-      } else if (routed.provider === "debate") {
-        // Orchestrator for debate requires extremely stable tool calling to trigger Qwen/Minimax
-        model = buildModel(openrouterKey || geminiKey, openrouterKey ? "openrouter" : "gemini", openrouterKey ? "google/gemini-2.0-flash-001" : "gemini-2.0-flash");
-      } else if (groqKey) {
+      // No BYOK: prefer Groq, then OpenRouter, then Gemini.
+      if (groqKey) {
         model = buildModel(groqKey, "groq", groqModel);
       } else if (openrouterKey) {
         model = buildModel(openrouterKey, "openrouter", routed.model);
