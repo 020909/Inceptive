@@ -1,5 +1,5 @@
 export type RoutedModel = {
-  provider: "openrouter" | "gemini" | "openai" | "claude" | "groq";
+  provider: "openrouter" | "gemini" | "openai" | "claude" | "groq" | "nvidia" | "debate";
   model: string;
   reason: string;
 };
@@ -49,14 +49,15 @@ export function routeModel(params: {
 
   // Smart routing by task type
   if (wantsCode) {
-    // Gemini 2.0 Flash has much better tool-use stability than Qwen on OpenRouter for now.
-    return { provider: "openrouter", model: "google/gemini-2.0-flash-001", reason: "Code/engineering → Gemini 2.0 Flash (Reliable Tool User)" };
+    // Route to the new custom Multi-Agent Debate workflow
+    return { provider: "debate", model: "qwen+minimax", reason: "Code/engineering → Multi-Agent Debate (Qwen 3.6 + Minimax M2.5)" };
   }
   if (wantsResearch) {
-    return { provider: "openrouter", model: "google/gemini-2.0-flash-001", reason: "Research/query answering" };
+    // Use NVIDIA Nemotron Nano or 3 Super for extreme reasoning/search
+    return { provider: "nvidia", model: "nvidia/nemotron-4-340b-instruct", reason: "Research/query → NVIDIA Nemotron 340B" };
   }
   if (wantsWriting) {
-    return { provider: "openrouter", model: "google/gemini-2.0-flash-001", reason: "Writing/drafting" };
+    return { provider: "openrouter", model: "stepfun/step-3.5-flash", reason: "Writing/drafting → Step 3.5 Flash" };
   }
 
   return { provider: "openrouter", model: "google/gemini-2.0-flash-001", reason: "Default" };

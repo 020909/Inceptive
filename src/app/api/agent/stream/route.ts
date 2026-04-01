@@ -73,10 +73,11 @@ const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string 
   generateExcel:       { icon: "", label: () => "Creating Excel spreadsheet..." },
   generatePowerPoint:  { icon: "", label: () => "Creating PowerPoint presentation..." },
   generatePDF:         { icon: "", label: () => "Creating PDF document..." },
-  generateImage:       { icon: "", label: () => "Generating AI image..." },
+  generateImage:       { icon: "🎨", label: () => "Generating AI image..." },
   projectMap:          { icon: "📁", label: () => "Mapping project structure..." },
   codeGrep:            { icon: "🔍", label: (args: any) => `Searching for "${args.query}"...` },
   readProjectFile:     { icon: "📄", label: (args: any) => `Reading ${args.path.split('/').pop()}...` },
+  multiAgentDebate:    { icon: "🧠", label: () => `Running Multi-Agent Debate Protocol...` },
 };
 
 /**
@@ -170,8 +171,14 @@ export async function POST(req: Request) {
       const groqModel = process.env.GROQ_CHAT_MODEL?.trim() || "llama-3.3-70b-versatile";
       const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
       const openrouterKey = process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY || "";
+      const nvidiaKey = process.env.NVIDIA_NIM_API_KEY || "";
 
-      if (groqKey) {
+      if (routed.provider === "nvidia" && nvidiaKey) {
+        model = buildModel(nvidiaKey, "nvidia", routed.model);
+      } else if (routed.provider === "debate") {
+        // Orchestrator for debate requires extremely stable tool calling to trigger Qwen/Minimax
+        model = buildModel(openrouterKey || geminiKey, openrouterKey ? "openrouter" : "gemini", openrouterKey ? "google/gemini-2.0-flash-001" : "gemini-2.0-flash");
+      } else if (groqKey) {
         model = buildModel(groqKey, "groq", groqModel);
       } else if (openrouterKey) {
         model = buildModel(openrouterKey, "openrouter", routed.model);
@@ -254,8 +261,8 @@ ${_cs}
    - For all coding, debugging, or architectural tasks, ALWAYS follow this 4-step loop:
      1. **REASON**: Determine what needs to be changed.
      2. **MAP**: Use \`projectMap\` to find relevant files and \`readProjectFile\` to understand their contents.
-     3. **EXECUTE**: Use \`runCode\` to test your logic or verify your assumptions if possible.
-     4. **VERIFY**: Check the output of your tools. If it fails, fix and repeat until correct.
+     3. **DEBATE**: You MUST immediately call the \`multiAgentDebate\` tool for all complex code generation to engage Qwen 3.6 and Minimax M2.5. Do not write complex code yourself.
+     4. **SYNTHESIZE & VERIFY**: Review the output of the Debate tool, synthesize the final code, and print it. Use \`runCode\` to test it if possible.
 3. ALWAYS USE TOOLS for real actions. When user says read my email → call readGmail. When user says send email → call sendGmail. For weather use getWeather; for a stock price use getStockQuote; for news headlines use getNewsHeadlines — do not invent numbers. 
 4. Be direct - no filler. Lead with action or the key insight.
 5. If connector not connected, tell user exactly: go to Email section and click Connect.
@@ -424,6 +431,53 @@ The chat interface will automatically render this as an interactive chart. Use v
           },
         },
 
+        /* ── MULTI-AGENT DEBATE ── */
+        multiAgentDebate: {
+          description: "Runs a simultaneous code-generation session with two elite AI models (Qwen 3.6 Plus & Minimax M2.5) to solve a coding request. Use this for all complex programming tasks immediately to get the best possible architecture.",
+          parameters: z.object({
+            codingRequest: z.string().describe("The comprehensive coding task, prompt, or bug to solve. Provide full context."),
+          }),
+          execute: async ({ codingRequest }: { codingRequest: string }) => {
+            const openrouterKey = process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY || "";
+            if (!openrouterKey) {
+              return { error: "OpenRouter key missing, cannot run Multi-Agent Debate." };
+            }
+
+            try {
+              const { generateText } = await import("ai");
+              
+              // Build the two elite models via OpenRouter
+              const qwenModel = buildModel(openrouterKey, "openrouter", "qwen/qwen-3.6-plus-preview");
+              const minimaxModel = buildModel(openrouterKey, "openrouter", "minimax/minimax-m2.5");
+
+              const systemContext = "You are an elite software engineer. Write the best, bug-free, production-ready code to solve the prompt. Do not ask for clarification; make the best technical decisions and provide the code.";
+
+              // Fire both models simultaneously
+              const [qwenDraft, minimaxDraft] = await Promise.all([
+                generateText({
+                  model: qwenModel,
+                  system: systemContext,
+                  prompt: codingRequest,
+                }).catch(e => ({ text: `Qwen failed: ${e.message}` })),
+                generateText({
+                  model: minimaxModel,
+                  system: systemContext,
+                  prompt: codingRequest,
+                }).catch(e => ({ text: `Minimax failed: ${e.message}` }))
+              ]);
+
+              return {
+                status: "success",
+                message: "Both elite agents have returned their solutions. Review both and synthesize them into the ultimate correct codebase.",
+                qwen3_6_Draft: qwenDraft.text,
+                minimax_M2_5_Draft: minimaxDraft.text,
+              };
+            } catch (err: any) {
+              return { error: `Multi-Agent pipeline failed: ${err.message}` };
+            }
+          },
+        },
+
         codeGrep: {
           description: "Search for a specific string or pattern across all project files. Use this to find where functions or variables are defined or used.",
           parameters: z.object({
@@ -561,7 +615,8 @@ The chat interface will automatically render this as an interactive chart. Use v
                   const transcript = await YoutubeTranscript.fetchTranscript(url);
                   rawContent = transcript.map(t => t.text).join(" ");
                 } catch (ytErr) {
-                  console.error("[Agent:summarizeURL] YT Transcript failed, falling back to browse", ytErr);
+                  console.error("[Agent:summarizeURL] YT Transcript failed, preventing browse fallback", ytErr);
+                  return { url, summary: "I could not extract captions from this video. It may be a Short without captions, private, or restricted.", keyPoints: [], wordCount: 0 };
                 }
               }
 
