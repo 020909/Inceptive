@@ -35,7 +35,7 @@ const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
 const readFile = promisify(fs.readFile);
 
-export const maxDuration = 60;
+export const maxDuration = 300; // 5 minutes
 export const runtime = "nodejs";
 
 const getAdmin = () => {
@@ -444,9 +444,9 @@ The chat interface will automatically render this as an interactive chart. Use v
             try {
               const { generateText } = await import("ai");
               
-              // Build the two elite models via OpenRouter
-              const qwenModel = buildModel(openrouterKey, "openrouter", "qwen/qwen-3.6-plus-preview");
-              const minimaxModel = buildModel(openrouterKey, "openrouter", "minimax/minimax-m2.5");
+              // Build the two elite models via OpenRouter using valid platform IDs
+              const qwenModel = buildModel(openrouterKey, "openrouter", "qwen/qwen-plus");
+              const minimaxModel = buildModel(openrouterKey, "openrouter", "minimax/minimax-01");
 
               const systemContext = "You are an elite software engineer. Write the best, bug-free, production-ready code to solve the prompt. Do not ask for clarification; make the best technical decisions and provide the code.";
 
