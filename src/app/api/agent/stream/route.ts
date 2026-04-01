@@ -374,7 +374,7 @@ The chat interface will automatically render this as an interactive chart. Use v
       model,
       system: systemOverride || systemPrompt,
       messages: finalHistory,
-      maxSteps: 10,
+      maxSteps: 25,
       maxTokens: 8000,
       // Disable sending reasoning/thinking blocks back in history —
       // they're stripped from client-side state anyway, so including them
