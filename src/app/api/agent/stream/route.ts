@@ -419,7 +419,7 @@ The chat interface will automatically render this as an interactive chart. Use v
               if (currentDepth > (depth || 2)) return [];
               try {
                 const entries = await readdir(dir, { withFileTypes: true });
-                let results: string[] = [];
+                const results: string[] = [];
                 for (const entry of entries) {
                   if (ignore.includes(entry.name)) continue;
                   const res = path.resolve(dir, entry.name);
@@ -458,7 +458,7 @@ The chat interface will automatically render this as an interactive chart. Use v
               const { runCouncil } = await import("@/lib/agent/council");
 
               // Load user's style memory for design agents
-              let styleMemory: Record<string, string> = {};
+              const styleMemory: Record<string, string> = {};
               try {
                 const { data: prefs } = await admin
                   .from("style_preferences")
@@ -715,7 +715,7 @@ The chat interface will automatically render this as an interactive chart. Use v
               const html = await res.text();
 
               // Simple but effective HTML to text extraction
-              let text = html
+              const text = html
                 .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
                 .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
                 .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, "")

@@ -31,7 +31,7 @@ export function ensureRetrievalUrlsListed(content: string, urls: string[]): stri
  * Used server-side before saving reports.
  */
 export function normalizeReportFormatting(raw: string): string {
-  let text = raw.replace(/\r\n/g, "\n");
+  const text = raw.replace(/\r\n/g, "\n");
   const lines = text.split("\n");
   let sectionNum = 1;
   const out: string[] = [];

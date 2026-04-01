@@ -166,7 +166,7 @@ function GeneratedFileCard({ result, toolName }: { result: any; toolName: string
 
   // Fallback for Document types (Excel, PPT, PDF)
   let Icon = FileText;
-  let title = result.filename || "Document";
+  const title = result.filename || "Document";
   let description = "";
 
   if (toolName === "generateExcel") {
