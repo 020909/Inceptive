@@ -774,9 +774,9 @@ function DashboardExperience() {
         }}
       />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {!hasChat ? (
-          <div className="flex flex-1 flex-col justify-start overflow-y-auto px-4 pt-3 pb-6 sm:px-6">
+          <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 py-8 sm:px-6">
             <div className="mx-auto w-full max-w-4xl">
               <h1 className="mb-4 text-center text-2xl font-bold tracking-tight text-[var(--fg-primary)] sm:text-3xl">
                 How can I help you today?
@@ -847,9 +847,9 @@ function DashboardExperience() {
           </div>
         ) : (
           <>
-            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6">
-              <div className="mx-auto max-w-4xl pb-6 pt-4 sm:pt-6">
-                <div className="space-y-4 pb-4">
+            <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6">
+              <div className="mx-auto max-w-4xl pb-4 pt-4 sm:pt-6">
+                <div className="space-y-4 pb-28 sm:pb-32">
                   {messages.map((msg, i) => {
                     const isLast = i === messages.length - 1;
                     const isLastAssistant = isLast && msg.role === "assistant";
@@ -867,7 +867,7 @@ function DashboardExperience() {
               </div>
             </div>
 
-            <div className="shrink-0 bg-[var(--bg-app)] px-4 pt-3 pb-6 sm:px-6">
+            <div className="sticky bottom-0 z-20 shrink-0 border-t border-[var(--border-subtle)] bg-[var(--bg-app)]/95 px-4 pt-3 pb-6 backdrop-blur-md sm:px-6">
               <div className="mx-auto w-full max-w-4xl space-y-3">
                 <DashboardCodePanel
                   open={codePanelOpen}
@@ -928,7 +928,6 @@ function DashboardExperience() {
                     <span>{isMicListening ? 'Stop' : 'Voice'}</span>
                   </button>
                 </div>
-                <InceptiveV0ActionRow items={actionItems} />
               </div>
             </div>
           </>

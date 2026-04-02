@@ -138,13 +138,13 @@ export function Sidebar() {
         ${collapsed ? "w-[64px] hover:w-[220px]" : "w-[220px]"}
       `}
     >
-      {/* ── Logo row — collapse control always visible (no waiting for hover to pin/unpin) ── */}
+      {/* ── Logo row: stacked logo + toggle when squeezed; horizontal when expanded or rail hover ── */}
       <div
         className={cn(
-          "flex shrink-0 items-center overflow-hidden transition-[padding] duration-300",
+          "flex shrink-0 overflow-hidden transition-[padding] duration-300",
           collapsed
-            ? "h-14 justify-between px-2 group-hover/sidebar:px-3"
-            : "h-14 justify-start gap-2 px-3",
+            ? "flex-col items-center gap-1.5 py-2.5 px-2 group-hover/sidebar:h-14 group-hover/sidebar:flex-row group-hover/sidebar:items-center group-hover/sidebar:justify-start group-hover/sidebar:gap-2 group-hover/sidebar:py-0 group-hover/sidebar:px-3"
+            : "h-14 flex-row items-center justify-start gap-2 px-3",
         )}
       >
         <button
@@ -165,7 +165,7 @@ export function Sidebar() {
           className={cn(
             "min-w-0 truncate text-sm font-semibold tracking-tight text-[#F5F5F7] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
             collapsed
-              ? "max-w-0 flex-1 overflow-hidden opacity-0 group-hover/sidebar:max-w-[120px] group-hover/sidebar:opacity-100"
+              ? "hidden max-w-0 overflow-hidden opacity-0 group-hover/sidebar:block group-hover/sidebar:max-w-[120px] group-hover/sidebar:flex-1 group-hover/sidebar:opacity-100"
               : "flex-1 opacity-100",
           )}
           style={{ fontFamily: "var(--font-header)" }}
