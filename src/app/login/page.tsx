@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
@@ -20,6 +19,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
+  const [authFeedback, setAuthFeedback] = useState<null | { type: "error" | "success"; message: string }>(null);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const validate = () => {
@@ -35,29 +35,36 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    setAuthFeedback(null);
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { toast.error(error.message); setLoading(false); return; }
+    if (error) {
+      setAuthFeedback({ type: "error", message: error.message });
+      setLoading(false);
+      return;
+    }
     router.push("/dashboard");
     router.refresh();
   };
 
   const handleOAuth = async (provider: "google" | "facebook") => {
+    setAuthFeedback(null);
     setOauthLoading(provider);
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
     });
-    if (error) toast.error(error.message);
+    if (error) setAuthFeedback({ type: "error", message: error.message });
     setOauthLoading(null);
   };
 
   const handleMagicLink = async () => {
     if (!email) { setErrors({ email: "Enter your email first" }); return; }
+    setAuthFeedback(null);
     setMagicLinkLoading(true);
     const { error } = await supabase.auth.signInWithOtp({ email });
-    if (error) toast.error(error.message);
-    else toast.success("Magic link sent — check your email");
+    if (error) setAuthFeedback({ type: "error", message: error.message });
+    else setAuthFeedback({ type: "success", message: "Magic link sent — check your email." });
     setMagicLinkLoading(false);
   };
 
@@ -184,6 +191,18 @@ export default function LoginPage() {
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
               </Button>
             </motion.div>
+
+            {authFeedback && (
+              <p
+                className={
+                  authFeedback.type === "error"
+                    ? "text-[11px] text-[var(--destructive)] leading-relaxed pt-1"
+                    : "text-[11px] text-[var(--success)] leading-relaxed pt-1"
+                }
+              >
+                {authFeedback.message}
+              </p>
+            )}
           </form>
 
           {/* Magic link */}

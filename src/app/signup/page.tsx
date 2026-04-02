@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
@@ -20,6 +19,7 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
+  const [authFeedback, setAuthFeedback] = useState<null | { type: "error" | "success"; message: string }>(null);
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
 
   const validate = () => {
@@ -34,22 +34,28 @@ export default function SignUpPage() {
   };
 
   const handleOAuth = async (provider: "google" | "facebook") => {
+    setAuthFeedback(null);
     setOauthLoading(provider);
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
     });
-    if (error) toast.error(error.message);
+    if (error) setAuthFeedback({ type: "error", message: error.message });
     setOauthLoading(null);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    setAuthFeedback(null);
     setLoading(true);
     const { error } = await supabase.auth.signUp({ email, password });
-    if (error) { toast.error(error.message); setLoading(false); return; }
-    toast.success("Account created! Check your email to verify.");
+    if (error) {
+      setAuthFeedback({ type: "error", message: error.message });
+      setLoading(false);
+      return;
+    }
+    setAuthFeedback({ type: "success", message: "Account created! Check your email to verify." });
     router.push("/dashboard");
     router.refresh();
   };
@@ -179,6 +185,18 @@ export default function SignUpPage() {
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
               </Button>
             </motion.div>
+
+            {authFeedback && (
+              <p
+                className={
+                  authFeedback.type === "error"
+                    ? "text-[11px] text-[var(--destructive)] leading-relaxed pt-1"
+                    : "text-[11px] text-[var(--success)] leading-relaxed pt-1"
+                }
+              >
+                {authFeedback.message}
+              </p>
+            )}
           </form>
 
           <p className="mt-8 text-center text-[13px] text-[var(--fg-muted)]">
