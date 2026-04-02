@@ -3,8 +3,40 @@
 import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, Code2, PenLine, Image as ImageIcon, FolderUp } from 'lucide-react';
 import { useChat } from '@/lib/chat-context';
+
+/** Icon-only action button that reveals its label on hover */
+function ActionButton({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  label: string;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="group/action flex items-center gap-0 overflow-hidden rounded-full px-2.5 py-1.5 text-[var(--fg-muted)] transition-all duration-200 hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--text-secondary)]"
+      type="button"
+    >
+      <Icon size={15} />
+      {/* Label: 0-width by default, expands on hover */}
+      <span
+        className="
+          text-xs font-medium whitespace-nowrap
+          max-w-0 opacity-0 overflow-hidden
+          group-hover/action:max-w-[80px] group-hover/action:opacity-100 group-hover/action:ml-1.5
+          transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]
+        "
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
 
 export function OmniscientInputBar() {
   const [value, setValue] = useState('');
@@ -38,46 +70,68 @@ export function OmniscientInputBar() {
     >
       <div
         className={`
-          relative flex items-center gap-3 px-5 py-4 rounded-[24px]
-          bg-[var(--bg-surface)] border transition-all duration-200
-          shadow-[0_20px_60px_rgba(0,0,0,0.3)]
+          relative flex flex-col gap-3 rounded-[28px] bg-[var(--bg-surface)]
+          border transition-[box-shadow,border-color] duration-200 ease-out
           ${focused
-            ? 'border-[var(--accent)] shadow-[0_20px_60px_rgba(0,0,0,0.3),0_0_0_2px_var(--accent-glow)]'
-            : 'border-[var(--border-subtle)] hover:border-[var(--border-default)]'
+            ? "border-[rgba(245,245,247,0.15)] shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_0_2px_rgba(245,245,247,0.1)]"
+            : "border-[var(--border-subtle)] shadow-[0_20px_60px_rgba(0,0,0,0.5)] hover:border-[var(--border-default)]"
           }
         `}
+        style={{ padding: "16px 24px" }}
       >
-        <textarea
-          ref={inputRef}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask Inceptive anything..."
-          rows={1}
-          className="
-            flex-1 bg-transparent border-none outline-none resize-none
-            text-[var(--fg-primary)] text-[15px] tracking-[-0.01em] leading-6
-            placeholder:text-[var(--fg-muted)]
-            min-h-[24px] max-h-[120px]
-          "
-        />
+        {/* Input row */}
+        <div className="flex items-end gap-3">
+          <textarea
+            ref={inputRef}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask Inceptive anything..."
+            rows={1}
+            className="
+              flex-1 min-h-[24px] max-h-[120px] resize-none border-none bg-transparent text-[15px]
+              leading-6 tracking-[-0.01em] text-[var(--text-secondary)] outline-none
+              placeholder:text-[var(--fg-muted)]
+            "
+          />
 
-        <button
-          onClick={submit}
-          disabled={!value.trim()}
-          className={`
-            shrink-0 flex items-center justify-center w-9 h-9 rounded-xl
-            transition-all duration-150
-            ${value.trim()
-              ? 'bg-[#6510F4] text-white hover:bg-[#7C3AED] hover:-translate-y-px'
-              : 'bg-[var(--bg-elevated)] text-[var(--fg-muted)] cursor-not-allowed'
-            }
-          `}
-        >
-          <ArrowUp size={18} strokeWidth={2} />
-        </button>
+          <button
+            onClick={submit}
+            disabled={!value.trim()}
+            className={`
+              shrink-0 flex items-center justify-center w-9 h-9 rounded-xl
+              transition-all duration-150
+              ${value.trim()
+                ? "bg-[#F5F5F7] text-[rgb(38,38,36)] hover:bg-[#FFFFFF] hover:-translate-y-px"
+                : "bg-[var(--bg-elevated)] text-[var(--fg-muted)] cursor-not-allowed"
+              }
+            `}
+          >
+            <ArrowUp size={18} strokeWidth={2} />
+          </button>
+        </div>
+
+        {/* Action buttons row */}
+        <div className="flex items-center gap-1 -mx-1">
+          <ActionButton
+            icon={Code2}
+            label="Code"
+            onClick={() => router.push(`/dashboard?prefill=${encodeURIComponent("Help me code ")}`)}
+          />
+          <ActionButton
+            icon={PenLine}
+            label="Write"
+            onClick={() => router.push(`/dashboard?prefill=${encodeURIComponent("Help me write ")}`)}
+          />
+          <ActionButton
+            icon={ImageIcon}
+            label="Image"
+            onClick={() => router.push(`/dashboard?prefill=${encodeURIComponent("Create an image of ")}`)}
+          />
+          <ActionButton icon={FolderUp} label="Upload" />
+        </div>
       </div>
     </motion.div>
   );

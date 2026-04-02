@@ -15,7 +15,7 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <main
         className="min-h-screen transition-[margin] duration-200 ease-out"
-        style={{ marginLeft: collapsed ? 60 : 240 }}
+        style={{ marginLeft: collapsed ? 64 : 220 }}
       >
         {children}
       </main>
