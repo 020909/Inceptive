@@ -277,6 +277,11 @@ export function selectAgentsForTask(task: string): CouncilAgent[] {
   const always = ["planner", "architect", "coder", "critic", "orchestrator"];
   const conditional: AgentRole[] = [];
 
+  // Full product surface: sites and multi-section landings
+  if (/\b(website|landing page|web app|homepage|multi-?page|saas|portfolio|marketing site)\b/.test(t)) {
+    conditional.push("ux-designer", "visual-polish", "tester", "deployer");
+  }
+
   // UX + Visual for any UI/frontend task
   if (/\b(ui|ux|component|page|layout|button|form|modal|css|tailwind|style|design|animation)\b/.test(t)) {
     conditional.push("ux-designer", "visual-polish");

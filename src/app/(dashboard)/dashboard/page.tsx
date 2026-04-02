@@ -20,6 +20,63 @@ import { StudioModeToggle, StudioModePanel } from "@/components/agent/StudioMode
 
 type AttachedFile = { name: string; content: string };
 
+/** Shown in the website preview panel while the 10-Agent Council is running */
+const PREVIEW_LOADING_HTML = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Building…</title><style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#262624;color:#f5f5f7;font-family:system-ui,sans-serif;}
+.p{animation:o 1.35s ease-in-out infinite}@keyframes o{0%,100%{opacity:.35}50%{opacity:1}}
+</style></head><body><div style="text-align:center;max-width:340px;padding:28px"><div class="p" style="font-size:2rem;line-height:1;margin-bottom:14px">◇</div><p style="font-size:14px;line-height:1.55;opacity:.95">Council agents are planning, designing, and building. The live preview refreshes when your page is ready.</p></div></body></html>`;
+
+function CollapsedCodeFence({ lang, body }: { lang: string; body: string }) {
+  const [open, setOpen] = useState(false);
+  const label = lang || "code";
+  return (
+    <div className="my-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/90 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full px-3 py-2.5 text-left text-xs font-medium text-[var(--fg-secondary)] hover:bg-[var(--border-subtle)] transition-colors flex items-center gap-2"
+      >
+        <span className="text-[var(--fg-muted)]">{open ? "▼" : "▶"}</span>
+        <span>Generated {label} — tap to {open ? "hide" : "show"} (chat hides source by default)</span>
+      </button>
+      {open && (
+        <pre className="max-h-[min(70vh,520px)] overflow-auto px-3 pb-3 pt-0 text-[11px] text-[var(--fg-secondary)] border-t border-[var(--border-subtle)] whitespace-pre-wrap break-words">
+          {body}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+function renderAssistantBlocks(content: string, onOpenPreview?: (code: string) => void): React.ReactNode {
+  const out: React.ReactNode[] = [];
+  const re = /```(html|chart|typescript|tsx|ts|javascript|js|jsx|css|json|python|bash|shell|md|vue|svelte)?\r?\n([\s\S]*?)```/gi;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let k = 0;
+  while ((m = re.exec(content)) !== null) {
+    if (m.index > last) {
+      const text = content.slice(last, m.index);
+      if (text.trim()) out.push(<span key={`t-${k++}`} className="whitespace-pre-wrap">{text}</span>);
+    }
+    const lang = (m[1] || "").toLowerCase();
+    const body = m[2];
+    if (lang === "html") {
+      out.push(<HtmlPreview key={`h-${k++}`} code={body} onOpenSplitScreen={onOpenPreview} />);
+    } else if (lang === "chart") {
+      out.push(<ChartPreview key={`c-${k++}`} config={body} />);
+    } else {
+      out.push(<CollapsedCodeFence key={`f-${k++}`} lang={lang || "code"} body={body} />);
+    }
+    last = re.lastIndex;
+  }
+  if (last < content.length) {
+    const tail = content.slice(last);
+    if (tail.trim()) out.push(<span key={`t-${k++}`} className="whitespace-pre-wrap">{tail}</span>);
+  }
+  return out.length > 0 ? <>{out}</> : content;
+}
+
 /**
  * Drag-to-resize handle for the split-screen layout.
  */
@@ -250,29 +307,16 @@ function ChatMessage({
     streaming &&
     (!msg.content?.trim() || isLikelyRawToolArgsJson(msg.content));
 
-  // Only show task logs while streaming; hide once done
-  const visibleLogs = isDone ? [] : (msg.taskLogs || []);
+  const councilTrace = (msg.taskLogs || []).some(
+    (l) => l.details && typeof l.details === "object" && (l.details as { agentRole?: string }).agentRole
+  );
+  const visibleLogs =
+    !isUser && councilTrace ? (msg.taskLogs || []) : !isUser && !isDone ? (msg.taskLogs || []) : [];
 
-  // Extract HTML and chart blocks to render rich content
   const renderContent = (content: string) => {
     if (isUser) return content;
-    
-    // Split on both ```html and ```chart blocks
-    const parts = content.split(/(```(?:html|chart)\n[\s\S]*?\n```)/g);
-    
-    if (parts.length === 1) return content; // No special blocks
-    
-    return parts.map((part, index) => {
-      const htmlMatch = part.match(/^```html\n([\s\S]*?)\n```$/);
-      if (htmlMatch) {
-        return <HtmlPreview key={index} code={htmlMatch[1]} onOpenSplitScreen={onOpenPreview} />;
-      }
-      const chartMatch = part.match(/^```chart\n([\s\S]*?)\n```$/);
-      if (chartMatch) {
-        return <ChartPreview key={index} config={chartMatch[1]} />;
-      }
-      return part.trim() ? <span key={index}>{part}</span> : null;
-    });
+    if (!content.trim()) return null;
+    return renderAssistantBlocks(content, onOpenPreview);
   };
 
   return (
@@ -527,7 +571,7 @@ function DashboardExperience() {
               sendLockRef.current = false;
             })
           );
-        }, 35000); // 35 seconds of IDLE time (no chunks)
+        }, 180000); // 3 minutes idle between stream chunks (council runs are long)
       };
 
       resetSafetyTimer();
@@ -595,7 +639,20 @@ function DashboardExperience() {
                 if (tc.toolCallId && tc.toolName) {
                   toolCallIdToName.set(tc.toolCallId, tc.toolName);
                 }
+                const tn = tc.toolName || "";
+                if (tn === "multiAgentDebate") {
+                  setPreviewCode(PREVIEW_LOADING_HTML);
+                }
               } catch { /* ignore */ }
+            } else if (line.startsWith("5:")) {
+              try {
+                const u = JSON.parse(line.slice(2)) as { type?: string; state?: string };
+                if (u.type === "preview" && u.state === "building") {
+                  setPreviewCode(PREVIEW_LOADING_HTML);
+                }
+              } catch {
+                /* ignore */
+              }
             } else if (line.startsWith("2:")) {
               try {
                 const tr = JSON.parse(line.slice(2));

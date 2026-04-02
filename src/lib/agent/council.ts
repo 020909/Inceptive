@@ -112,11 +112,14 @@ async function runAgent(
       system += styleContext;
     }
 
+    const maxTokens =
+      agent.role === "orchestrator" ? 12_000 : agent.role === "coder" ? 8_000 : 5_000;
+
     const result = await generateText({
       model,
       system,
       prompt,
-      maxTokens: 4000,
+      maxTokens,
     } as any);
 
     contribution.output = result.text || "";

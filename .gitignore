@@ -20,6 +20,9 @@
 # production
 /build
 
+# Agent sandbox outputs (per-user generated files — not source of truth)
+.inceptive-artifacts
+
 # misc
 .DS_Store
 *.pem

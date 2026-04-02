@@ -9,6 +9,7 @@ import { createClient } from "@supabase/supabase-js";
 import { streamText } from "ai";
 import { buildModel } from "@/lib/ai-model";
 import { routeModel } from "@/lib/ai/model-router";
+import { nvidiaModelForTask } from "@/lib/ai/nvidia-model-router";
 import { checkCredits, deductCredits, getUserPlan } from "@/lib/credits";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 import { geocodePlaceQuery } from "@/lib/data/geocode";
@@ -30,6 +31,7 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { promisify } from "util";
+import { mkdir, writeFile as writeFileAsync } from "fs/promises";
 
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
@@ -78,6 +80,7 @@ const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string 
   codeGrep:            { icon: "🔍", label: (args: any) => `Searching for "${args.query}"...` },
   readProjectFile:     { icon: "📄", label: (args: any) => `Reading ${args.path.split('/').pop()}...` },
   multiAgentDebate:    { icon: "🧠", label: () => `Running 10-Agent Council Protocol...` },
+  writeSandboxFiles:   { icon: "📦", label: (args: any) => `Writing ${args?.files?.length ?? "?"} sandbox file(s)...` },
   saveStylePreference: { icon: "🎨", label: () => "Saving style preference..." },
   createProject:       { icon: "📁", label: () => "Creating new project..." },
   fetchUrl:            { icon: "🌐", label: (args: any) => `Fetching ${args.url?.slice(0, 40)}...` },
@@ -110,6 +113,19 @@ async function logTask(
   }
 
   return { id, streamLine };
+}
+
+function userSandboxRoot(userId: string): string {
+  return path.join(process.cwd(), ".inceptive-artifacts", userId);
+}
+
+/** Prevent path escape; returns posix-style relative path */
+function safeSandboxRelative(rel: string): string | null {
+  const trimmed = rel.trim().replace(/^[\\/]+/, "");
+  if (!trimmed || trimmed.length > 220) return null;
+  const norm = path.normalize(trimmed);
+  if (norm.startsWith("..") || norm.split(/[/\\]/).includes("..")) return null;
+  return norm.split(path.sep).join("/");
 }
 
 /* ─────────────────────────────────────────
@@ -177,7 +193,8 @@ export async function POST(req: Request) {
       model = buildModel(key, "debate", routed.model);
     } else if (routed.provider === "nvidia") {
       const key = coreData?.api_key_encrypted || nvidiaKey;
-      model = buildModel(key, "nvidia", routed.model);
+      const nim = nvidiaModelForTask(lastUserMessage);
+      model = buildModel(key, "nvidia", nim.model);
     } else if (coreData?.api_key_encrypted) {
       // BYOK users: respect their key but still route model name safely.
       model = buildModel(coreData.api_key_encrypted, routed.provider, routed.model);
@@ -247,6 +264,7 @@ ${_cs}
 - projectMap: list all files in the current codebase to understand project structure
 - codeGrep: search for patterns or strings (functions, variables) across the entire project
 - readProjectFile: read the full content of any file in the project
+- writeSandboxFiles: write multiple files for the user under a private per-user sandbox (use for multi-file apps, extra pages, CSS/JS modules). Paths are relative (e.g. app/about.html, styles/theme.css).
 - runCode: execute Python or JavaScript in a sandbox to verify logic or perform calculations
 - getStockQuote/getWeather/getNewsHeadlines: live data
 - createGoal/createTask/updateGoalProgress: manage dashboard goals
@@ -261,14 +279,14 @@ ${_cs}
 13. Be thorough and detailed. For factual questions (history, science, finance, tech), provide comprehensive answers with context, nuance, and examples — not 2-sentence replies.
 14. Structure long answers with ## headers, bullet points, or numbered lists so they're easy to scan.
 15. When doing research or analysis, reason step-by-step before concluding. Show your thinking.
-16.2. SUPERCODED AGENT WORKFLOW (CRITICAL):
-   - For all coding, debugging, or architectural tasks, ALWAYS follow this 4-step loop. Never summarize or skip steps.
-     1. **REASON & PLAN**: Take at least 60 seconds of internal 'thinking' time to architect the entire solution. Do not rush.
-     2. **MAP REPOSITORY**: Use \`projectMap\` and \`codeGrep\` to find every relevant file. Use \`readProjectFile\` to understand the existing implementation before suggesting changes.
-     3. **10-AGENT COUNCIL**: You MUST call the \`multiAgentDebate\` tool for all code generation. This activates the full 10-Agent Council: Planner, UX Designer, Architect, Coder (Qwen 3.6 + Minimax M2.5), Critic, Tester, Doc Specialist, Visual Polish, Deployer, and Orchestrator. Do not write code yourself unless it's a 1-line trivial fix. 
-     4. **PERFECTIONIST SYNTHESIS**: The Council's Orchestrator will synthesize the ULTIMATE, bug-free, 100% production-ready code from all 10 agents. Present it to the user. 
-   - **NO LAZINESS**: If asked for a "full web app", you must provide at least 400-600 lines of comprehensive HTML/CSS/JS. Include complex layouts, landing pages, footers, animations, and interactive logic. NEVER use placeholders like "additional code here...".
-   - **QUALITY OVER SPEED**: You are being judged on the quality and thoroughness of your result, not how fast you finish. Take the full 10 steps if necessary.
+16. AUTONOMOUS BUILD MODE (CRITICAL — no approval loops):
+   - **Never** ask "Should I proceed?", "Do you approve this plan?", or repeatedly ask for confirmation. The user already delegated by sending the prompt. Execute end-to-end. Only ask **one** question if something is objectively impossible without a single missing fact.
+   - For **coding**, **debugging**, **architecture**, **websites**, **landing pages**, or **web apps**: your **first tool call** MUST be \`multiAgentDebate\` with the **full** user request plus any file context. Do **not** output a long plan in chat waiting for approval.
+   - You may call \`projectMap\` / \`readProjectFile\` **before** the council when editing **this** repo; for greenfield sites you may go **directly** to \`multiAgentDebate\`.
+   - After the council finishes: respond with a **short** summary (what you built, how to preview). Do **not** dump long TypeScript/React in the message unless the user explicitly asks for source code.
+   - **Multi-file / complex sites**: use \`writeSandboxFiles\` for extra pages and assets (e.g. \`pages/about.html\`, \`styles/site.css\`, \`scripts/main.js\`). Put the **primary live preview** in one \`\`\`html block (typically the home document with links to relative paths).
+   - **Depth**: rich sections (hero, features, social proof, FAQ as appropriate), motion, accessibility, responsive layout. No "TODO" stubs.
+   - **QUALITY OVER SPEED**: let the full council run; do not truncate synthesis.
 3. ALWAYS USE TOOLS for real actions. When user says read my email → call readGmail. When user says send email → call sendGmail. For weather use getWeather; for a stock price use getStockQuote; for news headlines use getNewsHeadlines — do not invent numbers. 
 4. Be direct - no filler. Lead with action or the key insight.
 5. If connector not connected, tell user exactly: go to Email section and click Connect.
@@ -279,20 +297,8 @@ ${_cs}
 10. URL ANALYSIS: When user shares a URL or asks to read/analyze/summarize any webpage, article, or YouTube video, use the \`fetchUrl\` tool IMMEDIATELY. Never say you cannot access URLs.
 11. DOCUMENT GENERATION (CRITICAL): When asked to generate Excel, PDF, or PowerPoint: NEVER refuse, NEVER say you cannot guarantee accuracy, NEVER ask for clarification unless something truly ambiguous. You have FULL knowledge in training data - use it. The content MUST contain actual data (names, numbers, etc.) not placeholder text.
 12. IMAGE GENERATION (CRITICAL): When asked to generate an image → call generateImage IMMEDIATELY with a detailed descriptive prompt.
-9. PREVIEW WEBSITES IN CHAT (ULTIMATE QUALITY): If the user asks you to create a website, landing page, pricing page, or UI component:
-   - YOU MUST write a COMPLETE, PRODUCTION-READY document wrapped in a \`\`\`html code block. 
-   - **TAKE YOUR TIME**: Write massive, detailed HTML documents. Include 10+ feature sections, pricing tables, testimonials, and FAQs.
-   - ALWAYS start with <!DOCTYPE html> and include <html>, <head>, <body> tags
-   - ALWAYS include <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   - ALWAYS include Tailwind CDN: <script src="https://cdn.tailwindcss.com"></script>
-   - ALWAYS use Google Fonts (Inter or similar): <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-   - Use DARK MODE by default (dark backgrounds like #0a0a0a, #111, #1a1a2e)
-   - Use vibrant gradient accents (purple-to-blue, pink-to-orange, etc.)
-   - Include smooth CSS animations and hover effects using Tailwind's \`hover:\` or custom CSS.
-   - Make it LOOK like a $50,000 professionally designed website. NOT a basic template.
-   - DO NOT use placeholder images — use CSS gradients, SVG patterns, or emoji instead
-   - IF YOU ARE LAZY, YOU FAIL. Quality and depth are your only goals.
-10. DATA VISUALIZATION: If the user asks you to show a chart, graph, or data visualization, output a Chart.js configuration JSON inside a \`\`\`chart code block. Example format:
+17. LIVE HTML PREVIEW: The primary site preview MUST be one complete document in a \`\`\`html block (DOCTYPE, viewport meta, Tailwind CDN optional but recommended). Prefer Premium Editorial palette (deep grey surfaces, beige/off-white text) unless the user specifies otherwise. No placeholder images — gradients, SVG, emoji.
+18. DATA VISUALIZATION: If the user asks you to show a chart, graph, or data visualization, output a Chart.js configuration JSON inside a \`\`\`chart code block. Example format:
 \`\`\`chart
 {"type":"bar","data":{"labels":["Jan","Feb","Mar"],"datasets":[{"label":"Sales","data":[12,19,3],"backgroundColor":["#6366f1","#8b5cf6","#a78bfa"]}]}}
 \`\`\`
@@ -387,7 +393,7 @@ The chat interface will automatically render this as an interactive chart. Use v
       model,
       system: systemOverride || systemPrompt,
       messages: finalHistory,
-      maxSteps: 25,
+      maxSteps: 32,
       maxTokens: 8000,
       // Disable sending reasoning/thinking blocks back in history —
       // they're stripped from client-side state anyway, so including them
@@ -455,6 +461,9 @@ The chat interface will automatically render this as an interactive chart. Use v
             }
 
             try {
+              if (streamEnqueue) {
+                streamEnqueue(`5:${JSON.stringify({ type: "preview", state: "building", source: "council" })}\n`);
+              }
               const { runCouncil } = await import("@/lib/agent/council");
 
               // Load user's style memory for design agents
@@ -516,6 +525,9 @@ The chat interface will automatically render this as an interactive chart. Use v
                 .map((c) => `### ${c.name}\n${c.output}`)
                 .join("\n\n---\n\n");
 
+              if (streamEnqueue) {
+                streamEnqueue(`5:${JSON.stringify({ type: "preview", state: "ready", source: "council" })}\n`);
+              }
               return {
                 status: "success",
                 message: `10-Agent Council completed in ${(councilResult.totalDurationMs / 1000).toFixed(1)}s. ${councilResult.agentsUsed.length} agents. Trust: ${councilResult.trustScore}/100.`,
@@ -638,6 +650,57 @@ The chat interface will automatically render this as an interactive chart. Use v
             } catch (e: any) {
               return { status: "error", message: e.message };
             }
+          },
+        },
+
+        writeSandboxFiles: {
+          description:
+            "Write multiple text files for the user into a private per-user sandbox on the server (not the main git repo). Use for multi-page sites, separate CSS/JS modules, or large apps. Paths are relative to the sandbox root.",
+          parameters: z.object({
+            files: z
+              .array(
+                z.object({
+                  relativePath: z.string().describe("Relative path e.g. pages/about.html or js/app.js"),
+                  content: z.string().describe("Full file contents"),
+                })
+              )
+              .min(1)
+              .max(24)
+              .describe("Files to write in one batch"),
+          }),
+          execute: async (args: { files: { relativePath: string; content: string }[] }) => {
+            const root = userSandboxRoot(user_id);
+            const maxTotal = 450_000;
+            let total = 0;
+            const written: string[] = [];
+            for (const f of args.files) {
+              const rel = safeSandboxRelative(f.relativePath);
+              if (!rel) {
+                return { status: "error", message: `Invalid path: ${f.relativePath}` };
+              }
+              total += (f.content || "").length;
+              if (total > maxTotal) {
+                return { status: "error", message: "Batch too large — split into smaller writeSandboxFiles calls." };
+              }
+            }
+            const rootResolved = path.resolve(root);
+            await mkdir(rootResolved, { recursive: true });
+            for (const f of args.files) {
+              const rel = safeSandboxRelative(f.relativePath)!;
+              const full = path.resolve(path.join(rootResolved, rel));
+              if (!full.startsWith(rootResolved + path.sep) && full !== rootResolved) {
+                return { status: "error", message: "Path traversal blocked." };
+              }
+              await mkdir(path.dirname(full), { recursive: true });
+              await writeFileAsync(full, f.content ?? "", "utf8");
+              written.push(rel);
+            }
+            return {
+              status: "success",
+              message: `Wrote ${written.length} file(s) to user sandbox.`,
+              paths: written,
+              root: `.inceptive-artifacts/${user_id}/`,
+            };
           },
         },
 

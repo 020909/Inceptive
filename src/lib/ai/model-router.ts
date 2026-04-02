@@ -8,6 +8,7 @@ function classify(text: string) {
   const t = (text || "").toLowerCase();
   const wantsCode =
     /\b(code|bug|typescript|javascript|python|react|next\.js|tailwind|supabase|sql|prisma|api route|compile|build|function|algorithm|sort|debug|refactor|implement|fix|architecture|database|schema|deploy|component|hook)\b/.test(t) ||
+    /\b(website|web app|landing page|homepage|multi-?page|saas site|portfolio page|htmx|spa)\b/.test(t) ||
     /```/.test(t);
   const wantsResearch =
     /\b(research|sources|citations|cite|links|market|landscape|box office|verify|fact check)\b/.test(t);
