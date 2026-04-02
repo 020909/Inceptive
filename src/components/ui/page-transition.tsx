@@ -2,16 +2,30 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
-export function PageTransition({ children }: { children: React.ReactNode }) {
+type PageTransitionProps = {
+  children: React.ReactNode;
+  /** Optional shell: use for marketing or sparse pages that need centered max-width padding. */
+  className?: string;
+};
+
+/**
+ * Route enter animation for dashboard content. No forced padding — each page owns layout
+ * (dashboard chat is full-bleed; others use p-8 / max-w-* on their root).
+ */
+export function PageTransition({ children, className }: PageTransitionProps) {
   return (
     <motion.div
-      className="px-4 pt-14 pb-6 sm:px-6 sm:pt-7 sm:pb-7 md:px-8 md:pt-8 md:pb-8 max-w-[1400px] animate-fade-slide-in"
-      initial={{ opacity: 0, y: 8 }}
+      className={cn(
+        "min-h-0 w-full animate-fade-slide-in",
+        className,
+      )}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
-        duration: 0.3,
-        ease: [0.25, 0.46, 0.45, 0.94],
+        duration: 0.4,
+        ease: [0.4, 0, 0.2, 1],
       }}
     >
       {children}

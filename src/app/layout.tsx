@@ -28,7 +28,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       }
     >
       <body className={cn(inter.variable, inter.className, 'antialiased')}>
-        <MotionConfig reducedMotion="user">
+        {/*
+          Use "never" so UI polish (sidebar, pages, panels) always animates in the product.
+          Switch to reducedMotion="user" if you want to honor OS "Reduce motion" (Framer
+          will then snap for those users).
+        */}
+        <MotionConfig reducedMotion="never">
           {children}
         </MotionConfig>
       </body>
