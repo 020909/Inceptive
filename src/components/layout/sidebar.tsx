@@ -78,13 +78,13 @@ function NavItem({
       href={item.href}
       className={cn(
         "group/item relative flex h-10 w-full items-center overflow-hidden rounded-lg transition-all duration-200",
-        collapsed
-          ? "justify-center gap-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3"
-          : "justify-start gap-3",
+        collapsed ? "justify-center gap-0 px-0" : "justify-start gap-3",
         isActive
-          ? "border-l-2 border-[var(--text-primary)] bg-[rgba(255,255,255,0.04)] pl-[14px]"
+          ? cn(
+              "border-l-2 border-[var(--text-primary)] bg-[rgba(255,255,255,0.04)]",
+              collapsed ? "pl-0" : "pl-[14px]",
+            )
           : "border-l-2 border-transparent hover:-translate-y-px hover:bg-[rgba(255,255,255,0.06)]",
-        !isActive && collapsed && "pl-0 group-hover/sidebar:pl-4",
         !isActive && !collapsed && "pl-4",
       )}
     >
@@ -93,20 +93,18 @@ function NavItem({
         <Icon size={20} strokeWidth={isActive ? 2 : 1.5} className={isActive ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]"} />
       </span>
 
-      {/* Label — revealed on sidebar hover (collapsed) or always when pinned open */}
-      <span
-        className={`
-          whitespace-nowrap overflow-hidden text-sm font-medium
-          transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-          ${collapsed
-            ? "opacity-0 max-w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:max-w-[120px]"
-            : "opacity-100 max-w-[140px]"
-          }
-          ${isActive ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]"}
-        `}
-      >
-        {item.label}
-      </span>
+      {/* Label — full width when expanded only (no hover width on collapsed rail) */}
+      {!collapsed && (
+        <span
+          className={cn(
+            "max-w-[140px] overflow-hidden whitespace-nowrap text-sm font-medium transition-opacity duration-200",
+            isActive ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]",
+          )}
+        >
+          {item.label}
+        </span>
+      )}
+      {collapsed && <span className="sr-only">{item.label}</span>}
     </Link>
   );
 }
@@ -132,15 +130,19 @@ export function Sidebar() {
         h-screen sticky top-0 z-40 overflow-hidden
         transition-[width] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]
         border-r border-[rgba(255,255,255,0.06)]
-        ${collapsed ? "w-[64px] hover:w-[220px]" : "w-[220px]"}
+        ${collapsed ? "w-[64px]" : "w-[220px]"}
       `}
     >
-      {/* ── Logo row ── */}
-      <div className="flex items-center h-16 px-4 shrink-0 overflow-hidden">
-        {/* Logo mark — always visible */}
+      {/* ── Logo row — collapse control always visible (no waiting for hover to pin/unpin) ── */}
+      <div
+        className={cn(
+          "flex shrink-0 items-center overflow-hidden",
+          collapsed ? "h-14 justify-between px-2" : "h-14 justify-start gap-2 px-3",
+        )}
+      >
         <button
-          onClick={() => router.push('/dashboard')}
-          className="flex shrink-0 items-center justify-center w-8 h-8"
+          onClick={() => router.push("/dashboard")}
+          className="flex h-8 w-8 shrink-0 items-center justify-center"
           aria-label="Home"
         >
           <Image
@@ -152,22 +154,23 @@ export function Sidebar() {
           />
         </button>
 
-        {/* Wordmark + collapse toggle — hidden until hover */}
-        <div className="flex items-center gap-2 ml-2 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 overflow-hidden">
+        {!collapsed && (
           <span
-            className="whitespace-nowrap text-sm font-semibold text-[#F5F5F7] tracking-tight"
+            className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight text-[#F5F5F7]"
             style={{ fontFamily: "var(--font-header)" }}
           >
             Inceptive
           </span>
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[var(--fg-tertiary)] transition-colors hover:bg-[var(--border-subtle)] hover:text-[var(--fg-primary)]"
-          >
-            <SidebarToggleIcon className="w-4 h-4" />
-          </button>
-        </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setCollapsed(!collapsed)}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--fg-tertiary)] transition-colors hover:bg-[var(--border-subtle)] hover:text-[var(--fg-primary)]"
+        >
+          <SidebarToggleIcon className="h-4 w-4" />
+        </button>
       </div>
 
       {/* ── Nav ── */}
@@ -182,8 +185,9 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* ── Recent Chats — only visible when hovered ── */}
-      <div className="px-2 pb-2 overflow-hidden opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300">
+      {/* ── Recent Chats — only when expanded (collapsed rail has no width for list) ── */}
+      {!collapsed && (
+      <div className="px-2 pb-2 overflow-hidden">
         {recentChats.length > 0 && (
           <div className="mt-2">
             <div className="flex items-center justify-between px-2 mb-1">
@@ -213,6 +217,7 @@ export function Sidebar() {
           </div>
         )}
       </div>
+      )}
 
       {/* ── Bottom: Settings ── */}
       <div className="px-2 pb-4 pt-2 border-t border-[rgba(255,255,255,0.06)] shrink-0">
@@ -220,13 +225,13 @@ export function Sidebar() {
           href="/settings"
           className={cn(
             "group/item relative flex h-10 w-full items-center overflow-hidden rounded-lg transition-all duration-200",
-            collapsed
-              ? "justify-center gap-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3"
-              : "justify-start gap-3",
+            collapsed ? "justify-center gap-0 px-0" : "justify-start gap-3",
             pathname === "/settings"
-              ? "border-l-2 border-[var(--text-primary)] bg-[rgba(255,255,255,0.04)] pl-[14px]"
+              ? cn(
+                  "border-l-2 border-[var(--text-primary)] bg-[rgba(255,255,255,0.04)]",
+                  collapsed ? "pl-0" : "pl-[14px]",
+                )
               : "border-l-2 border-transparent hover:-translate-y-px hover:bg-[rgba(255,255,255,0.06)]",
-            pathname !== "/settings" && collapsed && "pl-0 group-hover/sidebar:pl-4",
             pathname !== "/settings" && !collapsed && "pl-4",
           )}
         >
@@ -237,19 +242,17 @@ export function Sidebar() {
               className={pathname === "/settings" ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]"}
             />
           </span>
-          <span
-            className={`
-              whitespace-nowrap overflow-hidden text-sm font-medium
-              transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-              ${collapsed
-                ? "opacity-0 max-w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:max-w-[120px]"
-                : "opacity-100 max-w-[140px]"
-              }
-              ${pathname === "/settings" ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]"}
-            `}
-          >
-            Settings
-          </span>
+          {!collapsed && (
+            <span
+              className={cn(
+                "max-w-[140px] overflow-hidden whitespace-nowrap text-sm font-medium",
+                pathname === "/settings" ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]",
+              )}
+            >
+              Settings
+            </span>
+          )}
+          {collapsed && <span className="sr-only">Settings</span>}
         </Link>
       </div>
     </aside>
