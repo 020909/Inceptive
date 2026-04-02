@@ -9,15 +9,10 @@ import { ThemeProvider } from "@/lib/theme-context";
 import { PageTransition } from "@/components/ui/page-transition";
 
 function LayoutInner({ children }: { children: React.ReactNode }) {
-  const { collapsed } = useSidebar();
-
   return (
-    <div className="min-h-screen bg-[var(--bg-app)]">
+    <div className="flex h-screen overflow-hidden bg-[var(--bg-app)]">
       <Sidebar />
-      <main
-        className="min-h-screen transition-[margin-left] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
-        style={{ marginLeft: collapsed ? 64 : 220 }}
-      >
+      <main className="flex-1 min-w-0 overflow-y-auto">
         <PageTransition>{children}</PageTransition>
       </main>
     </div>
