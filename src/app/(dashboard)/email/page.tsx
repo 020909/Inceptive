@@ -335,7 +335,7 @@ export default function EmailPage() {
             </div>
 
             {/* Email Stats */}
-            <div className="mt-8 p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+            <div className="mt-8 p-4 rounded-2xl bg-[var(--bg-elevated)] card-elevated">
               <p className="text-[var(--fg-muted)] text-xs mb-3">Overview</p>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">

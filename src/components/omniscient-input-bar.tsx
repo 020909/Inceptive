@@ -38,10 +38,11 @@ export function OmniscientInputBar() {
     >
       <div
         className={`
-          relative flex items-center gap-3 px-4 py-3 rounded-2xl
+          relative flex items-center gap-3 px-5 py-4 rounded-[24px]
           bg-[var(--bg-surface)] border transition-all duration-200
+          shadow-[0_20px_60px_rgba(0,0,0,0.3)]
           ${focused
-            ? 'border-[var(--border-strong)] shadow-[0_0_0_1px_var(--border-subtle)]'
+            ? 'border-[var(--accent)] shadow-[0_20px_60px_rgba(0,0,0,0.3),0_0_0_2px_var(--accent-glow)]'
             : 'border-[var(--border-subtle)] hover:border-[var(--border-default)]'
           }
         `}
@@ -67,15 +68,15 @@ export function OmniscientInputBar() {
           onClick={submit}
           disabled={!value.trim()}
           className={`
-            shrink-0 flex items-center justify-center w-8 h-8 rounded-lg
+            shrink-0 flex items-center justify-center w-9 h-9 rounded-xl
             transition-all duration-150
             ${value.trim()
-              ? 'bg-[var(--fg-primary)] text-[var(--bg-base)] hover:bg-white/90'
+              ? 'bg-[#6510F4] text-white hover:bg-[#7C3AED] hover:-translate-y-px'
               : 'bg-[var(--bg-elevated)] text-[var(--fg-muted)] cursor-not-allowed'
             }
           `}
         >
-          <ArrowUp size={16} strokeWidth={2} />
+          <ArrowUp size={18} strokeWidth={2} />
         </button>
       </div>
     </motion.div>

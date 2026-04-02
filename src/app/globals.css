@@ -25,7 +25,7 @@
 @layer base {
   :root {
     /* ── Background tiers (darkest → lightest) ── */
-    --bg-base: #0A0A0A;
+    --bg-base: #0D0D0D;
     --bg-app: #111111;
     --bg-surface: #1A1A1A;
     --bg-elevated: #222222;
@@ -42,10 +42,11 @@
     --border-default: rgba(255, 255, 255, 0.10);
     --border-strong: rgba(255, 255, 255, 0.20);
 
-    /* ── Accent (Apple-blue, used sparingly) ── */
-    --accent: #0A84FF;
-    --accent-soft: rgba(10, 132, 255, 0.15);
-    --accent-muted: rgba(10, 132, 255, 0.08);
+    /* ── Accent (Electric Indigo, used sparingly) ── */
+    --accent: #6510F4;
+    --accent-soft: rgba(101, 16, 244, 0.12);
+    --accent-muted: rgba(101, 16, 244, 0.08);
+    --accent-glow: rgba(101, 16, 244, 0.25);
 
     /* ── Status ── */
     --success: #30D158;
@@ -100,9 +101,10 @@
     --border-default: rgba(0, 0, 0, 0.12);
     --border-strong: rgba(0, 0, 0, 0.22);
 
-    --accent: #0071E3;
-    --accent-soft: rgba(0, 113, 227, 0.10);
-    --accent-muted: rgba(0, 113, 227, 0.06);
+    --accent: #6510F4;
+    --accent-soft: rgba(101, 16, 244, 0.10);
+    --accent-muted: rgba(101, 16, 244, 0.06);
+    --accent-glow: rgba(101, 16, 244, 0.20);
 
     --success: #248A3D;
     --success-soft: rgba(36, 138, 61, 0.10);
@@ -142,6 +144,7 @@
     @apply antialiased;
     color: var(--fg-primary);
     background: var(--bg-base);
+    font-family: 'Inter', system-ui, sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -165,17 +168,17 @@
   }
 
   ::selection {
-    background: rgba(10, 132, 255, 0.3);
+    background: rgba(101, 16, 244, 0.3);
     color: white;
   }
 }
 
 @layer utilities {
   .glass {
-    background: color-mix(in srgb, var(--bg-app) 75%, transparent);
-    backdrop-filter: blur(24px) saturate(1.2);
-    -webkit-backdrop-filter: blur(24px) saturate(1.2);
-    border: 1px solid var(--border-subtle);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .glass-hover:hover {
@@ -234,6 +237,16 @@
   100% { background-position: -200% 0; }
 }
 
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-indigo {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 12px var(--accent-glow); }
+}
+
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -245,8 +258,8 @@
 }
 
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(10, 132, 255, 0); }
-  50% { box-shadow: 0 0 12px 2px rgba(10, 132, 255, 0.15); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(101, 16, 244, 0); }
+  50% { box-shadow: 0 0 12px 2px rgba(101, 16, 244, 0.15); }
 }
 
 @keyframes breathe {
@@ -329,10 +342,10 @@
 
   /* ── Subtle Glow Effects ── */
   .glow-accent {
-    box-shadow: 0 0 20px rgba(10, 132, 255, 0.08), 0 0 40px rgba(10, 132, 255, 0.04);
+    box-shadow: 0 0 20px rgba(101, 16, 244, 0.08), 0 0 40px rgba(101, 16, 244, 0.04);
   }
   .glow-accent-hover:hover {
-    box-shadow: 0 0 20px rgba(10, 132, 255, 0.15), 0 0 60px rgba(10, 132, 255, 0.06);
+    box-shadow: 0 0 20px rgba(101, 16, 244, 0.15), 0 0 60px rgba(101, 16, 244, 0.06);
   }
   .glow-success {
     box-shadow: 0 0 16px rgba(48, 209, 88, 0.1);
@@ -365,8 +378,29 @@
 
   /* ── Focus ring ── */
   .focus-ring:focus-visible {
-    outline: 2px solid rgba(10, 132, 255, 0.5);
+    outline: 2px solid rgba(101, 16, 244, 0.5);
     outline-offset: 2px;
+  }
+
+  /* ── Animate utilities ── */
+  .animate-fade-slide-in {
+    animation: fadeSlideIn 0.3s ease both;
+  }
+  
+  .animate-pulse-indigo {
+    animation: pulse-indigo 2s ease-in-out infinite;
+  }
+
+  /* ── Card styling for dashboard ── */
+  .card-elevated {
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card-elevated:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   /* ── Drag handle cursor indicator ── */

@@ -123,7 +123,7 @@ function ReportCard({ report, index, onOpen }: { report: Report; index: number; 
 
   return (
     <motion.div
-      className="group rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-colors duration-150 overflow-hidden cursor-pointer"
+      className="group rounded-2xl bg-[var(--bg-surface)] card-elevated overflow-hidden cursor-pointer"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06 }}
@@ -336,7 +336,7 @@ export default function ResearchPage() {
           { label: 'Last Engine', value: sessions[0]?.provider_used || '—', icon: Search },
           { label: 'Latest', value: reports.length > 0 ? timeAgo(reports[0].created_at) : '—', icon: Clock },
         ].map((s) => (
-          <div key={s.label} className="flex items-center gap-3 p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+          <div key={s.label} className="flex items-center gap-3 p-4 rounded-2xl bg-[var(--bg-surface)] card-elevated">
             <div className="w-9 h-9 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center">
               <s.icon size={15} className="text-[var(--fg-tertiary)]" />
             </div>
@@ -360,7 +360,7 @@ export default function ResearchPage() {
           {[1,2,3,4].map(i => <div key={i} className="h-32 rounded-xl shimmer" />)}
         </div>
       ) : reports.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+        <div className="flex flex-col items-center justify-center py-20 rounded-2xl bg-[var(--bg-surface)] card-elevated">
           <div className="w-12 h-12 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] flex items-center justify-center mb-4">
             <Search size={20} className="text-[var(--fg-tertiary)]" />
           </div>
@@ -390,7 +390,7 @@ export default function ResearchPage() {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.96, y: 12 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-4xl rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
+              className="w-full max-w-4xl rounded-2xl bg-[var(--bg-surface)] card-elevated max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
             >
               <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between shrink-0">
                 <div className="min-w-0 pr-4">

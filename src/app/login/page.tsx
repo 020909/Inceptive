@@ -62,7 +62,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[var(--bg-base)]">
+    <div 
+      className="min-h-screen flex bg-[var(--bg-base)]"
+      style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(101,16,244,0.15) 0%, transparent 70%), var(--bg-base)" }}
+    >
       {/* ── Left branding panel ── */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -72,7 +75,7 @@ export default function LoginPage() {
       >
         {/* Ambient glow */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 65%)" }}
+          style={{ background: "radial-gradient(circle, rgba(101,16,244,0.12) 0%, transparent 65%)" }}
         />
 
         <div className="flex items-center gap-2.5 relative z-10">
@@ -103,7 +106,7 @@ export default function LoginPage() {
         transition={{ duration: 0.4, delay: 0.1 }}
         className="flex flex-1 items-center justify-center p-6 lg:p-16"
       >
-        <div className="w-full max-w-[360px]">
+        <div className="w-full max-w-[400px] glass rounded-[24px] p-12">
           {/* Mobile logo */}
           <div className="flex items-center gap-2.5 mb-10 lg:hidden">
             <div className="relative h-8 w-8 rounded-lg overflow-hidden border border-[var(--border-subtle)]">

@@ -126,7 +126,7 @@ function Toggle({ on, onToggle, disabled }: { on: boolean; onToggle: () => void;
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-hidden ${className}`}>
+    <div className={`rounded-2xl card-elevated bg-[var(--bg-surface)] overflow-hidden ${className}`}>
       {children}
     </div>
   );
@@ -232,7 +232,6 @@ export default function SettingsPage() {
       const d = await res.json();
       if (res.ok) setScheduledTasks(d.tasks || []);
     } catch {
-      // ignore
     } finally {
       setScheduledLoading(false);
     }
@@ -437,11 +436,7 @@ export default function SettingsPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                       <div className="space-y-1.5 flex flex-col">
                         <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Name</Label>
-                        <select
-                          value={aiName}
-                          onChange={(e) => setAiName(e.target.value)}
-                          className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--fg-primary)] outline-none focus:border-[var(--fg-tertiary)] transition-colors h-10"
-                        >
+                        <select value={aiName} onChange={(e) => setAiName(e.target.value)} className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--fg-primary)] outline-none focus:border-[var(--fg-tertiary)] transition-colors h-10">
                           <option value="Inceptive">Inceptive (Default)</option>
                           <option value="Jarvis">Jarvis</option>
                           <option value="Aria">Aria</option>
@@ -449,14 +444,9 @@ export default function SettingsPage() {
                           <option value="Assistant">Assistant</option>
                         </select>
                       </div>
-
                       <div className="space-y-1.5 flex flex-col">
                         <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Personality</Label>
-                        <select
-                          value={aiPersonality}
-                          onChange={(e) => setAiPersonality(e.target.value)}
-                          className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--fg-primary)] outline-none focus:border-[var(--fg-tertiary)] transition-colors h-10"
-                        >
+                        <select value={aiPersonality} onChange={(e) => setAiPersonality(e.target.value)} className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--fg-primary)] outline-none focus:border-[var(--fg-tertiary)] transition-colors h-10">
                           <option value="Professional">Professional (Default)</option>
                           <option value="Friendly">Friendly & Approachable</option>
                           <option value="Witty">Witty & Sarcastic</option>
@@ -464,14 +454,9 @@ export default function SettingsPage() {
                           <option value="Academic">Academic & Analytical</option>
                         </select>
                       </div>
-
                       <div className="space-y-1.5 flex flex-col">
                         <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Tone</Label>
-                        <select
-                          value={aiTone}
-                          onChange={(e) => setAiTone(e.target.value)}
-                          className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--fg-primary)] outline-none focus:border-[var(--fg-tertiary)] transition-colors h-10"
-                        >
+                        <select value={aiTone} onChange={(e) => setAiTone(e.target.value)} className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--fg-primary)] outline-none focus:border-[var(--fg-tertiary)] transition-colors h-10">
                           <option value="Helpful">Helpful (Default)</option>
                           <option value="Formal">Formal</option>
                           <option value="Casual">Casual</option>
@@ -493,7 +478,6 @@ export default function SettingsPage() {
                       </div>
                       <Toggle on={is24_7Mode} onToggle={toggle24_7Mode} />
                     </div>
-
                     {is24_7Mode && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-3">
                         <div className="flex items-center justify-between">
@@ -501,11 +485,7 @@ export default function SettingsPage() {
                             <Clock className="w-4 h-4 text-[var(--fg-tertiary)]" />
                             <span className="text-xs text-[var(--fg-primary)]">Sleep after</span>
                           </div>
-                          <select
-                            value={sleepAfterMinutes}
-                            onChange={(e) => setSleepAfterMinutes(Number(e.target.value))}
-                            className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-1.5 text-xs text-[var(--fg-primary)]"
-                          >
+                          <select value={sleepAfterMinutes} onChange={(e) => setSleepAfterMinutes(Number(e.target.value))} className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-1.5 text-xs text-[var(--fg-primary)]">
                             <option value={1}>1 minute</option>
                             <option value={5}>5 minutes</option>
                             <option value={15}>15 minutes</option>
@@ -515,7 +495,6 @@ export default function SettingsPage() {
                         </div>
                       </motion.div>
                     )}
-
                     <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[var(--bg-app)] border border-[var(--border-subtle)]">
                       <div className={`w-2 h-2 rounded-full shrink-0 ${is24_7Mode ? "bg-[var(--success)]" : "bg-[var(--fg-muted)]"}`} />
                       <p className="text-xs text-[var(--fg-tertiary)]">
@@ -550,59 +529,38 @@ export default function SettingsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div className="space-y-1.5">
                         <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Name</Label>
-                        <Input
-                          value={scheduledName}
-                          onChange={(e) => setScheduledName(e.target.value)}
-                          placeholder="e.g. Monday Inbox Summary"
-                          className="h-10 rounded-lg text-sm bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--fg-primary)]"
-                        />
+                        <Input value={scheduledName} onChange={(e) => setScheduledName(e.target.value)} placeholder="e.g. Monday Inbox Summary"
+                          className="h-10 rounded-lg text-sm bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--fg-primary)]" />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Cron (UTC)</Label>
-                        <Input
-                          value={scheduledCron}
-                          onChange={(e) => setScheduledCron(e.target.value)}
-                          placeholder="0 9 * * 1"
-                          className="h-10 rounded-lg text-sm bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--fg-primary)] font-mono"
-                        />
+                        <Input value={scheduledCron} onChange={(e) => setScheduledCron(e.target.value)} placeholder="0 9 * * 1"
+                          className="h-10 rounded-lg text-sm bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--fg-primary)] font-mono" />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Actions</Label>
                         <div className="flex gap-2">
-                          <Button
-                            onClick={createScheduledTask}
-                            disabled={scheduledSaving}
-                            className="h-10 px-4 rounded-lg text-sm border-0 bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 disabled:opacity-40 flex items-center gap-2"
-                          >
+                          <Button onClick={createScheduledTask} disabled={scheduledSaving}
+                            className="h-10 px-4 rounded-lg text-sm border-0 bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 disabled:opacity-40 flex items-center gap-2">
                             {scheduledSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                             Create
                           </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={fetchScheduledTasks}
-                            className="h-10 px-4 rounded-lg text-sm hover:bg-[var(--bg-elevated)]"
-                          >
+                          <Button variant="ghost" onClick={fetchScheduledTasks} className="h-10 px-4 rounded-lg text-sm hover:bg-[var(--bg-elevated)]">
                             Refresh
                           </Button>
                         </div>
                       </div>
                     </div>
-
                     <div className="space-y-1.5">
                       <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Prompt</Label>
-                      <textarea
-                        value={scheduledPrompt}
-                        onChange={(e) => setScheduledPrompt(e.target.value)}
-                        rows={4}
+                      <textarea value={scheduledPrompt} onChange={(e) => setScheduledPrompt(e.target.value)} rows={4}
                         placeholder={`Example:\nEvery Monday at 9am: pull my Gmail inbox and summarize what needs a reply.\n\n(Use clear instructions. If Gmail isn't connected, the task will fail with a clear error.)`}
-                        className="w-full rounded-lg text-sm bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--fg-primary)] px-3 py-2 outline-none focus:border-[var(--border-strong)]"
-                      />
+                        className="w-full rounded-lg text-sm bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--fg-primary)] px-3 py-2 outline-none focus:border-[var(--border-strong)]" />
                       <p className="text-[11px] text-[var(--fg-muted)]">
                         Cron format: <span className="font-mono">min hour day month dayOfWeek</span> (UTC). Example:{" "}
                         <span className="font-mono">0 9 * * 1</span> = Mondays 09:00 UTC.
                       </p>
                     </div>
-
                     <div className="pt-2">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-[10px] text-[var(--fg-muted)] uppercase font-semibold tracking-wider">Your tasks</p>
@@ -625,27 +583,20 @@ export default function SettingsPage() {
                                 </p>
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
-                                <Toggle
-                                  on={!!t.enabled}
-                                  onToggle={async () => {
-                                    if (!session?.access_token) return;
-                                    await fetch(`/api/scheduled-tasks/${t.id}`, {
-                                      method: "PATCH",
-                                      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-                                      body: JSON.stringify({ enabled: !t.enabled }),
-                                    });
-                                    fetchScheduledTasks();
-                                  }}
-                                />
-                                <Button
-                                  variant="ghost"
-                                  onClick={async () => {
-                                    if (!session?.access_token) return;
-                                    await fetch(`/api/scheduled-tasks/${t.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${session.access_token}` } });
-                                    fetchScheduledTasks();
-                                  }}
-                                  className="h-9 px-3 rounded-lg text-xs hover:bg-[var(--bg-elevated)]"
-                                >
+                                <Toggle on={!!t.enabled} onToggle={async () => {
+                                  if (!session?.access_token) return;
+                                  await fetch(`/api/scheduled-tasks/${t.id}`, {
+                                    method: "PATCH",
+                                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+                                    body: JSON.stringify({ enabled: !t.enabled }),
+                                  });
+                                  fetchScheduledTasks();
+                                }} />
+                                <Button variant="ghost" onClick={async () => {
+                                  if (!session?.access_token) return;
+                                  await fetch(`/api/scheduled-tasks/${t.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${session.access_token}` } });
+                                  fetchScheduledTasks();
+                                }} className="h-9 px-3 rounded-lg text-xs hover:bg-[var(--bg-elevated)]">
                                   Delete
                                 </Button>
                               </div>
@@ -675,7 +626,6 @@ export default function SettingsPage() {
                         {memberSince && <div className="text-xs mt-0.5 text-[var(--fg-muted)]">Member since {memberSince}</div>}
                       </div>
                     </div>
-
                     <div className="space-y-1.5">
                       <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Display Name</Label>
                       <div className="flex gap-2">
@@ -687,7 +637,6 @@ export default function SettingsPage() {
                         </Button>
                       </div>
                     </div>
-
                     <div className="space-y-1.5">
                       <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Email Address</Label>
                       <div className="h-10 flex items-center px-3 rounded-lg text-sm bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--fg-tertiary)]">
@@ -730,10 +679,8 @@ export default function SettingsPage() {
                       </div>
                       {!creditInfo?.unlimited && (
                         <div className="h-2 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
-                          <div
-                            className="h-full bg-[var(--fg-primary)]"
-                            style={{ width: `${Math.max(0, Math.min(100, ((creditInfo?.remaining ?? 0) / Math.max(1, creditInfo?.total ?? 1)) * 100))}%` }}
-                          />
+                          <div className="h-full bg-[var(--fg-primary)]"
+                            style={{ width: `${Math.max(0, Math.min(100, ((creditInfo?.remaining ?? 0) / Math.max(1, creditInfo?.total ?? 1)) * 100))}%` }} />
                         </div>
                       )}
                     </div>

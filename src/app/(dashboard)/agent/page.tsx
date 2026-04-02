@@ -68,7 +68,7 @@ function JobCard({ job, index }: { job: AgentJob; index: number }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
-      className="group p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-colors duration-150 cursor-pointer"
+      className="group p-4 rounded-2xl bg-[var(--bg-surface)] card-elevated cursor-pointer"
       onClick={() => setExpanded(!expanded)}
     >
       <div className="flex items-start justify-between mb-2">
@@ -241,7 +241,7 @@ export default function AgentPage() {
           { label: "Completed", value: counts.completed },
           { label: "Failed", value: counts.failed },
         ].map((s) => (
-          <div key={s.label} className="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+          <div key={s.label} className="p-4 rounded-2xl bg-[var(--bg-surface)] card-elevated">
             <p className="text-[11px] text-[var(--fg-tertiary)] uppercase tracking-wider mb-1">{s.label}</p>
             <p className="text-xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">{s.value}</p>
           </div>
@@ -262,7 +262,7 @@ export default function AgentPage() {
               key={p.kind}
               onClick={() => enqueue(p.kind)}
               disabled={!!enqueuing}
-              className="group p-3 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] text-left transition-colors disabled:opacity-50"
+              className="group p-3 rounded-2xl bg-[var(--bg-surface)] card-elevated text-left disabled:opacity-50"
             >
               <p className="text-[var(--fg-primary)] text-sm font-medium mb-0.5">{p.label}</p>
               <p className="text-[var(--fg-muted)] text-[11px]">{p.description}</p>
@@ -280,14 +280,14 @@ export default function AgentPage() {
             <Loader2 className="animate-spin text-[var(--fg-muted)]" size={20} />
           </div>
         ) : templates.length === 0 ? (
-          <div className="text-center p-6 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+          <div className="text-center p-6 rounded-2xl bg-[var(--bg-surface)] card-elevated">
             <p className="text-[var(--fg-tertiary)] text-sm">No custom agents yet.</p>
-            <p className="text-[var(--fg-muted)] text-xs mt-1">Click “Add Agent” to create one.</p>
+            <p className="text-[var(--fg-muted)] text-xs mt-1">Click &ldquo;Add Agent&rdquo; to create one.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {templates.slice(0, 6).map((t) => (
-              <div key={t.id} className="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+              <div key={t.id} className="p-4 rounded-2xl bg-[var(--bg-surface)] card-elevated">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[var(--fg-primary)] font-medium text-sm truncate">{t.name}</p>
@@ -367,7 +367,7 @@ export default function AgentPage() {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.96, y: 12 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-hidden"
+              className="w-full max-w-lg rounded-2xl bg-[var(--bg-surface)] card-elevated overflow-hidden"
             >
               <div className="px-6 py-5 border-b border-[var(--border-subtle)] flex items-start justify-between gap-3">
                 <div>

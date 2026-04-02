@@ -94,7 +94,7 @@ function AgentAvatarPremium({ role, status, index }: { role: string; status: Age
       transition={{ delay: index * 0.03, type: "spring", stiffness: 300, damping: 20 }}
       className={`relative w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300 ${
         isThinking
-          ? "bg-[var(--accent-soft)] border border-[var(--accent)] agent-ring-active"
+          ? "bg-[var(--accent-soft)] border border-[#6510F4] animate-pulse-indigo"
           : isDone
             ? "bg-[var(--success-soft)] border border-[var(--success)]/30"
             : isError
@@ -105,7 +105,7 @@ function AgentAvatarPremium({ role, status, index }: { role: string; status: Age
       {isThinking && (
         <motion.div
           className="absolute inset-0 rounded-lg"
-          style={{ boxShadow: "0 0 12px rgba(10, 132, 255, 0.2)" }}
+          style={{ boxShadow: "0 0 12px rgba(101, 16, 244, 0.3)" }}
           animate={{ opacity: [0.3, 0.8, 0.3] }}
           transition={{ duration: 1.8, repeat: Infinity }}
         />
@@ -113,7 +113,7 @@ function AgentAvatarPremium({ role, status, index }: { role: string; status: Age
       <Icon
         size={12}
         className={`relative z-10 ${
-          isThinking ? "text-[var(--accent)]"
+          isThinking ? "text-[#6510F4]"
             : isDone ? "text-[var(--success)]"
             : isError ? "text-[var(--destructive)]"
             : "text-[var(--fg-muted)]"

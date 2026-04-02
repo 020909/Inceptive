@@ -73,7 +73,7 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
 
   return (
     <motion.div
-      className="group p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-all duration-300"
+      className="group p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated transition-all duration-300"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, type: 'spring', stiffness: 100, damping: 20 }}
@@ -82,13 +82,7 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
     >
       <div className="flex items-start justify-between mb-4">
         <div className="h-12 w-12 flex items-center justify-center">
-          <img
-            src={connector.logo}
-            alt={connector.name}
-            width={34}
-            height={34}
-            className="h-[34px] w-[34px] object-contain"
-          />
+          <img src={connector.logo} alt={connector.name} width={34} height={34} className="h-[34px] w-[34px] object-contain" />
         </div>
         <StatusBadge status={connected ? 'connected' : 'disconnected'} />
       </div>
@@ -97,7 +91,7 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
       <p className="text-[var(--fg-muted)] text-sm mb-4">{connector.description}</p>
       {connected && connectedAccount?.account_name && (
         <p className="text-[var(--fg-tertiary)] text-xs mb-3">
-          ✅ Connected as {connectedAccount.account_name}
+          Connected as {connectedAccount.account_name}
           {connectedAccount.account_email ? ` · ${connectedAccount.account_email}` : ""}
         </p>
       )}
@@ -108,12 +102,7 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
           <span>{connected ? 'Synced recently' : 'Not connected'}</span>
         </div>
 
-        <motion.div
-          className="flex items-center gap-1"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isHovered ? 1 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
+        <motion.div className="flex items-center gap-1" initial={{ opacity: 0 }} animate={{ opacity: isHovered ? 1 : 0 }} transition={{ duration: 0.2 }}>
           {connected ? (
             <>
               <button className="p-2 rounded-lg hover:bg-[var(--bg-elevated)] transition-colors">
@@ -192,9 +181,7 @@ export default function SocialPage() {
     }
   }, [session, user, fetchPosts, fetchConnected, loading]);
 
-  useEffect(() => {
-    init();
-  }, [init]);
+  useEffect(() => { init(); }, [init]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -221,12 +208,8 @@ export default function SocialPage() {
   const handleConnect = (connector: typeof SOCIAL_CONNECTORS[0]) => {
     if (!session?.access_token) { toast.error("Please sign in first"); return; }
     if (connector.telegramInput) { setIsTelegramModalOpen(true); return; }
-
     const authSlug = PROVIDER_AUTH_PATH[connector.provider] || connector.provider;
-    const base =
-      connector.type === "email"
-        ? `/api/auth/${authSlug}/connect`
-        : `/api/connectors/${connector.provider}?mode=connect`;
+    const base = connector.type === "email" ? `/api/auth/${authSlug}/connect` : `/api/connectors/${connector.provider}?mode=connect`;
     const url = `${base}?token=${encodeURIComponent(session.access_token)}&redirect_to=/social`;
     window.location.href = url;
   };
@@ -243,10 +226,7 @@ export default function SocialPage() {
   const handleTelegramConnect = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!botToken?.trim() || !session?.access_token) return;
-    if (!chatId.trim()) {
-      toast.error("Chat ID is required so we know where to send posts.");
-      return;
-    }
+    if (!chatId.trim()) { toast.error("Chat ID is required so we know where to send posts."); return; }
     setConnectingTelegram(true);
     try {
       const res = await fetch("/api/connectors/telegram", {
@@ -268,10 +248,7 @@ export default function SocialPage() {
     e.preventDefault();
     if (!session?.access_token || !user) return;
     const pk = platform.toLowerCase();
-    if (!isPlatformConnected(pk)) {
-      toast.error(`Connect ${platform} in Connectors before scheduling a post.`);
-      return;
-    }
+    if (!isPlatformConnected(pk)) { toast.error(`Connect ${platform} in Connectors before scheduling a post.`); return; }
     setSaving(true);
     try {
       if (generateWithAi) {
@@ -308,10 +285,7 @@ export default function SocialPage() {
   const handlePublish = async (postId: string) => {
     if (!session?.access_token) return;
     const post = posts.find((p) => p.id === postId);
-    if (post && !isPlatformConnected(post.platform)) {
-      toast.error(`Connect ${post.platform} in Connectors before publishing.`);
-      return;
-    }
+    if (post && !isPlatformConnected(post.platform)) { toast.error(`Connect ${post.platform} in Connectors before publishing.`); return; }
     setPublishing(postId);
     try {
       const res = await fetch("/api/actions/publish-post", {
@@ -343,10 +317,7 @@ export default function SocialPage() {
     return prov ? connectedAccounts.some(a => a.provider === prov) : false;
   };
 
-  const filteredConnectors = selectedCategory === 'all' 
-    ? SOCIAL_CONNECTORS 
-    : SOCIAL_CONNECTORS.filter(c => c.type === selectedCategory);
-
+  const filteredConnectors = selectedCategory === 'all' ? SOCIAL_CONNECTORS : SOCIAL_CONNECTORS.filter(c => c.type === selectedCategory);
   const connectedCount = connectedAccounts.length;
 
   if (loading) return (
@@ -365,95 +336,58 @@ export default function SocialPage() {
   return (
     <>
       <div className="min-h-screen flex flex-col">
-        {/* Header */}
         <header className="flex items-center justify-between px-8 py-5 border-b border-[var(--border-subtle)]">
           <div>
             <h1 className="text-xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Connectors</h1>
             <p className="text-[var(--fg-muted)] text-sm">Manage integrations and data sources</p>
           </div>
-          <motion.button
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] font-medium text-sm"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => { setPlatform("X"); setContent(""); setTopic(""); setScheduleTime(""); setGenerateWithAi(false); setIsModalOpen(true); }}
-          >
+          <motion.button className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] font-medium text-sm" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            onClick={() => { setPlatform("X"); setContent(""); setTopic(""); setScheduleTime(""); setGenerateWithAi(false); setIsModalOpen(true); }}>
             <Plus size={16} />
             Create Post
           </motion.button>
         </header>
 
-        {/* Content */}
         <div className="flex-1 p-8">
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mb-8">
-            <motion.div
-              className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0, type: 'spring', stiffness: 100, damping: 20 }}
-            >
+            <motion.div className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0, type: 'spring', stiffness: 100, damping: 20 }}>
               <p className="text-[var(--fg-muted)] text-sm mb-1">Connected</p>
               <p className="text-3xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{connectedCount}</p>
             </motion.div>
-            <motion.div
-              className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05, type: 'spring', stiffness: 100, damping: 20 }}
-            >
+            <motion.div className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, type: 'spring', stiffness: 100, damping: 20 }}>
               <p className="text-[var(--fg-muted)] text-sm mb-1">Available</p>
               <p className="text-3xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{SOCIAL_CONNECTORS.length}</p>
             </motion.div>
-            <motion.div
-              className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}
-            >
+            <motion.div className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}>
               <p className="text-[var(--fg-muted)] text-sm mb-1">Sync Errors</p>
               <p className="text-3xl font-semibold text-[var(--fg-secondary)] tracking-[-0.03em]">0</p>
             </motion.div>
           </div>
 
-          {/* Category Filter */}
           <div className="flex items-center gap-2 mb-6">
             {(['all', 'email', 'social'] as const).map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`
-                  px-4 py-2 rounded-lg text-sm capitalize transition-all duration-200
-                  ${selectedCategory === category
-                    ? 'bg-[var(--bg-elevated)] text-[var(--fg-primary)]'
-                    : 'text-[var(--fg-tertiary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--fg-primary)]'
-                  }
-                `}
-              >
+              <button key={category} onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-lg text-sm capitalize transition-all duration-200
+                  ${selectedCategory === category ? 'bg-[var(--bg-elevated)] text-[var(--fg-primary)]' : 'text-[var(--fg-tertiary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--fg-primary)]'}`}>
                 {category}
               </button>
             ))}
           </div>
 
-          {/* Connectors Grid */}
           <div className="grid grid-cols-4 gap-4">
             {filteredConnectors.map((connector, index) => (
-              <ConnectorCard 
-                key={connector.id} 
-                connector={connector} 
-                index={index}
+              <ConnectorCard key={connector.id} connector={connector} index={index}
                 connected={connectedAccounts.some(a => a.provider === connector.provider)}
                 connectedAccount={connectedAccounts.find(a => a.provider === connector.provider)}
                 onConnect={() => handleConnect(connector)}
-                onDisconnect={() => handleDisconnect(connector.provider)}
-              />
+                onDisconnect={() => handleDisconnect(connector.provider)} />
             ))}
           </div>
 
-          {/* Posts Section */}
           <div className="mt-8">
             <h2 className="text-[var(--fg-primary)] font-medium tracking-[-0.02em] mb-4">Recent Posts</h2>
             {posts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+              <div className="flex flex-col items-center justify-center py-16 rounded-2xl bg-[var(--bg-surface)] card-elevated">
                 <Share2 size={32} className="text-[var(--fg-muted)] mb-4" />
                 <p className="text-[var(--fg-secondary)] mb-2">No posts yet</p>
                 <p className="text-[var(--fg-muted)] text-sm">Connect your accounts and create a post to get started</p>
@@ -461,17 +395,10 @@ export default function SocialPage() {
             ) : (
               <div className="grid grid-cols-2 gap-4">
                 {posts.slice(0, 4).map((post, idx) => (
-                  <motion.div
-                    key={post.id}
-                    className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-all"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                  >
+                  <motion.div key={post.id} className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated hover:border-[var(--border-default)] transition-all"
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
                     <div className="flex items-start justify-between mb-3">
-                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--bg-elevated)] text-[var(--fg-primary)]">
-                        {post.platform}
-                      </span>
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--bg-elevated)] text-[var(--fg-primary)]">{post.platform}</span>
                       <div className="flex items-center gap-1.5">
                         <div className={`h-2 w-2 rounded-full ${getStatusColor(post.status)}`} />
                         <span className="text-xs text-[var(--fg-muted)] capitalize">{post.status}</span>
@@ -479,15 +406,10 @@ export default function SocialPage() {
                     </div>
                     <p className="text-sm text-[var(--fg-secondary)] line-clamp-2 mb-3">{post.content}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-[var(--fg-muted)]">
-                        {post.scheduled_for ? new Date(post.scheduled_for).toLocaleDateString() : 'Not scheduled'}
-                      </span>
+                      <span className="text-xs text-[var(--fg-muted)]">{post.scheduled_for ? new Date(post.scheduled_for).toLocaleDateString() : 'Not scheduled'}</span>
                       {post.status !== "published" && (
-                        <button
-                          onClick={() => handlePublish(post.id)}
-                          disabled={publishing === post.id || !isPlatformConnected(post.platform)}
-                          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-[var(--bg-elevated)] text-[var(--fg-primary)] hover:bg-[var(--bg-overlay)] disabled:opacity-50"
-                        >
+                        <button onClick={() => handlePublish(post.id)} disabled={publishing === post.id || !isPlatformConnected(post.platform)}
+                          className="text-xs px-3 py-1.5 rounded-lg font-medium bg-[var(--bg-elevated)] text-[var(--fg-primary)] hover:bg-[var(--bg-overlay)] disabled:opacity-50">
                           {publishing === post.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Publish'}
                         </button>
                       )}
@@ -498,13 +420,8 @@ export default function SocialPage() {
             )}
           </div>
 
-          {/* API Access */}
-          <motion.div
-            className="mt-8 p-6 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, type: 'spring', stiffness: 100, damping: 20 }}
-          >
+          <motion.div className="mt-8 p-6 rounded-2xl bg-[var(--bg-surface)] card-elevated"
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, type: 'spring', stiffness: 100, damping: 20 }}>
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-[var(--fg-primary)] font-medium tracking-[-0.02em] mb-1">Developer API</h3>
@@ -519,7 +436,6 @@ export default function SocialPage() {
         </div>
       </div>
 
-      {/* Create Post Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="border text-[var(--fg-primary)] sm:max-w-xl bg-[var(--bg-surface)] border-[var(--border-subtle)]">
           <DialogHeader><DialogTitle className="text-[var(--fg-primary)]">Create Social Post</DialogTitle></DialogHeader>
@@ -550,15 +466,13 @@ export default function SocialPage() {
             {generateWithAi ? (
               <div className="space-y-2">
                 <Label className="text-[var(--fg-secondary)] text-xs uppercase tracking-wide">Topic</Label>
-                <Input value={topic} onChange={e => setTopic(e.target.value)}
-                  placeholder="What should the post be about?"
+                <Input value={topic} onChange={e => setTopic(e.target.value)} placeholder="What should the post be about?"
                   className="text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus-visible:ring-white/20 bg-[var(--bg-app)] border border-[var(--border-subtle)]" required />
               </div>
             ) : (
               <div className="space-y-2">
                 <Label className="text-[var(--fg-secondary)] text-xs uppercase tracking-wide">Content</Label>
-                <Textarea value={content} onChange={e => setContent(e.target.value)}
-                  placeholder="Write your post here..."
+                <Textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Write your post here..."
                   className="text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus-visible:ring-white/20 min-h-[120px] bg-[var(--bg-app)] border border-[var(--border-subtle)]" required />
               </div>
             )}
@@ -573,7 +487,6 @@ export default function SocialPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Telegram Bot Token Modal */}
       <Dialog open={isTelegramModalOpen} onOpenChange={setIsTelegramModalOpen}>
         <DialogContent className="border text-[var(--fg-primary)] sm:max-w-md bg-[var(--bg-surface)] border-[var(--border-subtle)]">
           <DialogHeader>
@@ -590,17 +503,13 @@ export default function SocialPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-[var(--fg-secondary)] text-xs uppercase tracking-wide">Bot Token</Label>
-              <Input value={botToken} onChange={e => setBotToken(e.target.value)}
-                placeholder="1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ"
+              <Input value={botToken} onChange={e => setBotToken(e.target.value)} placeholder="1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ"
                 className="text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] font-mono text-xs focus-visible:ring-white/20 bg-[var(--bg-app)] border border-[var(--border-subtle)]" required />
             </div>
             <div className="space-y-2">
               <Label className="text-[var(--fg-secondary)] text-xs uppercase tracking-wide">Chat ID (required)</Label>
-              <Input value={chatId} onChange={e => setChatId(e.target.value)}
-                placeholder="-1001234567890 or @channelname"
-                className="text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] font-mono text-xs focus-visible:ring-white/20 bg-[var(--bg-app)] border border-[var(--border-subtle)]"
-                required
-              />
+              <Input value={chatId} onChange={e => setChatId(e.target.value)} placeholder="-1001234567890 or @channelname"
+                className="text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] font-mono text-xs focus-visible:ring-white/20 bg-[var(--bg-app)] border border-[var(--border-subtle)]" required />
             </div>
             <DialogFooter className="pt-2">
               <Button type="button" variant="ghost" onClick={() => setIsTelegramModalOpen(false)}

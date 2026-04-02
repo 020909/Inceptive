@@ -91,7 +91,7 @@ function NewProjectModal({ open, onClose, onCreated }: { open: boolean; onClose:
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-2xl"
+            className="w-full max-w-lg rounded-2xl bg-[var(--bg-surface)] card-elevated p-6 shadow-2xl"
           >
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-semibold text-[var(--fg-primary)]">New Project</h2>
@@ -179,7 +179,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, type: "spring", stiffness: 260, damping: 24 }}
-      className="group relative rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 cursor-pointer transition-all duration-300 hover:border-[var(--border-default)] hover:shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover-lift"
+      className="group relative rounded-2xl bg-[var(--bg-surface)] card-elevated p-5 cursor-pointer hover-lift"
     >
       {/* Subtle glow on hover */}
       <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-br from-[var(--accent-soft)] to-transparent" style={{ opacity: 0 }} />
@@ -298,7 +298,7 @@ export default function ProjectsPage() {
             animate={{ opacity: 1, scale: 1 }}
             className="flex flex-col items-center justify-center py-20 text-center"
           >
-            <div className="w-14 h-14 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex items-center justify-center mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-[var(--bg-surface)] card-elevated flex items-center justify-center mb-4">
               <FolderOpen size={24} className="text-[var(--fg-muted)]" />
             </div>
             <h3 className="text-sm font-semibold text-[var(--fg-primary)] mb-1">No projects yet</h3>

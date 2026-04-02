@@ -6,14 +6,12 @@ import { motion } from "framer-motion";
 export function PageTransition({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
-      className="px-4 pt-14 pb-6 sm:px-6 sm:pt-7 sm:pb-7 md:px-8 md:pt-8 md:pb-8 max-w-[1400px]"
-      initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
-      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      className="px-4 pt-14 pb-6 sm:px-6 sm:pt-7 sm:pb-7 md:px-8 md:pt-8 md:pb-8 max-w-[1400px] animate-fade-slide-in"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{
-        duration: 0.35,
+        duration: 0.3,
         ease: [0.25, 0.46, 0.45, 0.94],
-        opacity: { duration: 0.25 },
-        filter: { duration: 0.3 },
       }}
     >
       {children}

@@ -210,7 +210,7 @@ export default function GoalsPage() {
   function GoalCard({ goal, index }: { goal: Goal; index: number }) {
     return (
       <motion.div
-        className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-all duration-300"
+        className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated hover:border-[var(--border-default)] transition-all duration-300"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.1, type: 'spring', stiffness: 100, damping: 20 }}
@@ -321,7 +321,7 @@ export default function GoalsPage() {
           {/* Overview Stats */}
           <div className="grid grid-cols-4 gap-4 mb-8">
             <motion.div
-              className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
+              className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0, type: 'spring', stiffness: 100, damping: 20 }}
@@ -333,7 +333,7 @@ export default function GoalsPage() {
               <p className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{activeGoals.length}</p>
             </motion.div>
             <motion.div
-              className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
+              className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05, type: 'spring', stiffness: 100, damping: 20 }}
@@ -345,7 +345,7 @@ export default function GoalsPage() {
               <p className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{completedGoals.length}</p>
             </motion.div>
             <motion.div
-              className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
+              className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}
@@ -357,7 +357,7 @@ export default function GoalsPage() {
               <p className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{avgProgress}%</p>
             </motion.div>
             <motion.div
-              className="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
+              className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15, type: 'spring', stiffness: 100, damping: 20 }}
@@ -373,7 +373,7 @@ export default function GoalsPage() {
           {/* Goals Grid */}
           {goals.length === 0 ? (
             <motion.div
-              className="flex flex-col items-center justify-center py-24 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]"
+              className="flex flex-col items-center justify-center py-24 rounded-2xl bg-[var(--bg-surface)] card-elevated"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >

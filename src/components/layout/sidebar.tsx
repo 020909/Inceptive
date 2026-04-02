@@ -87,24 +87,19 @@ function NavItem({ item, isActive, collapsed }: { item: typeof navItems[0]; isAc
     <Link href={item.href}>
       <div
         className={`
-          group relative flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer
+          group relative flex items-center justify-center gap-3 px-3 py-2 rounded-lg cursor-pointer
           transition-all duration-200 ease-out
-          ${isActive ? "bg-[var(--border-subtle)]" : "hover:bg-[var(--border-subtle)]"}
+          ${isActive 
+            ? "bg-[var(--accent-soft)] border-l-2 border-l-[#6510F4]" 
+            : "hover:bg-[rgba(255,255,255,0.06)] hover:-translate-y-px border-l-2 border-l-transparent"
+          }
         `}
       >
-        {isActive && (
-          <motion.div
-            layoutId="nav-active"
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 rounded-full bg-[var(--fg-primary)]"
-            transition={{ type: "spring", stiffness: 380, damping: 30 }}
-          />
-        )}
-
         <Icon
-          size={18}
+          size={20}
           strokeWidth={1.5}
           className={`shrink-0 transition-colors duration-200 ${
-            isActive ? "text-[var(--fg-primary)]" : "text-[#B4B4C0] group-hover:text-[#D0D0D8]"
+            isActive ? "text-[#6510F4]" : "text-[#B4B4C0] group-hover:text-[#D0D0D8]"
           }`}
         />
 
@@ -148,8 +143,9 @@ export function Sidebar() {
         flex flex-col
         glass
         border-r border-[var(--border-subtle)]
-        transition-[width] duration-200 ease-out
-        ${collapsed ? 'w-[60px]' : 'w-[240px]'}
+        transition-[width] duration-[250ms] ease-out
+        ${collapsed ? 'w-[64px]' : 'w-[220px]'}
+        hover:w-[220px]
       `}
       initial={{ x: -40, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
