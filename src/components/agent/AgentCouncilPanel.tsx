@@ -91,7 +91,7 @@ function AgentAvatar({ agent, index }: { agent: AgentState; index: number }) {
         className={`
           relative w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300
           ${isActive
-            ? "bg-[var(--accent-soft)] border border-[var(--accent)] shadow-[0_0_12px_var(--accent-soft)]"
+            ? "bg-[rgba(245,245,247,0.12)] border border-[rgba(245,245,247,0.4)] animate-pulse-beige"
             : isDone
               ? "bg-[var(--success-soft)] border border-[var(--success)]"
               : isError
@@ -102,8 +102,8 @@ function AgentAvatar({ agent, index }: { agent: AgentState; index: number }) {
       >
         {isActive && (
           <motion.div
-            className="absolute inset-0 rounded-lg border border-[var(--accent)]"
-            animate={{ opacity: [0.3, 0.8, 0.3], scale: [1, 1.15, 1] }}
+            className="absolute inset-0 rounded-lg border border-[rgba(245,245,247,0.5)]"
+            animate={{ opacity: [0.35, 0.85, 0.35], scale: [1, 1.12, 1] }}
             transition={{ duration: 1.6, ease: "easeInOut", repeat: Infinity }}
           />
         )}
@@ -111,7 +111,7 @@ function AgentAvatar({ agent, index }: { agent: AgentState; index: number }) {
           size={14}
           className={`relative z-10 transition-colors duration-200 ${
             isActive
-              ? "text-[var(--accent)]"
+              ? "text-[#F5F5F7]"
               : isDone
                 ? "text-[var(--success)]"
                 : isError
@@ -123,7 +123,7 @@ function AgentAvatar({ agent, index }: { agent: AgentState; index: number }) {
       <span
         className={`text-[9px] tracking-wide font-medium transition-colors duration-200 ${
           isActive
-            ? "text-[var(--accent)]"
+            ? "text-[#F5F5F7]"
             : isDone
               ? "text-[var(--fg-secondary)]"
               : "text-[var(--fg-muted)]"
@@ -192,7 +192,7 @@ export function AgentCouncilPanel({ logs, isActive }: AgentCouncilPanelProps) {
                       agent.status === "done"
                         ? "bg-[var(--success-soft)]"
                         : agent.status === "thinking"
-                          ? "bg-[var(--accent-soft)]"
+                          ? "bg-[rgba(245,245,247,0.12)]"
                           : "bg-[var(--destructive-soft)]"
                     }`}
                   >
@@ -202,7 +202,7 @@ export function AgentCouncilPanel({ logs, isActive }: AgentCouncilPanelProps) {
                         agent.status === "done"
                           ? "text-[var(--success)]"
                           : agent.status === "thinking"
-                            ? "text-[var(--accent)]"
+                            ? "text-[#F5F5F7]"
                             : "text-[var(--destructive)]"
                       }
                     />
@@ -243,9 +243,9 @@ export function AgentStatusInline({ logs }: { logs: TaskLog[] }) {
   return (
     <div className="flex items-center gap-1.5 text-[11px]">
       {thinking.length > 0 && (
-        <span className="flex items-center gap-1 text-[var(--accent)]">
+        <span className="flex items-center gap-1 text-[#F5F5F7]">
           <motion.span
-            className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--accent)]"
+            className="inline-block w-1.5 h-1.5 rounded-full bg-[#F5F5F7]"
             animate={{ opacity: [0.4, 1, 0.4] }}
             transition={{ duration: 1.2, repeat: Infinity }}
           />

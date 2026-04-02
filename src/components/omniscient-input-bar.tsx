@@ -70,8 +70,9 @@ export function OmniscientInputBar() {
     >
       <div
         className={`
-          relative flex flex-col gap-3 rounded-[28px] bg-[var(--bg-surface)]
-          border transition-[box-shadow,border-color] duration-200 ease-out
+          relative flex flex-col gap-3 rounded-[28px]
+          backdrop-blur-xl bg-[var(--bg-surface)]/92
+          border transition-[box-shadow,border-color,background-color] duration-200 ease-out
           ${focused
             ? "border-[rgba(245,245,247,0.15)] shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_0_2px_rgba(245,245,247,0.1)]"
             : "border-[var(--border-subtle)] shadow-[0_20px_60px_rgba(0,0,0,0.5)] hover:border-[var(--border-default)]"

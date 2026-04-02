@@ -17,14 +17,11 @@ type PageTransitionProps = {
 export function PageTransition({ children, className }: PageTransitionProps) {
   return (
     <motion.div
-      className={cn(
-        "min-h-0 w-full animate-fade-slide-in",
-        className,
-      )}
-      initial={{ opacity: 0, y: 10 }}
+      className={cn("min-h-0 w-full", className)}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{
-        duration: 0.4,
+        duration: 0.5,
         ease: [0.4, 0, 0.2, 1],
       }}
     >

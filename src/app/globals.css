@@ -96,9 +96,11 @@
 
   html.light {
     /* ── Light theme aliases (Premium Editorial secondary) ── */
-    --bg-base-light: #f5f5f7;
+    --bg-base-light: #fffdd0;
     --bg-app-light: #ffffff;
     --bg-surface-light: #f8f8f8;
+    --text-primary-light: #000000;
+    --text-secondary-light: #1d1d1f;
 
     /* ── Background tiers — Light (Secondary) ── */
     --bg-base: var(--bg-base-light);
@@ -191,6 +193,11 @@
     background: rgba(245, 245, 247, 0.2);
     color: white;
   }
+
+  h1,
+  h2 {
+    font-family: var(--font-header);
+  }
 }
 
 @layer utilities {
@@ -200,6 +207,11 @@
     -webkit-backdrop-filter: blur(20px);
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  html.light .glass {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(0, 0, 0, 0.06);
   }
 
   .glass-hover:hover {
@@ -247,16 +259,14 @@
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
   }
 
-  /* ── Elevated Card (Trillion-Dollar Spec) — hover lift on interactive only ── */
+  /* ── Elevated Card (Trillion-Dollar Spec) — premium lift on hover ── */
   .card-elevated {
     border-radius: 24px !important;
     border: 1px solid rgba(255, 255, 255, 0.06) !important;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
     transition: all 0.4s ease;
   }
-  .card-elevated.cursor-pointer:hover,
-  .card-elevated.surface-card-hover:hover,
-  a.card-elevated:hover {
+  .card-elevated:hover {
     transform: translateY(-4px);
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
   }
@@ -315,7 +325,7 @@
 
   /* ── Trillion-Dollar: Beige Fade Slide In ── */
   .animate-fade-slide-in {
-    animation: fadeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: fadeSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 
   /* ── Trillion-Dollar: Beige Pulse Ring (for AI thinking states) ── */

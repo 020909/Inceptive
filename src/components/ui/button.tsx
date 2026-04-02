@@ -12,7 +12,7 @@ const buttonVariants = cva(
       variant: {
         /* ── Trillion-Dollar Primary: Soft Beige on Deep Grey ── */
         default:
-          "bg-[var(--text-primary)] text-[var(--bg-base)] hover:bg-[#FFFFFF] hover:-translate-y-px active:translate-y-0 active:scale-[0.98]",
+          "bg-[var(--text-primary)] text-[#000000] hover:bg-[#FFFFFF] hover:-translate-y-px active:translate-y-0 active:scale-[0.98] transition-all duration-200 ease-out",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground hover:-translate-y-px aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:

@@ -94,7 +94,7 @@ function AgentAvatarPremium({ role, status, index }: { role: string; status: Age
       transition={{ delay: index * 0.03, type: "spring", stiffness: 300, damping: 20 }}
       className={`relative w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300 ${
         isThinking
-          ? "bg-[var(--accent-soft)] border border-[#6510F4] animate-pulse-indigo"
+          ? "bg-[rgba(245,245,247,0.1)] border border-[rgba(245,245,247,0.35)] animate-pulse-beige"
           : isDone
             ? "bg-[var(--success-soft)] border border-[var(--success)]/30"
             : isError
@@ -102,18 +102,10 @@ function AgentAvatarPremium({ role, status, index }: { role: string; status: Age
               : "bg-[var(--bg-elevated)] border border-[var(--border-subtle)]"
       }`}
     >
-      {isThinking && (
-        <motion.div
-          className="absolute inset-0 rounded-lg"
-          style={{ boxShadow: "0 0 12px rgba(101, 16, 244, 0.3)" }}
-          animate={{ opacity: [0.3, 0.8, 0.3] }}
-          transition={{ duration: 1.8, repeat: Infinity }}
-        />
-      )}
       <Icon
         size={12}
         className={`relative z-10 ${
-          isThinking ? "text-[#6510F4]"
+          isThinking ? "text-[#F5F5F7]"
             : isDone ? "text-[var(--success)]"
             : isError ? "text-[var(--destructive)]"
             : "text-[var(--fg-muted)]"
@@ -142,14 +134,14 @@ function PhaseProgress({ events }: { events: ParsedAgentEvent[] }) {
             <div className="flex-1 flex flex-col items-center gap-1">
               <div
                 className={`w-full h-[3px] rounded-full transition-all duration-500 ${
-                  allDone ? "bg-[var(--success)]"
-                    : isActive ? "bg-[var(--accent)]"
+                  allDone ? "bg-[#F5F5F7]/55"
+                    : isActive ? "bg-[rgba(245,245,247,0.2)]"
                     : "bg-[var(--border-subtle)]"
                 }`}
               >
                 {isActive && (
                   <motion.div
-                    className="h-full bg-[var(--accent)] rounded-full"
+                    className="h-full bg-[#F5F5F7] rounded-full"
                     initial={{ width: "20%" }}
                     animate={{ width: "80%" }}
                     transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
@@ -157,8 +149,8 @@ function PhaseProgress({ events }: { events: ParsedAgentEvent[] }) {
                 )}
               </div>
               <span className={`text-[8px] font-medium uppercase tracking-wider ${
-                allDone ? "text-[var(--success)]"
-                  : isActive ? "text-[var(--accent)]"
+                allDone ? "text-[#F5F5F7]"
+                  : isActive ? "text-[#F5F5F7]"
                   : "text-[var(--fg-muted)]"
               }`}>
                 {PHASE_LABELS[phase]?.split(" ")[0]}
@@ -202,13 +194,13 @@ function AgentEventRow({ event, isLast }: { event: ParsedAgentEvent; isLast: boo
       <div className="flex items-center gap-2 cursor-pointer" onClick={() => event.output && setExpanded(!expanded)}>
         <div
           className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${
-            isThinking ? "bg-[var(--accent-soft)]"
+            isThinking ? "bg-[rgba(245,245,247,0.12)]"
               : isDone ? "bg-[var(--success-soft)]"
               : "bg-[var(--destructive-soft)]"
           }`}
         >
           <Icon size={10} className={
-            isThinking ? "text-[var(--accent)]"
+            isThinking ? "text-[#F5F5F7]"
               : isDone ? "text-[var(--success)]"
               : "text-[var(--destructive)]"
           } />
@@ -216,7 +208,7 @@ function AgentEventRow({ event, isLast }: { event: ParsedAgentEvent; isLast: boo
         <span className="text-[11px] font-semibold text-[var(--fg-secondary)] flex-1 truncate">{event.name}</span>
         {isThinking && (
           <motion.span
-            className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"
+            className="w-1.5 h-1.5 rounded-full bg-[#F5F5F7]"
             animate={{ opacity: [0.3, 1, 0.3] }}
             transition={{ duration: 1, repeat: Infinity }}
           />
@@ -259,7 +251,7 @@ export function StudioModeToggle({ isOpen, onToggle, eventCount }: StudioModeTog
       className={`
         flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 btn-premium
         ${isOpen
-          ? "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30 glow-accent"
+          ? "bg-[rgba(245,245,247,0.1)] text-[#F5F5F7] border border-[rgba(245,245,247,0.25)]"
           : "text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--bg-elevated)] border border-transparent"
         }
       `}
@@ -271,7 +263,7 @@ export function StudioModeToggle({ isOpen, onToggle, eventCount }: StudioModeTog
         <motion.span
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="ml-0.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--accent)] text-[9px] font-bold text-white"
+          className="ml-0.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#F5F5F7] text-[9px] font-bold text-[rgb(38,38,36)]"
         >
           {eventCount > 9 ? "9+" : eventCount}
         </motion.span>
@@ -343,9 +335,9 @@ export function StudioModePanel({ logs, isOpen }: StudioModePanelProps) {
             {/* Stats */}
             <div className="flex items-center gap-3 mt-2">
               {thinkingCount > 0 && (
-                <span className="flex items-center gap-1 text-[10px] text-[var(--accent)]">
+                <span className="flex items-center gap-1 text-[10px] text-[#F5F5F7]">
                   <motion.span
-                    className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"
+                    className="w-1.5 h-1.5 rounded-full bg-[#F5F5F7]"
                     animate={{ opacity: [0.3, 1, 0.3] }}
                     transition={{ duration: 1, repeat: Infinity }}
                   />

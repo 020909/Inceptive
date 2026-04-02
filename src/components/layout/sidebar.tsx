@@ -41,7 +41,8 @@ const SidebarContext = createContext({ collapsed: false, setCollapsed: (_: boole
 export function useSidebar() { return useContext(SidebarContext); }
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = React.useState(false);
+  /** Default narrow rail (64px); hover expands to 220px when collapsed, or pin open via toggle. */
+  const [collapsed, setCollapsed] = React.useState(true);
   return (
     <SidebarContext.Provider value={{ collapsed, setCollapsed }}>
       {children}
@@ -78,33 +79,37 @@ function NavItem({
       href={item.href}
       className={cn(
         "group/item relative flex h-10 w-full items-center overflow-hidden rounded-lg transition-all duration-200",
-        collapsed ? "justify-center gap-0 px-0" : "justify-start gap-3",
+        collapsed
+          ? "justify-center gap-0 px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3"
+          : "justify-start gap-3",
         isActive
           ? cn(
               "border-l-2 border-[var(--text-primary)] bg-[rgba(255,255,255,0.04)]",
-              collapsed ? "pl-0" : "pl-[14px]",
+              collapsed
+                ? "pl-0 group-hover/sidebar:pl-[14px]"
+                : "pl-[14px]",
             )
-          : "border-l-2 border-transparent hover:-translate-y-px hover:bg-[rgba(255,255,255,0.06)]",
-        !isActive && !collapsed && "pl-4",
+          : cn(
+              "border-l-2 border-transparent hover:-translate-y-px hover:bg-[rgba(255,255,255,0.06)]",
+              collapsed ? "pl-0 group-hover/sidebar:pl-4" : "pl-4",
+            ),
       )}
     >
-      {/* Icon — 20px, centered in 64px rail when collapsed */}
       <span className="flex shrink-0 items-center justify-center size-5 min-w-[20px]">
         <Icon size={20} strokeWidth={isActive ? 2 : 1.5} className={isActive ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]"} />
       </span>
 
-      {/* Label — full width when expanded only (no hover width on collapsed rail) */}
-      {!collapsed && (
-        <span
-          className={cn(
-            "max-w-[140px] overflow-hidden whitespace-nowrap text-sm font-medium transition-opacity duration-200",
-            isActive ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]",
-          )}
-        >
-          {item.label}
-        </span>
-      )}
-      {collapsed && <span className="sr-only">{item.label}</span>}
+      <span
+        className={cn(
+          "max-w-[140px] overflow-hidden whitespace-nowrap text-sm font-medium transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+          isActive ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]",
+          collapsed
+            ? "max-w-0 opacity-0 group-hover/sidebar:max-w-[140px] group-hover/sidebar:opacity-100"
+            : "opacity-100",
+        )}
+      >
+        {item.label}
+      </span>
     </Link>
   );
 }
@@ -130,14 +135,16 @@ export function Sidebar() {
         h-screen sticky top-0 z-40 overflow-hidden
         transition-[width] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]
         border-r border-[rgba(255,255,255,0.06)]
-        ${collapsed ? "w-[64px]" : "w-[220px]"}
+        ${collapsed ? "w-[64px] hover:w-[220px]" : "w-[220px]"}
       `}
     >
       {/* ── Logo row — collapse control always visible (no waiting for hover to pin/unpin) ── */}
       <div
         className={cn(
-          "flex shrink-0 items-center overflow-hidden",
-          collapsed ? "h-14 justify-between px-2" : "h-14 justify-start gap-2 px-3",
+          "flex shrink-0 items-center overflow-hidden transition-[padding] duration-300",
+          collapsed
+            ? "h-14 justify-between px-2 group-hover/sidebar:px-3"
+            : "h-14 justify-start gap-2 px-3",
         )}
       >
         <button
@@ -154,14 +161,17 @@ export function Sidebar() {
           />
         </button>
 
-        {!collapsed && (
-          <span
-            className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight text-[#F5F5F7]"
-            style={{ fontFamily: "var(--font-header)" }}
-          >
-            Inceptive
-          </span>
-        )}
+        <span
+          className={cn(
+            "min-w-0 truncate text-sm font-semibold tracking-tight text-[#F5F5F7] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+            collapsed
+              ? "max-w-0 flex-1 overflow-hidden opacity-0 group-hover/sidebar:max-w-[120px] group-hover/sidebar:opacity-100"
+              : "flex-1 opacity-100",
+          )}
+          style={{ fontFamily: "var(--font-header)" }}
+        >
+          Inceptive
+        </span>
 
         <button
           type="button"
@@ -185,9 +195,14 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* ── Recent Chats — only when expanded (collapsed rail has no width for list) ── */}
-      {!collapsed && (
-      <div className="px-2 pb-2 overflow-hidden">
+      {/* ── Recent Chats — visible when pinned open; on narrow rail, reveal on sidebar hover ── */}
+      <div
+        className={cn(
+          "px-2 pb-2 overflow-hidden",
+          collapsed && "max-h-0 opacity-0 overflow-hidden group-hover/sidebar:max-h-[320px] group-hover/sidebar:opacity-100 group-hover/sidebar:overflow-visible transition-[max-height,opacity] duration-300",
+          !collapsed && "max-h-none opacity-100",
+        )}
+      >
         {recentChats.length > 0 && (
           <div className="mt-2">
             <div className="flex items-center justify-between px-2 mb-1">
@@ -217,7 +232,6 @@ export function Sidebar() {
           </div>
         )}
       </div>
-      )}
 
       {/* ── Bottom: Settings ── */}
       <div className="px-2 pb-4 pt-2 border-t border-[rgba(255,255,255,0.06)] shrink-0">
@@ -225,14 +239,20 @@ export function Sidebar() {
           href="/settings"
           className={cn(
             "group/item relative flex h-10 w-full items-center overflow-hidden rounded-lg transition-all duration-200",
-            collapsed ? "justify-center gap-0 px-0" : "justify-start gap-3",
+            collapsed
+              ? "justify-center gap-0 px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3"
+              : "justify-start gap-3",
             pathname === "/settings"
               ? cn(
                   "border-l-2 border-[var(--text-primary)] bg-[rgba(255,255,255,0.04)]",
-                  collapsed ? "pl-0" : "pl-[14px]",
+                  collapsed
+                    ? "pl-0 group-hover/sidebar:pl-[14px]"
+                    : "pl-[14px]",
                 )
-              : "border-l-2 border-transparent hover:-translate-y-px hover:bg-[rgba(255,255,255,0.06)]",
-            pathname !== "/settings" && !collapsed && "pl-4",
+              : cn(
+                  "border-l-2 border-transparent hover:-translate-y-px hover:bg-[rgba(255,255,255,0.06)]",
+                  collapsed ? "pl-0 group-hover/sidebar:pl-4" : "pl-4",
+                ),
           )}
         >
           <span className="flex shrink-0 items-center justify-center size-5 min-w-[20px]">
@@ -242,17 +262,17 @@ export function Sidebar() {
               className={pathname === "/settings" ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]"}
             />
           </span>
-          {!collapsed && (
-            <span
-              className={cn(
-                "max-w-[140px] overflow-hidden whitespace-nowrap text-sm font-medium",
-                pathname === "/settings" ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]",
-              )}
-            >
-              Settings
-            </span>
-          )}
-          {collapsed && <span className="sr-only">Settings</span>}
+          <span
+            className={cn(
+              "max-w-[140px] overflow-hidden whitespace-nowrap text-sm font-medium transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+              pathname === "/settings" ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]",
+              collapsed
+                ? "max-w-0 opacity-0 group-hover/sidebar:max-w-[140px] group-hover/sidebar:opacity-100"
+                : "opacity-100",
+            )}
+          >
+            Settings
+          </span>
         </Link>
       </div>
     </aside>

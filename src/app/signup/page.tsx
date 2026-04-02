@@ -63,7 +63,7 @@ export default function SignUpPage() {
   return (
     <div 
       className="min-h-screen flex bg-[var(--bg-base)]"
-      style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(101,16,244,0.15) 0%, transparent 70%), var(--bg-base)" }}
+      style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(245,245,247,0.08) 0%, transparent 80%), var(--bg-base)" }}
     >
       {/* ── Left branding panel ── */}
       <motion.div
@@ -73,7 +73,7 @@ export default function SignUpPage() {
         className="hidden lg:flex lg:w-[45%] flex-col items-center justify-center p-10 relative overflow-hidden"
       >
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(101,16,244,0.12) 0%, transparent 65%)" }}
+          style={{ background: "radial-gradient(circle, rgba(245,245,247,0.06) 0%, transparent 65%)" }}
         />
 
         <div className="relative z-10 text-center">
@@ -97,7 +97,7 @@ export default function SignUpPage() {
         transition={{ duration: 0.4, delay: 0.1 }}
         className="flex flex-1 items-center justify-center p-6 lg:p-16 border-l border-[var(--border-subtle)]"
       >
-        <div className="w-full max-w-[400px] glass rounded-[24px] p-12">
+        <div className="w-full max-w-[480px] glass rounded-[32px] p-16">
           {/* Mobile logo */}
           <div className="flex items-center gap-2.5 mb-10 lg:hidden">
             <div className="relative h-8 w-8 rounded-lg overflow-hidden border border-[var(--border-subtle)]">
