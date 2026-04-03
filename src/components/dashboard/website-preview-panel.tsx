@@ -28,10 +28,13 @@ const DEVICE_WIDTHS: Record<DeviceMode, string> = {
 
 export function WebsitePreviewPanel({
   code,
+  buildStatusLine,
   onClose,
   onCodeChange,
 }: {
   code: string;
+  /** Live Council / build status — shown above the iframe */
+  buildStatusLine?: string | null;
   onClose: () => void;
   onCodeChange?: (newCode: string) => void;
 }) {
@@ -144,7 +147,8 @@ export function WebsitePreviewPanel({
           <motion.button
             whileTap={{ scale: 0.92 }}
             onClick={refreshPreview}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-[var(--accent-soft)] text-[var(--accent)] hover:bg-[var(--accent-muted)] transition-all btn-premium"
+            type="button"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-[var(--bg-elevated)] text-[var(--fg-primary)] border border-[var(--border-subtle)] hover:bg-[var(--bg-overlay)] transition-colors shadow-none outline-none focus-visible:ring-2 focus-visible:ring-[rgba(245,245,247,0.22)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-surface)]"
             title="Run Preview"
           >
             <Play size={11} fill="currentColor" />
@@ -181,6 +185,17 @@ export function WebsitePreviewPanel({
           </button>
         </div>
       </motion.div>
+
+      {buildStatusLine ? (
+        <div
+          className="shrink-0 px-3 py-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/80 text-[11px] text-[var(--fg-secondary)] leading-snug"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="text-[var(--fg-muted)] font-medium">Status: </span>
+          {buildStatusLine}
+        </div>
+      ) : null}
 
       {/* ── Main Content ── */}
       <div className="flex-1 overflow-hidden relative">

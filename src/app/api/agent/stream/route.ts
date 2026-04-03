@@ -31,14 +31,209 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { promisify } from "util";
-import { mkdir, writeFile as writeFileAsync } from "fs/promises";
+import { councilPhaseLabel } from "@/lib/agent/council-preview-labels";
+import { parseCouncilSandboxFiles } from "@/lib/agent/parse-council-deliverables";
+import {
+  isWebsiteBuildTask,
+  refineSynthesisToMultiFileDeliverables,
+} from "@/lib/agent/council-deliverable-refine";
+import { readUserSandboxFile, writeUserSandboxFilesBatch } from "@/lib/sandbox/user-artifacts";
+import { generateNextjsScaffoldFiles } from "@/lib/sandbox/nextjs-scaffold";
+import { EDITORIAL_BASE_CSS, mergeCssWithEditorialBase } from "@/lib/sandbox/editorial-base-css";
+import { runVerifyRepairLoop } from "@/lib/sandbox/site-verify-repair";
+import { resolveCouncilOpenRouterKey } from "@/lib/agent/council-openrouter-key";
 
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
 const readFile = promisify(fs.readFile);
 
-export const maxDuration = 300; // 5 minutes
+/** Hobby cap is 300s; raise on Pro if Council + refine often hits the limit. */
+export const maxDuration = 300;
 export const runtime = "nodejs";
+
+function ensureMinimumMultifileSiteFromHtml(html: string): { relativePath: string; content: string }[] {
+  const raw = (html || "").trim();
+  if (!raw) return [];
+
+  const styleMatch = raw.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+  const css = (styleMatch?.[1] || "").trim();
+  let outHtml = styleMatch ? raw.replace(styleMatch[0], "") : raw;
+
+  const scriptRe =
+    /<script(?![^>]*\btype=["']application\/ld\+json["'])(?![^>]*\btype=["']module["'])[^>]*>([\s\S]*?)<\/script>/i;
+  const scriptMatch = outHtml.match(scriptRe);
+  const js = (scriptMatch?.[1] || "").trim();
+  outHtml = scriptMatch ? outHtml.replace(scriptMatch[0], "") : outHtml;
+
+  const hasCssLink = /<link[^>]+rel=["']stylesheet["'][^>]*>/i.test(outHtml);
+  const hasJsSrc = /<script[^>]+src=["'][^"']+["'][^>]*>\s*<\/script>/i.test(outHtml);
+
+  if (!hasCssLink) {
+    outHtml = outHtml.replace(/<\/head>/i, `  <link rel="stylesheet" href="./styles/main.css" />\n</head>`);
+  }
+  if (!hasJsSrc) {
+    outHtml = outHtml.replace(/<\/body>/i, `  <script defer src="./scripts/app.js"></script>\n</body>`);
+  }
+
+  const fallbackCss = mergeCssWithEditorialBase(
+    css ||
+      `:root{--bg:#141413;--paper:#f5f2eb} body{margin:0;min-height:100vh}`
+  );
+
+  const fallbackJs =
+    js ||
+    `(() => {\n  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;\n  document.documentElement.dataset.motion = reduce ? 'reduce' : 'ok';\n})();\n`;
+
+  return [
+    { relativePath: "index.html", content: outHtml.trim() },
+    { relativePath: "styles/main.css", content: fallbackCss.trim() + "\n" },
+    { relativePath: "scripts/app.js", content: fallbackJs.trim() + "\n" },
+  ];
+}
+
+function normalizeRelPath(rel: string): string | null {
+  const trimmed = (rel || "").trim().replace(/^[\\/]+/, "");
+  if (!trimmed) return null;
+  if (trimmed.length > 220) return null;
+  if (trimmed.includes("..") || trimmed.startsWith("../") || trimmed.startsWith("..\\")) return null;
+  return trimmed.split(path.sep).join("/");
+}
+
+function resolveRelativeHtmlHref(entryHtmlRel: string, href: string): string | null {
+  const clean = (href || "").split("?")[0].split("#")[0].trim();
+  if (!clean) return null;
+  if (/^https?:\/\//i.test(clean) || clean.startsWith("//")) return null;
+  const baseDir = path.posix.dirname(entryHtmlRel.replace(/^\//, ""));
+  const joined = path.posix.normalize(path.posix.join(baseDir === "." ? "" : baseDir, clean)).replace(/^\//, "");
+  return normalizeRelPath(joined);
+}
+
+function pickEntryHtmlFromDeliverables(deliverables: { relativePath: string; content: string }[]): string | null {
+  const byRel = new Map<string, string>();
+  for (const d of deliverables) {
+    const rel = normalizeRelPath(d.relativePath);
+    if (!rel) continue;
+    if (typeof d.content !== "string") continue;
+    byRel.set(rel, d.content);
+  }
+  for (const name of ["index.html", "Index.html", "home.html"]) {
+    const val = byRel.get(name);
+    if (val != null) return name;
+  }
+  const anyHtml = Array.from(byRel.keys()).find((k) => /\.(html|htm)$/i.test(k));
+  return anyHtml || null;
+}
+
+function bundleHtmlFromDeliverables(deliverables: { relativePath: string; content: string }[]): string | null {
+  const entryRel = pickEntryHtmlFromDeliverables(deliverables);
+  if (!entryRel) return null;
+  const byRel = new Map<string, string>();
+  for (const d of deliverables) {
+    const rel = normalizeRelPath(d.relativePath);
+    if (!rel) continue;
+    byRel.set(rel, d.content);
+  }
+  const rawHtml = byRel.get(entryRel);
+  if (!rawHtml) return null;
+
+  let out = rawHtml;
+
+  // Inline CSS
+  const linkTags = [...rawHtml.matchAll(/<link\s+[^>]+>/gi)];
+  for (const m of linkTags) {
+    const tag = m[0];
+    const hrefMatch = /href=["']([^"']+)["']/i.exec(tag);
+    if (!hrefMatch) continue;
+    const href = hrefMatch[1];
+    if (!/rel\s*=\s*["']stylesheet["']/i.test(tag)) continue;
+    const relFile = resolveRelativeHtmlHref(entryRel, href);
+    if (!relFile) continue;
+    const css = byRel.get(relFile);
+    if (!css) continue;
+    const merged = mergeCssWithEditorialBase(css);
+    out = out.replace(tag, `<style data-inceptive-inlined="${relFile}">\n${merged}\n</style>`);
+  }
+
+  // Remaining relative stylesheet links (path mismatch / empty file) — one editorial block, not N duplicates
+  let strippedUnresolved = false;
+  out = out.replace(/<link[^>]*rel=["']stylesheet["'][^>]*>/gi, (tag) => {
+    const hrefMatch = /href=["']([^"']+)["']/i.exec(tag);
+    if (!hrefMatch) return tag;
+    const href = hrefMatch[1];
+    if (/^https?:\/\//i.test(href) || href.startsWith("//")) return tag;
+    strippedUnresolved = true;
+    return "";
+  });
+  if (strippedUnresolved) {
+    out = out.replace(/<\/head>/i, `  <style data-inceptive-fallback="missing-css">\n${EDITORIAL_BASE_CSS}\n</style>\n</head>`);
+  }
+
+  // Inline non-module JS referenced via <script src="..."></script>
+  const scriptTags = [...out.matchAll(/<script\s+[^>]*src=["']([^"']+)["'][^>]*>\s*<\/script>/gi)];
+  for (const m of scriptTags) {
+    const full = m[0];
+    const src = m[1];
+    if (/^https?:\/\//i.test(src) || src.startsWith("//")) continue;
+    if (/type\s*=\s*["']module["']/i.test(full)) continue;
+    const relFile = resolveRelativeHtmlHref(entryRel, src);
+    if (!relFile) continue;
+    const js = byRel.get(relFile);
+    if (!js) continue;
+    out = out.replace(full, `<script data-inceptive-inlined="${relFile}">\n${js}\n</script>`);
+  }
+
+  return out;
+}
+
+/** Merge editorial base into thin agent CSS so previews never look like browser defaults. */
+function applyEditorialCssToDeliverables(
+  deliverables: { relativePath: string; content: string }[]
+): { relativePath: string; content: string }[] {
+  return deliverables.map((f) => {
+    const r = normalizeRelPath(f.relativePath);
+    if (!r || !r.endsWith(".css")) return f;
+    return { ...f, content: mergeCssWithEditorialBase(f.content) };
+  });
+}
+
+function fileFenceLanguageForRel(rel: string): string {
+  const r = (rel || "").toLowerCase();
+  if (r.endsWith(".html") || r.endsWith(".htm")) return "html";
+  if (r.endsWith(".css")) return "css";
+  if (r.endsWith(".js")) return "javascript";
+  return "txt";
+}
+
+function buildMarkdownMultiFileDeliverables(deliverables: { relativePath: string; content: string }[]): string {
+  const out: string[] = [];
+  const normalized = deliverables
+    .map((d) => ({ relativePath: normalizeRelPath(d.relativePath) || "", content: d.content }))
+    .filter((d) => d.relativePath && typeof d.content === "string");
+
+  // Stable ordering: index.html first, then css, then scripts, then rest.
+  normalized.sort((a, b) => {
+    const rank = (x: string) => {
+      const l = x.toLowerCase();
+      if (l === "index.html" || l === "home.html") return 0;
+      if (l.includes("/styles/") || l.endsWith(".css")) return 1;
+      if (l.includes("/scripts/") || l.endsWith(".js")) return 2;
+      return 3;
+    };
+    const ra = rank(a.relativePath);
+    const rb = rank(b.relativePath);
+    if (ra !== rb) return ra - rb;
+    return a.relativePath.localeCompare(b.relativePath);
+  });
+
+  for (const d of normalized) {
+    const lang = fileFenceLanguageForRel(d.relativePath);
+    out.push(
+      `\`\`\`${lang}\n<!-- inceptive-file: ${d.relativePath} -->\n${String(d.content).trim()}\n\`\`\``
+    );
+  }
+
+  return out.join("\n\n");
+}
 
 const getAdmin = () => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://localhost:3000";
@@ -81,6 +276,7 @@ const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string 
   readProjectFile:     { icon: "📄", label: (args: any) => `Reading ${args.path.split('/').pop()}...` },
   multiAgentDebate:    { icon: "🧠", label: () => `Running 10-Agent Council Protocol...` },
   writeSandboxFiles:   { icon: "📦", label: (args: any) => `Writing ${args?.files?.length ?? "?"} sandbox file(s)...` },
+  upgradeSiteToNextjs: { icon: "⚛️", label: () => "Scaffolding Next.js (App Router) in sandbox…" },
   saveStylePreference: { icon: "🎨", label: () => "Saving style preference..." },
   createProject:       { icon: "📁", label: () => "Creating new project..." },
   fetchUrl:            { icon: "🌐", label: (args: any) => `Fetching ${args.url?.slice(0, 40)}...` },
@@ -113,19 +309,6 @@ async function logTask(
   }
 
   return { id, streamLine };
-}
-
-function userSandboxRoot(userId: string): string {
-  return path.join(process.cwd(), ".inceptive-artifacts", userId);
-}
-
-/** Prevent path escape; returns posix-style relative path */
-function safeSandboxRelative(rel: string): string | null {
-  const trimmed = rel.trim().replace(/^[\\/]+/, "");
-  if (!trimmed || trimmed.length > 220) return null;
-  const norm = path.normalize(trimmed);
-  if (norm.startsWith("..") || norm.split(/[/\\]/).includes("..")) return null;
-  return norm.split(path.sep).join("/");
 }
 
 /* ─────────────────────────────────────────
@@ -184,6 +367,7 @@ export async function POST(req: Request) {
     const nvidiaKey = process.env.NVIDIA_NIM_API_KEY || "";
     const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
     const openrouterKey = process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY || "";
+    const councilOpenRouterKey = resolveCouncilOpenRouterKey(openrouterKey, coreData);
     const groqKey = process.env.GROQ_API_KEY?.trim();
     const groqModel = process.env.GROQ_CHAT_MODEL?.trim() || "llama-3.3-70b-versatile";
 
@@ -265,13 +449,14 @@ ${_cs}
 - codeGrep: search for patterns or strings (functions, variables) across the entire project
 - readProjectFile: read the full content of any file in the project
 - writeSandboxFiles: write multiple files for the user under a private per-user sandbox (use for multi-file apps, extra pages, CSS/JS modules). Paths are relative (e.g. app/about.html, styles/theme.css).
+- upgradeSiteToNextjs: scaffold a minimal Next.js App Router project under next-site/ from the current sandbox static files (index.html, styles/main.css, scripts/app.js). Requires OpenRouter (or BYOK).
 - runCode: execute Python or JavaScript in a sandbox to verify logic or perform calculations
 - getStockQuote/getWeather/getNewsHeadlines: live data
 - createGoal/createTask/updateGoalProgress: manage dashboard goals
 - analyzeData/generateOutline: strategy and data tools
 - generateExcel/generatePowerPoint/generatePDF/generateImage: file generation tools
 - computerUse: control a headless browser with vision
-- multiAgentDebate: the 10-Agent Council Protocol (Planner, UX Designer, Architect, Coder, Critic, Tester, Doc Specialist, Visual Polish, Deployer, Orchestrator)
+- multiAgentDebate: the 10-Agent Council uses OpenRouter (Qwen / Minimax / Gemini) plus NVIDIA NIM for code/design/synthesis roles when NVIDIA_NIM_API_KEY is set. Requires OPENROUTER_KEY. Set COUNCIL_SKIP_NVIDIA=true to disable NIM only. If an NIM call fails, that step retries on OpenRouter.
 - saveStylePreference: remember user's design/coding preferences across sessions
 - createProject: create a new organized project for the user
 
@@ -280,11 +465,14 @@ ${_cs}
 14. Structure long answers with ## headers, bullet points, or numbered lists so they're easy to scan.
 15. When doing research or analysis, reason step-by-step before concluding. Show your thinking.
 16. AUTONOMOUS BUILD MODE (CRITICAL — no approval loops):
-   - **Never** ask "Should I proceed?", "Do you approve this plan?", or repeatedly ask for confirmation. The user already delegated by sending the prompt. Execute end-to-end. Only ask **one** question if something is objectively impossible without a single missing fact.
-   - For **coding**, **debugging**, **architecture**, **websites**, **landing pages**, or **web apps**: your **first tool call** MUST be \`multiAgentDebate\` with the **full** user request plus any file context. Do **not** output a long plan in chat waiting for approval.
-   - You may call \`projectMap\` / \`readProjectFile\` **before** the council when editing **this** repo; for greenfield sites you may go **directly** to \`multiAgentDebate\`.
-   - After the council finishes: respond with a **short** summary (what you built, how to preview). Do **not** dump long TypeScript/React in the message unless the user explicitly asks for source code.
-   - **Multi-file / complex sites**: use \`writeSandboxFiles\` for extra pages and assets (e.g. \`pages/about.html\`, \`styles/site.css\`, \`scripts/main.js\`). Put the **primary live preview** in one \`\`\`html block (typically the home document with links to relative paths).
+   - **Never** ask "Should I proceed?", "go ahead", "okay?", "confirm?", or wait for the user to nudge you. The first user message is authorization to finish the job.
+   - Ask clarifying questions **only** when: (1) the request is critically ambiguous or unsafe without one fact, or (2) the user explicitly asked you to ask questions first (e.g. "ask me before you build"). Otherwise: **execute continuously until the deliverable is done**.
+   - Do **not** send a chat message that only announces that you *will* call a tool. Prefer **silent tool-first turns**: call tools immediately; if you must write text first, **one short sentence** max, then tools — never a lecture or plan that blocks the next step.
+   - For **coding**, **debugging**, **architecture**, **websites**, **landing pages**, or **web apps**: your **first tool call** should be the Council pipeline (\`multiAgentDebate\`) with the **full** user request plus any file context — **without** asking permission.
+   - You may call \`projectMap\` / \`readProjectFile\` **before** the council when editing **this** repo; for greenfield sites you may go **directly** to the Council tool.
+   - **User-facing language**: say **"Council"** or **"multi-agent build"** in plain English with normal spaces and punctuation. Do **not** paste raw internal tool identifiers like \`multiAgentDebate\` or camelCase API names in the user reply. If you mention the system, write e.g. "I'm running this through our Council — multiple specialists in parallel."
+   - After the council finishes: respond with a **short** summary (what you built, how to preview) plus the \`\`\`html deliverable. Do **not** dump long TypeScript/React in the message unless the user explicitly asks for source code.
+   - **Multi-file / complex sites**: The Council orchestrator emits \`<!-- inceptive-file: path -->\` markers inside fenced code; the **server saves those files automatically** to the user sandbox. You should still output a **primary live preview** in one \`\`\`html block (usually the same as \`index.html\`). You may also call \`writeSandboxFiles\` for any extra assets if needed.
    - **Depth**: rich sections (hero, features, social proof, FAQ as appropriate), motion, accessibility, responsive layout. No "TODO" stubs.
    - **QUALITY OVER SPEED**: let the full council run; do not truncate synthesis.
 3. ALWAYS USE TOOLS for real actions. When user says read my email → call readGmail. When user says send email → call sendGmail. For weather use getWeather; for a stock price use getStockQuote; for news headlines use getNewsHeadlines — do not invent numbers. 
@@ -297,12 +485,12 @@ ${_cs}
 10. URL ANALYSIS: When user shares a URL or asks to read/analyze/summarize any webpage, article, or YouTube video, use the \`fetchUrl\` tool IMMEDIATELY. Never say you cannot access URLs.
 11. DOCUMENT GENERATION (CRITICAL): When asked to generate Excel, PDF, or PowerPoint: NEVER refuse, NEVER say you cannot guarantee accuracy, NEVER ask for clarification unless something truly ambiguous. You have FULL knowledge in training data - use it. The content MUST contain actual data (names, numbers, etc.) not placeholder text.
 12. IMAGE GENERATION (CRITICAL): When asked to generate an image → call generateImage IMMEDIATELY with a detailed descriptive prompt.
-17. LIVE HTML PREVIEW: The primary site preview MUST be one complete document in a \`\`\`html block (DOCTYPE, viewport meta, Tailwind CDN optional but recommended). Prefer Premium Editorial palette (deep grey surfaces, beige/off-white text) unless the user specifies otherwise. No placeholder images — gradients, SVG, emoji.
+17. LIVE HTML PREVIEW: After Council, the dashboard can load your **sandbox bundle** (multi-file site with CSS/JS inlined for preview). You MUST still include one complete \`\`\`html block for the primary page (usually same as \`index.html\`) so chat users see source. Prefer Premium Editorial palette (deep charcoal, warm paper text #f5f2eb, stone accents — no purple) unless the user specifies otherwise. No placeholder brands — tie copy to the request.
 18. DATA VISUALIZATION: If the user asks you to show a chart, graph, or data visualization, output a Chart.js configuration JSON inside a \`\`\`chart code block. Example format:
 \`\`\`chart
-{"type":"bar","data":{"labels":["Jan","Feb","Mar"],"datasets":[{"label":"Sales","data":[12,19,3],"backgroundColor":["#6366f1","#8b5cf6","#a78bfa"]}]}}
+{"type":"bar","data":{"labels":["Jan","Feb","Mar"],"datasets":[{"label":"Sales","data":[12,19,3],"backgroundColor":["#F5F5F7","#A1A1AA","#52525B"]}]}}
 \`\`\`
-The chat interface will automatically render this as an interactive chart. Use vibrant colors.`;
+The chat interface will automatically render this as an interactive chart. Prefer neutrals and beige — **no purple or indigo** in charts or UI copy unless the user asks.`;
 
 
     // ── Build valid message history ──────────────────────────────────────────
@@ -385,6 +573,198 @@ The chat interface will automatically render this as an interactive chart. Use v
       }
     }
 
+    // ── FORCE COUNCIL FOR WEBSITE BUILDS ──
+    // Prevent the model from returning only a single HTML fence without running the Council pipeline.
+    // This also streams agent activity to the dashboard timeline and bundles multi-file previews in-memory.
+    const lastUserContentForBuild =
+      [...finalHistory].reverse().find((m: any) => m.role === "user")?.content || lastUserMessage;
+
+    if (isWebsiteBuildTask(lastUserContentForBuild)) {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        async start(controller) {
+          const enqueue = (line: string) => {
+            try {
+              controller.enqueue(encoder.encode(line));
+            } catch {}
+          };
+
+          try {
+            if (!String(councilOpenRouterKey).trim()) {
+              enqueue(
+                `3:${JSON.stringify(
+                  "OpenRouter key missing for Council (add OPENROUTER_KEY on the server, or set your API key in Settings with provider OpenRouter)."
+                )}\n`
+              );
+              controller.close();
+              return;
+            }
+
+            const nvidiaKey = (process.env.NVIDIA_NIM_API_KEY || "").trim() || undefined;
+
+            // Load user style memory for design agents (optional)
+            const styleMemory: Record<string, string> = {};
+            try {
+              const { data: prefs } = await admin
+                .from("style_preferences")
+                .select("preference_key, preference_value, context")
+                .eq("user_id", user_id);
+              if (prefs) {
+                for (const p of prefs as any[]) {
+                  styleMemory[`${p.context}:${p.preference_key}`] = p.preference_value;
+                }
+              }
+            } catch {}
+
+            const { runCouncil } = await import("@/lib/agent/council");
+
+            enqueue(`5:${JSON.stringify({ type: "preview", state: "building", source: "council" })}\n`);
+
+            const councilResult = await runCouncil({
+              task: lastUserContentForBuild,
+              openrouterKey: councilOpenRouterKey,
+              nvidiaKey,
+              styleMemory,
+              onAgentEvent: (event: any) => {
+                const status = event.status;
+                const logEntry = {
+                  id: `council-${event.agentRole}-${Date.now()}`,
+                  action: `${event.agentName}: ${status === "thinking" ? "analyzing..." : status}`,
+                  status: status === "done" ? "done" : status === "error" ? "error" : "running",
+                  icon: "🧠",
+                  agent_mode: "council",
+                  details: {
+                    agentRole: event.agentRole,
+                    agentName: event.agentName,
+                    agentStatus: status,
+                    phase: event.phase,
+                    agentOutput: event.output || "",
+                  },
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                };
+                enqueue(`4:${JSON.stringify(logEntry)}\n`);
+
+                const label = councilPhaseLabel(event.agentRole, event.agentName, event.status);
+                enqueue(
+                  `5:${JSON.stringify({
+                    type: "preview",
+                    state: "building",
+                    label,
+                    agentRole: event.agentRole,
+                    agentStatus: event.status,
+                    source: "council",
+                  })}\n`
+                );
+              },
+            });
+
+            const contributionSummary = councilResult.contributions
+              .filter((c) => c.status === "done")
+              .map((c) => `### ${c.name}\n${c.output}`)
+              .join("\n\n---\n\n");
+
+            let finalSynthesis = councilResult.synthesis || "";
+            let parsedDeliverables = parseCouncilSandboxFiles(finalSynthesis);
+
+            if (parsedDeliverables.length < 2) {
+              enqueue(
+                `5:${JSON.stringify({
+                  type: "preview",
+                  state: "building",
+                  label: "Quality pass: splitting into multi-file site (editorial layout)…",
+                  source: "council-refine",
+                })}\n`
+              );
+              const r1 = await refineSynthesisToMultiFileDeliverables(
+                lastUserContentForBuild,
+                finalSynthesis + "\n\n" + contributionSummary.slice(0, 6000),
+                councilOpenRouterKey,
+                1
+              );
+              const p1 = parseCouncilSandboxFiles(r1);
+              if (p1.length >= 2) {
+                finalSynthesis = r1;
+                parsedDeliverables = p1;
+              } else {
+                const r2 = await refineSynthesisToMultiFileDeliverables(
+                  lastUserContentForBuild,
+                  finalSynthesis + "\n\n" + r1.slice(0, 12_000),
+                  councilOpenRouterKey,
+                  2
+                );
+                const p2 = parseCouncilSandboxFiles(r2);
+                if (p2.length > parsedDeliverables.length) {
+                  finalSynthesis = r2;
+                  parsedDeliverables = p2;
+                }
+              }
+            }
+
+            if (parsedDeliverables.length === 0) {
+              parsedDeliverables = parseCouncilSandboxFiles(councilResult.synthesis || "");
+              finalSynthesis = councilResult.synthesis || "";
+            }
+
+            // Guarantee: always write at least index.html + CSS + JS for website builds.
+            if (parsedDeliverables.length > 0 && parsedDeliverables.length < 3) {
+              const idx = parsedDeliverables.find((f) => f.relativePath === "index.html");
+              if (idx?.content?.trim()) {
+                parsedDeliverables = ensureMinimumMultifileSiteFromHtml(idx.content);
+              }
+            }
+
+            parsedDeliverables = applyEditorialCssToDeliverables(parsedDeliverables);
+            parsedDeliverables = await runVerifyRepairLoop(
+              lastUserContentForBuild,
+              parsedDeliverables,
+              councilOpenRouterKey,
+              enqueue
+            );
+            parsedDeliverables = applyEditorialCssToDeliverables(parsedDeliverables);
+
+            let writtenPaths: string[] = [];
+            try {
+              const sw = await writeUserSandboxFilesBatch(user_id, parsedDeliverables);
+              if (sw.status === "success") writtenPaths = sw.paths;
+            } catch {}
+
+            const bundleHtml = bundleHtmlFromDeliverables(parsedDeliverables);
+            const bundlePaths = writtenPaths.length > 0 ? writtenPaths : parsedDeliverables.map((f) => f.relativePath);
+
+            enqueue(`5:${JSON.stringify({ type: "preview", state: "ready", source: "council" })}\n`);
+            enqueue(
+              `6:${JSON.stringify({
+                type: "sandbox-bundle-ready",
+                paths: bundlePaths,
+                source: "council",
+                bundleHtml,
+              })}\n`
+            );
+
+            const assistantMessage = `Council build complete. Multi-file deliverables:\n\n${buildMarkdownMultiFileDeliverables(
+              parsedDeliverables
+            )}`;
+            enqueue(`0:${JSON.stringify(assistantMessage)}\n`);
+
+            if (plan !== "basic") {
+              await deductCredits(user_id, "chat_message").catch(() => {});
+            }
+          } catch (err: any) {
+            enqueue(`3:${JSON.stringify(err?.message || String(err))}\n`);
+          } finally {
+            controller.close();
+          }
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+        },
+      });
+    }
+
     // Shared enqueue ref — lets tools stream events to the response in real-time.
     // Set inside the ReadableStream start() closure, captured by tool execute closures.
     let streamEnqueue: ((line: string) => void) | null = null;
@@ -393,8 +773,8 @@ The chat interface will automatically render this as an interactive chart. Use v
       model,
       system: systemOverride || systemPrompt,
       messages: finalHistory,
-      maxSteps: 32,
-      maxTokens: 8000,
+      maxSteps: 40,
+      maxTokens: 12_000,
       // Disable sending reasoning/thinking blocks back in history —
       // they're stripped from client-side state anyway, so including them
       // would cause a mismatch and trigger "Invalid Responses API request"
@@ -450,14 +830,17 @@ The chat interface will automatically render this as an interactive chart. Use v
 
         /* ── MULTI-AGENT COUNCIL (10 Agents) ── */
         multiAgentDebate: {
-          description: "Runs the full 10-Agent Council Protocol: Planner, Architect, UX Designer, Coder (Qwen 3.6 + Minimax M2.5), Critic, Tester, Doc Specialist, Visual Polish, Deployer, and Orchestrator. Use this for ALL complex programming, design, and document tasks.",
+          description:
+            "Runs the full 10-Agent Council Protocol: multiple models — Qwen + Minimax + Gemini (via OpenRouter), NVIDIA NIM for code/architecture/design/synthesis — Planner, Architect, UX, Coder, Critic, Tester, Docs, Visual Polish, Deployer, Orchestrator. Use for ALL complex programming, design, and document tasks.",
           parameters: z.object({
             codingRequest: z.string().describe("The comprehensive task, prompt, or bug to solve. Provide full context including file contents."),
           }),
           execute: async ({ codingRequest }: { codingRequest: string }) => {
-            const openrouterKey = process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY || "";
-            if (!openrouterKey) {
-              return { error: "OpenRouter key missing, cannot run Council Protocol." };
+            if (!String(councilOpenRouterKey).trim()) {
+              return {
+                error:
+                  "OpenRouter key missing for Council. Add OPENROUTER_KEY to the server environment, or in Settings choose provider **OpenRouter** and paste your key.",
+              };
             }
 
             try {
@@ -482,7 +865,8 @@ The chat interface will automatically render this as an interactive chart. Use v
 
               const councilResult = await runCouncil({
                 task: codingRequest,
-                openrouterKey,
+                openrouterKey: councilOpenRouterKey,
+                nvidiaKey: (process.env.NVIDIA_NIM_API_KEY || "").trim() || undefined,
                 styleMemory,
                 onAgentEvent: (event) => {
                   const logEntry = {
@@ -503,39 +887,127 @@ The chat interface will automatically render this as an interactive chart. Use v
                   };
                   const streamLine = `4:${JSON.stringify(logEntry)}\n`;
                   if (streamEnqueue) streamEnqueue(streamLine);
+                  /* Live preview status bar — real phase labels tied to each agent step */
+                  if (streamEnqueue) {
+                    const label = councilPhaseLabel(event.agentRole, event.agentName, event.status);
+                    streamEnqueue(
+                      `5:${JSON.stringify({
+                        type: "preview",
+                        state: "building",
+                        label,
+                        agentRole: event.agentRole,
+                        agentStatus: event.status,
+                        source: "council",
+                      })}\n`
+                    );
+                  }
                   void (async () => { try { await admin.from("task_logs").insert({ ...logEntry, user_id }); } catch {} })();
                 },
               });
-
-              // Emit trust score as a final council event
-              const trustEvent = {
-                id: `council-trust-${Date.now()}`,
-                action: `Trust Score: ${councilResult.trustScore}/100`,
-                status: "done" as const,
-                icon: "🛡️",
-                agent_mode: "council",
-                details: { trustScore: councilResult.trustScore, agentsUsed: councilResult.agentsUsed.length },
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              };
-              if (streamEnqueue) streamEnqueue(`4:${JSON.stringify(trustEvent)}\n`);
 
               const contributionSummary = councilResult.contributions
                 .filter((c) => c.status === "done")
                 .map((c) => `### ${c.name}\n${c.output}`)
                 .join("\n\n---\n\n");
 
+              let finalSynthesis = councilResult.synthesis || "";
+              let parsedDeliverables = parseCouncilSandboxFiles(finalSynthesis);
+
+              if (isWebsiteBuildTask(codingRequest) && parsedDeliverables.length < 2) {
+                if (streamEnqueue) {
+                  streamEnqueue(
+                    `5:${JSON.stringify({
+                      type: "preview",
+                      state: "building",
+                      label: "Quality pass: splitting into multi-file site (editorial layout)…",
+                      source: "council-refine",
+                    })}\n`
+                  );
+                }
+                const r1 = await refineSynthesisToMultiFileDeliverables(
+                  codingRequest,
+                  finalSynthesis + "\n\n" + contributionSummary.slice(0, 6000),
+                  councilOpenRouterKey,
+                  1
+                );
+                const p1 = parseCouncilSandboxFiles(r1);
+                if (p1.length >= 2) {
+                  finalSynthesis = r1;
+                  parsedDeliverables = p1;
+                } else {
+                  const r2 = await refineSynthesisToMultiFileDeliverables(
+                    codingRequest,
+                    finalSynthesis + "\n\n" + r1.slice(0, 12_000),
+                    councilOpenRouterKey,
+                    2
+                  );
+                  const p2 = parseCouncilSandboxFiles(r2);
+                  if (p2.length > parsedDeliverables.length) {
+                    finalSynthesis = r2;
+                    parsedDeliverables = p2;
+                  }
+                }
+              }
+
+              if (parsedDeliverables.length === 0) {
+                parsedDeliverables = parseCouncilSandboxFiles(councilResult.synthesis || "");
+                finalSynthesis = councilResult.synthesis || "";
+              }
+
+              // Hard guarantee: for website-style builds, always persist at least index.html + CSS + JS,
+              // even if the model forgot the inceptive-file markers.
+              if (isWebsiteBuildTask(codingRequest) && parsedDeliverables.length > 0 && parsedDeliverables.length < 3) {
+                const idx = parsedDeliverables.find((f) => f.relativePath === "index.html");
+                if (idx?.content?.trim()) {
+                  parsedDeliverables = ensureMinimumMultifileSiteFromHtml(idx.content);
+                }
+              }
+
+              parsedDeliverables = applyEditorialCssToDeliverables(parsedDeliverables);
+              parsedDeliverables = await runVerifyRepairLoop(
+                codingRequest,
+                parsedDeliverables,
+                councilOpenRouterKey,
+                streamEnqueue ?? undefined
+              );
+              parsedDeliverables = applyEditorialCssToDeliverables(parsedDeliverables);
+
+              let sandboxFilesWritten: string[] = [];
+              if (parsedDeliverables.length > 0) {
+                const sw = await writeUserSandboxFilesBatch(user_id, parsedDeliverables);
+                if (sw.status === "success") sandboxFilesWritten = sw.paths;
+              }
+
               if (streamEnqueue) {
                 streamEnqueue(`5:${JSON.stringify({ type: "preview", state: "ready", source: "council" })}\n`);
               }
+              const bundleHtml = bundleHtmlFromDeliverables(parsedDeliverables);
+              const bundlePaths =
+                sandboxFilesWritten.length > 0
+                  ? sandboxFilesWritten
+                  : parsedDeliverables.map((f) => f.relativePath);
+              if (streamEnqueue && bundlePaths.length > 0) {
+                streamEnqueue(
+                  `6:${JSON.stringify({
+                    type: "sandbox-bundle-ready",
+                    paths: bundlePaths,
+                    source: "council",
+                    bundleHtml,
+                  })}\n`
+                );
+              }
+              const sandboxNote =
+                bundlePaths.length > 0
+                  ? ` Prepared ${bundlePaths.length} file(s) for your sandbox preview: ${bundlePaths.join(", ")}.`
+                  : "";
               return {
                 status: "success",
-                message: `10-Agent Council completed in ${(councilResult.totalDurationMs / 1000).toFixed(1)}s. ${councilResult.agentsUsed.length} agents. Trust: ${councilResult.trustScore}/100.`,
+                message: `Council completed in ${(councilResult.totalDurationMs / 1000).toFixed(1)}s (${councilResult.agentsUsed.length} specialists).${sandboxNote}`,
                 agentsUsed: councilResult.agentsUsed,
                 totalDurationMs: councilResult.totalDurationMs,
-                trustScore: councilResult.trustScore,
-                synthesis: councilResult.synthesis,
+                synthesis: finalSynthesis,
                 fullDeliberation: contributionSummary,
+                sandboxFilesWritten: bundlePaths,
               };
             } catch (err: any) {
               return { error: `Council Protocol failed: ${err.message}` };
@@ -669,37 +1141,69 @@ The chat interface will automatically render this as an interactive chart. Use v
               .describe("Files to write in one batch"),
           }),
           execute: async (args: { files: { relativePath: string; content: string }[] }) => {
-            const root = userSandboxRoot(user_id);
-            const maxTotal = 450_000;
-            let total = 0;
-            const written: string[] = [];
-            for (const f of args.files) {
-              const rel = safeSandboxRelative(f.relativePath);
-              if (!rel) {
-                return { status: "error", message: `Invalid path: ${f.relativePath}` };
-              }
-              total += (f.content || "").length;
-              if (total > maxTotal) {
-                return { status: "error", message: "Batch too large — split into smaller writeSandboxFiles calls." };
-              }
-            }
-            const rootResolved = path.resolve(root);
-            await mkdir(rootResolved, { recursive: true });
-            for (const f of args.files) {
-              const rel = safeSandboxRelative(f.relativePath)!;
-              const full = path.resolve(path.join(rootResolved, rel));
-              if (!full.startsWith(rootResolved + path.sep) && full !== rootResolved) {
-                return { status: "error", message: "Path traversal blocked." };
-              }
-              await mkdir(path.dirname(full), { recursive: true });
-              await writeFileAsync(full, f.content ?? "", "utf8");
-              written.push(rel);
+            const result = await writeUserSandboxFilesBatch(user_id, args.files);
+            if (result.status === "error") return result;
+            if (streamEnqueue && result.paths.length > 0) {
+              streamEnqueue(
+                `6:${JSON.stringify({
+                  type: "sandbox-bundle-ready",
+                  paths: result.paths,
+                  source: "writeSandboxFiles",
+                })}\n`
+              );
             }
             return {
               status: "success",
-              message: `Wrote ${written.length} file(s) to user sandbox.`,
-              paths: written,
-              root: `.inceptive-artifacts/${user_id}/`,
+              message: result.message,
+              paths: result.paths,
+              root: result.root,
+            };
+          },
+        },
+
+        upgradeSiteToNextjs: {
+          description:
+            "Scaffold a minimal Next.js App Router project under next-site/ in the user sandbox, using their current static site (index.html, styles/main.css, scripts/app.js) when present. Use when the user wants React/Next, routing, or to migrate off plain HTML. Requires OpenRouter (env or BYOK).",
+          parameters: z.object({
+            brief: z.string().describe("Product or page summary for metadata and page content (tone, sections, brand)."),
+          }),
+          execute: async ({ brief }: { brief: string }) => {
+            const orKey = councilOpenRouterKey.trim();
+            if (!orKey) {
+              return {
+                status: "error",
+                message:
+                  "OpenRouter (or BYOK) is required to generate the Next.js scaffold. Add OPENROUTER_KEY in env or an API key in Settings.",
+              };
+            }
+            const existing: { path: string; content: string }[] = [];
+            for (const p of ["index.html", "styles/main.css", "scripts/app.js"]) {
+              const r = await readUserSandboxFile(user_id, p);
+              if (r.status === "success") existing.push({ path: p, content: r.content });
+            }
+            const files = await generateNextjsScaffoldFiles(brief, orKey, existing);
+            if (!files || files.length < 4) {
+              return {
+                status: "error",
+                message: "Could not produce a valid Next.js scaffold. Try a shorter brief or ensure static files exist in the sandbox.",
+              };
+            }
+            const sw = await writeUserSandboxFilesBatch(user_id, files);
+            if (sw.status === "error") return sw;
+            if (streamEnqueue && sw.paths.length > 0) {
+              streamEnqueue(
+                `6:${JSON.stringify({
+                  type: "sandbox-bundle-ready",
+                  paths: sw.paths,
+                  source: "upgradeSiteToNextjs",
+                })}\n`
+              );
+            }
+            return {
+              status: "success",
+              message: `Created ${sw.paths.length} file(s) under next-site/ in your sandbox. Run \`npm install\` and \`npm run dev\` inside that folder locally to preview the Next app (the in-app preview stays HTML-first).`,
+              paths: sw.paths,
+              root: sw.root,
             };
           },
         },
@@ -1620,10 +2124,31 @@ The chat interface will automatically render this as an interactive chart. Use v
           let toolName =
             (tr?.toolName || tr?.name || tr?.tool?.name || toolNameByCallId.get(tr?.toolCallId) || "") as string;
           if (!toolName) toolName = inferToolNameFromOutput(normalized);
+          /* Council tool result sometimes arrives without toolName on the event — detect by shape */
+          if (
+            !toolName &&
+            normalized &&
+            typeof normalized === "object" &&
+            (normalized as any).status === "success" &&
+            ((normalized as any).synthesis !== undefined || Array.isArray((normalized as any).agentsUsed))
+          ) {
+            toolName = "multiAgentDebate";
+          }
 
           if (!fallbackFromTools) {
             const r = normalized;
-            if (r?.status === "success" && Array.isArray(r?.emails)) {
+            /* Council: prefer synthesis, never the short status-only message alone */
+            if (toolName === "multiAgentDebate" && r && typeof r === "object") {
+              const o = r as Record<string, unknown>;
+              const syn = typeof o.synthesis === "string" ? o.synthesis.trim() : "";
+              const full = typeof o.fullDeliberation === "string" ? String(o.fullDeliberation).trim() : "";
+              const msg = typeof o.message === "string" ? String(o.message).trim() : "";
+              fallbackFromTools = syn || full || msg || "";
+              if (!fallbackFromTools.trim()) {
+                fallbackFromTools =
+                  "Council specialists completed their pass; the assistant is now turning that into code for your preview (the right panel updates when HTML is ready). If anything looks wrong, describe what to change.";
+              }
+            } else if (r?.status === "success" && Array.isArray(r?.emails)) {
               const top = r.emails
                 .slice(0, 5)
                 .map((e: any, i: number) => `${i + 1}. ${e.subject || "(No subject)"} — ${e.from || "Unknown sender"}`)
@@ -1694,13 +2219,16 @@ The chat interface will automatically render this as an interactive chart. Use v
               }
             } else if (r?.status === "error" && typeof r?.message === "string") {
               fallbackFromTools = `I hit an issue while running the tool: ${r.message}`;
-            } else if (typeof r?.message === "string") {
+            } else if (typeof r?.message === "string" && toolName !== "multiAgentDebate") {
               fallbackFromTools = r.message;
             }
-            // Council synthesis fallback — capture the full synthesis as text
-            if (toolName === "multiAgentDebate" && r?.synthesis) {
-              fallbackFromTools = r.synthesis;
-            }
+          }
+
+          /* Stream council output immediately so the UI never ends on an empty assistant message */
+          if (toolName === "multiAgentDebate" && fallbackFromTools && !producedMeaningfulText) {
+            enqueue(`0:${JSON.stringify(fallbackFromTools.slice(0, 80_000))}\n`);
+            producedAnyText = true;
+            producedMeaningfulText = true;
           }
 
           if (!producedMeaningfulText) {

@@ -51,7 +51,11 @@ export function routeModel(params: {
   // Smart routing by task type
   if (wantsCode) {
     // Route to the 10-Agent Council workflow (Qwen 3.6 + Minimax M2.5 debate)
-    return { provider: "debate", model: "qwen+minimax", reason: "Code/engineering → 10-Agent Council (Qwen 3.6 + Minimax M2.5)" };
+    return {
+      provider: "debate",
+      model: "qwen+minimax+nvidia",
+      reason: "Code/engineering → 10-Agent Council (OpenRouter Qwen/Minimax/Gemini + NVIDIA NIM)",
+    };
   }
   if (wantsResearch) {
     // Use NVIDIA Nemotron Nano or 3 Super for extreme reasoning/search

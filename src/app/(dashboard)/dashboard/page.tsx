@@ -13,10 +13,10 @@ import { DashboardAiPrompt } from "@/components/ui/ai-prompt-box";
 import { DashboardCodePanel } from "@/components/dashboard/dashboard-code-panel";
 import { HtmlPreview } from "@/components/ui/html-preview";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
+import { CouncilActivityTimeline, isCouncilTaskLog } from "@/components/dashboard/CouncilActivityTimeline";
 import { WebsitePreviewPanel } from "@/components/dashboard/website-preview-panel";
 import { TTSButton } from "@/components/ui/tts-button";
 import { ChartPreview } from "@/components/ui/chart-preview";
-import { StudioModeToggle, StudioModePanel } from "@/components/agent/StudioModePanel";
 
 type AttachedFile = { name: string; content: string };
 
@@ -24,7 +24,51 @@ type AttachedFile = { name: string; content: string };
 const PREVIEW_LOADING_HTML = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Building…</title><style>
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#262624;color:#f5f5f7;font-family:system-ui,sans-serif;}
 .p{animation:o 1.35s ease-in-out infinite}@keyframes o{0%,100%{opacity:.35}50%{opacity:1}}
-</style></head><body><div style="text-align:center;max-width:340px;padding:28px"><div class="p" style="font-size:2rem;line-height:1;margin-bottom:14px">◇</div><p style="font-size:14px;line-height:1.55;opacity:.95">Council agents are planning, designing, and building. The live preview refreshes when your page is ready.</p></div></body></html>`;
+</style></head><body><div style="text-align:center;max-width:340px;padding:28px"><div class="p" style="font-size:2rem;line-height:1;margin-bottom:14px">◇</div><p style="font-size:14px;line-height:1.55;opacity:.95">Live status appears in the bar above. This view updates when generated HTML arrives.</p></div></body></html>`;
+
+/** Open the preview as soon as the user sends a build-style message (do not wait for the model to emit a tool-call). */
+function shouldOpenBuildPreviewLoading(text: string): boolean {
+  const t = text.toLowerCase();
+  const needles = [
+    "website",
+    "web app",
+    "webapp",
+    "landing",
+    "webpage",
+    "full-stack",
+    "fullstack",
+    "html",
+    "css",
+    "javascript",
+    "typescript",
+    "react",
+    "next.js",
+    "nextjs",
+    "build a",
+    "build an",
+    "build me",
+    "create a",
+    "make a",
+    "design a",
+    "app ",
+    "ui ",
+    "ux ",
+    "frontend",
+    "page",
+    "site ",
+    "productivity",
+    "dark mode",
+    "component",
+    "dashboard",
+    "deploy",
+    "svelte",
+    "vue",
+    "tailwind",
+  ];
+  if (needles.some((n) => t.includes(n))) return true;
+  /* whole word — avoids matching "overflow" etc. */
+  return /\bflow\b/i.test(t);
+}
 
 function CollapsedCodeFence({ lang, body }: { lang: string; body: string }) {
   const [open, setOpen] = useState(false);
@@ -168,6 +212,29 @@ function AsyncImage({ src, alt, onDownload }: { src: string; alt: string; onDown
 function GeneratedFileCard({ result, toolName }: { result: any; toolName: string }) {
   if (!result || result.status !== "success") return null;
 
+  if (toolName === "multiAgentDebate" || toolName === "writeSandboxFiles") {
+    const msg = typeof result.message === "string" ? result.message : "";
+    const paths: string[] | undefined =
+      toolName === "multiAgentDebate" ? result.sandboxFilesWritten : result.paths;
+    const title = toolName === "multiAgentDebate" ? "Council run complete" : "Sandbox files updated";
+    return (
+      <div className="mt-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2.5">
+        <p className="text-sm font-medium text-[var(--fg-primary)]">{title}</p>
+        {msg ? (
+          <p className="text-[11px] text-[var(--fg-secondary)] mt-1.5 leading-relaxed whitespace-pre-wrap">
+            {msg.length > 900 ? `${msg.slice(0, 900)}…` : msg}
+          </p>
+        ) : null}
+        {Array.isArray(paths) && paths.length > 0 && (
+          <p className="text-[10px] text-[var(--fg-muted)] mt-1.5 font-mono truncate" title={paths.join(", ")}>
+            {paths.length} file{paths.length === 1 ? "" : "s"}: {paths.slice(0, 4).join(", ")}
+            {paths.length > 4 ? "…" : ""}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   const handleDownloadImage = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (result.image) {
@@ -300,7 +367,6 @@ function ChatMessage({
   onOpenPreview?: (code: string) => void;
 }) {
   const isUser = msg.role === "user";
-  const isDone = !streaming || !isLastAssistant;
   const showGenerating =
     !isUser &&
     isLastAssistant &&
@@ -310,8 +376,7 @@ function ChatMessage({
   const councilTrace = (msg.taskLogs || []).some(
     (l) => l.details && typeof l.details === "object" && (l.details as { agentRole?: string }).agentRole
   );
-  const visibleLogs =
-    !isUser && councilTrace ? (msg.taskLogs || []) : !isUser && !isDone ? (msg.taskLogs || []) : [];
+  const nonCouncilTaskLogs = (msg.taskLogs || []).filter((l) => !isCouncilTaskLog(l));
 
   const renderContent = (content: string) => {
     if (isUser) return content;
@@ -327,7 +392,14 @@ function ChatMessage({
       className={`flex ${isUser ? "justify-end" : "justify-start"}`}
     >
       <div className={`max-w-[85%] sm:max-w-[80%] ${isUser ? "ml-8" : "mr-8"} w-full`}>
-        {!isUser && visibleLogs && visibleLogs.length > 0 && <ProgressIndicator logs={visibleLogs} />}
+        {!isUser && councilTrace && (
+          <CouncilActivityTimeline
+            logs={msg.taskLogs || []}
+            isStreaming={streaming}
+            isLastAssistant={isLastAssistant}
+          />
+        )}
+        {!isUser && nonCouncilTaskLogs.length > 0 && <ProgressIndicator logs={nonCouncilTaskLogs} />}
         <motion.div
           initial={{ scale: 0.97, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -400,11 +472,15 @@ function DashboardExperience() {
   const prefillConsumedRef = useRef(false);
   const [codePanelOpen, setCodePanelOpen] = useState(false);
   const [previewCode, setPreviewCode] = useState<string | null>(null);
+  /** When true, do not replace preview from streamed ```html (sandbox bundle is authoritative). */
+  const preferSandboxPreviewRef = useRef(false);
+  const [sandboxPaths, setSandboxPaths] = useState<string[] | null>(null);
+  /** Live line from Council / preview stream — shown above the iframe */
+  const [previewBuildStatus, setPreviewBuildStatus] = useState<string | null>(null);
   const [isMicListening, setIsMicListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const [splitRatio, setSplitRatio] = useState(50); // percentage for left panel
   const containerRef = useRef<HTMLDivElement>(null);
-  const [studioMode, setStudioMode] = useState(false);
 
   const handleResizeDrag = useCallback((deltaX: number) => {
     if (!containerRef.current) return;
@@ -551,6 +627,13 @@ function DashboardExperience() {
       pendingFilesRef.current = [];
       setStreaming(true);
 
+      if (shouldOpenBuildPreviewLoading(text.trim())) {
+        preferSandboxPreviewRef.current = false;
+        setSandboxPaths(null);
+        setPreviewCode(PREVIEW_LOADING_HTML);
+        setPreviewBuildStatus("Connecting — starting your build…");
+      }
+
       const assistantId = `a_${Date.now()}`;
       setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", toolCalls: [], toolResults: [] }]);
 
@@ -571,7 +654,7 @@ function DashboardExperience() {
               sendLockRef.current = false;
             })
           );
-        }, 180000); // 3 minutes idle between stream chunks (council runs are long)
+        }, 600_000); // 10 min idle — Council + multi-file refine can exceed a few minutes
       };
 
       resetSafetyTimer();
@@ -640,18 +723,64 @@ function DashboardExperience() {
                   toolCallIdToName.set(tc.toolCallId, tc.toolName);
                 }
                 const tn = tc.toolName || "";
-                if (tn === "multiAgentDebate") {
+                if (tn === "multiAgentDebate" || tn === "writeSandboxFiles") {
                   setPreviewCode(PREVIEW_LOADING_HTML);
+                  setPreviewBuildStatus("Running build tools…");
                 }
               } catch { /* ignore */ }
             } else if (line.startsWith("5:")) {
               try {
-                const u = JSON.parse(line.slice(2)) as { type?: string; state?: string };
+                const u = JSON.parse(line.slice(2)) as {
+                  type?: string;
+                  state?: string;
+                  label?: string;
+                };
                 if (u.type === "preview" && u.state === "building") {
                   setPreviewCode(PREVIEW_LOADING_HTML);
+                  if (typeof u.label === "string" && u.label.trim()) {
+                    setPreviewBuildStatus(u.label.trim());
+                  }
+                }
+                if (u.type === "preview" && u.state === "ready") {
+                  setPreviewBuildStatus("Loading preview…");
                 }
               } catch {
                 /* ignore */
+              }
+            } else if (line.startsWith("6:")) {
+              try {
+                const payload = JSON.parse(line.slice(2)) as {
+                  type?: string;
+                  paths?: string[];
+                  bundleHtml?: string;
+                };
+                if (payload.type !== "sandbox-bundle-ready") continue;
+                preferSandboxPreviewRef.current = true;
+                if (Array.isArray(payload.paths)) setSandboxPaths(payload.paths);
+                setPreviewBuildStatus("Loading multi-file sandbox preview…");
+                if (typeof payload.bundleHtml === "string" && payload.bundleHtml.trim().length > 0) {
+                  setPreviewCode(payload.bundleHtml);
+                  setPreviewBuildStatus(null);
+                } else {
+                  const prevRes = await fetch("/api/agent/sandbox-preview", {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (prevRes.ok) {
+                    const html = await prevRes.text();
+                    if (html.trim().length > 0) {
+                      setPreviewCode(html);
+                      setPreviewBuildStatus(null);
+                    } else {
+                      preferSandboxPreviewRef.current = false;
+                      setPreviewBuildStatus("Sandbox updated — empty bundle.");
+                    }
+                  } else {
+                    preferSandboxPreviewRef.current = false;
+                    setPreviewBuildStatus("Sandbox saved — could not load preview (try refresh).");
+                  }
+                }
+              } catch {
+                preferSandboxPreviewRef.current = false;
               }
             } else if (line.startsWith("2:")) {
               try {
@@ -661,15 +790,42 @@ function DashboardExperience() {
                 const result = tr.result ?? tr.output;
                 // Only capture the generation tools to display custom UI cards
                 if (
-                  toolName === "generateExcel" || 
-                  toolName === "generatePowerPoint" || 
-                  toolName === "generatePDF" || 
+                  toolName === "generateExcel" ||
+                  toolName === "generatePowerPoint" ||
+                  toolName === "generatePDF" ||
                   toolName === "generateImage"
                 ) {
-                   currentToolResults = [...currentToolResults, { toolCallId: tr.toolCallId || Date.now().toString(), toolName, result }];
-                   setMessages((prev) =>
-                     prev.map((m) => (m.id === assistantId ? { ...m, toolResults: currentToolResults } : m))
-                   );
+                  currentToolResults = [...currentToolResults, { toolCallId: tr.toolCallId || Date.now().toString(), toolName, result }];
+                  setMessages((prev) =>
+                    prev.map((m) => (m.id === assistantId ? { ...m, toolResults: currentToolResults } : m))
+                  );
+                } else if (toolName === "multiAgentDebate" && result && typeof result === "object") {
+                  const slim = {
+                    status: "success" as const,
+                    message: typeof result.message === "string" ? result.message : "",
+                    sandboxFilesWritten: Array.isArray(result.sandboxFilesWritten) ? result.sandboxFilesWritten : undefined,
+                    agentsUsedCount: Array.isArray(result.agentsUsed) ? result.agentsUsed.length : undefined,
+                  };
+                  currentToolResults = [
+                    ...currentToolResults,
+                    { toolCallId: tr.toolCallId || Date.now().toString(), toolName, result: slim },
+                  ];
+                  setMessages((prev) =>
+                    prev.map((m) => (m.id === assistantId ? { ...m, toolResults: currentToolResults } : m))
+                  );
+                } else if (toolName === "writeSandboxFiles" && result && typeof result === "object") {
+                  const slim = {
+                    status: "success" as const,
+                    message: typeof result.message === "string" ? result.message : "",
+                    paths: Array.isArray(result.paths) ? result.paths : undefined,
+                  };
+                  currentToolResults = [
+                    ...currentToolResults,
+                    { toolCallId: tr.toolCallId || Date.now().toString(), toolName, result: slim },
+                  ];
+                  setMessages((prev) =>
+                    prev.map((m) => (m.id === assistantId ? { ...m, toolResults: currentToolResults } : m))
+                  );
                 }
               } catch {
                 /* ignore */
@@ -719,7 +875,7 @@ function DashboardExperience() {
         });
       }
     },
-    [messages, session, streaming, setMessages]
+    [messages, session?.access_token, streaming, setMessages]
   );
 
   const handlePromptSend = useCallback(
@@ -748,15 +904,18 @@ function DashboardExperience() {
     { icon: FolderUp, label: "Upload Project", onClick: () => fileInputRef.current?.click() },
   ];
 
-  // Auto-detect HTML code in latest assistant message for split-screen
+  // Auto-detect HTML in the latest assistant message — only when not using sandbox bundle (and avoid partial fences while streaming)
   useEffect(() => {
+    if (preferSandboxPreviewRef.current) return;
+    if (streaming) return;
     const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
     if (!lastAssistant?.content) return;
     const match = lastAssistant.content.match(/```html\n([\s\S]*?)\n```/);
     if (match?.[1] && match[1].length > 50) {
       setPreviewCode(match[1]);
+      setPreviewBuildStatus(null);
     }
-  }, [messages]);
+  }, [messages, streaming]);
 
   return (
     <div ref={containerRef} className="flex h-screen bg-[var(--bg-app)] text-[var(--fg-primary)] overflow-hidden">
@@ -777,20 +936,13 @@ function DashboardExperience() {
           )}
         </div>
         <div className="flex items-center gap-3">
-          {/* Studio Mode toggle */}
-          <StudioModeToggle
-            isOpen={studioMode}
-            onToggle={() => setStudioMode(!studioMode)}
-            eventCount={messages.reduce((acc, m) => {
-              const councilLogs = (m.taskLogs || []).filter(
-                (l) => l.details && typeof l.details === "object" && (l.details as any).agentRole
-              );
-              return acc + councilLogs.length;
-            }, 0)}
-          />
           <button
             type="button"
-            onClick={startNewChat}
+            onClick={() => {
+              preferSandboxPreviewRef.current = false;
+              setSandboxPaths(null);
+              void startNewChat();
+            }}
             className="flex h-8 items-center gap-1.5 rounded-xl bg-white px-3 text-xs font-medium text-black transition-opacity hover:opacity-90"
           >
             <Plus size={14} className="text-black" />
@@ -1008,17 +1160,23 @@ function DashboardExperience() {
         >
           <WebsitePreviewPanel
             code={previewCode}
-            onClose={() => { setPreviewCode(null); setSplitRatio(50); }}
+            buildStatusLine={
+              sandboxPaths && sandboxPaths.length > 0
+                ? `${previewBuildStatus ? `${previewBuildStatus} · ` : ""}Sandbox files: ${sandboxPaths.slice(0, 6).join(", ")}${
+                    sandboxPaths.length > 6 ? "…" : ""
+                  }`
+                : previewBuildStatus
+            }
+            onClose={() => {
+              setPreviewCode(null);
+              setPreviewBuildStatus(null);
+              setSplitRatio(50);
+            }}
             onCodeChange={(newCode) => setPreviewCode(newCode)}
           />
         </motion.div>
       )}
     </AnimatePresence>
-    {/* ── STUDIO MODE PANEL ── */}
-    <StudioModePanel
-      logs={messages.flatMap((m) => m.taskLogs || [])}
-      isOpen={studioMode && !previewCode}
-    />
     </div>
   );
 }
