@@ -8,7 +8,7 @@ export function parseCouncilSandboxFiles(synthesis: string): { relativePath: str
 
   const out: { relativePath: string; content: string }[] = [];
   const re =
-    /```(?:html|css|javascript|js|txt|json)?\s*\n<!--\s*inceptive-file:\s*([^>\n]+?)\s*-->\s*\n([\s\S]*?)```/gi;
+    /```(?:html|css|javascript|js|txt|json|svg|xml)?\s*\n<!--\s*inceptive-file:\s*([^>\n]+?)\s*-->\s*\n([\s\S]*?)```/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(synthesis)) !== null) {
     const rel = m[1].trim().replace(/^[/\\]+/, "");

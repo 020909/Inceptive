@@ -31,6 +31,8 @@ function isRetriableModelError(e: any): boolean {
   const msg = String(e?.message || e || "").toLowerCase();
   return (
     msg.includes("rate limit") ||
+    msg.includes("rate_limit") ||
+    msg.includes("too many requests") ||
     msg.includes("429") ||
     msg.includes("timeout") ||
     msg.includes("temporar") ||
@@ -282,8 +284,8 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
   const phase2Agents = selectedAgents.filter((a) => a.phase === 2);
   if (phase2Agents.length > 0) {
     const phase2Prompt = `## Task\n${task}${accumulatedContext}\n\nProvide your specialized analysis and output.`;
-    // Avoid bursty parallel calls that trigger rate limits. Keep it small for "free" reliability.
-    const phase2Results = await mapWithConcurrency(phase2Agents, 2, (agent) =>
+    // Sequential (concurrency 1) reduces OpenRouter + NIM rate-limit storms on free tiers.
+    const phase2Results = await mapWithConcurrency(phase2Agents, 1, (agent) =>
       runAgent(agent, phase2Prompt, openrouterKey, nvidiaKey, task, onAgentEvent, styleContext)
     );
     for (const result of phase2Results) {
@@ -298,7 +300,7 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
   const phase3Agents = selectedAgents.filter((a) => a.phase === 3);
   if (phase3Agents.length > 0) {
     const phase3Prompt = `## Original Task\n${task}\n\n## All Agent Outputs So Far\n${accumulatedContext}\n\nReview the above outputs and provide your specialized analysis.`;
-    const phase3Results = await mapWithConcurrency(phase3Agents, 2, (agent) =>
+    const phase3Results = await mapWithConcurrency(phase3Agents, 1, (agent) =>
       runAgent(agent, phase3Prompt, openrouterKey, nvidiaKey, task, onAgentEvent, styleContext)
     );
     for (const result of phase3Results) {

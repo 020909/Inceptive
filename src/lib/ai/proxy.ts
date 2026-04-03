@@ -192,9 +192,13 @@ export async function proxyToOpenRouter(
   request: ProxyChatRequest
 ): Promise<Response> {
   // Use provided apiKey or fallback to default
-  const apiKey = request.apiKey || process.env.OPENROUTER_DEFAULT_KEY || process.env.OPENROUTER_KEY;
+  const apiKey =
+    request.apiKey ||
+    process.env.OPENROUTER_KEY ||
+    process.env.OPENROUTER_DEFAULT_KEY ||
+    process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    throw new Error("OPENROUTER_DEFAULT_KEY is not configured");
+    throw new Error("OpenRouter API key is not configured (OPENROUTER_KEY or OPENROUTER_API_KEY)");
   }
 
   const model = request.model || DEFAULT_MODEL;

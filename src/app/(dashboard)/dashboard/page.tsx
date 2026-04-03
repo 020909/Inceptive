@@ -94,7 +94,8 @@ function CollapsedCodeFence({ lang, body }: { lang: string; body: string }) {
 
 function renderAssistantBlocks(content: string, onOpenPreview?: (code: string) => void): React.ReactNode {
   const out: React.ReactNode[] = [];
-  const re = /```(html|chart|typescript|tsx|ts|javascript|js|jsx|css|json|python|bash|shell|md|vue|svelte)?\r?\n([\s\S]*?)```/gi;
+  const re =
+    /```(html|chart|typescript|tsx|ts|javascript|js|jsx|css|json|python|bash|shell|md|vue|svelte|txt|xml|svg)?\r?\n([\s\S]*?)```/gi;
   let last = 0;
   let m: RegExpExecArray | null;
   let k = 0;

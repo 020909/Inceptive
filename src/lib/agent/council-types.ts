@@ -271,6 +271,7 @@ DO NOT summarize what each agent said. Just output the perfected result directly
 - Micro-interactions: hover, focus-visible, respectful motion; \`@media (prefers-reduced-motion: reduce)\` fallback.
 - Copy: plausible product language tied to the user brief — not generic "Lorem" or filler brand names.
 - **Minimum** deliverable for a marketing/product site: the three-file split below (HTML + CSS + JS). Single-file output is only throwaway prototypes.
+- For icons and simple graphics, prefer **inline SVG** inside \`index.html\` OR include every \`images/*.svg\` file as its own \`inceptive-file\` block — otherwise previews break when an \`<img src>\` has no matching file.
 
 ## REQUIRED multi-file format (server parses this automatically — files are saved for live preview)
 

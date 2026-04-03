@@ -26,6 +26,16 @@ async function readSandboxFile(rootResolved: string, rel: string): Promise<strin
   }
 }
 
+async function readSandboxBuffer(rootResolved: string, rel: string): Promise<Buffer | null> {
+  const full = path.resolve(path.join(rootResolved, rel));
+  if (!full.startsWith(rootResolved + path.sep) && full !== rootResolved) return null;
+  try {
+    return await readFile(full);
+  } catch {
+    return null;
+  }
+}
+
 async function pickEntryHtml(rootResolved: string): Promise<string | null> {
   for (const name of ["index.html", "Index.html", "home.html"]) {
     const rel = safeSandboxRelative(name);
@@ -95,6 +105,35 @@ export async function bundleSandboxIndexForPreview(userId: string): Promise<stri
     const js = await readSandboxFile(rootResolved, relFile);
     if (!js) continue;
     out = out.replace(full, `<script data-inceptive-inlined="${relFile}">\n${js}\n</script>`);
+  }
+
+  const imgTags = [...out.matchAll(/<img\s+[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi)];
+  for (const m of imgTags) {
+    const fullTag = m[0];
+    const src = m[1];
+    if (isRemoteHref(src)) continue;
+    const relFile = resolveRelative(entryRel, src);
+    if (!relFile) continue;
+    const buf = await readSandboxBuffer(rootResolved, relFile);
+    if (!buf?.length) continue;
+    const ext = path.extname(relFile).toLowerCase();
+    let dataUrl: string;
+    if (ext === ".svg") {
+      dataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(buf.toString("utf8"));
+    } else {
+      const mime =
+        ext === ".png"
+          ? "image/png"
+          : ext === ".jpg" || ext === ".jpeg"
+            ? "image/jpeg"
+            : ext === ".gif"
+              ? "image/gif"
+              : ext === ".webp"
+                ? "image/webp"
+                : "application/octet-stream";
+      dataUrl = `data:${mime};base64,${buf.toString("base64")}`;
+    }
+    out = out.replace(fullTag, fullTag.replace(src, dataUrl));
   }
 
   return out;

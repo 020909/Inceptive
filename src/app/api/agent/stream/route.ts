@@ -8,6 +8,7 @@ import { YoutubeTranscript } from "youtube-transcript";
 import { createClient } from "@supabase/supabase-js";
 import { streamText } from "ai";
 import { buildModel } from "@/lib/ai-model";
+import { serverOpenRouterKeyFromEnv } from "@/lib/ai/openrouter-env";
 import { routeModel } from "@/lib/ai/model-router";
 import { nvidiaModelForTask } from "@/lib/ai/nvidia-model-router";
 import { checkCredits, deductCredits, getUserPlan } from "@/lib/credits";
@@ -180,6 +181,21 @@ function bundleHtmlFromDeliverables(deliverables: { relativePath: string; conten
     const js = byRel.get(relFile);
     if (!js) continue;
     out = out.replace(full, `<script data-inceptive-inlined="${relFile}">\n${js}\n</script>`);
+  }
+
+  const imgTags = [...out.matchAll(/<img\s+[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi)];
+  for (const m of imgTags) {
+    const full = m[0];
+    const src = m[1];
+    if (/^https?:\/\//i.test(src) || src.startsWith("//")) continue;
+    const relFile = resolveRelativeHtmlHref(entryRel, src);
+    if (!relFile) continue;
+    const asset = byRel.get(relFile);
+    if (!asset?.trim()) continue;
+    const ext = path.extname(relFile).toLowerCase();
+    if (ext !== ".svg") continue;
+    const dataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(asset);
+    out = out.replace(full, full.replace(src, dataUrl));
   }
 
   return out;
@@ -366,7 +382,7 @@ export async function POST(req: Request) {
 
     const nvidiaKey = process.env.NVIDIA_NIM_API_KEY || "";
     const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
-    const openrouterKey = process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY || "";
+    const openrouterKey = serverOpenRouterKeyFromEnv();
     const councilOpenRouterKey = resolveCouncilOpenRouterKey(openrouterKey, coreData);
     const groqKey = process.env.GROQ_API_KEY?.trim();
     const groqModel = process.env.GROQ_CHAT_MODEL?.trim() || "llama-3.3-70b-versatile";
@@ -456,7 +472,7 @@ ${_cs}
 - analyzeData/generateOutline: strategy and data tools
 - generateExcel/generatePowerPoint/generatePDF/generateImage: file generation tools
 - computerUse: control a headless browser with vision
-- multiAgentDebate: the 10-Agent Council uses OpenRouter (Qwen / Minimax / Gemini) plus NVIDIA NIM for code/design/synthesis roles when NVIDIA_NIM_API_KEY is set. Requires OPENROUTER_KEY. Set COUNCIL_SKIP_NVIDIA=true to disable NIM only. If an NIM call fails, that step retries on OpenRouter.
+- multiAgentDebate: the 10-Agent Council uses OpenRouter (Qwen / Minimax / Gemini) plus NVIDIA NIM when NVIDIA_NIM_API_KEY is set. Server needs an OpenRouter key (OPENROUTER_KEY, OPENROUTER_DEFAULT_KEY, or OPENROUTER_API_KEY). Set COUNCIL_SKIP_NVIDIA=true to disable NIM only. If an NIM call fails, that step retries on OpenRouter.
 - saveStylePreference: remember user's design/coding preferences across sessions
 - createProject: create a new organized project for the user
 
@@ -593,7 +609,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
             if (!String(councilOpenRouterKey).trim()) {
               enqueue(
                 `3:${JSON.stringify(
-                  "OpenRouter key missing for Council (add OPENROUTER_KEY on the server, or set your API key in Settings with provider OpenRouter)."
+                  "OpenRouter key missing for Council. In Vercel, set OPENROUTER_KEY or OPENROUTER_API_KEY (or OPENROUTER_DEFAULT_KEY), redeploy, or use Settings with provider OpenRouter."
                 )}\n`
               );
               controller.close();
@@ -742,9 +758,10 @@ The chat interface will automatically render this as an interactive chart. Prefe
               })}\n`
             );
 
-            const assistantMessage = `Council build complete. Multi-file deliverables:\n\n${buildMarkdownMultiFileDeliverables(
-              parsedDeliverables
-            )}`;
+            const assistantMessage =
+              writtenPaths.length >= 2
+                ? `Your site is live in the preview (${writtenPaths.length} files: ${bundlePaths.slice(0, 8).join(", ")}${bundlePaths.length > 8 ? "…" : ""}). Open the **Code** tab for the bundled HTML, or expand a block below if you need raw source.`
+                : `Council build complete.\n\n${buildMarkdownMultiFileDeliverables(parsedDeliverables)}`;
             enqueue(`0:${JSON.stringify(assistantMessage)}\n`);
 
             if (plan !== "basic") {
@@ -839,7 +856,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
             if (!String(councilOpenRouterKey).trim()) {
               return {
                 error:
-                  "OpenRouter key missing for Council. Add OPENROUTER_KEY to the server environment, or in Settings choose provider **OpenRouter** and paste your key.",
+                  "OpenRouter key missing for Council. In Vercel, set OPENROUTER_KEY or OPENROUTER_API_KEY, redeploy, or in Settings choose provider OpenRouter.",
               };
             }
 
@@ -1533,7 +1550,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
             let visionNote = "";
             const runVision = async (b64: string) => {
               if (args.analyze || args.action === "analyze") {
-                visionNote = await describeScreenshotBase64(process.env.OPENROUTER_KEY || "", "openrouter", b64).catch(
+                visionNote = await describeScreenshotBase64(serverOpenRouterKeyFromEnv(), "openrouter", b64).catch(
                   () => ""
                 );
               }
@@ -1569,7 +1586,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
             }
             if (args.action === "analyze") {
               const b64 = await computerScreenshot(user_id, sid);
-              visionNote = await describeScreenshotBase64(process.env.OPENROUTER_KEY || "", "openrouter", b64).catch(() => "");
+              visionNote = await describeScreenshotBase64(serverOpenRouterKeyFromEnv(), "openrouter", b64).catch(() => "");
               return { status: "success", vision: visionNote };
             }
             const b64 = await computerScreenshot(user_id, sid);
