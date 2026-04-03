@@ -12,6 +12,22 @@ const getAdmin = () =>
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+/** Founder / internal account: higher daily free-pool on the free plan only (set FOUNDER_DAILY_CREDITS_EMAIL in env to override). */
+const FOUNDER_DAILY_CREDITS_EMAIL =
+  (process.env.FOUNDER_DAILY_CREDITS_EMAIL || "alymaknojiya@icloud.com").toLowerCase().trim();
+const FOUNDER_DAILY_CREDITS_AMOUNT = Math.max(
+  1,
+  Number.parseInt(process.env.FOUNDER_DAILY_CREDITS_AMOUNT || "1000", 10) || 1000
+);
+
+async function isFounderDailyGrant(userId: string): Promise<boolean> {
+  if (!FOUNDER_DAILY_CREDITS_EMAIL) return false;
+  const admin = getAdmin();
+  const { data } = await admin.from("users").select("email").eq("id", userId).maybeSingle();
+  const em = (data?.email as string | undefined)?.toLowerCase().trim();
+  return !!em && em === FOUNDER_DAILY_CREDITS_EMAIL;
+}
+
 export type CreditCheckResult =
   | { allowed: true; remaining: number; plan: PlanId; unlimited: boolean }
   | { allowed: false; reason: string; remaining: number; plan: PlanId; unlimited: boolean };
@@ -50,6 +66,29 @@ export async function getOrInitCredits(userId: string) {
     if (new Date(data.period_end) < now) {
       return await resetCredits(userId, data.plan as PlanId);
     }
+    // One-time / ongoing sync: founder gets a 1000/day pool on free instead of 100
+    if ((data.plan as PlanId) === "free" && (await isFounderDailyGrant(userId))) {
+      const cap = FOUNDER_DAILY_CREDITS_AMOUNT;
+      if (Number(data.credits_total) < cap) {
+        const prevTotal = Number(data.credits_total) || 0;
+        const prevRem = Number(data.credits_remaining) || 0;
+        const bump = cap - prevTotal;
+        const nextRem = Math.min(cap, prevRem + Math.max(0, bump));
+        await admin
+          .from("user_credits")
+          .update({
+            credits_total: cap,
+            credits_remaining: nextRem,
+            updated_at: now.toISOString(),
+          })
+          .eq("user_id", userId);
+        const { data: fresh } = await admin.from("user_credits").select("*").eq("user_id", userId).single();
+        if (fresh) {
+          const unlimited = await hasUnlimitedInceptiveCredits(userId);
+          return { ...fresh, is_subscriber: unlimited, daily_reset_at: fresh.period_end };
+        }
+      }
+    }
     const unlimited = await hasUnlimitedInceptiveCredits(userId);
     const { error: syncErr } = await admin
       .from("user_credits")
@@ -65,13 +104,15 @@ export async function getOrInitCredits(userId: string) {
     return { ...data, is_subscriber: unlimited, daily_reset_at: data.period_end };
   }
 
+  const founderFree = (await isFounderDailyGrant(userId)) ? FOUNDER_DAILY_CREDITS_AMOUNT : 100;
+
   const inserted = await admin
     .from("user_credits")
     .insert({
       user_id: userId,
       plan: "free",
-      credits_remaining: 100,
-      credits_total: 100,
+      credits_remaining: founderFree,
+      credits_total: founderFree,
       period_start: new Date().toISOString(),
       period_end: new Date(Date.now() + 86_400_000).toISOString(),
       is_subscriber: false,
@@ -88,10 +129,13 @@ export async function resetCredits(userId: string, plan: PlanId) {
   const planDef = PLANS[plan];
   const now = new Date();
 
-  const total =
+  let total =
     plan === "basic"
       ? 999_999
       : planDef.credits;
+  if (plan === "free" && (await isFounderDailyGrant(userId))) {
+    total = FOUNDER_DAILY_CREDITS_AMOUNT;
+  }
 
   const periodEnd =
     plan === "free"
