@@ -655,7 +655,7 @@ function DashboardExperience() {
               sendLockRef.current = false;
             })
           );
-        }, 600_000); // 10 min idle — Council + multi-file refine can exceed a few minutes
+        }, 2_700_000); // 45 min idle — Council steps can be 15–20+ min on free models; heartbeats usually prevent this firing
       };
 
       resetSafetyTimer();

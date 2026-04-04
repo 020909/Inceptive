@@ -42,6 +42,7 @@ import { generateNextjsScaffoldFiles } from "@/lib/sandbox/nextjs-scaffold";
 import { EDITORIAL_BASE_CSS, mergeCssWithEditorialBase } from "@/lib/sandbox/editorial-base-css";
 import { runVerifyRepairLoop } from "@/lib/sandbox/site-verify-repair";
 import { resolveCouncilOpenRouterKey } from "@/lib/agent/council-openrouter-key";
+import { startCouncilHeartbeat } from "@/lib/agent/council-heartbeat";
 
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
@@ -627,8 +628,16 @@ The chat interface will automatically render this as an interactive chart. Prefe
             const { runCouncil } = await import("@/lib/agent/council");
 
             enqueue(`5:${JSON.stringify({ type: "preview", state: "building", source: "council" })}\n`);
+            enqueue(
+              `0:${JSON.stringify(
+                "Council build started — specialists run in sequence; a single step (especially coding) can take many minutes on free models. Watch the timeline below; this chat updates when the build finishes."
+              )}\n`
+            );
 
-            const councilResult = await runCouncil({
+            const stopHeartbeat = startCouncilHeartbeat(enqueue);
+            let councilResult;
+            try {
+              councilResult = await runCouncil({
               task: lastUserContentForBuild,
               openrouterKey: councilOpenRouterKey,
               styleMemory,
@@ -665,13 +674,16 @@ The chat interface will automatically render this as an interactive chart. Prefe
                 );
               },
             });
+            } finally {
+              stopHeartbeat();
+            }
 
-            const contributionSummary = councilResult.contributions
+            const contributionSummary = councilResult!.contributions
               .filter((c) => c.status === "done")
               .map((c) => `### ${c.name}\n${c.output}`)
               .join("\n\n---\n\n");
 
-            let finalSynthesis = councilResult.synthesis || "";
+            let finalSynthesis = councilResult!.synthesis || "";
             let parsedDeliverables = parseCouncilSandboxFiles(finalSynthesis);
 
             if (parsedDeliverables.length < 2) {
@@ -709,8 +721,8 @@ The chat interface will automatically render this as an interactive chart. Prefe
             }
 
             if (parsedDeliverables.length === 0) {
-              parsedDeliverables = parseCouncilSandboxFiles(councilResult.synthesis || "");
-              finalSynthesis = councilResult.synthesis || "";
+              parsedDeliverables = parseCouncilSandboxFiles(councilResult!.synthesis || "");
+              finalSynthesis = councilResult!.synthesis || "";
             }
 
             // Guarantee: always write at least index.html + CSS + JS for website builds.
@@ -871,7 +883,10 @@ The chat interface will automatically render this as an interactive chart. Prefe
                 }
               } catch {} // Style memory is optional
 
-              const councilResult = await runCouncil({
+              const stopCouncilHb = startCouncilHeartbeat((line) => streamEnqueue?.(line));
+              let councilResult;
+              try {
+                councilResult = await runCouncil({
                 task: codingRequest,
                 openrouterKey: councilOpenRouterKey,
                 styleMemory,
@@ -911,13 +926,16 @@ The chat interface will automatically render this as an interactive chart. Prefe
                   void (async () => { try { await admin.from("task_logs").insert({ ...logEntry, user_id }); } catch {} })();
                 },
               });
+              } finally {
+                stopCouncilHb();
+              }
 
-              const contributionSummary = councilResult.contributions
+              const contributionSummary = councilResult!.contributions
                 .filter((c) => c.status === "done")
                 .map((c) => `### ${c.name}\n${c.output}`)
                 .join("\n\n---\n\n");
 
-              let finalSynthesis = councilResult.synthesis || "";
+              let finalSynthesis = councilResult!.synthesis || "";
               let parsedDeliverables = parseCouncilSandboxFiles(finalSynthesis);
 
               if (isWebsiteBuildTask(codingRequest) && parsedDeliverables.length < 2) {
@@ -957,8 +975,8 @@ The chat interface will automatically render this as an interactive chart. Prefe
               }
 
               if (parsedDeliverables.length === 0) {
-                parsedDeliverables = parseCouncilSandboxFiles(councilResult.synthesis || "");
-                finalSynthesis = councilResult.synthesis || "";
+                parsedDeliverables = parseCouncilSandboxFiles(councilResult!.synthesis || "");
+                finalSynthesis = councilResult!.synthesis || "";
               }
 
               // Hard guarantee: for website-style builds, always persist at least index.html + CSS + JS,
@@ -1009,9 +1027,9 @@ The chat interface will automatically render this as an interactive chart. Prefe
                   : "";
               return {
                 status: "success",
-                message: `Council completed in ${(councilResult.totalDurationMs / 1000).toFixed(1)}s (${councilResult.agentsUsed.length} specialists).${sandboxNote}`,
-                agentsUsed: councilResult.agentsUsed,
-                totalDurationMs: councilResult.totalDurationMs,
+                message: `Council completed in ${(councilResult!.totalDurationMs / 1000).toFixed(1)}s (${councilResult!.agentsUsed.length} specialists).${sandboxNote}`,
+                agentsUsed: councilResult!.agentsUsed,
+                totalDurationMs: councilResult!.totalDurationMs,
                 synthesis: finalSynthesis,
                 fullDeliberation: contributionSummary,
                 sandboxFilesWritten: bundlePaths,
