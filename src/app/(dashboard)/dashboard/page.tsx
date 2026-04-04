@@ -14,11 +14,27 @@ import { DashboardCodePanel } from "@/components/dashboard/dashboard-code-panel"
 import { HtmlPreview } from "@/components/ui/html-preview";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
 import { CouncilActivityTimeline, isCouncilTaskLog } from "@/components/dashboard/CouncilActivityTimeline";
+import {
+  ClarificationOptionBar,
+  focusDashboardChatInput,
+} from "@/components/chat/ClarificationOptionBar";
 import { WebsitePreviewPanel } from "@/components/dashboard/website-preview-panel";
 import { TTSButton } from "@/components/ui/tts-button";
 import { ChartPreview } from "@/components/ui/chart-preview";
 
 type AttachedFile = { name: string; content: string };
+
+type CouncilResumeClient = {
+  task: string;
+  accumulatedContext: string;
+  contributions: Array<{
+    role: string;
+    name: string;
+    status: string;
+    output: string;
+    durationMs?: number;
+  }>;
+};
 
 /** Shown in the website preview panel while the 10-Agent Council is running */
 const PREVIEW_LOADING_HTML = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Building…</title><style>
@@ -482,6 +498,20 @@ function DashboardExperience() {
   const recognitionRef = useRef<any>(null);
   const [splitRatio, setSplitRatio] = useState(50); // percentage for left panel
   const containerRef = useRef<HTMLDivElement>(null);
+  const councilResumeRef = useRef<CouncilResumeClient | null>(null);
+  const councilContinueRef = useRef(false);
+  const [clarificationPrompt, setClarificationPrompt] = useState<{
+    headline: string;
+    choices: string[];
+  } | null>(null);
+
+  useEffect(() => {
+    if (messages.length === 0) {
+      councilResumeRef.current = null;
+      councilContinueRef.current = false;
+      setClarificationPrompt(null);
+    }
+  }, [messages.length]);
 
   const handleResizeDrag = useCallback((deltaX: number) => {
     if (!containerRef.current) return;
@@ -609,6 +639,12 @@ function DashboardExperience() {
         return;
       }
 
+      if (shouldOpenBuildPreviewLoading(text.trim()) && text.trim().length > 220) {
+        councilResumeRef.current = null;
+        councilContinueRef.current = false;
+        setClarificationPrompt(null);
+      }
+
       const userMsg: Message = {
         id: `u_${Date.now()}`,
         role: "user",
@@ -626,6 +662,7 @@ function DashboardExperience() {
       setInput("");
       setPendingFiles([]);
       pendingFilesRef.current = [];
+      setClarificationPrompt(null);
       setStreaming(true);
 
       if (shouldOpenBuildPreviewLoading(text.trim())) {
@@ -661,13 +698,19 @@ function DashboardExperience() {
       resetSafetyTimer();
 
       try {
+        const bodyPayload: Record<string, unknown> = {
+          messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
+          attachedFiles: attach.map((f) => ({ name: f.name, content: f.content })),
+        };
+        if (councilContinueRef.current && councilResumeRef.current) {
+          bodyPayload.councilResume = councilResumeRef.current;
+          bodyPayload.councilContinue = true;
+        }
+
         const res = await fetch("/api/agent/stream", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
-            attachedFiles: attach.map((f) => ({ name: f.name, content: f.content })),
-          }),
+          body: JSON.stringify(bodyPayload),
         });
 
         if (!res.ok) {
@@ -756,6 +799,9 @@ function DashboardExperience() {
                   bundleHtml?: string;
                 };
                 if (payload.type !== "sandbox-bundle-ready") continue;
+                councilResumeRef.current = null;
+                councilContinueRef.current = false;
+                setClarificationPrompt(null);
                 preferSandboxPreviewRef.current = true;
                 if (Array.isArray(payload.paths)) setSandboxPaths(payload.paths);
                 setPreviewBuildStatus("Loading multi-file sandbox preview…");
@@ -857,6 +903,46 @@ function DashboardExperience() {
               } catch {
                 /* ignore */
               }
+            } else if (line.startsWith("7:")) {
+              try {
+                const p = JSON.parse(line.slice(2)) as {
+                  type?: string;
+                  headline?: string;
+                  choices?: string[];
+                };
+                if (p.type === "clarification" && Array.isArray(p.choices) && p.choices.length >= 2) {
+                  setClarificationPrompt({
+                    headline: typeof p.headline === "string" ? p.headline : "Choose one",
+                    choices: p.choices.filter((c) => typeof c === "string" && c.trim()).slice(0, 4),
+                  });
+                }
+              } catch {
+                /* ignore */
+              }
+            } else if (line.startsWith("8:")) {
+              try {
+                const p = JSON.parse(line.slice(2)) as {
+                  type?: string;
+                  task?: string;
+                  accumulatedContext?: string;
+                  contributions?: CouncilResumeClient["contributions"];
+                };
+                if (
+                  p.type === "council_resume" &&
+                  typeof p.task === "string" &&
+                  typeof p.accumulatedContext === "string" &&
+                  Array.isArray(p.contributions)
+                ) {
+                  councilResumeRef.current = {
+                    task: p.task,
+                    accumulatedContext: p.accumulatedContext,
+                    contributions: p.contributions,
+                  };
+                  councilContinueRef.current = true;
+                }
+              } catch {
+                /* ignore */
+              }
             }
           }
         }
@@ -878,6 +964,23 @@ function DashboardExperience() {
     },
     [messages, session?.access_token, streaming, setMessages]
   );
+
+  const onClarificationPick = useCallback(
+    (label: string) => {
+      void sendMessage(label);
+    },
+    [sendMessage]
+  );
+
+  const onClarificationSomethingElse = useCallback(() => {
+    focusDashboardChatInput();
+  }, []);
+
+  const onDismissClarification = useCallback(() => {
+    councilResumeRef.current = null;
+    councilContinueRef.current = false;
+    setClarificationPrompt(null);
+  }, []);
 
   const handlePromptSend = useCallback(
     async (text: string, boxFiles?: File[]) => {
@@ -1015,6 +1118,16 @@ function DashboardExperience() {
                     ))}
                   </div>
                 )}
+                {clarificationPrompt && (
+                  <ClarificationOptionBar
+                    headline={clarificationPrompt.headline}
+                    choices={clarificationPrompt.choices}
+                    disabled={streaming}
+                    onPickChoice={onClarificationPick}
+                    onPickSomethingElse={onClarificationSomethingElse}
+                    onDismiss={onDismissClarification}
+                  />
+                )}
                 <DashboardAiPrompt
                   value={input}
                   onChange={setInput}
@@ -1101,6 +1214,16 @@ function DashboardExperience() {
                       />
                     ))}
                   </div>
+                )}
+                {clarificationPrompt && (
+                  <ClarificationOptionBar
+                    headline={clarificationPrompt.headline}
+                    choices={clarificationPrompt.choices}
+                    disabled={streaming}
+                    onPickChoice={onClarificationPick}
+                    onPickSomethingElse={onClarificationSomethingElse}
+                    onDismiss={onDismissClarification}
+                  />
                 )}
                 <DashboardAiPrompt
                   value={input}

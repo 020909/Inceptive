@@ -43,6 +43,8 @@ import { EDITORIAL_BASE_CSS, mergeCssWithEditorialBase } from "@/lib/sandbox/edi
 import { runVerifyRepairLoop } from "@/lib/sandbox/site-verify-repair";
 import { resolveCouncilOpenRouterKey } from "@/lib/agent/council-openrouter-key";
 import { startCouncilHeartbeat } from "@/lib/agent/council-heartbeat";
+import { parseCouncilResumePayload } from "@/lib/agent/council";
+import { defaultAfterPlannerClarification } from "@/lib/agent/council-clarification";
 
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
@@ -338,7 +340,13 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
-    const { messages, systemOverride, attachedFiles } = await req.json();
+    const {
+      messages,
+      systemOverride,
+      attachedFiles,
+      councilResume: councilResumeBody,
+      councilContinue,
+    } = await req.json();
     console.log(`[agent.stream][${requestId}] start`, {
       user_id,
       messages: Array.isArray(messages) ? messages.length : 0,
@@ -584,13 +592,23 @@ The chat interface will automatically render this as an interactive chart. Prefe
       }
     }
 
-    // ── FORCE COUNCIL FOR WEBSITE BUILDS ──
-    // Prevent the model from returning only a single HTML fence without running the Council pipeline.
-    // This also streams agent activity to the dashboard timeline and bundles multi-file previews in-memory.
+    // ── FORCE COUNCIL FOR WEBSITE BUILDS (chunked: planner → clarify → resume under Vercel maxDuration) ──
     const lastUserContentForBuild =
       [...finalHistory].reverse().find((m: any) => m.role === "user")?.content || lastUserMessage;
+    const taskEchoForBuild =
+      typeof lastUserContentForBuild === "string"
+        ? lastUserContentForBuild
+        : String(lastUserContentForBuild || "");
+    const bridgingUserRaw = [...finalHistory].reverse().find((m: any) => m.role === "user")?.content;
+    const bridgingNote =
+      typeof bridgingUserRaw === "string"
+        ? bridgingUserRaw.trim().slice(0, 12_000)
+        : String(bridgingUserRaw ?? "").slice(0, 12_000);
+    const resumeState = parseCouncilResumePayload(councilResumeBody);
+    const councilBuildContinue = councilContinue === true && resumeState !== null;
+    const councilBuildBrief = councilBuildContinue && resumeState ? resumeState.task : taskEchoForBuild;
 
-    if (isWebsiteBuildTask(lastUserContentForBuild)) {
+    if (councilBuildContinue || isWebsiteBuildTask(taskEchoForBuild)) {
       const encoder = new TextEncoder();
       const stream = new ReadableStream({
         async start(controller) {
@@ -628,52 +646,96 @@ The chat interface will automatically render this as an interactive chart. Prefe
             const { runCouncil } = await import("@/lib/agent/council");
 
             enqueue(`5:${JSON.stringify({ type: "preview", state: "building", source: "council" })}\n`);
-            enqueue(
-              `0:${JSON.stringify(
-                "Council build started — specialists run in sequence; a single step (especially coding) can take many minutes on free models. Watch the timeline below; this chat updates when the build finishes."
-              )}\n`
-            );
+            if (!councilBuildContinue) {
+              enqueue(
+                `0:${JSON.stringify(
+                  "Council build — step 1 of 2: running the Planner first. You’ll pick theme preferences next; then the rest of the Council runs in a fresh step (fits Vercel time limits)."
+                )}\n`
+              );
+            }
+
+            const onCouncilAgentEvent = (event: any) => {
+              const status = event.status;
+              const logEntry = {
+                id: `council-${event.agentRole}-${Date.now()}`,
+                action: `${event.agentName}: ${status === "thinking" ? "analyzing..." : status}`,
+                status: status === "done" ? "done" : status === "error" ? "error" : "running",
+                icon: "🧠",
+                agent_mode: "council",
+                details: {
+                  agentRole: event.agentRole,
+                  agentName: event.agentName,
+                  agentStatus: status,
+                  phase: event.phase,
+                  agentOutput: event.output || "",
+                },
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              };
+              enqueue(`4:${JSON.stringify(logEntry)}\n`);
+              const label = councilPhaseLabel(event.agentRole, event.agentName, event.status);
+              enqueue(
+                `5:${JSON.stringify({
+                  type: "preview",
+                  state: "building",
+                  label,
+                  agentRole: event.agentRole,
+                  agentStatus: event.status,
+                  source: "council",
+                })}\n`
+              );
+            };
 
             const stopHeartbeat = startCouncilHeartbeat(enqueue);
             let councilResult;
             try {
-              councilResult = await runCouncil({
-              task: lastUserContentForBuild,
-              openrouterKey: councilOpenRouterKey,
-              styleMemory,
-              onAgentEvent: (event: any) => {
-                const status = event.status;
-                const logEntry = {
-                  id: `council-${event.agentRole}-${Date.now()}`,
-                  action: `${event.agentName}: ${status === "thinking" ? "analyzing..." : status}`,
-                  status: status === "done" ? "done" : status === "error" ? "error" : "running",
-                  icon: "🧠",
-                  agent_mode: "council",
-                  details: {
-                    agentRole: event.agentRole,
-                    agentName: event.agentName,
-                    agentStatus: status,
-                    phase: event.phase,
-                    agentOutput: event.output || "",
-                  },
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                };
-                enqueue(`4:${JSON.stringify(logEntry)}\n`);
-
-                const label = councilPhaseLabel(event.agentRole, event.agentName, event.status);
+              if (councilBuildContinue && resumeState) {
                 enqueue(
-                  `5:${JSON.stringify({
-                    type: "preview",
-                    state: "building",
-                    label,
-                    agentRole: event.agentRole,
-                    agentStatus: event.status,
-                    source: "council",
+                  `0:${JSON.stringify(
+                    "Resuming Council with your answer — UX, Architect, Coder, and the rest run in this step."
+                  )}\n`
+                );
+                councilResult = await runCouncil({
+                  task: resumeState.task,
+                  openrouterKey: councilOpenRouterKey,
+                  styleMemory,
+                  resume: resumeState,
+                  userBridgingNote: bridgingNote,
+                  onAgentEvent: onCouncilAgentEvent,
+                });
+              } else {
+                councilResult = await runCouncil({
+                  task: taskEchoForBuild,
+                  openrouterKey: councilOpenRouterKey,
+                  styleMemory,
+                  stopAfterPlanner: true,
+                  onAgentEvent: onCouncilAgentEvent,
+                });
+
+                const clar = defaultAfterPlannerClarification();
+                enqueue(
+                  `0:${JSON.stringify(
+                    "Planner finished. Pick a theme below (or **Something else** to type your own). The Council continues automatically when you answer."
+                  )}\n`
+                );
+                enqueue(
+                  `7:${JSON.stringify({
+                    type: "clarification",
+                    headline: clar.headline,
+                    choices: clar.choices,
                   })}\n`
                 );
-              },
-            });
+                enqueue(
+                  `8:${JSON.stringify({
+                    type: "council_resume",
+                    task: taskEchoForBuild,
+                    accumulatedContext: councilResult.accumulatedContextForResume ?? "",
+                    contributions: councilResult.contributions,
+                  })}\n`
+                );
+                controller.close();
+                return;
+              }
             } finally {
               stopHeartbeat();
             }
@@ -696,7 +758,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
                 })}\n`
               );
               const r1 = await refineSynthesisToMultiFileDeliverables(
-                lastUserContentForBuild,
+                councilBuildBrief,
                 finalSynthesis + "\n\n" + contributionSummary.slice(0, 6000),
                 councilOpenRouterKey,
                 1
@@ -707,7 +769,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
                 parsedDeliverables = p1;
               } else {
                 const r2 = await refineSynthesisToMultiFileDeliverables(
-                  lastUserContentForBuild,
+                  councilBuildBrief,
                   finalSynthesis + "\n\n" + r1.slice(0, 12_000),
                   councilOpenRouterKey,
                   2
@@ -735,7 +797,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
 
             parsedDeliverables = applyEditorialCssToDeliverables(parsedDeliverables);
             parsedDeliverables = await runVerifyRepairLoop(
-              lastUserContentForBuild,
+              councilBuildBrief,
               parsedDeliverables,
               councilOpenRouterKey,
               enqueue

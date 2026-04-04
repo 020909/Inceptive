@@ -95,12 +95,49 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
+/** Saved after a checkpoint (e.g. planner done); next invocation runs phase 2+. */
+export type CouncilResumeState = {
+  task: string;
+  accumulatedContext: string;
+  contributions: AgentContribution[];
+};
+
+/** Validate client-supplied resume JSON (best-effort; same user session only). */
+export function parseCouncilResumePayload(x: unknown): CouncilResumeState | null {
+  if (!x || typeof x !== "object") return null;
+  const o = x as Record<string, unknown>;
+  if (typeof o.task !== "string" || o.task.trim().length < 3) return null;
+  if (typeof o.accumulatedContext !== "string") return null;
+  if (!Array.isArray(o.contributions) || o.contributions.length === 0) return null;
+  const contributions: AgentContribution[] = [];
+  for (const raw of o.contributions) {
+    if (!raw || typeof raw !== "object") return null;
+    const c = raw as Record<string, unknown>;
+    if (typeof c.role !== "string" || typeof c.name !== "string") return null;
+    if (typeof c.status !== "string" || typeof c.output !== "string") return null;
+    contributions.push({
+      role: c.role as AgentContribution["role"],
+      name: c.name,
+      status: c.status as AgentContribution["status"],
+      output: c.output,
+      durationMs: typeof c.durationMs === "number" ? c.durationMs : 0,
+    });
+  }
+  return { task: o.task.trim(), accumulatedContext: o.accumulatedContext, contributions };
+}
+
 export interface CouncilRunOptions {
   task: string;
   openrouterKey: string;
   onAgentEvent?: (event: CouncilStreamEvent) => void;
   context?: string;
   styleMemory?: Record<string, string>;
+  /** Run phase 1 only, then return (multi-request / Vercel timeout workaround). */
+  stopAfterPlanner?: boolean;
+  /** Continue from a prior checkpoint; skips phase 1. */
+  resume?: CouncilResumeState;
+  /** When resuming, last user message (theme / preferences) injected before phase 2. */
+  userBridgingNote?: string;
 }
 
 export interface CouncilResult {
@@ -109,6 +146,10 @@ export interface CouncilResult {
   totalDurationMs: number;
   agentsUsed: string[];
   trustScore: number;
+  /** Present when `stopAfterPlanner` ended the run early. */
+  checkpoint?: "after_planner";
+  /** Internal context string to send back as `council_resume` (must match next `resume.accumulatedContext`). */
+  accumulatedContextForResume?: string;
 }
 
 function calculateTrustScore(contributions: AgentContribution[]): number {
@@ -268,7 +309,8 @@ async function runAgent(
 }
 
 export async function runCouncil(options: CouncilRunOptions): Promise<CouncilResult> {
-  const { task, openrouterKey, onAgentEvent, context, styleMemory } = options;
+  const { task, openrouterKey, onAgentEvent, context, styleMemory, stopAfterPlanner, resume, userBridgingNote } =
+    options;
   const totalStart = Date.now();
   const styleContext = buildStyleContext(styleMemory || {});
 
@@ -276,17 +318,38 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
   const contributions: AgentContribution[] = [];
   let accumulatedContext = "";
 
-  if (context) {
-    accumulatedContext = `\n\n## Project Context\n${context}`;
-  }
+  if (resume) {
+    accumulatedContext = resume.accumulatedContext;
+    contributions.push(...resume.contributions.map((c) => ({ ...c })));
+    const note = String(userBridgingNote || "").trim();
+    if (note) {
+      accumulatedContext += `\n\n## User preferences (before design & code)\n${note}`;
+    }
+  } else {
+    if (context) {
+      accumulatedContext = `\n\n## Project Context\n${context}`;
+    }
 
-  const phase1Agents = selectedAgents.filter((a) => a.phase === 1);
-  for (const agent of phase1Agents) {
-    const prompt = `## Task\n${task}${accumulatedContext}`;
-    const result = await runAgent(agent, prompt, openrouterKey, onAgentEvent);
-    contributions.push(result);
-    if (result.status === "done") {
-      accumulatedContext += `\n\n## ${agent.name} Output\n${result.output}`;
+    const phase1Agents = selectedAgents.filter((a) => a.phase === 1);
+    for (const agent of phase1Agents) {
+      const prompt = `## Task\n${task}${accumulatedContext}`;
+      const result = await runAgent(agent, prompt, openrouterKey, onAgentEvent);
+      contributions.push(result);
+      if (result.status === "done") {
+        accumulatedContext += `\n\n## ${agent.name} Output\n${result.output}`;
+      }
+    }
+
+    if (stopAfterPlanner) {
+      return {
+        contributions,
+        synthesis: "",
+        totalDurationMs: Date.now() - totalStart,
+        agentsUsed: selectedAgents.map((a) => a.name),
+        trustScore: calculateTrustScore(contributions),
+        checkpoint: "after_planner",
+        accumulatedContextForResume: accumulatedContext,
+      };
     }
   }
 

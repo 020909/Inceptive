@@ -181,6 +181,7 @@ export function DashboardAiPrompt({
         )}
 
         <textarea
+          id="inceptive-dashboard-prompt"
           ref={textareaRef}
           rows={1}
           value={value}
