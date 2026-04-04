@@ -2,7 +2,7 @@
  * Council of 10 Specialized Agents — Type Definitions
  *
  * Each agent has a unique role, persona, and system prompt.
- * OpenRouter models are chosen per role in `council-openrouter-router.ts` (Qwen3.6 Plus, Gemma 3, etc.).
+ * Models are chosen per role in `council-model-router.ts` (Gemma 4 31B via Gemini API + OpenRouter fallbacks).
  */
 
 export type AgentRole =

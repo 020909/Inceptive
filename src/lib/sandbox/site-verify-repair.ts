@@ -1,12 +1,14 @@
 import path from "path";
 import { generateText } from "ai";
-import { buildModel } from "@/lib/ai-model";
 import { parseCouncilSandboxFiles } from "@/lib/agent/parse-council-deliverables";
+import {
+  buildCouncilRefineModel,
+  hasCouncilRefineKey,
+  type CouncilRefineKeys,
+} from "@/lib/agent/council-refine-model";
 import { applyDeterministicSiteFixes } from "@/lib/sandbox/site-deterministic-fixes";
 
 export type SiteDeliverable = { relativePath: string; content: string };
-
-const REFINE_MODEL = process.env.COUNCIL_REFINE_MODEL?.trim() || "google/gemini-2.0-flash-001";
 
 function normRel(rel: string): string | null {
   const t = (rel || "").trim().replace(/^[\\/]+/, "");
@@ -104,11 +106,11 @@ export async function repairSiteDeliverables(
   brief: string,
   deliverables: SiteDeliverable[],
   issues: string[],
-  openrouterKey: string
+  keys: CouncilRefineKeys
 ): Promise<SiteDeliverable[] | null> {
-  if (!issues.length || !openrouterKey.trim()) return null;
+  if (!issues.length || !hasCouncilRefineKey(keys)) return null;
 
-  const model = buildModel(openrouterKey, "openrouter", REFINE_MODEL);
+  const model = buildCouncilRefineModel(keys);
   const fileSummary = deliverables
     .map((f) => {
       const r = normRel(f.relativePath) || f.relativePath;
@@ -144,14 +146,14 @@ const MAX_VERIFY_REPAIR_ROUNDS = 2;
 export async function runVerifyRepairLoop(
   brief: string,
   deliverables: SiteDeliverable[],
-  openrouterKey: string,
+  keys: CouncilRefineKeys,
   enqueue?: (line: string) => void
 ): Promise<SiteDeliverable[]> {
   let current = applyDeterministicSiteFixes(deliverables, brief) as SiteDeliverable[];
 
   for (let round = 0; round < MAX_VERIFY_REPAIR_ROUNDS; round++) {
     const v = verifyStaticSiteDeliverables(current);
-    if (v.ok || !openrouterKey.trim()) return current;
+    if (v.ok || !hasCouncilRefineKey(keys)) return current;
 
     enqueue?.(
       `5:${JSON.stringify({
@@ -165,7 +167,7 @@ export async function runVerifyRepairLoop(
       })}\n`
     );
 
-    const repaired = await repairSiteDeliverables(brief, current, v.issues, openrouterKey);
+    const repaired = await repairSiteDeliverables(brief, current, v.issues, keys);
     if (!repaired || repaired.length < 2) return current;
 
     current = applyDeterministicSiteFixes(repaired, brief) as SiteDeliverable[];

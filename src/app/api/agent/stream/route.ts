@@ -41,7 +41,7 @@ import { readUserSandboxFile, writeUserSandboxFilesBatch } from "@/lib/sandbox/u
 import { generateNextjsScaffoldFiles } from "@/lib/sandbox/nextjs-scaffold";
 import { EDITORIAL_BASE_CSS, mergeCssWithEditorialBase } from "@/lib/sandbox/editorial-base-css";
 import { runVerifyRepairLoop } from "@/lib/sandbox/site-verify-repair";
-import { resolveCouncilOpenRouterKey } from "@/lib/agent/council-openrouter-key";
+import { resolveCouncilGeminiKey, resolveCouncilOpenRouterKey } from "@/lib/agent/council-openrouter-key";
 import { startCouncilHeartbeat } from "@/lib/agent/council-heartbeat";
 import { parseCouncilResumePayload } from "@/lib/agent/council";
 import { defaultAfterPlannerClarification } from "@/lib/agent/council-clarification";
@@ -391,6 +391,7 @@ export async function POST(req: Request) {
     const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
     const openrouterKey = serverOpenRouterKeyFromEnv();
     const councilOpenRouterKey = resolveCouncilOpenRouterKey(openrouterKey, coreData);
+    const councilGeminiKey = resolveCouncilGeminiKey(geminiKey, coreData);
     const groqKey = process.env.GROQ_API_KEY?.trim();
     const groqModel = process.env.GROQ_CHAT_MODEL?.trim() || "llama-3.3-70b-versatile";
 
@@ -475,7 +476,7 @@ ${_cs}
 - analyzeData/generateOutline: strategy and data tools
 - generateExcel/generatePowerPoint/generatePDF/generateImage: file generation tools
 - computerUse: control a headless browser with vision
-- multiAgentDebate: the 10-Agent Council (OpenRouter only — per-role free models: Qwen3.6 Plus, Gemma 3 27B/12B, etc.). Requires OPENROUTER_KEY, OPENROUTER_API_KEY, or OPENROUTER_DEFAULT_KEY on the server.
+- multiAgentDebate: the 10-Agent Council (Gemma 4 31B via Google AI Studio when GEMINI_API_KEY/GOOGLE_AI_API_KEY is set; OpenRouter for light agents and fallbacks). Prefer both keys in production.
 - saveStylePreference: remember user's design/coding preferences across sessions
 - createProject: create a new organized project for the user
 
@@ -619,10 +620,10 @@ The chat interface will automatically render this as an interactive chart. Prefe
           };
 
           try {
-            if (!String(councilOpenRouterKey).trim()) {
+            if (!String(councilOpenRouterKey).trim() && !String(councilGeminiKey).trim()) {
               enqueue(
                 `3:${JSON.stringify(
-                  "OpenRouter key missing for Council. In Vercel, set OPENROUTER_KEY or OPENROUTER_API_KEY (or OPENROUTER_DEFAULT_KEY), redeploy, or use Settings with provider OpenRouter."
+                  "Council needs at least one key: GEMINI_API_KEY or GOOGLE_AI_API_KEY (Gemma 4 on AI Studio) and/or OPENROUTER_KEY / OPENROUTER_API_KEY (fallbacks + light agents). Or use BYOK in Settings (Google or OpenRouter)."
                 )}\n`
               );
               controller.close();
@@ -698,6 +699,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
                 councilResult = await runCouncil({
                   task: resumeState.task,
                   openrouterKey: councilOpenRouterKey,
+                  geminiKey: councilGeminiKey,
                   styleMemory,
                   resume: resumeState,
                   userBridgingNote: bridgingNote,
@@ -707,6 +709,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
                 councilResult = await runCouncil({
                   task: taskEchoForBuild,
                   openrouterKey: councilOpenRouterKey,
+                  geminiKey: councilGeminiKey,
                   styleMemory,
                   stopAfterPlanner: true,
                   onAgentEvent: onCouncilAgentEvent,
@@ -760,7 +763,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
               const r1 = await refineSynthesisToMultiFileDeliverables(
                 councilBuildBrief,
                 finalSynthesis + "\n\n" + contributionSummary.slice(0, 6000),
-                councilOpenRouterKey,
+                { openrouterKey: councilOpenRouterKey, geminiKey: councilGeminiKey },
                 1
               );
               const p1 = parseCouncilSandboxFiles(r1);
@@ -771,7 +774,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
                 const r2 = await refineSynthesisToMultiFileDeliverables(
                   councilBuildBrief,
                   finalSynthesis + "\n\n" + r1.slice(0, 12_000),
-                  councilOpenRouterKey,
+                  { openrouterKey: councilOpenRouterKey, geminiKey: councilGeminiKey },
                   2
                 );
                 const p2 = parseCouncilSandboxFiles(r2);
@@ -799,7 +802,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
             parsedDeliverables = await runVerifyRepairLoop(
               councilBuildBrief,
               parsedDeliverables,
-              councilOpenRouterKey,
+              { openrouterKey: councilOpenRouterKey, geminiKey: councilGeminiKey },
               enqueue
             );
             parsedDeliverables = applyEditorialCssToDeliverables(parsedDeliverables);
@@ -913,15 +916,15 @@ The chat interface will automatically render this as an interactive chart. Prefe
         /* ── MULTI-AGENT COUNCIL (10 Agents) ── */
         multiAgentDebate: {
           description:
-            "Runs the full 10-Agent Council Protocol on OpenRouter (per-role models: Qwen3.6 Plus, Gemma 3, etc.). Planner, Architect, UX, Coder, Critic, Tester, Docs, Visual Polish, Deployer, Orchestrator. Use for ALL complex programming, design, and document tasks.",
+            "Runs the full 10-Agent Council Protocol: Gemma 4 31B (Google AI Studio / Gemini API) for heavy coding, UI, critic, tester, orchestrator; OpenRouter for light agents and fallbacks. Planner, Architect, UX, Coder, Critic, Tester, Docs, Visual Polish, Deployer, Orchestrator. Use for ALL complex programming, design, and document tasks.",
           parameters: z.object({
             codingRequest: z.string().describe("The comprehensive task, prompt, or bug to solve. Provide full context including file contents."),
           }),
           execute: async ({ codingRequest }: { codingRequest: string }) => {
-            if (!String(councilOpenRouterKey).trim()) {
+            if (!String(councilOpenRouterKey).trim() && !String(councilGeminiKey).trim()) {
               return {
                 error:
-                  "OpenRouter key missing for Council. In Vercel, set OPENROUTER_KEY or OPENROUTER_API_KEY, redeploy, or in Settings choose provider OpenRouter.",
+                  "Council needs GEMINI_API_KEY or GOOGLE_AI_API_KEY (Gemma 4) and/or OPENROUTER_KEY / OPENROUTER_API_KEY (fallbacks). Set in Vercel env or BYOK in Settings.",
               };
             }
 
@@ -951,6 +954,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
                 councilResult = await runCouncil({
                 task: codingRequest,
                 openrouterKey: councilOpenRouterKey,
+                geminiKey: councilGeminiKey,
                 styleMemory,
                 onAgentEvent: (event) => {
                   const logEntry = {
@@ -1014,7 +1018,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
                 const r1 = await refineSynthesisToMultiFileDeliverables(
                   codingRequest,
                   finalSynthesis + "\n\n" + contributionSummary.slice(0, 6000),
-                  councilOpenRouterKey,
+                  { openrouterKey: councilOpenRouterKey, geminiKey: councilGeminiKey },
                   1
                 );
                 const p1 = parseCouncilSandboxFiles(r1);
@@ -1025,7 +1029,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
                   const r2 = await refineSynthesisToMultiFileDeliverables(
                     codingRequest,
                     finalSynthesis + "\n\n" + r1.slice(0, 12_000),
-                    councilOpenRouterKey,
+                    { openrouterKey: councilOpenRouterKey, geminiKey: councilGeminiKey },
                     2
                   );
                   const p2 = parseCouncilSandboxFiles(r2);
@@ -1054,7 +1058,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
               parsedDeliverables = await runVerifyRepairLoop(
                 codingRequest,
                 parsedDeliverables,
-                councilOpenRouterKey,
+                { openrouterKey: councilOpenRouterKey, geminiKey: councilGeminiKey },
                 streamEnqueue ?? undefined
               );
               parsedDeliverables = applyEditorialCssToDeliverables(parsedDeliverables);

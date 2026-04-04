@@ -18,6 +18,8 @@ function classify(text: string) {
 }
 
 /**
+ * 10-Agent Council per-role routing (Gemma 4 + OpenRouter): see `src/lib/agent/council-model-router.ts`.
+ *
  * Route a request to a best-fit model.
  *
  * Smart routing:
@@ -53,7 +55,7 @@ export function routeModel(params: {
     return {
       provider: "debate",
       model: "council-openrouter",
-      reason: "Code/engineering → 10-Agent Council (OpenRouter, per-role models)",
+      reason: "Code/engineering → 10-Agent Council (Gemma 4 on Gemini API + OpenRouter fallbacks)",
     };
   }
   if (wantsResearch) {
@@ -69,3 +71,10 @@ export function routeModel(params: {
 
   return { provider: "openrouter", model: "google/gemini-2.0-flash-001", reason: "Default" };
 }
+
+export {
+  getCouncilModelChain,
+  councilChainIsRunnable,
+  type CouncilModelStep,
+  type CouncilModelProvider,
+} from "@/lib/agent/council-model-router";

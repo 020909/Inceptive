@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { buildModel } from "@/lib/ai-model";
+import { buildCouncilRefineModel, type CouncilRefineKeys } from "@/lib/agent/council-refine-model";
 
 /** Tasks that deserve a real multi-file static site, not one generic HTML blob */
 export function isWebsiteBuildTask(text: string): boolean {
@@ -17,8 +17,6 @@ export function isWebsiteBuildTask(text: string): boolean {
   return /\b(build|create|design)\b/.test(t) && /\b(html|css|ui|frontend|page|site)\b/.test(t);
 }
 
-const REFINE_MODEL = process.env.COUNCIL_REFINE_MODEL?.trim() || "google/gemini-2.0-flash-001";
-
 /**
  * Quality pass: turn thin single-file council output into a multi-file editorial site.
  * Two passes — second is stricter if the first still collapses to one file in the parser.
@@ -26,10 +24,10 @@ const REFINE_MODEL = process.env.COUNCIL_REFINE_MODEL?.trim() || "google/gemini-
 export async function refineSynthesisToMultiFileDeliverables(
   codingRequest: string,
   synthesis: string,
-  openrouterKey: string,
+  keys: CouncilRefineKeys,
   pass: 1 | 2
 ): Promise<string> {
-  const model = buildModel(openrouterKey, "openrouter", REFINE_MODEL);
+  const model = buildCouncilRefineModel(keys);
   const strict =
     pass === 2
       ? `You MUST output at least THREE separate fenced code blocks:

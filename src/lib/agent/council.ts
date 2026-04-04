@@ -1,13 +1,13 @@
 /**
- * Council Engine — 10-Agent orchestration (OpenRouter only; per-role models in council-openrouter-router).
+ * Council Engine — 10-Agent orchestration (Gemma 4 on Gemini API + OpenRouter fallbacks; see council-model-router).
  */
 
 import { generateText } from "ai";
 import { buildModel } from "@/lib/ai-model";
 import {
-  getOpenRouterModelForCouncilRole,
-  openRouterModelFallbackChain,
-} from "@/lib/agent/council-openrouter-router";
+  councilChainIsRunnable,
+  getCouncilModelChain,
+} from "@/lib/agent/council-model-router";
 import type {
   AgentContribution,
   AgentRole,
@@ -126,9 +126,16 @@ export function parseCouncilResumePayload(x: unknown): CouncilResumeState | null
   return { task: o.task.trim(), accumulatedContext: o.accumulatedContext, contributions };
 }
 
+export type CouncilProviderKeys = {
+  openrouterKey: string;
+  geminiKey: string;
+};
+
 export interface CouncilRunOptions {
   task: string;
   openrouterKey: string;
+  /** Google AI Studio / Gemini API — enables Gemma 4 31B for heavy agents */
+  geminiKey?: string;
   onAgentEvent?: (event: CouncilStreamEvent) => void;
   context?: string;
   styleMemory?: Record<string, string>;
@@ -186,7 +193,7 @@ function buildStyleContext(memory: Record<string, string>): string {
 async function runAgent(
   agent: CouncilAgent,
   prompt: string,
-  openrouterKey: string,
+  keys: CouncilProviderKeys,
   onEvent?: (event: CouncilStreamEvent) => void,
   styleContext?: string
 ): Promise<AgentContribution> {
@@ -207,10 +214,13 @@ async function runAgent(
     phase: agent.phase,
   });
 
-  const orKey = String(openrouterKey || "").trim();
-  if (!orKey) {
+  const orKey = String(keys.openrouterKey || "").trim();
+  const geminiKey = String(keys.geminiKey || "").trim();
+  const chain = getCouncilModelChain(agent.role);
+  if (!councilChainIsRunnable(chain, orKey, geminiKey)) {
     contribution.status = "error";
-    contribution.output = "Error: OpenRouter API key missing (set OPENROUTER_KEY or OPENROUTER_API_KEY on the server).";
+    contribution.output =
+      "Error: Council needs at least one of: OpenRouter key (OPENROUTER_KEY / OPENROUTER_API_KEY) and/or Google AI Studio key (GEMINI_API_KEY / GOOGLE_AI_API_KEY) for Gemma 4. You can also set BYOK in Settings (OpenRouter or Google).";
     contribution.durationMs = Date.now() - start;
     onEvent?.({
       type: "council",
@@ -233,8 +243,6 @@ async function runAgent(
   const maxOutputTokens =
     agent.role === "orchestrator" ? 12_000 : agent.role === "coder" ? 6_000 : 5_000;
 
-  const { label } = getOpenRouterModelForCouncilRole(agent.role);
-  const chain = openRouterModelFallbackChain(agent.role);
   const promptLimit = maxPromptCharsForRole(agent.role);
   const promptForModel = truncateCouncilPrompt(prompt, promptLimit);
   if (promptForModel.length < prompt.length) {
@@ -254,8 +262,15 @@ async function runAgent(
 
   let lastErr: unknown = null;
 
-  for (const modelId of chain) {
-    const model = buildModel(orKey, "openrouter", modelId);
+  for (const step of chain) {
+    const keyForStep = step.provider === "gemini" ? geminiKey : orKey;
+    if (!String(keyForStep).trim()) continue;
+
+    const model = buildModel(
+      keyForStep.trim(),
+      step.provider === "gemini" ? "gemini" : "openrouter",
+      step.modelId
+    );
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
         const result = await runOnce(model);
@@ -278,7 +293,7 @@ async function runAgent(
           agentName: agent.name,
           status: "done",
           phase: agent.phase,
-          output: `${label} [${modelId}] ${contribution.output.slice(0, 280)}`,
+          output: `${step.label} [${step.provider}:${step.modelId}] ${contribution.output.slice(0, 280)}`,
         });
         return contribution;
       } catch (e) {
@@ -309,8 +324,21 @@ async function runAgent(
 }
 
 export async function runCouncil(options: CouncilRunOptions): Promise<CouncilResult> {
-  const { task, openrouterKey, onAgentEvent, context, styleMemory, stopAfterPlanner, resume, userBridgingNote } =
-    options;
+  const {
+    task,
+    openrouterKey,
+    geminiKey: geminiKeyOpt,
+    onAgentEvent,
+    context,
+    styleMemory,
+    stopAfterPlanner,
+    resume,
+    userBridgingNote,
+  } = options;
+  const keys: CouncilProviderKeys = {
+    openrouterKey,
+    geminiKey: String(geminiKeyOpt || "").trim(),
+  };
   const totalStart = Date.now();
   const styleContext = buildStyleContext(styleMemory || {});
 
@@ -333,7 +361,7 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
     const phase1Agents = selectedAgents.filter((a) => a.phase === 1);
     for (const agent of phase1Agents) {
       const prompt = `## Task\n${task}${accumulatedContext}`;
-      const result = await runAgent(agent, prompt, openrouterKey, onAgentEvent);
+      const result = await runAgent(agent, prompt, keys, onAgentEvent);
       contributions.push(result);
       if (result.status === "done") {
         accumulatedContext += `\n\n## ${agent.name} Output\n${result.output}`;
@@ -365,7 +393,7 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
     const phase2ParallelResults = await mapWithConcurrency(
       phase2Parallel,
       parallelConcurrency,
-      (agent) => runAgent(agent, phase2ParallelPrompt, openrouterKey, onAgentEvent, styleContext)
+      (agent) => runAgent(agent, phase2ParallelPrompt, keys, onAgentEvent, styleContext)
     );
     for (const result of phase2ParallelResults) {
       contributions.push(result);
@@ -378,7 +406,7 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
   if (phase2After.length > 0) {
     const phase2AfterPrompt = `## Task\n${task}${accumulatedContext}\n\nProvide your specialized analysis and output.`;
     const phase2AfterResults = await mapWithConcurrency(phase2After, 1, (agent) =>
-      runAgent(agent, phase2AfterPrompt, openrouterKey, onAgentEvent, styleContext)
+      runAgent(agent, phase2AfterPrompt, keys, onAgentEvent, styleContext)
     );
     for (const result of phase2AfterResults) {
       contributions.push(result);
@@ -392,7 +420,7 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
   if (phase3Agents.length > 0) {
     const phase3Prompt = `## Original Task\n${task}\n\n## All Agent Outputs So Far\n${accumulatedContext}\n\nReview the above outputs and provide your specialized analysis.`;
     const phase3Results = await mapWithConcurrency(phase3Agents, 1, (agent) =>
-      runAgent(agent, phase3Prompt, openrouterKey, onAgentEvent, styleContext)
+      runAgent(agent, phase3Prompt, keys, onAgentEvent, styleContext)
     );
     for (const result of phase3Results) {
       contributions.push(result);
@@ -406,7 +434,7 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
   let synthesis = "";
   if (orchestrator) {
     const synthPrompt = `## Original Task\n${task}\n\n## Complete Council Deliberation\n${accumulatedContext}\n\nSynthesize the ultimate, production-ready output.`;
-    const synthResult = await runAgent(orchestrator, synthPrompt, openrouterKey, onAgentEvent);
+    const synthResult = await runAgent(orchestrator, synthPrompt, keys, onAgentEvent);
     contributions.push(synthResult);
     synthesis = synthResult.output;
   }
