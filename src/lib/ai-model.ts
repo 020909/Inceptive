@@ -56,15 +56,6 @@ export function buildModel(apiKey: string, provider: string, modelName?: string)
     case "google":
       return createGoogleGenerativeAI({ apiKey })(modelName || "gemini-2.0-flash");
 
-    // ── NVIDIA NIM ─────────────────────────────────────────────────────
-    case "nvidia": {
-      const client = createOpenAI({
-        apiKey,
-        baseURL: "https://integrate.api.nvidia.com/v1",
-      });
-      return client.chat(modelName || "nvidia/nemotron-4-340b-instruct");
-    }
-
     // ── 10-Agent Council Orchestrator ────────────────────────────────
     case "debate": {
       const client = createOpenAI({

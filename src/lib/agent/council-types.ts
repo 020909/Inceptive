@@ -2,13 +2,8 @@
  * Council of 10 Specialized Agents — Type Definitions
  *
  * Each agent has a unique role, persona, and system prompt.
- * Models are resolved per-agent via `councilProvider`: Qwen / Minimax / Gemini on OpenRouter,
- * plus NVIDIA NIM for code, design polish, architecture, and synthesis (see council-model-registry).
+ * OpenRouter models are chosen per role in `council-openrouter-router.ts` (Qwen3.6 Plus, Gemma 3, etc.).
  */
-
-import type { CouncilProviderKind } from "./council-model-registry";
-
-export type { CouncilProviderKind };
 
 export type AgentRole =
   | "planner"
@@ -29,8 +24,6 @@ export interface CouncilAgent {
   name: string;
   shortName: string;
   description: string;
-  /** Routed to OpenRouter (Qwen / Minimax / Gemini) or NVIDIA NIM — see council-model-registry */
-  councilProvider: CouncilProviderKind;
   systemPrompt: string;
   /** Which phase this agent participates in (agents in same phase run in parallel) */
   phase: 1 | 2 | 3 | 4;
@@ -80,7 +73,6 @@ export const COUNCIL_AGENTS: CouncilAgent[] = [
     name: "Planner Agent",
     shortName: "Planner",
     description: "Analyzes the task and creates a step-by-step execution plan",
-    councilProvider: "openrouter-qwen",
     phase: 1,
     systemPrompt: `You are the Planner Agent — an expert project manager and technical strategist.
 Your job: analyze the user's request and produce a concise, actionable execution plan.
@@ -99,7 +91,6 @@ Be concise. No code. Just the plan.`,
     name: "UX Designer Agent",
     shortName: "UX",
     description: "Focuses on user experience, accessibility, and interaction design",
-    councilProvider: "openrouter-minimax",
     phase: 2,
     systemPrompt: `You are the UX Designer Agent — an expert in user experience, interaction design, and accessibility.
 Your job: review the coding task from a UX perspective and provide design recommendations.
@@ -118,7 +109,6 @@ Output: A brief design review with specific, implementable suggestions. Referenc
     name: "Architect Agent",
     shortName: "Architect",
     description: "Designs system structure and chooses optimal patterns",
-    councilProvider: "nvidia-default",
     phase: 2,
     systemPrompt: `You are the Architect Agent — a senior software architect specializing in Next.js, React, and TypeScript.
 Your job: design the optimal file structure, component hierarchy, and data flow for this task.
@@ -137,7 +127,6 @@ Be specific. Use TypeScript types. Keep it production-grade.`,
     name: "Coder Agent",
     shortName: "Coder",
     description: "Writes production-ready, bug-free code",
-    councilProvider: "nvidia-code",
     phase: 2,
     systemPrompt: `You are the Coder Agent — an elite full-stack engineer. You write flawless, production-ready code.
 
@@ -159,7 +148,6 @@ Your output should be copy-paste ready production code.`,
     name: "Critic Agent",
     shortName: "Critic",
     description: "Reviews code for bugs, security issues, and improvements",
-    councilProvider: "openrouter-minimax",
     phase: 3,
     systemPrompt: `You are the Critic Agent — a ruthless code reviewer who catches every bug, security flaw, and anti-pattern.
 
@@ -177,7 +165,6 @@ For each issue, provide the FIX (not just the problem). Be specific with line-le
     name: "Tester Agent",
     shortName: "Tester",
     description: "Identifies test cases and validates correctness",
-    councilProvider: "openrouter-qwen",
     phase: 3,
     systemPrompt: `You are the Tester/QA Agent — an expert in software testing and quality assurance.
 
@@ -194,7 +181,6 @@ Be practical. Focus on the most impactful tests.`,
     name: "Document Specialist",
     shortName: "Docs",
     description: "Generates documentation, PPTs, Excel, and PDFs",
-    councilProvider: "openrouter-gemini",
     phase: 2,
     systemPrompt: `You are the Document Specialist Agent — expert in generating professional documents.
 
@@ -212,7 +198,6 @@ Output the document content in a structured format ready for generation tools.`,
     name: "Visual Polish Agent",
     shortName: "Polish",
     description: "Refines UI details, animations, and visual quality",
-    councilProvider: "nvidia-design",
     phase: 3,
     systemPrompt: `You are the Visual Polish Agent — a UI perfectionist focused on micro-interactions and visual refinement.
 
@@ -230,7 +215,6 @@ Output specific CSS/Tailwind changes. Use the existing CSS variable system (--bg
     name: "Deployer Agent",
     shortName: "Deploy",
     description: "Handles deployment considerations and environment setup",
-    councilProvider: "openrouter-qwen",
     phase: 3,
     systemPrompt: `You are the Deployer Agent — expert in Vercel, Next.js deployment, and production readiness.
 
@@ -249,7 +233,6 @@ Output a brief deployment readiness checklist.`,
     name: "Orchestrator Agent",
     shortName: "Synth",
     description: "Synthesizes all agent outputs into the final, perfected result",
-    councilProvider: "nvidia-default",
     phase: 4,
     systemPrompt: `You are the Orchestrator — the final synthesizer of the Inceptive Council.
 

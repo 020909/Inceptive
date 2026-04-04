@@ -10,7 +10,6 @@ import { streamText } from "ai";
 import { buildModel } from "@/lib/ai-model";
 import { serverOpenRouterKeyFromEnv } from "@/lib/ai/openrouter-env";
 import { routeModel } from "@/lib/ai/model-router";
-import { nvidiaModelForTask } from "@/lib/ai/nvidia-model-router";
 import { checkCredits, deductCredits, getUserPlan } from "@/lib/credits";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 import { geocodePlaceQuery } from "@/lib/data/geocode";
@@ -380,7 +379,6 @@ export async function POST(req: Request) {
       freeOnly: true,
     });
 
-    const nvidiaKey = process.env.NVIDIA_NIM_API_KEY || "";
     const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
     const openrouterKey = serverOpenRouterKeyFromEnv();
     const councilOpenRouterKey = resolveCouncilOpenRouterKey(openrouterKey, coreData);
@@ -391,10 +389,6 @@ export async function POST(req: Request) {
       // Orchestrator for debate requires extremely stable tool calling (Gemini 2.0 Flash)
       const key = coreData?.api_key_encrypted || openrouterKey || geminiKey;
       model = buildModel(key, "debate", routed.model);
-    } else if (routed.provider === "nvidia") {
-      const key = coreData?.api_key_encrypted || nvidiaKey;
-      const nim = nvidiaModelForTask(lastUserMessage);
-      model = buildModel(key, "nvidia", nim.model);
     } else if (coreData?.api_key_encrypted) {
       // BYOK users: respect their key but still route model name safely.
       model = buildModel(coreData.api_key_encrypted, routed.provider, routed.model);
@@ -472,7 +466,7 @@ ${_cs}
 - analyzeData/generateOutline: strategy and data tools
 - generateExcel/generatePowerPoint/generatePDF/generateImage: file generation tools
 - computerUse: control a headless browser with vision
-- multiAgentDebate: the 10-Agent Council uses OpenRouter (Qwen / Minimax / Gemini) plus NVIDIA NIM when NVIDIA_NIM_API_KEY is set. Server needs an OpenRouter key (OPENROUTER_KEY, OPENROUTER_DEFAULT_KEY, or OPENROUTER_API_KEY). Set COUNCIL_SKIP_NVIDIA=true to disable NIM only. If an NIM call fails, that step retries on OpenRouter.
+- multiAgentDebate: the 10-Agent Council (OpenRouter only — per-role free models: Qwen3.6 Plus, Gemma 3 27B/12B, etc.). Requires OPENROUTER_KEY, OPENROUTER_API_KEY, or OPENROUTER_DEFAULT_KEY on the server.
 - saveStylePreference: remember user's design/coding preferences across sessions
 - createProject: create a new organized project for the user
 
@@ -616,8 +610,6 @@ The chat interface will automatically render this as an interactive chart. Prefe
               return;
             }
 
-            const nvidiaKey = (process.env.NVIDIA_NIM_API_KEY || "").trim() || undefined;
-
             // Load user style memory for design agents (optional)
             const styleMemory: Record<string, string> = {};
             try {
@@ -639,7 +631,6 @@ The chat interface will automatically render this as an interactive chart. Prefe
             const councilResult = await runCouncil({
               task: lastUserContentForBuild,
               openrouterKey: councilOpenRouterKey,
-              nvidiaKey,
               styleMemory,
               onAgentEvent: (event: any) => {
                 const status = event.status;
@@ -848,7 +839,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
         /* ── MULTI-AGENT COUNCIL (10 Agents) ── */
         multiAgentDebate: {
           description:
-            "Runs the full 10-Agent Council Protocol: multiple models — Qwen + Minimax + Gemini (via OpenRouter), NVIDIA NIM for code/architecture/design/synthesis — Planner, Architect, UX, Coder, Critic, Tester, Docs, Visual Polish, Deployer, Orchestrator. Use for ALL complex programming, design, and document tasks.",
+            "Runs the full 10-Agent Council Protocol on OpenRouter (per-role models: Qwen3.6 Plus, Gemma 3, etc.). Planner, Architect, UX, Coder, Critic, Tester, Docs, Visual Polish, Deployer, Orchestrator. Use for ALL complex programming, design, and document tasks.",
           parameters: z.object({
             codingRequest: z.string().describe("The comprehensive task, prompt, or bug to solve. Provide full context including file contents."),
           }),
@@ -883,7 +874,6 @@ The chat interface will automatically render this as an interactive chart. Prefe
               const councilResult = await runCouncil({
                 task: codingRequest,
                 openrouterKey: councilOpenRouterKey,
-                nvidiaKey: (process.env.NVIDIA_NIM_API_KEY || "").trim() || undefined,
                 styleMemory,
                 onAgentEvent: (event) => {
                   const logEntry = {
