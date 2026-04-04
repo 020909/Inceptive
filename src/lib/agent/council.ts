@@ -10,6 +10,7 @@ import {
 } from "@/lib/agent/council-openrouter-router";
 import type {
   AgentContribution,
+  AgentRole,
   CouncilAgent,
   CouncilStreamEvent,
 } from "./council-types";
@@ -27,6 +28,9 @@ function isRetriableModelError(e: unknown): boolean {
     msg.includes("too many requests") ||
     msg.includes("429") ||
     msg.includes("timeout") ||
+    msg.includes("timed out") ||
+    msg.includes("abort") ||
+    msg.includes("cancel") ||
     msg.includes("temporar") ||
     msg.includes("overload") ||
     msg.includes("capacity") ||
@@ -34,6 +38,42 @@ function isRetriableModelError(e: unknown): boolean {
     msg.includes("fetch failed") ||
     msg.includes("socket hang up")
   );
+}
+
+/** Huge accumulatedContext + task blows context windows and makes free models crawl; keep task + ends. */
+function truncateCouncilPrompt(prompt: string, maxChars: number): string {
+  if (prompt.length <= maxChars) return prompt;
+  const head = Math.floor(maxChars * 0.38);
+  const tail = maxChars - head - 140;
+  const omitted = prompt.length - head - tail;
+  return `${prompt.slice(0, head)}\n\n[… ${omitted} characters omitted for speed — follow ## Task above and the tail below …]\n\n${prompt.slice(-Math.max(0, tail))}`;
+}
+
+function maxPromptCharsForRole(role: AgentRole): number {
+  switch (role) {
+    case "coder":
+      return 32_000;
+    case "orchestrator":
+      return 40_000;
+    case "critic":
+    case "tester":
+    case "visual-polish":
+    case "deployer":
+      return 28_000;
+    default:
+      return 48_000;
+  }
+}
+
+function generateTimeoutMsForRole(role: AgentRole): number {
+  switch (role) {
+    case "coder":
+      return 240_000; // 4m — large output
+    case "orchestrator":
+      return 300_000; // 5m
+    default:
+      return 120_000;
+  }
 }
 
 async function mapWithConcurrency<T, R>(
@@ -149,19 +189,27 @@ async function runAgent(
     system += styleContext;
   }
 
-  const maxTokens =
-    agent.role === "orchestrator" ? 12_000 : agent.role === "coder" ? 8_000 : 5_000;
+  const maxOutputTokens =
+    agent.role === "orchestrator" ? 12_000 : agent.role === "coder" ? 6_000 : 5_000;
 
   const { label } = getOpenRouterModelForCouncilRole(agent.role);
   const chain = openRouterModelFallbackChain(agent.role);
+  const promptLimit = maxPromptCharsForRole(agent.role);
+  const promptForModel = truncateCouncilPrompt(prompt, promptLimit);
+  if (promptForModel.length < prompt.length) {
+    console.warn(`[council] ${agent.role} prompt truncated`, { from: prompt.length, to: promptForModel.length });
+  }
+  const callTimeoutMs = generateTimeoutMsForRole(agent.role);
 
   const runOnce = (model: ReturnType<typeof buildModel>) =>
     generateText({
       model,
       system,
-      prompt,
-      maxTokens,
-    } as any);
+      prompt: promptForModel,
+      maxOutputTokens,
+      maxRetries: 0,
+      timeout: callTimeoutMs,
+    });
 
   let lastErr: unknown = null;
 
@@ -170,7 +218,16 @@ async function runAgent(
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
         const result = await runOnce(model);
-        contribution.output = (result?.text as string) || "";
+        const text = ((result?.text as string) || "").trim();
+        if (!text) {
+          lastErr = new Error("Empty model response");
+          if (attempt < 3) {
+            await sleep(400 + Math.floor(Math.random() * 400));
+            continue;
+          }
+          break;
+        }
+        contribution.output = text;
         contribution.status = "done";
         contribution.durationMs = Date.now() - start;
 
@@ -234,12 +291,33 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
   }
 
   const phase2Agents = selectedAgents.filter((a) => a.phase === 2);
-  if (phase2Agents.length > 0) {
-    const phase2Prompt = `## Task\n${task}${accumulatedContext}\n\nProvide your specialized analysis and output.`;
-    const phase2Results = await mapWithConcurrency(phase2Agents, 1, (agent) =>
-      runAgent(agent, phase2Prompt, openrouterKey, onAgentEvent, styleContext)
+  /** UX / Architect / Docs only need the task + planner (phase 1) context — run in parallel before Coder. */
+  const phase2ParallelRoles = new Set<AgentRole>(["ux-designer", "architect", "doc-specialist"]);
+  const phase2Parallel = phase2Agents.filter((a) => phase2ParallelRoles.has(a.role));
+  const phase2After = phase2Agents.filter((a) => !phase2ParallelRoles.has(a.role));
+
+  if (phase2Parallel.length > 0) {
+    const phase2ParallelPrompt = `## Task\n${task}${accumulatedContext}\n\nProvide your specialized analysis and output.`;
+    const parallelConcurrency = Math.min(3, phase2Parallel.length);
+    const phase2ParallelResults = await mapWithConcurrency(
+      phase2Parallel,
+      parallelConcurrency,
+      (agent) => runAgent(agent, phase2ParallelPrompt, openrouterKey, onAgentEvent, styleContext)
     );
-    for (const result of phase2Results) {
+    for (const result of phase2ParallelResults) {
+      contributions.push(result);
+      if (result.status === "done") {
+        accumulatedContext += `\n\n## ${result.name} Output\n${result.output}`;
+      }
+    }
+  }
+
+  if (phase2After.length > 0) {
+    const phase2AfterPrompt = `## Task\n${task}${accumulatedContext}\n\nProvide your specialized analysis and output.`;
+    const phase2AfterResults = await mapWithConcurrency(phase2After, 1, (agent) =>
+      runAgent(agent, phase2AfterPrompt, openrouterKey, onAgentEvent, styleContext)
+    );
+    for (const result of phase2AfterResults) {
       contributions.push(result);
       if (result.status === "done") {
         accumulatedContext += `\n\n## ${result.name} Output\n${result.output}`;

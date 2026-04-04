@@ -48,8 +48,8 @@ const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
 const readFile = promisify(fs.readFile);
 
-/** Hobby cap is 300s; raise on Pro if Council + refine often hits the limit. */
-export const maxDuration = 300;
+/** Council + refine + verify can exceed 5m on free OpenRouter; Pro/Enterprise allows up to 800s. */
+export const maxDuration = 800;
 export const runtime = "nodejs";
 
 function ensureMinimumMultifileSiteFromHtml(html: string): { relativePath: string; content: string }[] {
