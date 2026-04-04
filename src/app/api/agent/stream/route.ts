@@ -50,8 +50,8 @@ const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
 const readFile = promisify(fs.readFile);
 
-/** Council + refine + verify can exceed 5m on free OpenRouter; Pro/Enterprise allows up to 800s. */
-export const maxDuration = 800;
+/** Vercel Hobby: 1–300s max. Pro can raise in project settings; keep this ≤300 so Hobby deploys succeed. */
+export const maxDuration = 300;
 export const runtime = "nodejs";
 
 function ensureMinimumMultifileSiteFromHtml(html: string): { relativePath: string; content: string }[] {
