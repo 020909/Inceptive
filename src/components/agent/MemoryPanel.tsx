@@ -54,7 +54,7 @@ const typeIcons: Record<string, React.ReactNode> = {
 };
 
 const typeColors: Record<string, string> = {
-  preference: "text-purple-400 bg-purple-400/10",
+  preference: "text-[var(--accent)] bg-[var(--accent-soft)]",
   fact: "text-blue-400 bg-blue-400/10",
   task: "text-green-400 bg-green-400/10",
   file: "text-yellow-400 bg-yellow-400/10",

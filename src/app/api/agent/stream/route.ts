@@ -43,8 +43,27 @@ import { EDITORIAL_BASE_CSS, mergeCssWithEditorialBase } from "@/lib/sandbox/edi
 import { runVerifyRepairLoop } from "@/lib/sandbox/site-verify-repair";
 import { resolveCouncilGeminiKey, resolveCouncilOpenRouterKey } from "@/lib/agent/council-openrouter-key";
 import { startCouncilHeartbeat } from "@/lib/agent/council-heartbeat";
-import { parseCouncilResumePayload } from "@/lib/agent/council";
-import { defaultAfterPlannerClarification } from "@/lib/agent/council-clarification";
+import {
+  inferWebsiteCouncilContinueStep,
+  parseCouncilResumePayload,
+  type CouncilResumeState,
+} from "@/lib/agent/council";
+
+/** User messages may be string or multimodal parts — empty string broke website-build detection. */
+function extractMessageTextForStream(content: unknown): string {
+  if (typeof content === "string") return content.trim();
+  if (Array.isArray(content)) {
+    const out: string[] = [];
+    for (const part of content) {
+      if (typeof part === "string") out.push(part);
+      else if (part && typeof part === "object" && "text" in part && typeof (part as { text?: string }).text === "string") {
+        out.push((part as { text: string }).text);
+      }
+    }
+    return out.join("\n").trim();
+  }
+  return "";
+}
 
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
@@ -292,7 +311,7 @@ const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string 
   projectMap:          { icon: "📁", label: () => "Mapping project structure..." },
   codeGrep:            { icon: "🔍", label: (args: any) => `Searching for "${args.query}"...` },
   readProjectFile:     { icon: "📄", label: (args: any) => `Reading ${args.path.split('/').pop()}...` },
-  multiAgentDebate:    { icon: "🧠", label: () => `Running 10-Agent Council Protocol...` },
+  multiAgentDebate:    { icon: "🧠", label: () => `Running Council…` },
   writeSandboxFiles:   { icon: "📦", label: (args: any) => `Writing ${args?.files?.length ?? "?"} sandbox file(s)...` },
   upgradeSiteToNextjs: { icon: "⚛️", label: () => "Scaffolding Next.js (App Router) in sandbox…" },
   saveStylePreference: { icon: "🎨", label: () => "Saving style preference..." },
@@ -377,8 +396,8 @@ export async function POST(req: Request) {
       .single();
 
     let model: ReturnType<typeof buildModel>;
-    const lastUserMessage =
-      (Array.isArray(messages) ? [...messages].reverse().find((m: any) => m?.role === "user")?.content : "") || "";
+    const lastUserMsg = Array.isArray(messages) ? [...messages].reverse().find((m: any) => m?.role === "user") : undefined;
+    const lastUserMessage = extractMessageTextForStream(lastUserMsg?.content ?? "");
     // Free-only mode for launch: we only use free/cheap-friendly defaults.
     // If you later add paid keys/models, router can be expanded safely.
     const routed = routeModel({
@@ -396,7 +415,6 @@ export async function POST(req: Request) {
     const groqModel = process.env.GROQ_CHAT_MODEL?.trim() || "llama-3.3-70b-versatile";
 
     if (routed.provider === "debate") {
-      // Orchestrator for debate requires extremely stable tool calling (Gemini 2.0 Flash)
       const key = coreData?.api_key_encrypted || openrouterKey || geminiKey;
       model = buildModel(key, "debate", routed.model);
     } else if (coreData?.api_key_encrypted) {
@@ -476,7 +494,7 @@ ${_cs}
 - analyzeData/generateOutline: strategy and data tools
 - generateExcel/generatePowerPoint/generatePDF/generateImage: file generation tools
 - computerUse: control a headless browser with vision
-- multiAgentDebate: the 10-Agent Council (Gemma 4 31B via Google AI Studio when GEMINI_API_KEY/GOOGLE_AI_API_KEY is set; OpenRouter for light agents and fallbacks). Prefer both keys in production.
+- multiAgentDebate: the 10-Agent Council (OpenRouter + Gemini API fallbacks; set COUNCIL_OPENROUTER_* for model slugs).
 - saveStylePreference: remember user's design/coding preferences across sessions
 - createProject: create a new organized project for the user
 
@@ -524,7 +542,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
       .slice(-20) // keep a bit more than we need before pruning
       .map((m: any) => ({
         role: m.role as "user" | "assistant",
-        content: typeof m.content === "string" ? m.content.trim() : "",
+        content: extractMessageTextForStream(m.content),
       }));
 
     const validHistory: { role: "user" | "assistant"; content: string }[] = [];
@@ -593,7 +611,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
       }
     }
 
-    // ── FORCE COUNCIL FOR WEBSITE BUILDS (chunked: planner → clarify → resume under Vercel maxDuration) ──
+    // ── FORCE COUNCIL FOR WEBSITE BUILDS: planner → phase 2 → phase 3 + orchestrator across separate HTTP requests (≤ maxDuration each) ──
     const lastUserContentForBuild =
       [...finalHistory].reverse().find((m: any) => m.role === "user")?.content || lastUserMessage;
     const taskEchoForBuild =
@@ -623,7 +641,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
             if (!String(councilOpenRouterKey).trim() && !String(councilGeminiKey).trim()) {
               enqueue(
                 `3:${JSON.stringify(
-                  "Council needs at least one key: GEMINI_API_KEY or GOOGLE_AI_API_KEY (Gemma 4 on AI Studio) and/or OPENROUTER_KEY / OPENROUTER_API_KEY (fallbacks + light agents). Or use BYOK in Settings (Google or OpenRouter)."
+                  "Council needs GEMINI_API_KEY / GOOGLE_AI_API_KEY and/or OPENROUTER_KEY / OPENROUTER_API_KEY. Or BYOK in Settings (Google or OpenRouter)."
                 )}\n`
               );
               controller.close();
@@ -647,13 +665,6 @@ The chat interface will automatically render this as an interactive chart. Prefe
             const { runCouncil } = await import("@/lib/agent/council");
 
             enqueue(`5:${JSON.stringify({ type: "preview", state: "building", source: "council" })}\n`);
-            if (!councilBuildContinue) {
-              enqueue(
-                `0:${JSON.stringify(
-                  "Council build — step 1 of 2: running the Planner first. You’ll pick theme preferences next; then the rest of the Council runs in a fresh step (fits Vercel time limits)."
-                )}\n`
-              );
-            }
 
             const onCouncilAgentEvent = (event: any) => {
               const status = event.status;
@@ -689,22 +700,58 @@ The chat interface will automatically render this as an interactive chart. Prefe
 
             const stopHeartbeat = startCouncilHeartbeat(enqueue);
             let councilResult;
+            const plannerFailed = (contributions: { role: string; status: string }[]) =>
+              contributions.some((c) => c.role === "planner" && c.status === "error");
             try {
               if (councilBuildContinue && resumeState) {
-                enqueue(
-                  `0:${JSON.stringify(
-                    "Resuming Council with your answer — UX, Architect, Coder, and the rest run in this step."
-                  )}\n`
-                );
-                councilResult = await runCouncil({
-                  task: resumeState.task,
-                  openrouterKey: councilOpenRouterKey,
-                  geminiKey: councilGeminiKey,
-                  styleMemory,
-                  resume: resumeState,
-                  userBridgingNote: bridgingNote,
-                  onAgentEvent: onCouncilAgentEvent,
-                });
+                const step = inferWebsiteCouncilContinueStep(resumeState.contributions);
+                if (step === "invalid") {
+                  enqueue(
+                    `3:${JSON.stringify(
+                      "Could not resume this Council build (invalid or already complete). Start a new website request."
+                    )}\n`
+                  );
+                  return;
+                }
+                if (step === "run_phase2" && plannerFailed(resumeState.contributions)) {
+                  enqueue(
+                    `3:${JSON.stringify(
+                      "Council cannot continue: the Planner step already failed. Fix OpenRouter/Gemini keys and quotas, then start a new website request."
+                    )}\n`
+                  );
+                  enqueue(
+                    `0:${JSON.stringify(
+                      "Stopped: Planner failed earlier, so design and code steps were skipped."
+                    )}\n`
+                  );
+                  return;
+                }
+                if (step === "run_phase2") {
+                  // Always stop after phase 2 so phase 3 + orchestrator run in a separate HTTP request (≤300s each).
+                  councilResult = await runCouncil({
+                    task: resumeState.task,
+                    openrouterKey: councilOpenRouterKey,
+                    geminiKey: councilGeminiKey,
+                    styleMemory,
+                    resume: resumeState,
+                    userBridgingNote: bridgingNote,
+                    stopAfterPhase2: true,
+                    plan,
+                    onAgentEvent: onCouncilAgentEvent,
+                  });
+                } else {
+                  councilResult = await runCouncil({
+                    task: resumeState.task,
+                    openrouterKey: councilOpenRouterKey,
+                    geminiKey: councilGeminiKey,
+                    styleMemory,
+                    resume: resumeState,
+                    userBridgingNote: bridgingNote,
+                    phase3AndOrchestratorOnly: true,
+                    plan,
+                    onAgentEvent: onCouncilAgentEvent,
+                  });
+                }
               } else {
                 councilResult = await runCouncil({
                   task: taskEchoForBuild,
@@ -712,31 +759,42 @@ The chat interface will automatically render this as an interactive chart. Prefe
                   geminiKey: councilGeminiKey,
                   styleMemory,
                   stopAfterPlanner: true,
+                  plan,
                   onAgentEvent: onCouncilAgentEvent,
                 });
+              }
 
-                const clar = defaultAfterPlannerClarification();
-                enqueue(
-                  `0:${JSON.stringify(
-                    "Planner finished. Pick a theme below (or **Something else** to type your own). The Council continues automatically when you answer."
-                  )}\n`
-                );
-                enqueue(
-                  `7:${JSON.stringify({
-                    type: "clarification",
-                    headline: clar.headline,
-                    choices: clar.choices,
-                  })}\n`
-                );
+              const ck = councilResult.checkpoint;
+              if (ck === "after_planner" || ck === "after_phase2") {
+                if (ck === "after_planner" && plannerFailed(councilResult.contributions)) {
+                  enqueue(
+                    `3:${JSON.stringify(
+                      "Planner could not reach any model (check OpenRouter model slugs, API keys, and rate limits). Set keys in Settings or Vercel env, then try again."
+                    )}\n`
+                  );
+                  enqueue(
+                    `0:${JSON.stringify(
+                      "Council stopped after the Planner step failed — no further specialists were run."
+                    )}\n`
+                  );
+                  return;
+                }
+                const resumePayload: CouncilResumeState = {
+                  task: councilBuildContinue && resumeState ? resumeState.task : taskEchoForBuild,
+                  accumulatedContext: councilResult.accumulatedContextForResume ?? "",
+                  contributions: councilResult.contributions,
+                };
                 enqueue(
                   `8:${JSON.stringify({
                     type: "council_resume",
-                    task: taskEchoForBuild,
-                    accumulatedContext: councilResult.accumulatedContextForResume ?? "",
-                    contributions: councilResult.contributions,
+                    ...resumePayload,
                   })}\n`
                 );
-                controller.close();
+                const msg =
+                  ck === "after_planner"
+                    ? "Planner finished — continuing design and implementation in the next step…"
+                    : "Design and code pass complete — continuing review and final synthesis…";
+                enqueue(`0:${JSON.stringify(msg)}\n`);
                 return;
               }
             } finally {
@@ -799,7 +857,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
             }
 
             parsedDeliverables = applyEditorialCssToDeliverables(parsedDeliverables);
-            parsedDeliverables = await runVerifyRepairLoop(
+              parsedDeliverables = await runVerifyRepairLoop(
               councilBuildBrief,
               parsedDeliverables,
               { openrouterKey: councilOpenRouterKey, geminiKey: councilGeminiKey },
@@ -913,10 +971,10 @@ The chat interface will automatically render this as an interactive chart. Prefe
           },
         },
 
-        /* ── MULTI-AGENT COUNCIL (10 Agents) ── */
+        /* ── MULTI-AGENT COUNCIL (4 / 6 / 10 by subscription) ── */
         multiAgentDebate: {
           description:
-            "Runs the full 10-Agent Council Protocol: Gemma 4 31B (Google AI Studio / Gemini API) for heavy coding, UI, critic, tester, orchestrator; OpenRouter for light agents and fallbacks. Planner, Architect, UX, Coder, Critic, Tester, Docs, Visual Polish, Deployer, Orchestrator. Use for ALL complex programming, design, and document tasks.",
+            "Runs the Council Protocol (Free: 4 agents; Pro/Basic: 6; Unlimited: up to 10). Uses OpenRouter + Gemini API fallbacks. Use for complex programming, design, and document tasks.",
           parameters: z.object({
             codingRequest: z.string().describe("The comprehensive task, prompt, or bug to solve. Provide full context including file contents."),
           }),
@@ -924,7 +982,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
             if (!String(councilOpenRouterKey).trim() && !String(councilGeminiKey).trim()) {
               return {
                 error:
-                  "Council needs GEMINI_API_KEY or GOOGLE_AI_API_KEY (Gemma 4) and/or OPENROUTER_KEY / OPENROUTER_API_KEY (fallbacks). Set in Vercel env or BYOK in Settings.",
+                  "Council needs GEMINI_API_KEY / GOOGLE_AI_API_KEY and/or OPENROUTER_KEY / OPENROUTER_API_KEY. Set in Vercel env or BYOK in Settings (Google or OpenRouter).",
               };
             }
 
@@ -956,6 +1014,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
                 openrouterKey: councilOpenRouterKey,
                 geminiKey: councilGeminiKey,
                 styleMemory,
+                plan,
                 onAgentEvent: (event) => {
                   const logEntry = {
                     id: `council-${event.agentRole}-${Date.now()}`,
@@ -2098,7 +2157,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
             await deductCredits(user_id, "tool_small").catch(() => {});
             // Directly return the Pollinations URL. This completely bypasses Vercel Serverless Timeouts!
             // The browser will load the image instantly without proxying through our API route.
-            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(args.prompt)}?nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
+            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(args.prompt)}?nologo=true&width=768&height=768&seed=${Math.floor(Math.random() * 1_000_000)}`;
             return {
               status: "success",
               image: imageUrl, // Pass direct URL

@@ -54,8 +54,9 @@ export function routeModel(params: {
   if (wantsCode) {
     return {
       provider: "debate",
-      model: "council-openrouter",
-      reason: "Code/engineering → 10-Agent Council (Gemma 4 on Gemini API + OpenRouter fallbacks)",
+      model: "openrouter/free",
+      reason:
+        "Code/engineering → 10-Agent Council (OpenRouter + Gemini API fallbacks)",
     };
   }
   if (wantsResearch) {

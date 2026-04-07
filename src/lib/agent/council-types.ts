@@ -1,9 +1,11 @@
 /**
- * Council of 10 Specialized Agents — Type Definitions
+ * Council — Type Definitions
  *
- * Each agent has a unique role, persona, and system prompt.
- * Models are chosen per role in `council-model-router.ts` (Gemma 4 31B via Gemini API + OpenRouter fallbacks).
+ * Subscription tiers control how many specialists run (4 / 6 / 10). See `councilAgentBudget` / `selectAgentsForTask`.
+ * Models are chosen per role in `council-model-router.ts` (OpenRouter + Gemini fallbacks).
  */
+
+import type { PlanId } from "@/lib/stripe";
 
 export type AgentRole =
   | "planner"
@@ -295,8 +297,47 @@ export function getAgentsByPhase(phase: number): CouncilAgent[] {
   return COUNCIL_AGENTS.filter((a) => a.phase === phase);
 }
 
-/** Which agents are contextually relevant for a task */
-export function selectAgentsForTask(task: string): CouncilAgent[] {
+/** How many Council specialists run for this subscription (website + tool flows). */
+export function councilAgentBudget(plan: PlanId): 4 | 6 | 10 {
+  switch (plan) {
+    case "free":
+      return 4;
+    case "basic":
+    case "pro":
+      return 6;
+    case "unlimited":
+    default:
+      return 10;
+  }
+}
+
+/**
+ * Which agents participate — full 10-agent council only on Unlimited; smaller fixed sets on Free / Pro.
+ * Free: Planner → UX → Coder → Orchestrator (final synthesis).
+ * Pro/Basic: + Architect + Critic.
+ */
+export function selectAgentsForTask(task: string, plan: PlanId = "unlimited"): CouncilAgent[] {
+  const budget = councilAgentBudget(plan);
+  if (budget === 4) {
+    const roles: AgentRole[] = ["planner", "ux-designer", "coder", "orchestrator"];
+    return COUNCIL_AGENTS.filter((a) => roles.includes(a.role));
+  }
+  if (budget === 6) {
+    const roles: AgentRole[] = [
+      "planner",
+      "ux-designer",
+      "architect",
+      "coder",
+      "critic",
+      "orchestrator",
+    ];
+    return COUNCIL_AGENTS.filter((a) => roles.includes(a.role));
+  }
+  return selectAgentsForTaskFull10(task);
+}
+
+/** Original contextual 10-agent selection (Unlimited / internal). */
+function selectAgentsForTaskFull10(task: string): CouncilAgent[] {
   const t = task.toLowerCase();
   const always = ["planner", "architect", "coder", "critic", "orchestrator"];
   const conditional: AgentRole[] = [];
@@ -334,3 +375,4 @@ export function selectAgentsForTask(task: string): CouncilAgent[] {
   const selected = new Set([...always, ...conditional]);
   return COUNCIL_AGENTS.filter((a) => selected.has(a.role));
 }
+

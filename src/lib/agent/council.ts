@@ -1,5 +1,5 @@
 /**
- * Council Engine — 10-Agent orchestration (Gemma 4 on Gemini API + OpenRouter fallbacks; see council-model-router).
+ * Council Engine — tiered agents (4 / 6 / 10 by plan). OpenRouter + Gemini fallbacks (see council-model-router).
  */
 
 import { generateText } from "ai";
@@ -8,6 +8,7 @@ import {
   councilChainIsRunnable,
   getCouncilModelChain,
 } from "@/lib/agent/council-model-router";
+import type { PlanId } from "@/lib/stripe";
 import type {
   AgentContribution,
   AgentRole,
@@ -65,13 +66,22 @@ function maxPromptCharsForRole(role: AgentRole): number {
   }
 }
 
-function generateTimeoutMsForRole(role: AgentRole): number {
+/** Tighter caps on Free / Pro keep each Vercel segment under ~300s wall time. */
+function generateTimeoutMsForRole(role: AgentRole, plan: PlanId = "unlimited"): number {
+  const tier: "free" | "mid" | "full" =
+    plan === "free" ? "free" : plan === "basic" || plan === "pro" ? "mid" : "full";
   switch (role) {
     case "coder":
-      return 240_000; // 4m — large output
+      if (tier === "free") return 90_000;
+      if (tier === "mid") return 150_000;
+      return 240_000;
     case "orchestrator":
-      return 300_000; // 5m
+      if (tier === "free") return 100_000;
+      if (tier === "mid") return 180_000;
+      return 300_000;
     default:
+      if (tier === "free") return 55_000;
+      if (tier === "mid") return 85_000;
       return 120_000;
   }
 }
@@ -101,6 +111,35 @@ export type CouncilResumeState = {
   accumulatedContext: string;
   contributions: AgentContribution[];
 };
+
+const WEBSITE_COUNCIL_PHASE2_ROLES: AgentRole[] = [
+  "ux-designer",
+  "architect",
+  "coder",
+  "doc-specialist",
+];
+const WEBSITE_COUNCIL_PHASE3_ROLES: AgentRole[] = [
+  "critic",
+  "tester",
+  "visual-polish",
+  "deployer",
+];
+
+/**
+ * Multi-request website builds: infer whether the next HTTP call should run phase 2 only or phase 3 + orchestrator only.
+ */
+export function inferWebsiteCouncilContinueStep(
+  contributions: AgentContribution[]
+): "run_phase2" | "run_phase3" | "invalid" {
+  if (!contributions.length) return "invalid";
+  const roles = new Set(contributions.map((c) => c.role));
+  if (roles.has("orchestrator")) return "invalid";
+  const hasPhase2 = WEBSITE_COUNCIL_PHASE2_ROLES.some((r) => roles.has(r));
+  const hasPhase3 = WEBSITE_COUNCIL_PHASE3_ROLES.some((r) => roles.has(r));
+  if (hasPhase2 && !hasPhase3) return "run_phase3";
+  if (roles.has("planner") && !hasPhase2) return "run_phase2";
+  return "invalid";
+}
 
 /** Validate client-supplied resume JSON (best-effort; same user session only). */
 export function parseCouncilResumePayload(x: unknown): CouncilResumeState | null {
@@ -141,10 +180,16 @@ export interface CouncilRunOptions {
   styleMemory?: Record<string, string>;
   /** Run phase 1 only, then return (multi-request / Vercel timeout workaround). */
   stopAfterPlanner?: boolean;
+  /** After phase 2 (UX / architect / coder / docs), return — next request runs phase 3 + orchestrator. */
+  stopAfterPhase2?: boolean;
   /** Continue from a prior checkpoint; skips phase 1. */
   resume?: CouncilResumeState;
   /** When resuming, last user message (theme / preferences) injected before phase 2. */
   userBridgingNote?: string;
+  /** Multi-request: resume has phase 1+2 outputs; run only phase 3 agents + orchestrator. */
+  phase3AndOrchestratorOnly?: boolean;
+  /** Subscription tier — controls agent count and per-call timeouts. */
+  plan?: PlanId;
 }
 
 export interface CouncilResult {
@@ -153,8 +198,8 @@ export interface CouncilResult {
   totalDurationMs: number;
   agentsUsed: string[];
   trustScore: number;
-  /** Present when `stopAfterPlanner` ended the run early. */
-  checkpoint?: "after_planner";
+  /** Present when a multi-request checkpoint ended the run early (Vercel time limits). */
+  checkpoint?: "after_planner" | "after_phase2";
   /** Internal context string to send back as `council_resume` (must match next `resume.accumulatedContext`). */
   accumulatedContextForResume?: string;
 }
@@ -195,7 +240,8 @@ async function runAgent(
   prompt: string,
   keys: CouncilProviderKeys,
   onEvent?: (event: CouncilStreamEvent) => void,
-  styleContext?: string
+  styleContext?: string,
+  plan: PlanId = "unlimited"
 ): Promise<AgentContribution> {
   const start = Date.now();
   const contribution: AgentContribution = {
@@ -217,10 +263,10 @@ async function runAgent(
   const orKey = String(keys.openrouterKey || "").trim();
   const geminiKey = String(keys.geminiKey || "").trim();
   const chain = getCouncilModelChain(agent.role);
-  if (!councilChainIsRunnable(chain, orKey, geminiKey)) {
+  if (!councilChainIsRunnable(chain, { openrouterKey: orKey, geminiKey })) {
     contribution.status = "error";
     contribution.output =
-      "Error: Council needs at least one of: OpenRouter key (OPENROUTER_KEY / OPENROUTER_API_KEY) and/or Google AI Studio key (GEMINI_API_KEY / GOOGLE_AI_API_KEY) for Gemma 4. You can also set BYOK in Settings (OpenRouter or Google).";
+      "Error: Council needs OpenRouter (OPENROUTER_KEY / OPENROUTER_API_KEY) and/or Google AI Studio (GEMINI_API_KEY / GOOGLE_AI_API_KEY). BYOK in Settings supports OpenRouter or Google.";
     contribution.durationMs = Date.now() - start;
     onEvent?.({
       type: "council",
@@ -248,7 +294,7 @@ async function runAgent(
   if (promptForModel.length < prompt.length) {
     console.warn(`[council] ${agent.role} prompt truncated`, { from: prompt.length, to: promptForModel.length });
   }
-  const callTimeoutMs = generateTimeoutMsForRole(agent.role);
+  const callTimeoutMs = generateTimeoutMsForRole(agent.role, plan);
 
   const runOnce = (model: ReturnType<typeof buildModel>) =>
     generateText({
@@ -266,11 +312,8 @@ async function runAgent(
     const keyForStep = step.provider === "gemini" ? geminiKey : orKey;
     if (!String(keyForStep).trim()) continue;
 
-    const model = buildModel(
-      keyForStep.trim(),
-      step.provider === "gemini" ? "gemini" : "openrouter",
-      step.modelId
-    );
+    const provider = step.provider === "gemini" ? "gemini" : "openrouter";
+    const model = buildModel(keyForStep.trim(), provider, step.modelId);
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
         const result = await runOnce(model);
@@ -332,9 +375,13 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
     context,
     styleMemory,
     stopAfterPlanner,
+    stopAfterPhase2,
     resume,
     userBridgingNote,
+    phase3AndOrchestratorOnly,
+    plan: planOpt,
   } = options;
+  const plan: PlanId = planOpt ?? "unlimited";
   const keys: CouncilProviderKeys = {
     openrouterKey,
     geminiKey: String(geminiKeyOpt || "").trim(),
@@ -342,9 +389,47 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
   const totalStart = Date.now();
   const styleContext = buildStyleContext(styleMemory || {});
 
-  const selectedAgents = selectAgentsForTask(task);
+  const selectedAgents = selectAgentsForTask(task, plan);
   const contributions: AgentContribution[] = [];
   let accumulatedContext = "";
+
+  if (resume && phase3AndOrchestratorOnly) {
+    accumulatedContext = resume.accumulatedContext;
+    contributions.push(...resume.contributions.map((c) => ({ ...c })));
+    const note = String(userBridgingNote || "").trim();
+    if (note) {
+      accumulatedContext += `\n\n## User preferences (before design & code)\n${note}`;
+    }
+    const phase3Agents = selectedAgents.filter((a) => a.phase === 3);
+    if (phase3Agents.length > 0) {
+      const phase3Prompt = `## Original Task\n${task}\n\n## All Agent Outputs So Far\n${accumulatedContext}\n\nReview the above outputs and provide your specialized analysis.`;
+      const phase3Results = await mapWithConcurrency(phase3Agents, 1, (agent) =>
+        runAgent(agent, phase3Prompt, keys, onAgentEvent, styleContext, plan)
+      );
+      for (const result of phase3Results) {
+        contributions.push(result);
+        if (result.status === "done") {
+          accumulatedContext += `\n\n## ${result.name} Output\n${result.output}`;
+        }
+      }
+    }
+    const orchestrator = selectedAgents.find((a) => a.role === "orchestrator");
+    let synthesis = "";
+    if (orchestrator) {
+      const synthPrompt = `## Original Task\n${task}\n\n## Complete Council Deliberation\n${accumulatedContext}\n\nSynthesize the ultimate, production-ready output.`;
+      const synthResult = await runAgent(orchestrator, synthPrompt, keys, onAgentEvent, undefined, plan);
+      contributions.push(synthResult);
+      synthesis = synthResult.output;
+    }
+    const trustScore = calculateTrustScore(contributions);
+    return {
+      contributions,
+      synthesis,
+      totalDurationMs: Date.now() - totalStart,
+      agentsUsed: selectedAgents.map((a) => a.name),
+      trustScore,
+    };
+  }
 
   if (resume) {
     accumulatedContext = resume.accumulatedContext;
@@ -361,7 +446,7 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
     const phase1Agents = selectedAgents.filter((a) => a.phase === 1);
     for (const agent of phase1Agents) {
       const prompt = `## Task\n${task}${accumulatedContext}`;
-      const result = await runAgent(agent, prompt, keys, onAgentEvent);
+      const result = await runAgent(agent, prompt, keys, onAgentEvent, undefined, plan);
       contributions.push(result);
       if (result.status === "done") {
         accumulatedContext += `\n\n## ${agent.name} Output\n${result.output}`;
@@ -393,7 +478,7 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
     const phase2ParallelResults = await mapWithConcurrency(
       phase2Parallel,
       parallelConcurrency,
-      (agent) => runAgent(agent, phase2ParallelPrompt, keys, onAgentEvent, styleContext)
+      (agent) => runAgent(agent, phase2ParallelPrompt, keys, onAgentEvent, styleContext, plan)
     );
     for (const result of phase2ParallelResults) {
       contributions.push(result);
@@ -406,7 +491,7 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
   if (phase2After.length > 0) {
     const phase2AfterPrompt = `## Task\n${task}${accumulatedContext}\n\nProvide your specialized analysis and output.`;
     const phase2AfterResults = await mapWithConcurrency(phase2After, 1, (agent) =>
-      runAgent(agent, phase2AfterPrompt, keys, onAgentEvent, styleContext)
+      runAgent(agent, phase2AfterPrompt, keys, onAgentEvent, styleContext, plan)
     );
     for (const result of phase2AfterResults) {
       contributions.push(result);
@@ -416,11 +501,23 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
     }
   }
 
+  if (stopAfterPhase2) {
+    return {
+      contributions,
+      synthesis: "",
+      totalDurationMs: Date.now() - totalStart,
+      agentsUsed: selectedAgents.map((a) => a.name),
+      trustScore: calculateTrustScore(contributions),
+      checkpoint: "after_phase2",
+      accumulatedContextForResume: accumulatedContext,
+    };
+  }
+
   const phase3Agents = selectedAgents.filter((a) => a.phase === 3);
   if (phase3Agents.length > 0) {
     const phase3Prompt = `## Original Task\n${task}\n\n## All Agent Outputs So Far\n${accumulatedContext}\n\nReview the above outputs and provide your specialized analysis.`;
     const phase3Results = await mapWithConcurrency(phase3Agents, 1, (agent) =>
-      runAgent(agent, phase3Prompt, keys, onAgentEvent, styleContext)
+      runAgent(agent, phase3Prompt, keys, onAgentEvent, styleContext, plan)
     );
     for (const result of phase3Results) {
       contributions.push(result);
@@ -434,7 +531,7 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
   let synthesis = "";
   if (orchestrator) {
     const synthPrompt = `## Original Task\n${task}\n\n## Complete Council Deliberation\n${accumulatedContext}\n\nSynthesize the ultimate, production-ready output.`;
-    const synthResult = await runAgent(orchestrator, synthPrompt, keys, onAgentEvent);
+    const synthResult = await runAgent(orchestrator, synthPrompt, keys, onAgentEvent, undefined, plan);
     contributions.push(synthResult);
     synthesis = synthResult.output;
   }

@@ -21,6 +21,10 @@ import {
 import { WebsitePreviewPanel } from "@/components/dashboard/website-preview-panel";
 import { TTSButton } from "@/components/ui/tts-button";
 import { ChartPreview } from "@/components/ui/chart-preview";
+import { CouncilProgress } from "@/components/council/CouncilProgress";
+import { useCouncil } from "@/hooks/useCouncil";
+import { isWebsiteBuildTask } from "@/lib/agent/council-deliverable-refine";
+import { bundleSessionCouncilOutputForPreview } from "@/lib/council/bundle-session-preview-html";
 
 type AttachedFile = { name: string; content: string };
 
@@ -36,7 +40,11 @@ type CouncilResumeClient = {
   }>;
 };
 
-/** Shown in the website preview panel while the 10-Agent Council is running */
+/** Shown in the website preview panel while the Council build is running */
+/** After planner checkpoint, client auto-sends this so the Council continues without a manual “theme” click (second API call). */
+const COUNCIL_RESUME_BRIDGE_MESSAGE =
+  "Continue the build: editorial direction, warm neutrals or charcoal, distinctive typography, accessible focus states, multi-file HTML/CSS/JS.";
+
 const PREVIEW_LOADING_HTML = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Building…</title><style>
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#262624;color:#f5f5f7;font-family:system-ui,sans-serif;}
 .p{animation:o 1.35s ease-in-out infinite}@keyframes o{0%,100%{opacity:.35}50%{opacity:1}}
@@ -500,15 +508,29 @@ function DashboardExperience() {
   const containerRef = useRef<HTMLDivElement>(null);
   const councilResumeRef = useRef<CouncilResumeClient | null>(null);
   const councilContinueRef = useRef(false);
+  /** Prevents double-firing the automatic second request after `8:council_resume`. */
+  const councilAutoContinueScheduledRef = useRef(false);
+  const messagesRef = useRef<Message[]>([]);
+  const sendMessageRef = useRef<
+    (text: string, attachments?: AttachedFile[], baseMessages?: Message[]) => Promise<void>
+  >(() => Promise.resolve());
   const [clarificationPrompt, setClarificationPrompt] = useState<{
     headline: string;
     choices: string[];
   } | null>(null);
 
+  const getAccessToken = useCallback(() => session?.access_token ?? null, [session?.access_token]);
+  const council = useCouncil(getAccessToken);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
   useEffect(() => {
     if (messages.length === 0) {
       councilResumeRef.current = null;
       councilContinueRef.current = false;
+      councilAutoContinueScheduledRef.current = false;
       setClarificationPrompt(null);
     }
   }, [messages.length]);
@@ -632,6 +654,7 @@ function DashboardExperience() {
       const last = lastSentRef.current;
       if (last.text === text.trim() && now - last.ts < 1200) return;
       sendLockRef.current = true;
+      councilAutoContinueScheduledRef.current = false;
       lastSentRef.current = { text: text.trim(), ts: now };
       const token = session?.access_token;
       if (!token) {
@@ -639,9 +662,81 @@ function DashboardExperience() {
         return;
       }
 
+      /** Session-based Council (OpenRouter + Supabase sessions). Runs alongside normal chat; only for website-style builds. */
+      if (isWebsiteBuildTask(text.trim())) {
+        councilResumeRef.current = null;
+        councilContinueRef.current = false;
+        councilAutoContinueScheduledRef.current = false;
+        setClarificationPrompt(null);
+
+        const userMsg: Message = {
+          id: `u_${Date.now()}`,
+          role: "user",
+          content: text.trim(),
+          toolCalls: [],
+          toolResults: [],
+        };
+        const sourceMessages = baseMessages ?? messages;
+        const lastMsgInHistory = sourceMessages[sourceMessages.length - 1];
+        const allMessages =
+          lastMsgInHistory?.role === "user" && lastMsgInHistory.content.trim() === text.trim()
+            ? sourceMessages
+            : [...sourceMessages, userMsg];
+        setMessages(allMessages);
+        setInput("");
+        setPendingFiles([]);
+        pendingFilesRef.current = [];
+        setClarificationPrompt(null);
+        setStreaming(true);
+
+        if (shouldOpenBuildPreviewLoading(text.trim())) {
+          preferSandboxPreviewRef.current = false;
+          setSandboxPaths(null);
+          setPreviewCode(PREVIEW_LOADING_HTML);
+          setPreviewBuildStatus("Council — running specialist chain…");
+        }
+
+        const assistantId = `a_${Date.now()}`;
+        setMessages((prev) => [
+          ...prev,
+          { id: assistantId, role: "assistant", content: "", toolCalls: [], toolResults: [] },
+        ]);
+
+        try {
+          const result = await council.startCouncil(text.trim());
+          if (result.ok) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId ? { ...m, content: result.finalOutput } : m
+              )
+            );
+            const bundled = bundleSessionCouncilOutputForPreview(result.finalOutput);
+            if (bundled && bundled.length > 80) {
+              preferSandboxPreviewRef.current = false;
+              setSandboxPaths(null);
+              setPreviewCode(bundled);
+              setPreviewBuildStatus(null);
+            }
+          } else {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? { ...m, content: `Council could not finish: ${result.error}` }
+                  : m
+              )
+            );
+          }
+        } finally {
+          setStreaming(false);
+          sendLockRef.current = false;
+        }
+        return;
+      }
+
       if (shouldOpenBuildPreviewLoading(text.trim()) && text.trim().length > 220) {
         councilResumeRef.current = null;
         councilContinueRef.current = false;
+        councilAutoContinueScheduledRef.current = false;
         setClarificationPrompt(null);
       }
 
@@ -738,6 +833,32 @@ function DashboardExperience() {
         // Map toolCallId -> toolName so we can match tool-output-available events
         const toolCallIdToName = new Map<string, string>();
 
+        const applyCouncilResumePayload = (p: {
+          task: string;
+          accumulatedContext: string;
+          contributions: CouncilResumeClient["contributions"];
+        }) => {
+          councilResumeRef.current = {
+            task: p.task,
+            accumulatedContext: p.accumulatedContext,
+            contributions: p.contributions,
+          };
+          councilContinueRef.current = true;
+          if (councilAutoContinueScheduledRef.current) return;
+          councilAutoContinueScheduledRef.current = true;
+          window.setTimeout(() => {
+            if (!councilContinueRef.current || !councilResumeRef.current) {
+              councilAutoContinueScheduledRef.current = false;
+              return;
+            }
+            void sendMessageRef.current(
+              COUNCIL_RESUME_BRIDGE_MESSAGE,
+              undefined,
+              messagesRef.current
+            );
+          }, 200);
+        };
+
         while (true) {
           resetSafetyTimer();
           const { done, value } = await reader.read();
@@ -801,6 +922,7 @@ function DashboardExperience() {
                 if (payload.type !== "sandbox-bundle-ready") continue;
                 councilResumeRef.current = null;
                 councilContinueRef.current = false;
+                councilAutoContinueScheduledRef.current = false;
                 setClarificationPrompt(null);
                 preferSandboxPreviewRef.current = true;
                 if (Array.isArray(payload.paths)) setSandboxPaths(payload.paths);
@@ -933,17 +1055,43 @@ function DashboardExperience() {
                   typeof p.accumulatedContext === "string" &&
                   Array.isArray(p.contributions)
                 ) {
-                  councilResumeRef.current = {
+                  applyCouncilResumePayload({
                     task: p.task,
                     accumulatedContext: p.accumulatedContext,
                     contributions: p.contributions,
-                  };
-                  councilContinueRef.current = true;
+                  });
                 }
               } catch {
                 /* ignore */
               }
             }
+          }
+        }
+
+        // Last protocol line often arrives without a trailing \n; it stays in `buffer` and was never parsed above.
+        const tail = buffer.trim();
+        if (tail.startsWith("8:")) {
+          try {
+            const p = JSON.parse(tail.slice(2)) as {
+              type?: string;
+              task?: string;
+              accumulatedContext?: string;
+              contributions?: CouncilResumeClient["contributions"];
+            };
+            if (
+              p.type === "council_resume" &&
+              typeof p.task === "string" &&
+              typeof p.accumulatedContext === "string" &&
+              Array.isArray(p.contributions)
+            ) {
+              applyCouncilResumePayload({
+                task: p.task,
+                accumulatedContext: p.accumulatedContext,
+                contributions: p.contributions,
+              });
+            }
+          } catch {
+            /* ignore */
           }
         }
       } catch {
@@ -962,8 +1110,10 @@ function DashboardExperience() {
         });
       }
     },
-    [messages, session?.access_token, streaming, setMessages]
+    [messages, session?.access_token, streaming, setMessages, council.startCouncil]
   );
+
+  sendMessageRef.current = sendMessage;
 
   const onClarificationPick = useCallback(
     (label: string) => {
@@ -979,6 +1129,7 @@ function DashboardExperience() {
   const onDismissClarification = useCallback(() => {
     councilResumeRef.current = null;
     councilContinueRef.current = false;
+    councilAutoContinueScheduledRef.current = false;
     setClarificationPrompt(null);
   }, []);
 
@@ -1008,15 +1159,21 @@ function DashboardExperience() {
     { icon: FolderUp, label: "Upload Project", onClick: () => fileInputRef.current?.click() },
   ];
 
-  // Auto-detect HTML in the latest assistant message — only when not using sandbox bundle (and avoid partial fences while streaming)
+  // Auto-detect HTML in the latest assistant message — merge CSS for blob preview; skip when sandbox bundle owns the iframe
   useEffect(() => {
     if (preferSandboxPreviewRef.current) return;
     if (streaming) return;
     const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
     if (!lastAssistant?.content) return;
-    const match = lastAssistant.content.match(/```html\n([\s\S]*?)\n```/);
-    if (match?.[1] && match[1].length > 50) {
-      setPreviewCode(match[1]);
+    const bundled = bundleSessionCouncilOutputForPreview(lastAssistant.content);
+    if (bundled && bundled.length > 80) {
+      setPreviewCode(bundled);
+      setPreviewBuildStatus(null);
+      return;
+    }
+    const match = lastAssistant.content.match(/```html\s*\n([\s\S]*?)```/);
+    if (match?.[1] && match[1].trim().length > 50) {
+      setPreviewCode(match[1].trim());
       setPreviewBuildStatus(null);
     }
   }, [messages, streaming]);
@@ -1058,7 +1215,7 @@ function DashboardExperience() {
             className={[
               "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-opacity hover:opacity-95",
               incognito
-                ? "border-violet-400/70 bg-white ring-1 ring-violet-400/35"
+                ? "border-[var(--accent)]/45 bg-white ring-1 ring-[var(--accent)]/25"
                 : "border-black/10 bg-white",
             ].join(" ")}
             title="Incognito: chats are not saved to history or session"
@@ -1128,6 +1285,14 @@ function DashboardExperience() {
                     onDismiss={onDismissClarification}
                   />
                 )}
+                <CouncilProgress
+                  agents={council.agents}
+                  currentAgent={council.currentAgent}
+                  status={council.status}
+                  finalOutput={council.finalOutput}
+                  error={council.error}
+                  onCancel={council.cancel}
+                />
                 <DashboardAiPrompt
                   value={input}
                   onChange={setInput}
@@ -1225,6 +1390,14 @@ function DashboardExperience() {
                     onDismiss={onDismissClarification}
                   />
                 )}
+                <CouncilProgress
+                  agents={council.agents}
+                  currentAgent={council.currentAgent}
+                  status={council.status}
+                  finalOutput={council.finalOutput}
+                  error={council.error}
+                  onCancel={council.cancel}
+                />
                 <DashboardAiPrompt
                   value={input}
                   onChange={setInput}

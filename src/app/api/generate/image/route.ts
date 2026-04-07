@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
+import { checkCredits, deductCredits, getUserPlan } from "@/lib/credits";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,9 +28,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const plan = await getUserPlan(userId);
+  if (plan !== "basic") {
+    const creditCheck = await checkCredits(userId, "tool_small");
+    if (!creditCheck.allowed && !creditCheck.unlimited) {
+      return NextResponse.json({ error: creditCheck.reason }, { status: 402 });
+    }
+  }
+
   try {
     const body = await req.json();
-    const { prompt, width = 1024, height = 1024 } = body;
+    const { prompt, width = 768, height = 768 } = body;
 
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json({ error: "Missing or invalid prompt" }, { status: 400 });
@@ -38,6 +47,9 @@ export async function POST(req: Request) {
     // ── Try Pollinations.ai first (free, no key) ──
     const pollinationsResult = await generateViaPollinations(prompt, width, height);
     if (pollinationsResult.success) {
+      if (plan !== "basic") {
+        await deductCredits(userId, "tool_small").catch(() => {});
+      }
       return NextResponse.json({
         status: "success",
         image: pollinationsResult.image,
@@ -53,6 +65,9 @@ export async function POST(req: Request) {
       for (const model of HF_MODELS) {
         const result = await generateViaHF(hfToken, `${HF_ROUTER_URL}/${model}`, prompt, width, height);
         if (result.success) {
+          if (plan !== "basic") {
+            await deductCredits(userId, "tool_small").catch(() => {});
+          }
           return NextResponse.json({
             status: "success",
             image: result.image,
@@ -76,11 +91,6 @@ export async function POST(req: Request) {
         : pollinationsResult.error || "Image generation failed. Please try again.";
 
     return NextResponse.json({ error: errorMessage }, { status: 500 });
-
-    return NextResponse.json(
-      { error: pollinationsResult.error || "Image generation failed. Please try again." },
-      { status: 500 }
-    );
   } catch (error: any) {
     console.error("Image generation error:", error);
     return NextResponse.json({ error: error.message || "Failed to generate image" }, { status: 500 });
@@ -97,7 +107,7 @@ async function generateViaPollinations(
     const url = `${POLLINATIONS_URL}/${encodedPrompt}?width=${Math.min(width, 1024)}&height=${Math.min(height, 1024)}&nologo=true&seed=${Date.now()}`;
 
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(60000), // 60s timeout
+      signal: AbortSignal.timeout(28_000),
     });
 
     if (!response.ok) {
@@ -144,7 +154,7 @@ async function generateViaHF(
           guidance_scale: 3.5,
         },
       }),
-      signal: AbortSignal.timeout(120000),
+      signal: AbortSignal.timeout(45_000),
     });
 
     if (!response.ok) {

@@ -3,15 +3,22 @@ import { buildCouncilRefineModel, type CouncilRefineKeys } from "@/lib/agent/cou
 
 /** Tasks that deserve a real multi-file static site, not one generic HTML blob */
 export function isWebsiteBuildTask(text: string): boolean {
-  const t = (text || "").toLowerCase();
+  const t = (text || "").toLowerCase().trim();
+  if (!t) return false;
   if (
-    /\b(website|web app|webapp|landing page|landing|homepage|saas|portfolio|marketing site|static site|multi-?page|full stack|fullstack)\b/.test(
+    /\b(website|web app|webapp|web page|webpage|landing page|landing|homepage|home page|saas|portfolio|marketing site|static site|multi-?page|full[\s-]?stack|fullstack|next\.?js|vite|astro|tailwind site)\b/.test(
       t
     )
   ) {
     return true;
   }
   if (/\b(flow|dashboard|planner|habit tracker|productivity)\b/.test(t) && /\b(app|tool|site|page|build|create)\b/.test(t)) {
+    return true;
+  }
+  if (/\b(build|create|design|generate|make)\b/.test(t) && /\b(html|css|tailwind|frontend|ui|ux|page|site|sandbox|preview|hero|navbar)\b/.test(t)) {
+    return true;
+  }
+  if (/\b(make me|give me|i need|i want)\b/.test(t) && /\b(site|page|html|css|landing|web)\b/.test(t)) {
     return true;
   }
   return /\b(build|create|design)\b/.test(t) && /\b(html|css|ui|frontend|page|site)\b/.test(t);

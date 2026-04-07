@@ -6,5 +6,10 @@ export async function GET() {
     ok: true,
     service: "inceptive",
     ts: new Date().toISOString(),
+    vercel: {
+      deploymentId: process.env.VERCEL_DEPLOYMENT_ID || null,
+      gitCommitSha: process.env.VERCEL_GIT_COMMIT_SHA || null,
+      gitCommitRef: process.env.VERCEL_GIT_COMMIT_REF || null,
+    },
   });
 }

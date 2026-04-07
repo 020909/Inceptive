@@ -63,9 +63,10 @@ export function CouncilActivityTimeline({
   isLastAssistant: boolean;
 }) {
   const councilPresent = logs.some(isCouncilTaskLog);
-  if (!councilPresent) return null;
-
-  const { ordered } = useMemo(() => normalizeSteps(logs), [logs]);
+  const { ordered } = useMemo(
+    () => (councilPresent ? normalizeSteps(logs) : { ordered: [] as TaskLog[] }),
+    [logs, councilPresent]
+  );
 
   const activeLive = isStreaming && isLastAssistant;
   const [open, setOpen] = useState(activeLive);
@@ -93,6 +94,8 @@ export function CouncilActivityTimeline({
     : anyThinking
       ? "Working…"
       : "In progress…";
+
+  if (!councilPresent) return null;
 
   return (
     <motion.div

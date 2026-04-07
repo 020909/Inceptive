@@ -9,6 +9,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.inceptive-ai.com
  *
  * DB stores providers as: 'claude', 'openai', 'gemini', 'openrouter'
  * UI-facing aliases also accepted: 'anthropic' → 'claude', 'google' → 'gemini'
+ *
  */
 export function buildModel(apiKey: string, provider: string, modelName?: string) {
   const p = (provider || "").toLowerCase().trim();
@@ -66,9 +67,9 @@ export function buildModel(apiKey: string, provider: string, modelName?: string)
           "X-Title": "Inceptive AI",
         },
       });
-      // The orchestrator must be a stable tool-user like Gemini 2.0 Flash.
-      // It handles calling the 10-Agent Council via the multiAgentDebate tool.
-      return client.chat("google/gemini-2.0-flash-001");
+      // Use OpenRouter's free router so tool-calling requests route to a compatible free model.
+      // Caller may override via modelName (must be an OpenRouter model slug).
+      return client.chat(modelName || "openrouter/free");
     }
 
     // ── Fallback: try OpenRouter (most permissive) ─────────────────────

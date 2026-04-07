@@ -50,11 +50,12 @@
     --border-default: rgba(255, 255, 255, 0.10);
     --border-strong: rgba(255, 255, 255, 0.20);
 
-    /* ── Accent (Electric Indigo, used sparingly) ── */
-    --accent: #6510F4;
-    --accent-soft: rgba(101, 16, 244, 0.12);
-    --accent-muted: rgba(101, 16, 244, 0.08);
-    --accent-glow: rgba(101, 16, 244, 0.25);
+    /* ── Accent (editorial teal — no purple/indigo) ── */
+    --accent: #0f766e;
+    --accent-soft: rgba(15, 118, 110, 0.14);
+    --accent-muted: rgba(15, 118, 110, 0.09);
+    --accent-glow: rgba(15, 118, 110, 0.28);
+    --accent-subtle: rgba(15, 118, 110, 0.11);
 
     /* ── Status ── */
     --success: #30D158;
@@ -123,10 +124,11 @@
     --border-default: rgba(0, 0, 0, 0.12);
     --border-strong: rgba(0, 0, 0, 0.22);
 
-    --accent: #6510F4;
-    --accent-soft: rgba(101, 16, 244, 0.10);
-    --accent-muted: rgba(101, 16, 244, 0.06);
-    --accent-glow: rgba(101, 16, 244, 0.20);
+    --accent: #0d9488;
+    --accent-soft: rgba(13, 148, 136, 0.12);
+    --accent-muted: rgba(13, 148, 136, 0.07);
+    --accent-glow: rgba(13, 148, 136, 0.22);
+    --accent-subtle: rgba(13, 148, 136, 0.09);
 
     --success: #248A3D;
     --success-soft: rgba(36, 138, 61, 0.10);
@@ -333,8 +335,8 @@
     animation: pulse-beige 2s infinite;
   }
 
-  .animate-pulse-indigo {
-    animation: pulse-indigo 2s ease-in-out infinite;
+  .animate-pulse-accent {
+    animation: pulse-accent 2s ease-in-out infinite;
   }
 
   /* ── Staggered reveal for lists ── */
@@ -372,10 +374,10 @@
 
   /* ── Subtle Glow Effects ── */
   .glow-accent {
-    box-shadow: 0 0 20px rgba(101, 16, 244, 0.08), 0 0 40px rgba(101, 16, 244, 0.04);
+    box-shadow: 0 0 20px rgba(15, 118, 110, 0.1), 0 0 40px rgba(15, 118, 110, 0.05);
   }
   .glow-accent-hover:hover {
-    box-shadow: 0 0 20px rgba(101, 16, 244, 0.15), 0 0 60px rgba(101, 16, 244, 0.06);
+    box-shadow: 0 0 20px rgba(15, 118, 110, 0.18), 0 0 60px rgba(15, 118, 110, 0.08);
   }
   .glow-success {
     box-shadow: 0 0 16px rgba(48, 209, 88, 0.1);
@@ -490,7 +492,7 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulse-indigo {
+@keyframes pulse-accent {
   0%, 100% { box-shadow: 0 0 0 0 transparent; }
   50% { box-shadow: 0 0 12px var(--accent-glow); }
 }
