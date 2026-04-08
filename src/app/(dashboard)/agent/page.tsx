@@ -48,6 +48,43 @@ const STATUS_CONFIG = {
   failed:    { icon: XCircle,       color: "text-[var(--destructive)]", bg: "bg-[var(--destructive-soft)]", label: "Failed" },
 };
 
+const JOB_BORDER_BY_STATUS: Record<AgentJob['status'], string> = {
+  completed: "border-l-[var(--success)]",
+  failed: "border-l-[var(--destructive)]",
+  pending: "border-l-[var(--warning)]",
+  running: "border-l-[var(--accent)]",
+};
+
+function formatRelativeTime(iso: string): string {
+  const d = new Date(iso);
+  const diffMs = Date.now() - d.getTime();
+  const sec = Math.floor(diffMs / 1000);
+  if (sec < 10) return "just now";
+  if (sec < 60) return `${sec} seconds ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min} minute${min === 1 ? "" : "s"} ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} hour${hr === 1 ? "" : "s"} ago`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day} day${day === 1 ? "" : "s"} ago`;
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined });
+}
+
+function presetIcon(kind: string) {
+  switch (kind) {
+    case "browser.probe":
+      return <Bot className="text-[var(--accent)]" size={44} strokeWidth={1.25} />;
+    case "connector.health":
+      return <CheckCircle2 className="text-[var(--success)]" size={44} strokeWidth={1.25} />;
+    case "inbox.monitor.stub":
+      return <Clock className="text-[var(--warning)]" size={44} strokeWidth={1.25} />;
+    case "computer.use.stub":
+      return <Play className="text-[var(--fg-secondary)]" size={44} strokeWidth={1.25} />;
+    default:
+      return <Bot className="text-[var(--fg-tertiary)]" size={44} strokeWidth={1.25} />;
+  }
+}
+
 function StatusBadge({ status }: { status: AgentJob['status'] }) {
   const c = STATUS_CONFIG[status];
   const Icon = c.icon;
@@ -61,6 +98,7 @@ function StatusBadge({ status }: { status: AgentJob['status'] }) {
 
 function JobCard({ job, index }: { job: AgentJob; index: number }) {
   const [expanded, setExpanded] = useState(false);
+  const borderClass = JOB_BORDER_BY_STATUS[job.status];
 
   return (
     <motion.div
@@ -68,20 +106,15 @@ function JobCard({ job, index }: { job: AgentJob; index: number }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
-      className="group p-4 rounded-2xl bg-[var(--bg-surface)] card-elevated cursor-pointer"
+      className={`group pl-4 border-l-4 ${borderClass} p-4 rounded-2xl bg-[var(--bg-surface)] card-elevated cursor-pointer`}
       onClick={() => setExpanded(!expanded)}
     >
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center shrink-0">
-            <Bot size={16} className="text-[var(--fg-tertiary)]" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[var(--fg-primary)] font-medium text-sm tracking-[-0.01em]">{job.kind}</p>
-            <p className="text-[var(--fg-muted)] text-[11px]">
-              {new Date(job.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-            </p>
-          </div>
+      <div className="flex items-start justify-between mb-2 gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[var(--fg-primary)] font-bold text-base tracking-[-0.02em]">{job.kind}</p>
+          <p className="text-[var(--fg-muted)] text-xs mt-1">
+            {formatRelativeTime(job.created_at)}
+          </p>
         </div>
         <StatusBadge status={job.status} />
       </div>
@@ -193,162 +226,175 @@ export default function AgentPage() {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      {/* Header */}
+    <div className="p-6 md:p-8 max-w-6xl mx-auto w-full">
+      {/* Hero — command center */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-start justify-between mb-8"
+        className="w-full rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] card-elevated p-6 md:p-8 mb-8"
       >
-        <div>
-          <h1 className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">AI Agents</h1>
-          <p className="text-[var(--fg-tertiary)] text-sm mt-0.5">Autonomous task execution and monitoring</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={fetchJobs}
-            className="p-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--fg-tertiary)] hover:text-[var(--fg-primary)] hover:border-[var(--border-default)] transition-colors"
-            aria-label="Refresh"
-          >
-            <RefreshCw size={15} />
-          </button>
-          <button
-            onClick={() => {
-              setAddOpen(true);
-              setAgentName("");
-              setAgentDescription("");
-              setAgentPayloadText("");
-              setAgentKind(AGENT_KIND_OPTIONS[0]?.kind || "browser.probe");
-            }}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white text-black border border-white hover:opacity-90 transition-colors text-xs font-semibold"
-          >
-            <Plus size={14} />
-            Add Agent
-          </button>
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+          <div className="min-w-0">
+            <h1
+              className="text-3xl md:text-4xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]"
+              style={{ fontFamily: "var(--font-header)" }}
+            >
+              Agent Command Center
+            </h1>
+            <p className="text-[var(--fg-tertiary)] text-sm md:text-base mt-2">
+              Autonomous tasks running in your background
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--fg-primary)] text-xs font-semibold tracking-wide">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-40" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--accent)]" />
+              </span>
+              {counts.running} job{counts.running === 1 ? "" : "s"} running
+            </span>
+            <button
+              onClick={fetchJobs}
+              className="p-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--fg-tertiary)] hover:text-[var(--fg-primary)] hover:border-[var(--border-default)] transition-colors"
+              aria-label="Refresh"
+            >
+              <RefreshCw size={15} />
+            </button>
+            <button
+              onClick={() => {
+                setAddOpen(true);
+                setAgentName("");
+                setAgentDescription("");
+                setAgentPayloadText("");
+                setAgentKind(AGENT_KIND_OPTIONS[0]?.kind || "browser.probe");
+              }}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white text-black border border-white hover:opacity-90 transition-colors text-xs font-semibold"
+            >
+              <Plus size={14} />
+              Add Agent
+            </button>
+          </div>
         </div>
       </motion.div>
 
-      {/* Stats row */}
+      {/* Task launcher — horizontal scroll */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="grid grid-cols-4 gap-3 mb-8"
+        className="mb-10"
       >
-        {[
-          { label: "Total", value: counts.total },
-          { label: "Running", value: counts.running },
-          { label: "Completed", value: counts.completed },
-          { label: "Failed", value: counts.failed },
-        ].map((s) => (
-          <div key={s.label} className="p-4 rounded-2xl bg-[var(--bg-surface)] card-elevated">
-            <p className="text-[11px] text-[var(--fg-tertiary)] uppercase tracking-wider mb-1">{s.label}</p>
-            <p className="text-xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">{s.value}</p>
-          </div>
-        ))}
-      </motion.div>
-
-      {/* Quick launch */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="mb-8"
-      >
-        <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider mb-3">Quick launch</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider mb-4">Quick launch</p>
+        <div className="flex gap-4 overflow-x-auto pb-3 -mx-1 px-1 snap-x snap-mandatory">
           {JOB_PRESETS.map(p => (
-            <button
+            <div
               key={p.kind}
-              onClick={() => enqueue(p.kind)}
-              disabled={!!enqueuing}
-              className="group p-3 rounded-2xl bg-[var(--bg-surface)] card-elevated text-left disabled:opacity-50"
+              className="snap-start shrink-0 w-[180px] rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] card-elevated p-4 flex flex-col items-stretch"
             >
-              <p className="text-[var(--fg-primary)] text-sm font-medium mb-0.5">{p.label}</p>
-              <p className="text-[var(--fg-muted)] text-[11px]">{p.description}</p>
-              {enqueuing === p.kind && <Loader2 size={12} className="animate-spin text-[var(--fg-tertiary)] mt-1" />}
-            </button>
+              <div className="flex justify-center mb-3 opacity-95">
+                {presetIcon(p.kind)}
+              </div>
+              <p className="text-[var(--fg-primary)] text-sm font-semibold mb-1 leading-tight">{p.label}</p>
+              <p className="text-[var(--fg-muted)] text-[11px] leading-snug flex-1 mb-3">{p.description}</p>
+              <button
+                onClick={() => enqueue(p.kind)}
+                disabled={!!enqueuing}
+                className="w-full mt-auto flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] text-xs font-semibold disabled:opacity-50"
+              >
+                {enqueuing === p.kind ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+                Launch
+              </button>
+            </div>
           ))}
         </div>
       </motion.div>
 
-      {/* Custom agents */}
-      <div className="mb-8">
-        <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider mb-3">Custom agents</p>
-        {templatesLoading ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="animate-spin text-[var(--fg-muted)]" size={20} />
-          </div>
-        ) : templates.length === 0 ? (
-          <div className="text-center p-6 rounded-2xl bg-[var(--bg-surface)] card-elevated">
-            <p className="text-[var(--fg-tertiary)] text-sm">No custom agents yet.</p>
-            <p className="text-[var(--fg-muted)] text-xs mt-1">Click &ldquo;Add Agent&rdquo; to create one.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {templates.slice(0, 6).map((t) => (
-              <div key={t.id} className="p-4 rounded-2xl bg-[var(--bg-surface)] card-elevated">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[var(--fg-primary)] font-medium text-sm truncate">{t.name}</p>
-                    <p className="text-[var(--fg-muted)] text-xs mt-1">{t.kind}</p>
-                    {t.description ? (
-                      <p className="text-[var(--fg-tertiary)] text-xs mt-2 line-clamp-2">{t.description}</p>
-                    ) : null}
+      {/* Two columns: Custom agents | Recent jobs */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08 }}
+        >
+          <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider mb-4">Custom agents</p>
+          {templatesLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="animate-spin text-[var(--fg-muted)]" size={20} />
+            </div>
+          ) : templates.length === 0 ? (
+            <div className="text-center p-8 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] card-elevated">
+              <p className="text-[var(--fg-tertiary)] text-sm">No custom agents yet.</p>
+              <p className="text-[var(--fg-muted)] text-xs mt-1">Click &ldquo;Add Agent&rdquo; to create one.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {templates.slice(0, 6).map((t) => (
+                <div key={t.id} className="p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] card-elevated">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[var(--fg-primary)] font-medium text-sm truncate">{t.name}</p>
+                      <p className="text-[var(--fg-muted)] text-xs mt-1">{t.kind}</p>
+                      {t.description ? (
+                        <p className="text-[var(--fg-tertiary)] text-xs mt-2 line-clamp-2">{t.description}</p>
+                      ) : null}
+                    </div>
+                    <button
+                      className="p-2 rounded-lg hover:bg-[var(--bg-elevated)] text-[var(--fg-tertiary)]"
+                      aria-label="Delete template"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(`/api/agent/templates/${t.id}`, { method: "DELETE" });
+                          if (!res.ok) throw new Error();
+                          toast.success("Template deleted");
+                          fetchTemplates();
+                        } catch {
+                          toast.error("Failed to delete");
+                        }
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
-                  <button
-                    className="p-2 rounded-lg hover:bg-[var(--bg-elevated)] text-[var(--fg-tertiary)]"
-                    aria-label="Delete template"
-                    onClick={async () => {
-                      try {
-                        const res = await fetch(`/api/agent/templates/${t.id}`, { method: "DELETE" });
-                        if (!res.ok) throw new Error();
-                        toast.success("Template deleted");
-                        fetchTemplates();
-                      } catch {
-                        toast.error("Failed to delete");
-                      }
-                    }}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      onClick={() => enqueue(t.kind, (t.payload || {}) as Record<string, unknown>)}
+                      disabled={!!enqueuing}
+                      className="flex-1 px-3 py-2 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] text-xs font-semibold disabled:opacity-50"
+                    >
+                      Run
+                    </button>
+                  </div>
                 </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <button
-                    onClick={() => enqueue(t.kind, (t.payload || {}) as Record<string, unknown>)}
-                    disabled={!!enqueuing}
-                    className="flex-1 px-3 py-2 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] text-xs font-semibold disabled:opacity-50"
-                  >
-                    Run
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
 
-      {/* Job list */}
-      <div>
-        <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider mb-3">Recent jobs</p>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider mb-4">Recent jobs</p>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="animate-spin text-[var(--fg-muted)]" size={20} />
-          </div>
-        ) : jobs.length === 0 ? (
-          <div className="text-center py-16">
-            <Bot size={32} className="text-[var(--fg-muted)] mx-auto mb-3" />
-            <p className="text-[var(--fg-tertiary)] text-sm">No agent jobs yet</p>
-            <p className="text-[var(--fg-muted)] text-xs mt-1">Use Quick Launch above to start a task</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {jobs.map((job, i) => (
-              <JobCard key={job.id} job={job} index={i} />
-            ))}
-          </div>
-        )}
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="animate-spin text-[var(--fg-muted)]" size={20} />
+            </div>
+          ) : jobs.length === 0 ? (
+            <div className="text-center py-16 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+              <Bot size={32} className="text-[var(--fg-muted)] mx-auto mb-3" />
+              <p className="text-[var(--fg-tertiary)] text-sm">No agent jobs yet</p>
+              <p className="text-[var(--fg-muted)] text-xs mt-1">Use Quick Launch above to start a task</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {jobs.map((job, i) => (
+                <JobCard key={job.id} job={job} index={i} />
+              ))}
+            </div>
+          )}
+        </motion.div>
       </div>
 
       {/* Add Agent modal */}

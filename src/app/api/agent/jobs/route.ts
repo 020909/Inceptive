@@ -11,6 +11,7 @@ const ALLOWED_KINDS = new Set([
   "slack.ping",
   "computer.use",
   "computer.use.stub",
+  "openmanus.task",
 ]);
 
 /** GET — list recent jobs for the authenticated user */
