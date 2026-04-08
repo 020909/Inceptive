@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Mail, Loader2, Send, Trash2, Plus, Unlink, Inbox, Sparkles, X, ChevronRight, Search, Filter, Archive, Reply, Star, MoreHorizontal } from "lucide-react";
+import { Mail, Loader2, Send, Trash2, Plus, Unlink, Sparkles, X, Search, Filter, Archive, Reply, Star } from "lucide-react";
 import { formatTimeAgo } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -86,7 +86,6 @@ export default function EmailPage() {
   const [inbox, setInbox] = useState<InboxEmail[]>([]);
   const [tab, setTab] = useState<"inbox" | "sent">("inbox");
   const [loading, setLoading] = useState(true);
-  const [loadingInbox, setLoadingInbox] = useState(false);
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
   const [selected, setSelected] = useState<InboxEmail | null>(null);
   const [emailBody, setEmailBody] = useState("");
@@ -116,7 +115,6 @@ export default function EmailPage() {
 
   const fetchInbox = useCallback(async () => {
     if (!token) return;
-    setLoadingInbox(true);
     try {
       const r = await fetch("/api/emails/inbox?unread_only=0&limit=30", { headers: { Authorization: "Bearer " + token } });
       const d = await r.json();
@@ -137,7 +135,6 @@ export default function EmailPage() {
       toast.error(e?.message || "Failed to load inbox");
       setInbox([]);
     } finally {
-      setLoadingInbox(false);
       setLoading(false);
     }
   }, [token]);
@@ -274,7 +271,7 @@ export default function EmailPage() {
   if (loading) return (
     <>
       <div className="min-h-screen flex flex-col">
-        <div className="h-20 shimmer rounded-xl mx-8 mt-8" />
+        <div className="h-28 shimmer rounded-[28px] mx-8 mt-8" />
         <div className="flex-1 shimmer rounded-2xl mx-8 mt-4" />
       </div>
     </>
@@ -284,10 +281,11 @@ export default function EmailPage() {
     <>
       <div className="min-h-screen flex flex-col">
         {/* Header */}
-        <header className="flex items-center justify-between px-8 py-5 border-b border-[var(--border-subtle)]">
+        <header className="page-hero mx-8 mt-8 flex items-center justify-between px-8 py-6">
           <div>
-            <h1 className="text-xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Email Autopilot</h1>
-            <p className="text-[var(--fg-muted)] text-sm">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Communication</p>
+            <h1 className="mt-2 text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Email Autopilot</h1>
+            <p className="text-[var(--fg-muted)] text-sm mt-2">
               {gmail ? "Connected as " + gmail.account_email : "Connect Gmail to read, reply and send emails with AI"}
             </p>
           </div>

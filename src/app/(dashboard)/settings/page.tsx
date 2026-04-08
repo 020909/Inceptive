@@ -126,7 +126,7 @@ function Toggle({ on, onToggle, disabled }: { on: boolean; onToggle: () => void;
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl card-elevated bg-[var(--bg-surface)] overflow-hidden ${className}`}>
+    <div className={`command-surface rounded-[24px] overflow-hidden ${className}`}>
       {children}
     </div>
   );
@@ -348,7 +348,7 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="p-8 max-w-4xl">
+      <div className="page-frame max-w-5xl">
         <div className="h-7 w-32 rounded-lg bg-[var(--bg-surface)] animate-pulse mb-6" />
         <div className="h-[400px] rounded-xl bg-[var(--bg-surface)] animate-pulse" />
       </div>
@@ -356,14 +356,16 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl">
-      <motion.h1
+    <div className="page-frame max-w-6xl">
+      <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em] mb-6"
+        className="page-hero mb-6 px-6 py-6"
       >
-        Settings
-      </motion.h1>
+        <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Preferences</p>
+        <h1 className="mt-2 text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Settings</h1>
+        <p className="mt-2 text-sm text-[var(--fg-muted)]">Control AI behavior, account details, memory, connectors, and agent defaults.</p>
+      </motion.div>
 
       <div className="flex gap-6 items-start">
 
@@ -373,7 +375,7 @@ export default function SettingsPage() {
           animate={{ opacity: 1, x: 0 }}
           className="w-52 shrink-0 sticky top-6"
         >
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-hidden">
+          <div className="command-surface rounded-[24px] overflow-hidden">
             {SECTIONS.map((s, i) => {
               const Icon = s.icon;
               const isActive = activeSection === s.id;

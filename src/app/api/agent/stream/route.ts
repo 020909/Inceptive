@@ -48,22 +48,12 @@ import {
   parseCouncilResumePayload,
   type CouncilResumeState,
 } from "@/lib/agent/council";
-
-/** User messages may be string or multimodal parts — empty string broke website-build detection. */
-function extractMessageTextForStream(content: unknown): string {
-  if (typeof content === "string") return content.trim();
-  if (Array.isArray(content)) {
-    const out: string[] = [];
-    for (const part of content) {
-      if (typeof part === "string") out.push(part);
-      else if (part && typeof part === "object" && "text" in part && typeof (part as { text?: string }).text === "string") {
-        out.push((part as { text: string }).text);
-      }
-    }
-    return out.join("\n").trim();
-  }
-  return "";
-}
+import {
+  buildAgentSystemPrompt,
+  extractMessageTextForStream,
+  normalizeStreamHistory,
+} from "@/lib/agent/stream-context";
+import { TOOL_DISPLAY, buildTaskLogStreamLine, logTaskEvent } from "@/lib/agent/stream-events";
 
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
@@ -281,74 +271,6 @@ const getAdmin = () => {
 const admin = getAdmin();
 
 /* ─────────────────────────────────────────
-   TOOL DISPLAY MAP — human-readable actions for Live Task Feed
-───────────────────────────────────────── */
-const TOOL_DISPLAY: Record<string, { icon: string; label: (args: any) => string }> = {
-  searchWeb:           { icon: "", label: () => "Searching the web..." },
-  deepResearch:        { icon: "", label: () => "Running deep research..." },
-  browseURL:           { icon: "", label: () => "Reading webpage..." },
-  summarizeURL:        { icon: "📋", label: () => "Summarizing URL content..." },
-  getWeather:          { icon: "", label: () => "Checking weather..." },
-  getStockQuote:       { icon: "", label: () => "Fetching stock price..." },
-  getNewsHeadlines:    { icon: "", label: () => "Fetching latest news..." },
-  computerUse:         { icon: "", label: () => "Using the browser..." },
-  readGmail:           { icon: "", label: () => "Scanning Gmail inbox..." },
-  summarizeEmail:      { icon: "", label: () => "Reading email..." },
-  sendGmail:           { icon: "", label: () => "Sending email..." },
-  draftEmail:          { icon: "", label: () => "Drafting email..." },
-  saveResearchReport:  { icon: "", label: () => "Saving report..." },
-  scheduleSocialPost:  { icon: "", label: () => "Scheduling social post..." },
-  runCode:             { icon: "", label: () => "Executing code..." },
-  createGoal:          { icon: "", label: () => "Creating goal..." },
-  createTask:          { icon: "", label: () => "Adding task..." },
-  updateGoalProgress:  { icon: "", label: () => "Updating goal progress..." },
-  analyzeData:         { icon: "", label: () => "Analyzing data..." },
-  generateOutline:     { icon: "", label: () => "Generating outline..." },
-  generateExcel:       { icon: "", label: () => "Creating Excel spreadsheet..." },
-  generatePowerPoint:  { icon: "", label: () => "Creating PowerPoint presentation..." },
-  generatePDF:         { icon: "", label: () => "Creating PDF document..." },
-  generateImage:       { icon: "🎨", label: () => "Generating AI image..." },
-  projectMap:          { icon: "📁", label: () => "Mapping project structure..." },
-  codeGrep:            { icon: "🔍", label: (args: any) => `Searching for "${args.query}"...` },
-  readProjectFile:     { icon: "📄", label: (args: any) => `Reading ${args.path.split('/').pop()}...` },
-  multiAgentDebate:    { icon: "🧠", label: () => `Running Council…` },
-  writeSandboxFiles:   { icon: "📦", label: (args: any) => `Writing ${args?.files?.length ?? "?"} sandbox file(s)...` },
-  upgradeSiteToNextjs: { icon: "⚛️", label: () => "Scaffolding Next.js (App Router) in sandbox…" },
-  saveStylePreference: { icon: "🎨", label: () => "Saving style preference..." },
-  createProject:       { icon: "📁", label: () => "Creating new project..." },
-  fetchUrl:            { icon: "🌐", label: (args: any) => `Fetching ${args.url?.slice(0, 40)}...` },
-};
-
-/**
- * Log a task action to Supabase + return a stream event line.
- * Fire-and-forget DB insert so it never blocks the stream.
- */
-async function logTask(
-  userId: string,
-  action: string,
-  status: "running" | "done" | "error",
-  icon: string,
-  agentMode: string | undefined,
-  details: Record<string, unknown> = {},
-  existingLogId?: string
-): Promise<{ id: string; streamLine: string }> {
-  const id = existingLogId || crypto.randomUUID();
-  const now = new Date().toISOString();
-
-  const logEntry = { id, action, status, icon, agent_mode: agentMode || null, details, created_at: now, updated_at: now };
-  const streamLine = `4:${JSON.stringify(logEntry)}\n`;
-
-  // Fire-and-forget — don't await, don't block
-  if (existingLogId) {
-    Promise.resolve(admin.from("task_logs").update({ status, details, updated_at: now }).eq("id", existingLogId)).catch(() => {});
-  } else {
-    Promise.resolve(admin.from("task_logs").insert({ ...logEntry, user_id: userId })).catch(() => {});
-  }
-
-  return { id, streamLine };
-}
-
-/* ─────────────────────────────────────────
    STREAM ROUTE
 ───────────────────────────────────────── */
 export async function POST(req: Request) {
@@ -363,6 +285,7 @@ export async function POST(req: Request) {
       messages,
       systemOverride,
       attachedFiles,
+      projectContext,
       councilResume: councilResumeBody,
       councilContinue,
     } = await req.json();
@@ -370,6 +293,7 @@ export async function POST(req: Request) {
       user_id,
       messages: Array.isArray(messages) ? messages.length : 0,
       attachedFiles: Array.isArray(attachedFiles) ? attachedFiles.length : 0,
+      projectContext: projectContext && typeof projectContext === "object" ? "yes" : "no",
     });
 
     if (!messages) {
@@ -466,69 +390,15 @@ export async function POST(req: Request) {
     const { data: _gl } = await getAdmin()
       .from('goals').select('title,progress_percent').eq('user_id',user_id).eq('status','active').limit(3);
     const _gs = (_gl||[]).map((g:any)=>g.title+'('+g.progress_percent+'%)').join(', ') || 'none';
-    const systemPrompt = `You are ${aiName} - a powerful AI agent for entrepreneurs and founders.
-The user you are speaking to is named: ${userName}. Address them appropriately.
-Your Personality is: ${aiPersonality}.
-Your Tone is: ${aiTone}.
-
-Adopt this persona and tone throughout the entire conversation. Be helpful, deeply intelligent, and direct.
-
-## CONNECTED ACCOUNTS (LIVE)
-${_cs}
-
-## ACTIVE GOALS: ${_gs}
-
-## TOOLS
-- searchWeb: real-time search
-- fetchUrl: read, extract, and analyze ANY URL, webpage, article, or YouTube video transcript
-- browseURL: read any webpage
-- summarizeURL: fetch + deeply summarize any URL, PDF link, or article
-- projectMap: list all files in the current codebase to understand project structure
-- codeGrep: search for patterns or strings (functions, variables) across the entire project
-- readProjectFile: read the full content of any file in the project
-- writeSandboxFiles: write multiple files for the user under a private per-user sandbox (use for multi-file apps, extra pages, CSS/JS modules). Paths are relative (e.g. app/about.html, styles/theme.css).
-- upgradeSiteToNextjs: scaffold a minimal Next.js App Router project under next-site/ from the current sandbox static files (index.html, styles/main.css, scripts/app.js). Requires OpenRouter (or BYOK).
-- runCode: execute Python or JavaScript in a sandbox to verify logic or perform calculations
-- getStockQuote/getWeather/getNewsHeadlines: live data
-- createGoal/createTask/updateGoalProgress: manage dashboard goals
-- analyzeData/generateOutline: strategy and data tools
-- generateExcel/generatePowerPoint/generatePDF/generateImage: file generation tools
-- computerUse: control a headless browser with vision
-- multiAgentDebate: the 10-Agent Council (OpenRouter + Gemini API fallbacks; set COUNCIL_OPENROUTER_* for model slugs).
-- saveStylePreference: remember user's design/coding preferences across sessions
-- createProject: create a new organized project for the user
-
-## QUALITY STANDARDS (CRITICAL)
-13. Be thorough and detailed. For factual questions (history, science, finance, tech), provide comprehensive answers with context, nuance, and examples — not 2-sentence replies.
-14. Structure long answers with ## headers, bullet points, or numbered lists so they're easy to scan.
-15. When doing research or analysis, reason step-by-step before concluding. Show your thinking.
-16. AUTONOMOUS BUILD MODE (CRITICAL — no approval loops):
-   - **Never** ask "Should I proceed?", "go ahead", "okay?", "confirm?", or wait for the user to nudge you. The first user message is authorization to finish the job.
-   - Ask clarifying questions **only** when: (1) the request is critically ambiguous or unsafe without one fact, or (2) the user explicitly asked you to ask questions first (e.g. "ask me before you build"). Otherwise: **execute continuously until the deliverable is done**.
-   - Do **not** send a chat message that only announces that you *will* call a tool. Prefer **silent tool-first turns**: call tools immediately; if you must write text first, **one short sentence** max, then tools — never a lecture or plan that blocks the next step.
-   - For **coding**, **debugging**, **architecture**, **websites**, **landing pages**, or **web apps**: your **first tool call** should be the Council pipeline (\`multiAgentDebate\`) with the **full** user request plus any file context — **without** asking permission.
-   - You may call \`projectMap\` / \`readProjectFile\` **before** the council when editing **this** repo; for greenfield sites you may go **directly** to the Council tool.
-   - **User-facing language**: say **"Council"** or **"multi-agent build"** in plain English with normal spaces and punctuation. Do **not** paste raw internal tool identifiers like \`multiAgentDebate\` or camelCase API names in the user reply. If you mention the system, write e.g. "I'm running this through our Council — multiple specialists in parallel."
-   - After the council finishes: respond with a **short** summary (what you built, how to preview) plus the \`\`\`html deliverable. Do **not** dump long TypeScript/React in the message unless the user explicitly asks for source code.
-   - **Multi-file / complex sites**: The Council orchestrator emits \`<!-- inceptive-file: path -->\` markers inside fenced code; the **server saves those files automatically** to the user sandbox. You should still output a **primary live preview** in one \`\`\`html block (usually the same as \`index.html\`). You may also call \`writeSandboxFiles\` for any extra assets if needed.
-   - **Depth**: rich sections (hero, features, social proof, FAQ as appropriate), motion, accessibility, responsive layout. No "TODO" stubs.
-   - **QUALITY OVER SPEED**: let the full council run; do not truncate synthesis.
-3. ALWAYS USE TOOLS for real actions. When user says read my email → call readGmail. When user says send email → call sendGmail. For weather use getWeather; for a stock price use getStockQuote; for news headlines use getNewsHeadlines — do not invent numbers. 
-4. Be direct - no filler. Lead with action or the key insight.
-5. If connector not connected, tell user exactly: go to Email section and click Connect.
-6. If file context is provided, DO NOT repeat it verbatim or show "Attached Files" scaffolding. Summarize/answer directly from the relevant parts.
-7. If [INCEPTIVE_FILE_CONTEXT_BEGIN] is present, treat it as real extracted file content. Never say you cannot access files.
-8. Never print raw JSON tool arguments as your reply — answer in plain English after tools run.
-9. STYLE MEMORY: When a user mentions a design preference (e.g. "I like rounded corners", "always use Inter font", "dark mode only"), call \`saveStylePreference\` to remember it. The 10-Agent Council will use these preferences in future sessions.
-10. URL ANALYSIS: When user shares a URL or asks to read/analyze/summarize any webpage, article, or YouTube video, use the \`fetchUrl\` tool IMMEDIATELY. Never say you cannot access URLs.
-11. DOCUMENT GENERATION (CRITICAL): When asked to generate Excel, PDF, or PowerPoint: NEVER refuse, NEVER say you cannot guarantee accuracy, NEVER ask for clarification unless something truly ambiguous. You have FULL knowledge in training data - use it. The content MUST contain actual data (names, numbers, etc.) not placeholder text.
-12. IMAGE GENERATION (CRITICAL): When asked to generate an image → call generateImage IMMEDIATELY with a detailed descriptive prompt.
-17. LIVE HTML PREVIEW: After Council, the dashboard can load your **sandbox bundle** (multi-file site with CSS/JS inlined for preview). You MUST still include one complete \`\`\`html block for the primary page (usually same as \`index.html\`) so chat users see source. Prefer Premium Editorial palette (deep charcoal, warm paper text #f5f2eb, stone accents — no purple) unless the user specifies otherwise. No placeholder brands — tie copy to the request.
-18. DATA VISUALIZATION: If the user asks you to show a chart, graph, or data visualization, output a Chart.js configuration JSON inside a \`\`\`chart code block. Example format:
-\`\`\`chart
-{"type":"bar","data":{"labels":["Jan","Feb","Mar"],"datasets":[{"label":"Sales","data":[12,19,3],"backgroundColor":["#F5F5F7","#A1A1AA","#52525B"]}]}}
-\`\`\`
-The chat interface will automatically render this as an interactive chart. Prefer neutrals and beige — **no purple or indigo** in charts or UI copy unless the user asks.`;
+    const systemPrompt = buildAgentSystemPrompt({
+      aiName,
+      aiPersonality,
+      aiTone,
+      userName,
+      connectedAccountsSummary: _cs,
+      activeGoalsSummary: _gs,
+      projectContext,
+    });
 
 
     // ── Build valid message history ──────────────────────────────────────────
@@ -538,51 +408,11 @@ The chat interface will automatically render this as an interactive chart. Prefe
     //  3. If an assistant message was empty (e.g. tool-only first turn with no text),
     //     drop that exchange entirely so we don't end up with consecutive user msgs
     //  4. Trim trailing whitespace from assistant content (Anthropic requirement)
-    const rawHistory = (messages as any[])
-      .slice(-20) // keep a bit more than we need before pruning
-      .map((m: any) => ({
-        role: m.role as "user" | "assistant",
-        content: extractMessageTextForStream(m.content),
-      }));
-
-    const validHistory: { role: "user" | "assistant"; content: string }[] = [];
-    let idx = 0;
-    while (idx < rawHistory.length) {
-      const cur = rawHistory[idx];
-      // If this is a user message followed by an empty assistant message, skip the pair
-      if (
-        cur.role === "user" &&
-        idx + 1 < rawHistory.length &&
-        rawHistory[idx + 1].role === "assistant" &&
-        !rawHistory[idx + 1].content
-      ) {
-        idx += 2; // skip both
-        continue;
-      }
-      // Skip any orphaned empty message
-      if (!cur.content) { idx++; continue; }
-      // Prevent two consecutive same-role messages (merge them)
-      if (validHistory.length > 0 && validHistory[validHistory.length - 1].role === cur.role) {
-        validHistory[validHistory.length - 1].content += "\n\n" + cur.content;
-        idx++;
-        continue;
-      }
-      validHistory.push(cur);
-      idx++;
-    }
-
-    // Ensure the history ends with a user message (the current turn is always appended
-    // by the client, so this should already be true — but guard just in case)
-    while (validHistory.length > 0 && validHistory[validHistory.length - 1].role === "assistant") {
-      validHistory.pop();
-    }
-
-    // Cap at 16 messages to keep context reasonable
-    const finalHistory = validHistory.slice(-16);
+    const finalHistory = normalizeStreamHistory(messages);
 
     // Inject file contents into last user message if files attached
-    if (attachedFiles && Array.isArray(attachedFiles) && attachedFiles.length > 0 && validHistory.length > 0) {
-      const lastMsg = validHistory[validHistory.length - 1];
+    if (attachedFiles && Array.isArray(attachedFiles) && attachedFiles.length > 0 && finalHistory.length > 0) {
+      const lastMsg = finalHistory[finalHistory.length - 1] as any;
       if (lastMsg.role === 'user') {
         const fileCtx = attachedFiles
           .map((f: any) => `[FILE:${f.name}]\n${f.content || "(No text preview available)"}`)
@@ -1032,7 +862,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
                   };
-                  const streamLine = `4:${JSON.stringify(logEntry)}\n`;
+                  const streamLine = buildTaskLogStreamLine(logEntry);
                   if (streamEnqueue) streamEnqueue(streamLine);
                   /* Live preview status bar — real phase labels tied to each agent step */
                   if (streamEnqueue) {
@@ -2494,15 +2324,16 @@ The chat interface will automatically render this as an interactive chart. Prefe
           const existingId = toolLogIds.get(tr.toolCallId);
           if (existingId) {
             const resultStatus = (normalized as any)?.status === "error" ? "error" : "done";
-            const { streamLine } = await logTask(
-              user_id,
-              "",
-              resultStatus,
-              "",
+            const { streamLine } = await logTaskEvent({
+              admin,
+              userId: user_id,
+              action: "",
+              status: resultStatus,
+              icon: "",
               agentMode,
-              { result: typeof normalized === "string" ? normalized : normalized },
-              existingId
-            );
+              details: { result: typeof normalized === "string" ? normalized : normalized },
+              existingLogId: existingId,
+            });
             enqueue(streamLine);
           }
           console.log(`[agent.stream][${requestId}] tool-output`, {
@@ -2514,7 +2345,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
 
         try {
           // Log immediately so every message has multiple lines
-          const { streamLine: initLine } = await logTask(user_id, "Processing input...", "done", "", agentMode);
+          const { streamLine: initLine } = await logTaskEvent({ admin, userId: user_id, action: "Processing input...", status: "done", icon: "", agentMode });
           enqueue(initLine);
 
           for await (const value of result.fullStream) {
@@ -2530,7 +2361,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
                 continue;
               }
               if (!thinkingLogId) {
-                const { id, streamLine } = await logTask(user_id, "Composing response...", "running", "", agentMode);
+                const { id, streamLine } = await logTaskEvent({ admin, userId: user_id, action: "Composing response...", status: "running", icon: "", agentMode });
                 thinkingLogId = id;
                 enqueue(streamLine);
               }
@@ -2546,7 +2377,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
                   if (!trimmed || trimmed === "{}" || isGarbageUserFacingText(trimmed)) break;
                   // Log "Thinking..." once when first text appears, save its ID
                   if (!thinkingLogId) {
-                    const { id, streamLine } = await logTask(user_id, "Composing response...", "running", "", agentMode);
+                    const { id, streamLine } = await logTaskEvent({ admin, userId: user_id, action: "Composing response...", status: "running", icon: "", agentMode });
                     thinkingLogId = id;
                     enqueue(streamLine);
                   }
@@ -2563,10 +2394,15 @@ The chat interface will automatically render this as an interactive chart. Prefe
                 const display = TOOL_DISPLAY[tc.toolName];
                 const action = display ? display.label(tc.args || {}) : tc.toolName;
                 const icon = display?.icon || "⚡";
-                const { id: logId, streamLine } = await logTask(
-                  user_id, action, "running", icon, agentMode,
-                  { toolName: tc.toolName, args: tc.args }
-                );
+                const { id: logId, streamLine } = await logTaskEvent({
+                  admin,
+                  userId: user_id,
+                  action,
+                  status: "running",
+                  icon,
+                  agentMode,
+                  details: { toolName: tc.toolName, args: tc.args },
+                });
                 toolLogIds.set(tc.toolCallId, logId);
                 enqueue(streamLine);
                 break;
@@ -2578,10 +2414,15 @@ The chat interface will automatically render this as an interactive chart. Prefe
                 const display = TOOL_DISPLAY[v.toolName];
                 const action = display ? display.label(v.input || {}) : v.toolName;
                 const icon = display?.icon || "⚡";
-                const { id: logId, streamLine } = await logTask(
-                  user_id, action, "running", icon, agentMode,
-                  { toolName: v.toolName, args: v.input }
-                );
+                const { id: logId, streamLine } = await logTaskEvent({
+                  admin,
+                  userId: user_id,
+                  action,
+                  status: "running",
+                  icon,
+                  agentMode,
+                  details: { toolName: v.toolName, args: v.input },
+                });
                 toolLogIds.set(v.toolCallId, logId);
                 enqueue(streamLine);
                 break;
@@ -2613,7 +2454,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
                   : JSON.stringify(raw);
                 enqueue(`3:${JSON.stringify(msg ?? "Unknown error from AI provider")}\n`);
                 // Log error
-                const { streamLine } = await logTask(user_id, `Error: ${msg}`, "error", "", agentMode);
+                const { streamLine } = await logTaskEvent({ admin, userId: user_id, action: `Error: ${msg}`, status: "error", icon: "", agentMode });
                 enqueue(streamLine);
                 break;
               }
@@ -2626,7 +2467,7 @@ The chat interface will automatically render this as an interactive chart. Prefe
 
           // ── Final completion updates ──
           if (thinkingLogId) {
-            const { streamLine } = await logTask(user_id, "Composing response...", "done", "", agentMode, {}, thinkingLogId);
+            const { streamLine } = await logTaskEvent({ admin, userId: user_id, action: "Composing response...", status: "done", icon: "", agentMode, existingLogId: thinkingLogId });
             enqueue(streamLine);
           }
           // If the model only emitted "{}" or whitespace, treat it as no real answer and use tool fallback.
@@ -2641,11 +2482,11 @@ The chat interface will automatically render this as an interactive chart. Prefe
             producedMeaningfulText,
             usedFallback: !producedMeaningfulText,
           });
-          const { streamLine: completeLine } = await logTask(user_id, "Task completed - replied to user", "done", "", agentMode);
+          const { streamLine: completeLine } = await logTaskEvent({ admin, userId: user_id, action: "Task completed - replied to user", status: "done", icon: "", agentMode });
           enqueue(completeLine);
         } catch (err: any) {
           enqueue(`3:${JSON.stringify(err?.message || "Stream error")}\n`);
-          const { streamLine: errLine } = await logTask(user_id, "Task failed", "error", "", agentMode);
+          const { streamLine: errLine } = await logTaskEvent({ admin, userId: user_id, action: "Task failed", status: "error", icon: "", agentMode });
           enqueue(errLine);
         } finally {
           controller.close();

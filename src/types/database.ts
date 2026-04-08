@@ -68,3 +68,38 @@ export interface WeeklyReport {
   goals_active: number;
   report_json: Record<string, unknown>;
 }
+
+export interface Project {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  template: string;
+  status: "active" | "archived" | "deleted";
+  github_repo: string | null;
+  github_branch: string | null;
+  last_opened_at: string;
+  created_at: string;
+  updated_at: string;
+  artifact_count?: number;
+  latest_artifact_type?: string | null;
+}
+
+export interface ProjectArtifact {
+  id: string;
+  user_id: string;
+  project_id: string;
+  type: "website" | "image" | "powerpoint" | "excel" | "pdf" | "report" | "file" | "other";
+  title: string;
+  source: string;
+  status: "draft" | "ready" | "archived";
+  summary: string;
+  content_text: string | null;
+  content_json: Record<string, unknown> | null;
+  file_name: string | null;
+  mime_type: string | null;
+  preview_url: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}

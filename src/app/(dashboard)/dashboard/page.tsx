@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState, Suspense } from "react
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X, FileSpreadsheet, Presentation, FileText, Download, Mic, MicOff, GripVertical } from "lucide-react";
+import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X, FileSpreadsheet, Presentation, FileText, Download, Mic, MicOff, Globe, Sparkles, Layers3 } from "lucide-react";
 import { useChat, type Message, type ToolResult, type TaskLog } from "@/lib/chat-context";
 import { useAuth } from "@/lib/auth-context";
 import { useSidebar } from "@/components/layout/sidebar";
@@ -25,8 +25,23 @@ import { CouncilProgress } from "@/components/council/CouncilProgress";
 import { useCouncil } from "@/hooks/useCouncil";
 import { isWebsiteBuildTask } from "@/lib/agent/council-deliverable-refine";
 import { bundleSessionCouncilOutputForPreview } from "@/lib/council/bundle-session-preview-html";
+import type { Project, ProjectArtifact } from "@/types/database";
 
 type AttachedFile = { name: string; content: string };
+type WorkspaceProject = Project;
+type WorkspaceArtifact = ProjectArtifact;
+type ProjectContextPayload = {
+  id: string;
+  name: string;
+  description: string;
+  template: string;
+  latestArtifactType?: string | null;
+  recentArtifacts: Array<{
+    title: string;
+    type: string;
+    summary: string;
+  }>;
+};
 
 type CouncilResumeClient = {
   task: string;
@@ -476,6 +491,190 @@ function AttachmentChip({ name, onRemove }: { name: string; onRemove?: () => voi
   );
 }
 
+function getRelativeTime(date: string): string {
+  const diff = Date.now() - new Date(date).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(date).toLocaleDateString();
+}
+
+function artifactIconForType(type: string) {
+  switch (type) {
+    case "website":
+      return Globe;
+    case "image":
+      return ImageIcon;
+    case "powerpoint":
+      return Presentation;
+    case "excel":
+      return FileSpreadsheet;
+    case "pdf":
+      return FileText;
+    default:
+      return Sparkles;
+  }
+}
+
+function summarizePrompt(prompt: string) {
+  return prompt.replace(/\s+/g, " ").trim().slice(0, 140);
+}
+
+function recentUserPrompt(messages: Message[]): string {
+  return [...messages]
+    .reverse()
+    .find((message) => message.role === "user" && message.content.trim())?.content.trim() || "Untitled artifact";
+}
+
+function WorkspaceBar({
+  projects,
+  activeProjectId,
+  onProjectChange,
+  artifacts,
+  savingArtifact,
+}: {
+  projects: WorkspaceProject[];
+  activeProjectId: string | null;
+  onProjectChange: (id: string) => void;
+  artifacts: WorkspaceArtifact[];
+  savingArtifact: boolean;
+}) {
+  const activeProject = projects.find((project) => project.id === activeProjectId) || null;
+
+  return (
+    <div className="aurora-divider shrink-0 border-b border-[var(--border-subtle)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.012))] px-4 py-3 backdrop-blur-md sm:px-6">
+      <div className="mx-auto flex max-w-4xl flex-col gap-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Workspace</p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <select
+                value={activeProjectId || ""}
+                onChange={(e) => onProjectChange(e.target.value)}
+                disabled={projects.length === 0}
+                className="min-w-[220px] rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--fg-primary)] outline-none transition-colors focus:border-[var(--accent)]"
+              >
+                {projects.length === 0 && <option value="">Creating workspace…</option>}
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+              {activeProject && (
+                <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)]/90 px-3 py-1 text-[11px] text-[var(--fg-secondary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                  {activeProject.artifact_count || 0} artifact{activeProject.artifact_count === 1 ? "" : "s"}
+                </span>
+              )}
+              {savingArtifact && (
+                <span className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-3 py-1 text-[11px] text-[var(--fg-primary)]">
+                  Saving output…
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="max-w-xl text-xs leading-relaxed text-[var(--fg-muted)]">
+            Generated websites, images, decks, sheets, and PDFs now attach to the active project automatically.
+          </div>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {artifacts.length === 0 ? (
+            <div className="flex items-center gap-2 rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-surface)]/80 px-4 py-3 text-xs text-[var(--fg-muted)]">
+              <Layers3 size={14} />
+              Outputs will appear here once Inceptive generates something in this project.
+            </div>
+          ) : (
+            artifacts.map((artifact) => {
+              const Icon = artifactIconForType(artifact.type);
+              return (
+                <div
+                  key={artifact.id}
+                  className="min-w-[210px] rounded-2xl border border-[var(--border-subtle)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2">
+                      <Icon size={14} className="text-[var(--fg-primary)]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-[var(--fg-primary)]">{artifact.title}</p>
+                      <p className="text-[11px] text-[var(--fg-muted)]">
+                        {artifact.type} · {getRelativeTime(artifact.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const WEBSITE_RECIPES = [
+  {
+    label: "SaaS Landing",
+    prompt:
+      "Build a premium SaaS landing page with a strong hero, product story, feature grid, testimonials, pricing, FAQ, and polished mobile layout.",
+  },
+  {
+    label: "Startup Site",
+    prompt:
+      "Design a bold startup website with a sharp product pitch, founder credibility, social proof, roadmap, and strong call-to-action sections.",
+  },
+  {
+    label: "Dashboard UI",
+    prompt:
+      "Create a modern web app dashboard with sidebar navigation, KPI cards, activity feed, charts, settings area, and polished empty states.",
+  },
+  {
+    label: "Portfolio",
+    prompt:
+      "Build a standout portfolio website with case studies, about section, proof of work, testimonials, and contact CTA.",
+  },
+];
+
+const REFINE_RECIPES = [
+  "Make the hero feel more premium and high-conviction.",
+  "Improve typography, spacing, and visual hierarchy.",
+  "Add better motion, hover states, and polish.",
+  "Make the mobile layout feel deliberate and strong.",
+];
+
+function BuildRecipeStrip({
+  title,
+  recipes,
+  onPick,
+}: {
+  title: string;
+  recipes: Array<{ label: string; prompt: string }>;
+  onPick: (prompt: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">{title}</p>
+      <div className="flex flex-wrap gap-2">
+        {recipes.map((recipe) => (
+          <button
+            key={recipe.label}
+            type="button"
+            onClick={() => onPick(recipe.prompt)}
+            className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs text-[var(--fg-secondary)] transition-colors hover:border-[var(--border-default)] hover:bg-[var(--bg-elevated)] hover:text-[var(--fg-primary)]"
+          >
+            {recipe.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function DashboardExperience() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -489,9 +688,14 @@ function DashboardExperience() {
   const [streaming, setStreaming] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<AttachedFile[]>([]);
+  const [projects, setProjects] = useState<WorkspaceProject[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [recentArtifacts, setRecentArtifacts] = useState<WorkspaceArtifact[]>([]);
+  const [savingArtifact, setSavingArtifact] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingFilesRef = useRef<AttachedFile[]>([]);
+  const savedArtifactKeysRef = useRef<Set<string>>(new Set());
   const sendLockRef = useRef(false);
   const lastSentRef = useRef<{ text: string; ts: number }>({ text: "", ts: 0 });
   const prefillConsumedRef = useRef(false);
@@ -521,10 +725,110 @@ function DashboardExperience() {
 
   const getAccessToken = useCallback(() => session?.access_token ?? null, [session?.access_token]);
   const council = useCouncil(getAccessToken);
+  const activeProject = projects.find((project) => project.id === activeProjectId) || null;
 
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  const fetchProjects = useCallback(async () => {
+    try {
+      const res = await fetch("/api/projects");
+      if (!res.ok) return [];
+      const data = await res.json();
+      const nextProjects = (data.projects || []) as WorkspaceProject[];
+      setProjects(nextProjects);
+
+      const saved =
+        typeof window !== "undefined" ? window.localStorage.getItem("inceptive.activeProjectId") : null;
+      const savedStillExists = saved && nextProjects.some((project) => project.id === saved);
+      const fallback = nextProjects[0]?.id || null;
+      const nextActive = savedStillExists ? saved : fallback;
+      setActiveProjectId((current) =>
+        current && nextProjects.some((project) => project.id === current) ? current : nextActive
+      );
+      return nextProjects;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const fetchArtifacts = useCallback(async (projectId: string) => {
+    try {
+      const res = await fetch(`/api/artifacts?project_id=${encodeURIComponent(projectId)}&limit=12`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setRecentArtifacts((data.artifacts || []) as WorkspaceArtifact[]);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const ensureWorkspaceProject = useCallback(
+    async (prompt?: string) => {
+      if (activeProjectId) return activeProjectId;
+      const currentProjects = projects.length > 0 ? projects : await fetchProjects();
+      if (currentProjects.length > 0) return currentProjects[0].id;
+
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: prompt ? summarizePrompt(prompt).slice(0, 48) : "Workspace",
+          description: "Auto-created workspace for generated outputs",
+          template: "blank",
+        }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const created = data.project as WorkspaceProject | undefined;
+      if (!created?.id) return null;
+
+      setProjects((prev) => [created, ...prev]);
+      setActiveProjectId(created.id);
+      return created.id;
+    },
+    [activeProjectId, projects, fetchProjects]
+  );
+
+  const persistArtifact = useCallback(
+    async (payload: Record<string, unknown>) => {
+      const projectId = await ensureWorkspaceProject(
+        typeof payload.prompt === "string" ? payload.prompt : undefined
+      );
+      if (!projectId) return;
+
+      setSavingArtifact(true);
+      try {
+        const res = await fetch("/api/artifacts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, project_id: projectId }),
+        });
+        if (!res.ok) return;
+        await Promise.all([fetchProjects(), fetchArtifacts(projectId)]);
+      } finally {
+        setSavingArtifact(false);
+      }
+    },
+    [ensureWorkspaceProject, fetchProjects, fetchArtifacts]
+  );
+
+  const buildProjectContext = useCallback((): ProjectContextPayload | null => {
+    if (!activeProject) return null;
+    return {
+      id: activeProject.id,
+      name: activeProject.name,
+      description: activeProject.description || "",
+      template: activeProject.template,
+      latestArtifactType: activeProject.latest_artifact_type || null,
+      recentArtifacts: recentArtifacts.slice(0, 6).map((artifact) => ({
+        title: artifact.title,
+        type: artifact.type,
+        summary: artifact.summary || "",
+      })),
+    };
+  }, [activeProject, recentArtifacts]);
 
   useEffect(() => {
     if (messages.length === 0) {
@@ -534,6 +838,18 @@ function DashboardExperience() {
       setClarificationPrompt(null);
     }
   }, [messages.length]);
+
+  useEffect(() => {
+    void fetchProjects();
+  }, [fetchProjects]);
+
+  useEffect(() => {
+    if (!activeProjectId) return;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("inceptive.activeProjectId", activeProjectId);
+    }
+    void fetchArtifacts(activeProjectId);
+  }, [activeProjectId, fetchArtifacts]);
 
   const handleResizeDrag = useCallback((deltaX: number) => {
     if (!containerRef.current) return;
@@ -796,6 +1112,7 @@ function DashboardExperience() {
         const bodyPayload: Record<string, unknown> = {
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
           attachedFiles: attach.map((f) => ({ name: f.name, content: f.content })),
+          projectContext: buildProjectContext(),
         };
         if (councilContinueRef.current && councilResumeRef.current) {
           bodyPayload.councilResume = councilResumeRef.current;
@@ -1178,6 +1495,112 @@ function DashboardExperience() {
     }
   }, [messages, streaming]);
 
+  useEffect(() => {
+    const assistants = messages.filter((message) => message.role === "assistant");
+    for (const assistant of assistants) {
+      for (const toolResult of assistant.toolResults || []) {
+        const dedupeKey = `${assistant.id}:${toolResult.toolCallId}:${toolResult.toolName}`;
+        if (savedArtifactKeysRef.current.has(dedupeKey)) continue;
+
+        const prompt = recentUserPrompt(messages);
+        const result = toolResult.result as Record<string, any> | undefined;
+        let payload: Record<string, unknown> | null = null;
+
+        if (toolResult.toolName === "generateImage" && result?.image) {
+          payload = {
+            type: "image",
+            title: summarizePrompt(prompt),
+            source: toolResult.toolName,
+            summary: "AI-generated image",
+            preview_url: String(result.image),
+            content_json: {
+              prompt: result.prompt || prompt,
+              width: result.width || null,
+              height: result.height || null,
+            },
+            metadata: { toolName: toolResult.toolName },
+            prompt,
+          };
+        } else if (toolResult.toolName === "generatePowerPoint" && result?.content) {
+          payload = {
+            type: "powerpoint",
+            title: result.filename || `${summarizePrompt(prompt)}.pptx`,
+            source: toolResult.toolName,
+            summary: `${result.slideCount || 0} slides generated`,
+            file_name: result.filename || null,
+            mime_type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            content_json: { base64: result.content, slideCount: result.slideCount || 0 },
+            metadata: { toolName: toolResult.toolName },
+            prompt,
+          };
+        } else if (toolResult.toolName === "generateExcel" && result?.content) {
+          payload = {
+            type: "excel",
+            title: result.filename || `${summarizePrompt(prompt)}.xlsx`,
+            source: toolResult.toolName,
+            summary: `${result.rowCount || 0} rows exported`,
+            file_name: result.filename || null,
+            mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            content_json: { base64: result.content, rowCount: result.rowCount || 0 },
+            metadata: { toolName: toolResult.toolName },
+            prompt,
+          };
+        } else if (toolResult.toolName === "generatePDF" && result?.content) {
+          payload = {
+            type: "pdf",
+            title: result.filename || `${summarizePrompt(prompt)}.pdf`,
+            source: toolResult.toolName,
+            summary: `${result.pageCount || 1} page document`,
+            file_name: result.filename || null,
+            mime_type: "application/pdf",
+            content_json: { base64: result.content, pageCount: result.pageCount || 1 },
+            metadata: { toolName: toolResult.toolName },
+            prompt,
+          };
+        }
+
+        if (!payload) continue;
+        savedArtifactKeysRef.current.add(dedupeKey);
+        void persistArtifact(payload).catch(() => {
+          savedArtifactKeysRef.current.delete(dedupeKey);
+        });
+      }
+    }
+  }, [messages, persistArtifact]);
+
+  useEffect(() => {
+    if (streaming || !previewCode || previewCode === PREVIEW_LOADING_HTML) return;
+    const lastAssistant = [...messages].reverse().find((message) => message.role === "assistant");
+    if (!lastAssistant) return;
+
+    const looksLikeWebsite =
+      previewCode.includes("<html") ||
+      previewCode.includes("<body") ||
+      (lastAssistant.toolResults || []).some((toolResult) =>
+        ["multiAgentDebate", "writeSandboxFiles"].includes(toolResult.toolName)
+      );
+
+    if (!looksLikeWebsite) return;
+
+    const dedupeKey = `website:${lastAssistant.id}:${previewCode.length}`;
+    if (savedArtifactKeysRef.current.has(dedupeKey)) return;
+
+    const prompt = recentUserPrompt(messages);
+    savedArtifactKeysRef.current.add(dedupeKey);
+    void persistArtifact({
+      type: "website",
+      title: summarizePrompt(prompt),
+      source: "dashboard.preview",
+      summary: "Generated website/app preview",
+      content_text: previewCode,
+      content_json: { previewLength: previewCode.length },
+      metadata: { assistantId: lastAssistant.id },
+      prompt,
+    }).catch(() => {
+      savedArtifactKeysRef.current.delete(dedupeKey);
+    });
+  }, [messages, previewCode, streaming, persistArtifact]);
+
   return (
     <div ref={containerRef} className="flex h-screen bg-[var(--bg-app)] text-[var(--fg-primary)] overflow-hidden">
     {/* ── LEFT PANEL (Chat) ── */}
@@ -1187,7 +1610,7 @@ function DashboardExperience() {
       layout
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <header className="flex shrink-0 items-center justify-between border-b border-[var(--border-subtle)] px-4 py-3 sm:px-6">
+      <header className="aurora-divider flex shrink-0 items-center justify-between border-b border-[var(--border-subtle)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent)] px-4 py-3 sm:px-6">
         <div className="flex min-w-[120px] items-center gap-2">
           {streaming && <GeneratingEllipsis className="text-xs text-[var(--fg-muted)]" />}
           {incognito && (
@@ -1231,6 +1654,13 @@ function DashboardExperience() {
           </button>
         </div>
       </header>
+      <WorkspaceBar
+        projects={projects}
+        activeProjectId={activeProjectId}
+        onProjectChange={setActiveProjectId}
+        artifacts={recentArtifacts}
+        savingArtifact={savingArtifact}
+      />
 
       <input
         ref={fileInputRef}
@@ -1292,6 +1722,11 @@ function DashboardExperience() {
                   finalOutput={council.finalOutput}
                   error={council.error}
                   onCancel={council.cancel}
+                />
+                <BuildRecipeStrip
+                  title="Website Recipes"
+                  recipes={WEBSITE_RECIPES}
+                  onPick={(prompt) => setInput(prompt)}
                 />
                 <DashboardAiPrompt
                   value={input}
@@ -1398,6 +1833,16 @@ function DashboardExperience() {
                   error={council.error}
                   onCancel={council.cancel}
                 />
+                {previewCode && (
+                  <BuildRecipeStrip
+                    title="Refine This Build"
+                    recipes={REFINE_RECIPES.map((prompt, index) => ({
+                      label: `Refine ${index + 1}`,
+                      prompt,
+                    }))}
+                    onPick={(prompt) => setInput(prompt)}
+                  />
+                )}
                 <DashboardAiPrompt
                   value={input}
                   onChange={setInput}

@@ -282,7 +282,7 @@ export default function GoalsPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
-        <div className="h-20 shimmer rounded-xl mx-8 mt-8" />
+        <div className="h-28 shimmer rounded-[28px] mx-8 mt-8" />
         <div className="flex-1 p-8">
           <div className="grid grid-cols-4 gap-4">
             {[1,2,3,4].map(i => <div key={i} className="h-32 shimmer rounded-xl" />)}
@@ -296,10 +296,11 @@ export default function GoalsPage() {
     <>
       <div className="min-h-screen flex flex-col">
         {/* Header */}
-        <header className="flex items-center justify-between px-8 py-5 border-b border-[var(--border-subtle)]">
+        <header className="page-hero mx-8 mt-8 flex items-center justify-between px-8 py-6">
           <div>
-            <h1 className="text-xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Goals</h1>
-            <p className="text-[var(--fg-muted)] text-sm">Track objectives and milestones</p>
+            <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Planning</p>
+            <h1 className="mt-2 text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Goals</h1>
+            <p className="text-[var(--fg-muted)] text-sm mt-2">Track objectives, milestones, and execution momentum.</p>
           </div>
           <motion.button
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] font-medium text-sm"
@@ -321,7 +322,7 @@ export default function GoalsPage() {
           {/* Overview Stats */}
           <div className="grid grid-cols-4 gap-4 mb-8">
             <motion.div
-              className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated"
+              className="page-kpi p-5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0, type: 'spring', stiffness: 100, damping: 20 }}
@@ -333,7 +334,7 @@ export default function GoalsPage() {
               <p className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{activeGoals.length}</p>
             </motion.div>
             <motion.div
-              className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated"
+              className="page-kpi p-5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05, type: 'spring', stiffness: 100, damping: 20 }}
@@ -345,7 +346,7 @@ export default function GoalsPage() {
               <p className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{completedGoals.length}</p>
             </motion.div>
             <motion.div
-              className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated"
+              className="page-kpi p-5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}
@@ -357,7 +358,7 @@ export default function GoalsPage() {
               <p className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{avgProgress}%</p>
             </motion.div>
             <motion.div
-              className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated"
+              className="page-kpi p-5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15, type: 'spring', stiffness: 100, damping: 20 }}

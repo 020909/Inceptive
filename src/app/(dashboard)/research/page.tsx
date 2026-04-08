@@ -260,11 +260,12 @@ export default function ResearchPage() {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between mb-8">
+    <div className="page-frame max-w-6xl">
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="page-hero mb-8 flex items-start justify-between px-8 py-6">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">Research</h1>
-          <p className="text-[var(--fg-tertiary)] text-sm mt-0.5">AI-powered research and knowledge synthesis</p>
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Intelligence</p>
+          <h1 className="mt-2 text-3xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">Research</h1>
+          <p className="text-[var(--fg-tertiary)] text-sm mt-2">AI-powered research, synthesis, and saved knowledge reports.</p>
         </div>
       </motion.div>
 
@@ -279,7 +280,7 @@ export default function ResearchPage() {
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="Research any topic..."
             disabled={generating}
-            className="w-full pl-12 pr-28 py-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--fg-primary)] text-base placeholder:text-[var(--fg-muted)] focus:outline-none focus:border-[var(--border-strong)] transition-colors disabled:opacity-50"
+            className="command-surface w-full pl-12 pr-28 py-4 rounded-2xl text-[var(--fg-primary)] text-base placeholder:text-[var(--fg-muted)] focus:outline-none disabled:opacity-50"
           />
           <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
             {generating ? (
@@ -336,7 +337,7 @@ export default function ResearchPage() {
           { label: 'Last Engine', value: sessions[0]?.provider_used || '—', icon: Search },
           { label: 'Latest', value: reports.length > 0 ? timeAgo(reports[0].created_at) : '—', icon: Clock },
         ].map((s) => (
-          <div key={s.label} className="flex items-center gap-3 p-4 rounded-2xl bg-[var(--bg-surface)] card-elevated">
+          <div key={s.label} className="page-kpi flex items-center gap-3 p-4">
             <div className="w-9 h-9 rounded-lg bg-[var(--bg-elevated)] flex items-center justify-center">
               <s.icon size={15} className="text-[var(--fg-tertiary)]" />
             </div>

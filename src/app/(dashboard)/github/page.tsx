@@ -2,8 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Github, Link2, ExternalLink, GitBranch, Check, AlertCircle, RefreshCw, X } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
+import { Github, Link2, ExternalLink, GitBranch, Check, AlertCircle, RefreshCw } from "lucide-react";
 
 /**
  * GitHub Connection Page
@@ -30,14 +29,12 @@ interface RepoInfo {
 }
 
 export default function GitHubPage() {
-  const { user } = useAuth();
   const [state, setState] = useState<ConnectionState>("disconnected");
   const [token, setToken] = useState("");
   const [username, setUsername] = useState("");
   const [repos, setRepos] = useState<RepoInfo[]>([]);
   const [error, setError] = useState("");
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
-  const [branch, setBranch] = useState("main");
   const [showTokenInput, setShowTokenInput] = useState(false);
 
   const connectWithToken = async () => {
@@ -86,10 +83,11 @@ export default function GitHubPage() {
 
   return (
     <div className="flex-1 min-h-screen bg-[var(--bg-app)] text-[var(--fg-primary)]">
-      <div className="max-w-3xl mx-auto px-6 py-8">
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-bold tracking-tight mb-1">GitHub</h1>
-          <p className="text-sm text-[var(--fg-muted)] mb-8">Connect your repositories to pull code for AI analysis and push generated code back</p>
+      <div className="page-frame max-w-5xl">
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="page-hero mb-8 px-6 py-6">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Codebase</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">GitHub</h1>
+          <p className="text-sm text-[var(--fg-muted)] mt-2">Connect repositories to inspect code, analyze projects, and prepare generated changes for push.</p>
         </motion.div>
 
         <AnimatePresence mode="wait">

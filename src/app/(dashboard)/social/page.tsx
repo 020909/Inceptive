@@ -323,7 +323,7 @@ export default function SocialPage() {
   if (loading) return (
     <>
       <div className="min-h-screen flex flex-col">
-        <div className="h-20 shimmer rounded-xl mx-8 mt-8" />
+        <div className="h-28 shimmer rounded-[28px] mx-8 mt-8" />
         <div className="flex-1 p-8">
           <div className="grid grid-cols-4 gap-4">
             {[1,2,3,4].map(i => <div key={i} className="h-48 shimmer rounded-xl" />)}
@@ -336,10 +336,11 @@ export default function SocialPage() {
   return (
     <>
       <div className="min-h-screen flex flex-col">
-        <header className="flex items-center justify-between px-8 py-5 border-b border-[var(--border-subtle)]">
+        <header className="page-hero mx-8 mt-8 flex items-center justify-between px-8 py-6">
           <div>
-            <h1 className="text-xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Connectors</h1>
-            <p className="text-[var(--fg-muted)] text-sm">Manage integrations and data sources</p>
+            <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Integrations</p>
+            <h1 className="mt-2 text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Connectors</h1>
+            <p className="text-[var(--fg-muted)] text-sm mt-2">Manage integrations, publishing surfaces, and external channels.</p>
           </div>
           <motion.button className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] font-medium text-sm" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
             onClick={() => { setPlatform("X"); setContent(""); setTopic(""); setScheduleTime(""); setGenerateWithAi(false); setIsModalOpen(true); }}>
@@ -350,15 +351,15 @@ export default function SocialPage() {
 
         <div className="flex-1 p-8">
           <div className="grid grid-cols-3 gap-4 mb-8">
-            <motion.div className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0, type: 'spring', stiffness: 100, damping: 20 }}>
+            <motion.div className="page-kpi p-5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0, type: 'spring', stiffness: 100, damping: 20 }}>
               <p className="text-[var(--fg-muted)] text-sm mb-1">Connected</p>
               <p className="text-3xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{connectedCount}</p>
             </motion.div>
-            <motion.div className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, type: 'spring', stiffness: 100, damping: 20 }}>
+            <motion.div className="page-kpi p-5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, type: 'spring', stiffness: 100, damping: 20 }}>
               <p className="text-[var(--fg-muted)] text-sm mb-1">Available</p>
               <p className="text-3xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{SOCIAL_CONNECTORS.length}</p>
             </motion.div>
-            <motion.div className="p-5 rounded-2xl bg-[var(--bg-surface)] card-elevated" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}>
+            <motion.div className="page-kpi p-5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}>
               <p className="text-[var(--fg-muted)] text-sm mb-1">Sync Errors</p>
               <p className="text-3xl font-semibold text-[var(--fg-secondary)] tracking-[-0.03em]">0</p>
             </motion.div>

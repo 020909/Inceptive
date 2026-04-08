@@ -93,6 +93,14 @@
     --background-elevated: var(--bg-elevated);
     --background-overlay: var(--bg-overlay);
     --surface: var(--bg-surface);
+
+    /* ── Premium dashboard shell (21st / editorial — no new deps) ── */
+    --premium-radial: radial-gradient(ellipse 130% 90% at 50% -15%, rgba(15, 118, 110, 0.16), transparent 52%);
+    --premium-radial-side: radial-gradient(ellipse 70% 50% at 100% 0%, rgba(245, 245, 247, 0.05), transparent 45%);
+    --premium-border-glow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 48px -24px rgba(0, 0, 0, 0.45);
+    --premium-grid: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    --premium-orb-top: radial-gradient(circle at 20% 10%, rgba(15, 118, 110, 0.16), transparent 28%);
+    --premium-orb-bottom: radial-gradient(circle at 80% 85%, rgba(208, 188, 138, 0.12), transparent 26%);
   }
 
   html.light {
@@ -161,6 +169,12 @@
     --background-elevated: var(--bg-elevated);
     --background-overlay: var(--bg-overlay);
     --surface: var(--bg-surface);
+
+    --premium-radial: radial-gradient(ellipse 130% 90% at 50% -15%, rgba(13, 148, 136, 0.09), transparent 52%);
+    --premium-radial-side: radial-gradient(ellipse 70% 50% at 100% 0%, rgba(0, 0, 0, 0.04), transparent 45%);
+    --premium-grid: linear-gradient(rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px);
+    --premium-orb-top: radial-gradient(circle at 20% 10%, rgba(13, 148, 136, 0.1), transparent 28%);
+    --premium-orb-bottom: radial-gradient(circle at 80% 85%, rgba(184, 134, 11, 0.08), transparent 26%);
   }
 
   html,
@@ -203,6 +217,111 @@
 }
 
 @layer utilities {
+  .dashboard-premium-bg {
+    background-image: var(--premium-orb-top), var(--premium-orb-bottom), var(--premium-radial), var(--premium-radial-side), var(--premium-grid);
+    background-repeat: no-repeat;
+    background-size: auto, auto, auto, auto, 26px 26px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.92), rgba(0,0,0,0.62));
+  }
+
+  .dashboard-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.035), transparent 18%),
+      linear-gradient(90deg, transparent, rgba(255,255,255,0.03) 50%, transparent);
+    opacity: 0.7;
+  }
+
+  .command-surface {
+    position: relative;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015)),
+      rgba(45, 45, 43, 0.82);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.05),
+      0 24px 80px rgba(0,0,0,0.38),
+      0 0 0 1px rgba(255,255,255,0.03);
+    backdrop-filter: blur(18px) saturate(1.18);
+    -webkit-backdrop-filter: blur(18px) saturate(1.18);
+  }
+
+  .command-surface::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(135deg, rgba(255,255,255,0.06), transparent 30%, transparent 70%, rgba(15,118,110,0.08));
+    opacity: 0.9;
+  }
+
+  .editor-frame {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)),
+      rgba(18,18,17,0.94);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.04),
+      0 30px 70px rgba(0,0,0,0.42);
+  }
+
+  .page-frame {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding: 2rem;
+  }
+
+  .page-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background:
+      radial-gradient(circle at top left, rgba(15,118,110,0.14), transparent 28%),
+      linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)),
+      rgba(45,45,43,0.82);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.04),
+      0 30px 80px rgba(0,0,0,0.34);
+    backdrop-filter: blur(18px) saturate(1.1);
+    -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  }
+
+  .page-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), rgba(15,118,110,0.45), transparent);
+  }
+
+  .page-kpi {
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)),
+      rgba(45,45,43,0.78);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+
+  .aurora-divider {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .aurora-divider::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(15,118,110,0.55), rgba(255,255,255,0.4), transparent);
+  }
+
   /* ── Glassmorphism Utility ── */
   .glass {
     backdrop-filter: blur(20px);

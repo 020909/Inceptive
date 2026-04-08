@@ -37,7 +37,7 @@ function SidebarToggleIcon({ className }: { className?: string }) {
 }
 
 // ── Sidebar context so layout can react to collapse ──
-const SidebarContext = createContext({ collapsed: false, setCollapsed: (_: boolean) => {} });
+const SidebarContext = createContext({ collapsed: false, setCollapsed: (_collapsed: boolean) => {} });
 export function useSidebar() { return useContext(SidebarContext); }
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
@@ -79,6 +79,7 @@ function NavItem({
       href={item.href}
       className={cn(
         "group/item relative flex h-10 w-full items-center overflow-hidden rounded-lg transition-all duration-200",
+        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--ring)]",
         collapsed
           ? "justify-center gap-0 px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3"
           : "justify-start gap-3",
@@ -130,18 +131,18 @@ export function Sidebar() {
     <aside
       className={`
         group/sidebar
-        glass
+        command-surface
         flex flex-col shrink-0
         h-screen sticky top-0 z-40 overflow-hidden
         transition-[width] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]
-        border-r border-[rgba(255,255,255,0.06)]
+        border-r border-[rgba(255,255,255,0.08)]
         ${collapsed ? "w-[64px] hover:w-[220px]" : "w-[220px]"}
       `}
     >
       {/* ── Logo row: stacked logo + toggle when squeezed; horizontal when expanded or rail hover ── */}
       <div
         className={cn(
-          "flex shrink-0 overflow-hidden transition-[padding] duration-300",
+          "aurora-divider flex shrink-0 overflow-hidden transition-[padding] duration-300",
           collapsed
             ? "flex-col items-center gap-1.5 py-2.5 px-2 group-hover/sidebar:h-14 group-hover/sidebar:flex-row group-hover/sidebar:items-center group-hover/sidebar:justify-start group-hover/sidebar:gap-2 group-hover/sidebar:py-0 group-hover/sidebar:px-3"
             : "h-14 flex-row items-center justify-start gap-2 px-3",
@@ -177,7 +178,7 @@ export function Sidebar() {
           type="button"
           onClick={() => setCollapsed(!collapsed)}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--fg-tertiary)] transition-colors hover:bg-[var(--border-subtle)] hover:text-[var(--fg-primary)]"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--fg-tertiary)] transition-colors hover:bg-white/[0.06] hover:text-[var(--fg-primary)]"
         >
           <SidebarToggleIcon className="h-4 w-4" />
         </button>
@@ -234,7 +235,7 @@ export function Sidebar() {
       </div>
 
       {/* ── Bottom: Settings ── */}
-      <div className="px-2 pb-4 pt-2 border-t border-[rgba(255,255,255,0.06)] shrink-0">
+      <div className="aurora-divider px-2 pb-4 pt-2 border-t border-[rgba(255,255,255,0.06)] shrink-0">
         <Link
           href="/settings"
           className={cn(

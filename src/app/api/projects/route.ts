@@ -26,7 +26,41 @@ export async function GET(req: Request) {
     .limit(50);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ projects: data || [] });
+
+  const projects = data || [];
+  if (projects.length === 0) return NextResponse.json({ projects: [] });
+
+  const projectIds = projects.map((project) => project.id);
+  const { data: artifacts } = await admin
+    .from("project_artifacts")
+    .select("project_id, type, created_at")
+    .in("project_id", projectIds)
+    .eq("user_id", userId)
+    .neq("status", "archived")
+    .order("created_at", { ascending: false });
+
+  const artifactMeta = new Map<string, { count: number; latestType: string | null }>();
+  for (const project of projects) {
+    artifactMeta.set(project.id, { count: 0, latestType: null });
+  }
+  for (const artifact of artifacts || []) {
+    const current = artifactMeta.get(artifact.project_id) || { count: 0, latestType: null };
+    artifactMeta.set(artifact.project_id, {
+      count: current.count + 1,
+      latestType: current.latestType || artifact.type || null,
+    });
+  }
+
+  return NextResponse.json({
+    projects: projects.map((project) => {
+      const meta = artifactMeta.get(project.id);
+      return {
+        ...project,
+        artifact_count: meta?.count || 0,
+        latest_artifact_type: meta?.latestType || null,
+      };
+    }),
+  });
 }
 
 // POST /api/projects — create a new project

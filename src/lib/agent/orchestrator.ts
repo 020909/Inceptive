@@ -1,37 +1,20 @@
 import { executeAgentJob } from "./executor";
 import { claimNextDueJob, completeJob } from "./task-queue";
 import type { AgentJobRow } from "./types";
+import { createOpenManusTask, resultToJobRecord } from "@/lib/openmanus/client";
 
 /**
- * OpenManus: POST task to external server. Job kinds are primarily implemented in
- * executor.ts (executeAgentJob); openmanus.task is handled here before dispatch.
+ * OpenManus / AI·ML API: task jobs are handled here (executor.ts handles other kinds).
  */
 async function runOpenManusTaskJob(job: AgentJobRow): Promise<void> {
   const task = String((job.payload as { task?: string }).task ?? "");
-  const baseUrl = (process.env.OPENMANUS_API_URL?.trim() || "http://localhost:8000").replace(/\/$/, "");
-  const url = `${baseUrl}/api/v1/tasks`;
+  const model =
+    typeof (job.payload as { model?: string }).model === "string"
+      ? (job.payload as { model?: string }).model
+      : undefined;
 
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ task }),
-    });
-    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-    if (!res.ok) {
-      await completeJob(job.id, {
-        error: "OpenManus not connected",
-        hint: "Set OPENMANUS_API_URL in your .env.local",
-      });
-      return;
-    }
-    await completeJob(job.id, data);
-  } catch {
-    await completeJob(job.id, {
-      error: "OpenManus not connected",
-      hint: "Set OPENMANUS_API_URL in your .env.local",
-    });
-  }
+  const result = await createOpenManusTask({ task, model });
+  await completeJob(job.id, resultToJobRecord(result));
 }
 
 /**

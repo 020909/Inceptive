@@ -78,8 +78,6 @@ export default function SkillsPage() {
   const [cat, setCat] = useState("All");
   const [running, setRunning] = useState<string|null>(null);
   const [customSkills, setCustomSkills] = useState<UserSkill[]>([]);
-  const [customLoading, setCustomLoading] = useState(false);
-
   const [addOpen, setAddOpen] = useState(false);
   const [skillTitle, setSkillTitle] = useState("");
   const [skillDescription, setSkillDescription] = useState("");
@@ -89,7 +87,6 @@ export default function SkillsPage() {
   const [savingSkill, setSavingSkill] = useState(false);
 
   const fetchCustomSkills = useCallback(async () => {
-    setCustomLoading(true);
     try {
       const res = await fetch("/api/skills");
       if (!res.ok) return;
@@ -97,8 +94,6 @@ export default function SkillsPage() {
       setCustomSkills(data.skills || []);
     } catch {
       /* no-op */
-    } finally {
-      setCustomLoading(false);
     }
   }, []);
 
@@ -123,15 +118,16 @@ export default function SkillsPage() {
 
   return (
     <>
-      <div className="max-w-5xl mx-auto p-6 md:p-8">
+      <div className="page-frame max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 flex items-start justify-between gap-3"
+          className="page-hero mb-8 flex items-start justify-between gap-3 px-6 py-6"
         >
           <div>
-            <h1 className="text-2xl font-bold text-[var(--fg-primary)] mb-1">Skills</h1>
-            <p className="text-sm text-[var(--fg-secondary)]">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Playbooks</p>
+            <h1 className="mt-2 text-3xl font-bold text-[var(--fg-primary)] mb-1">Skills</h1>
+            <p className="text-sm text-[var(--fg-secondary)] mt-2">
               Pick a skill and we will prefill your dashboard prompt for review.
             </p>
           </div>

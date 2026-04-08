@@ -2,21 +2,18 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   FolderOpen,
   Clock,
-  Archive,
-  Trash2,
   Code2,
   FileText,
   Globe,
-  LayoutTemplate,
   Search,
   X,
   Github,
 } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
 
 interface Project {
   id: string;
@@ -28,6 +25,8 @@ interface Project {
   github_branch: string;
   last_opened_at: string;
   created_at: string;
+  artifact_count?: number;
+  latest_artifact_type?: string | null;
 }
 
 const TEMPLATE_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -170,7 +169,7 @@ function NewProjectModal({ open, onClose, onCreated }: { open: boolean; onClose:
   );
 }
 
-function ProjectCard({ project, index }: { project: Project; index: number }) {
+function ProjectCard({ project, index, onOpen }: { project: Project; index: number; onOpen: (projectId: string) => void }) {
   const Icon = TEMPLATE_ICONS[project.template] || FileText;
   const timeAgo = getRelativeTime(project.last_opened_at);
 
@@ -180,6 +179,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, type: "spring", stiffness: 260, damping: 24 }}
       className="group relative rounded-2xl bg-[var(--bg-surface)] card-elevated p-5 cursor-pointer hover-lift"
+      onClick={() => onOpen(project.id)}
     >
       {/* Subtle glow on hover */}
       <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-br from-[var(--accent-soft)] to-transparent" style={{ opacity: 0 }} />
@@ -204,7 +204,18 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
           <span>{timeAgo}</span>
           <span className="text-[var(--border-default)]">·</span>
           <span className="capitalize">{project.template}</span>
+          {typeof project.artifact_count === "number" && (
+            <>
+              <span className="text-[var(--border-default)]">·</span>
+              <span>{project.artifact_count} outputs</span>
+            </>
+          )}
         </div>
+        {project.latest_artifact_type && (
+          <p className="mt-3 text-[11px] text-[var(--fg-secondary)]">
+            Latest artifact: <span className="capitalize">{project.latest_artifact_type}</span>
+          </p>
+        )}
       </div>
     </motion.div>
   );
@@ -223,7 +234,7 @@ function getRelativeTime(date: string): string {
 }
 
 export default function ProjectsPage() {
-  const { user } = useAuth();
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -250,18 +261,27 @@ export default function ProjectsPage() {
       p.description?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const openProject = useCallback(
+    (projectId: string) => {
+      window.localStorage.setItem("inceptive.activeProjectId", projectId);
+      router.push("/dashboard");
+    },
+    [router]
+  );
+
   return (
     <div className="flex-1 min-h-screen bg-[var(--bg-app)] text-[var(--fg-primary)]">
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="page-frame max-w-6xl">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
+          className="page-hero mb-8 flex items-center justify-between px-6 py-6"
         >
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
-            <p className="text-sm text-[var(--fg-muted)] mt-1">Organize your code, documents, and creative work</p>
+            <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Workspace</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight">Projects</h1>
+            <p className="text-sm text-[var(--fg-muted)] mt-2">Organize your code, documents, websites, and generated artifacts in one place.</p>
           </div>
           <button
             onClick={() => setShowNew(true)}
@@ -280,7 +300,7 @@ export default function ProjectsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search projects..."
-              className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] pl-9 pr-3 py-2 text-sm text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus:border-[var(--accent)] focus:outline-none transition-colors"
+              className="command-surface w-full rounded-xl pl-9 pr-3 py-2 text-sm text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus:outline-none"
             />
           </div>
         </motion.div>
@@ -316,7 +336,7 @@ export default function ProjectsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((project, i) => (
-              <ProjectCard key={project.id} project={project} index={i} />
+              <ProjectCard key={project.id} project={project} index={i} onOpen={openProject} />
             ))}
           </div>
         )}

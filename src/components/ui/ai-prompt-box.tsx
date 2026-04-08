@@ -136,11 +136,10 @@ export function DashboardAiPrompt({
     <>
       <div
         className={cn(
-          "w-full rounded-[1.75rem] border p-2 shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-200",
-          "border-[var(--border-subtle)] bg-[var(--bg-surface)]",
+          "command-surface w-full rounded-[1.9rem] p-2.5 transition-all duration-300",
           dragOver && "border-[var(--border-strong)] bg-[var(--bg-elevated)]",
-          isLoading && "border-[var(--fg-muted)]/40",
-          activeRing,
+          isLoading && "ring-1 ring-[var(--accent)]/20",
+          activeRing && "ring-1 ring-white/15",
           className
         )}
         onDragOver={onDragOver}
@@ -156,6 +155,8 @@ export function DashboardAiPrompt({
           onDrop?.(e);
         }}
       >
+        <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
         {files.length > 0 && filePreviews[files[0]!.name] && (
           <div className="mb-1 flex flex-wrap gap-2 px-1">
             <div className="group relative">
@@ -200,7 +201,7 @@ export function DashboardAiPrompt({
           )}
         />
 
-        <div className="flex items-center justify-between gap-2 px-1 pt-2">
+        <div className="aurora-divider mt-1 flex items-center justify-between gap-2 px-1 pt-2.5">
           <div className="flex min-w-0 flex-1 items-center gap-1">
             <button
               type="button"
@@ -293,28 +294,33 @@ export function DashboardAiPrompt({
             </div>
           </div>
 
-          <button
-            type="button"
-            title={isLoading ? "Working…" : "Send"}
-            disabled={(!hasContent && files.length === 0) || disabled}
-            onClick={() => {
-              if (isLoading) return;
-              handleSend();
-            }}
-            className={cn(
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-200 btn-premium",
-              hasContent && !isLoading
-                ? "bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 glow-accent-hover"
-                : "bg-[var(--bg-elevated)] text-[var(--fg-muted)]",
-              isLoading && "animate-pulse"
-            )}
-          >
-            {isLoading ? (
-              <Square className="h-4 w-4 fill-current opacity-70" />
-            ) : (
-              <ArrowUp className="h-4 w-4" />
-            )}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="hidden rounded-full border border-white/8 bg-white/[0.035] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--fg-muted)] md:block">
+              Inceptive Studio
+            </div>
+            <button
+              type="button"
+              title={isLoading ? "Working…" : "Send"}
+              disabled={(!hasContent && files.length === 0) || disabled}
+              onClick={() => {
+                if (isLoading) return;
+                handleSend();
+              }}
+              className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 btn-premium",
+                hasContent && !isLoading
+                  ? "bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 glow-accent-hover"
+                  : "bg-[var(--bg-elevated)] text-[var(--fg-muted)]",
+                isLoading && "animate-pulse"
+              )}
+            >
+              {isLoading ? (
+                <Square className="h-4 w-4 fill-current opacity-70" />
+              ) : (
+                <ArrowUp className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

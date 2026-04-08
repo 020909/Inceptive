@@ -8,7 +8,6 @@ import {
   Download,
   ExternalLink,
   MonitorPlay,
-  RefreshCw,
   Smartphone,
   Tablet,
   Monitor,
@@ -87,12 +86,12 @@ export function WebsitePreviewPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[var(--bg-base)] glass-panel overflow-hidden">
+    <div className="editor-frame flex h-full flex-col overflow-hidden rounded-l-[28px]">
       {/* ── Top Bar: Tabs + Actions + Device Toggles ── */}
       <motion.div
         initial={{ opacity: 0, y: -4 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] shrink-0"
+        className="flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] px-3 py-2.5 shrink-0"
       >
         {/* Left: View Tabs */}
         <div className="flex items-center gap-1">
@@ -120,7 +119,7 @@ export function WebsitePreviewPanel({
 
         {/* Center: Device Toggles (preview mode only) */}
         {view === "preview" && (
-          <div className="flex items-center gap-1 bg-[var(--bg-elevated)] rounded-lg p-0.5">
+          <div className="flex items-center gap-1 rounded-xl border border-[var(--border-subtle)] bg-black/15 p-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
             {([
               { mode: "desktop" as DeviceMode, Icon: Monitor },
               { mode: "tablet" as DeviceMode, Icon: Tablet },
@@ -186,9 +185,9 @@ export function WebsitePreviewPanel({
         </div>
       </motion.div>
 
-      {buildStatusLine ? (
+        {buildStatusLine ? (
         <div
-          className="shrink-0 px-3 py-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/80 text-[11px] text-[var(--fg-secondary)] leading-snug"
+          className="shrink-0 border-b border-[var(--border-subtle)] bg-[linear-gradient(90deg,rgba(15,118,110,0.08),rgba(255,255,255,0.03),rgba(0,0,0,0))] px-3 py-2 text-[11px] leading-snug text-[var(--fg-secondary)]"
           role="status"
           aria-live="polite"
         >
@@ -207,12 +206,13 @@ export function WebsitePreviewPanel({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="w-full h-full flex items-start justify-center bg-[#0d0d0d] p-4 overflow-auto"
+              className="relative flex h-full w-full items-start justify-center overflow-auto bg-[radial-gradient(circle_at_top,rgba(15,118,110,0.16),transparent_24%),linear-gradient(180deg,#0c0c0b,#131312)] p-4"
             >
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:26px_26px] opacity-[0.16]" />
               <motion.div
                 layout
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="bg-white rounded-xl overflow-hidden shadow-2xl"
+                className="relative overflow-hidden rounded-[26px] border border-white/10 bg-white shadow-[0_40px_100px_rgba(0,0,0,0.5)]"
                 style={{
                   width: DEVICE_WIDTHS[device],
                   maxWidth: "100%",
@@ -220,6 +220,14 @@ export function WebsitePreviewPanel({
                   minHeight: device !== "desktop" ? "600px" : undefined,
                 }}
               >
+                <div className="flex h-9 items-center gap-1.5 border-b border-black/8 bg-[#f2efe8] px-4">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+                  <div className="ml-3 rounded-full bg-black/5 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-black/45">
+                    Live Preview
+                  </div>
+                </div>
                 <iframe
                   ref={iframeRef}
                   title="Website Preview"
@@ -246,7 +254,7 @@ export function WebsitePreviewPanel({
                   onCodeChange?.(e.target.value);
                 }}
                 spellCheck={false}
-                className="w-full h-full resize-none bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm p-4 focus:outline-none leading-relaxed"
+                className="h-full w-full resize-none bg-[#161616] p-4 font-mono text-sm leading-relaxed text-[#d4d4d4] focus:outline-none"
               />
             </motion.div>
           )}

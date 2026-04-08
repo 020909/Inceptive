@@ -226,17 +226,18 @@ export default function AgentPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto w-full">
+    <div className="page-frame max-w-7xl w-full">
       {/* Hero — command center */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] card-elevated p-6 md:p-8 mb-8"
+        className="page-hero w-full p-6 md:p-8 mb-8"
       >
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
           <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Autonomy</p>
             <h1
-              className="text-3xl md:text-4xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]"
+              className="mt-2 text-3xl md:text-4xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]"
               style={{ fontFamily: "var(--font-header)" }}
             >
               Agent Command Center
@@ -273,6 +274,24 @@ export default function AgentPage() {
               <Plus size={14} />
               Add Agent
             </button>
+          </div>
+        </div>
+        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="page-kpi p-4">
+            <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-[0.2em]">Total</p>
+            <p className="mt-2 text-2xl font-semibold text-[var(--fg-primary)]">{counts.total}</p>
+          </div>
+          <div className="page-kpi p-4">
+            <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-[0.2em]">Running</p>
+            <p className="mt-2 text-2xl font-semibold text-[var(--fg-primary)]">{counts.running}</p>
+          </div>
+          <div className="page-kpi p-4">
+            <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-[0.2em]">Completed</p>
+            <p className="mt-2 text-2xl font-semibold text-[var(--fg-primary)]">{counts.completed}</p>
+          </div>
+          <div className="page-kpi p-4">
+            <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-[0.2em]">Failed</p>
+            <p className="mt-2 text-2xl font-semibold text-[var(--fg-primary)]">{counts.failed}</p>
           </div>
         </div>
       </motion.div>
