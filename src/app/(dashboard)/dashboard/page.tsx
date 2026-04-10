@@ -577,18 +577,11 @@ function WorkspaceBar({
               )}
         </div>
         </div>
-          <div className="max-w-xl text-xs leading-relaxed text-[var(--fg-muted)]">
-            Generated websites, images, decks, sheets, and PDFs now attach to the active project automatically.
-          </div>
+          {/* Workspace help text removed (too noisy). */}
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {artifacts.length === 0 ? (
-            <div className="flex items-center gap-2 rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-surface)]/80 px-4 py-3 text-xs text-[var(--fg-muted)]">
-              <Layers3 size={14} />
-              Outputs will appear here once Inceptive generates something in this project.
-            </div>
-          ) : (
+          {artifacts.length === 0 ? null : (
             artifacts.map((artifact) => {
               const Icon = artifactIconForType(artifact.type);
               return (
@@ -1648,7 +1641,7 @@ function DashboardExperience() {
               alt=""
               width={22}
               height={22}
-              className="h-[22px] w-[22px] object-contain"
+              className="h-[22px] w-[22px] rounded-lg object-cover"
             />
             <span className="sr-only">Incognito mode</span>
           </button>

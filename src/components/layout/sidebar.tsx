@@ -42,7 +42,7 @@ export function useSidebar() { return useContext(SidebarContext); }
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   /** Default narrow rail (64px); hover expands to 220px when collapsed, or pin open via toggle. */
-  const [collapsed, setCollapsed] = React.useState(true);
+  const [collapsed, setCollapsed] = React.useState(false);
   return (
     <SidebarContext.Provider value={{ collapsed, setCollapsed }}>
       {children}
@@ -131,7 +131,7 @@ export function Sidebar() {
     <aside
       className={`
         group/sidebar
-        command-surface
+        sidebar-surface
         m-3 flex h-[calc(100vh-1.5rem)] shrink-0 flex-col overflow-hidden rounded-[28px]
         sticky top-3 z-40
         transition-[width] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]

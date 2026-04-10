@@ -184,17 +184,7 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background:
-      radial-gradient(circle at top left, rgba(201, 100, 66, 0.06), transparent 28%),
-      radial-gradient(circle at bottom right, rgba(20, 20, 19, 0.04), transparent 28%);
-    opacity: 0.9;
-    z-index: -1;
-  }
+  /* Keep app background plain (no gradients). */
 
   .using-mouse * {
     outline: none !important;
@@ -237,24 +227,36 @@
   }
 
   .dashboard-shell::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.46), transparent 18%),
-      linear-gradient(90deg, transparent, rgba(255,255,255,0.24) 50%, transparent);
-    opacity: 0.38;
+    content: none;
   }
 
   html.dark .dashboard-shell::before {
-    background:
-      linear-gradient(180deg, rgba(250,249,245,0.08), transparent 18%),
-      linear-gradient(90deg, transparent, rgba(250,249,245,0.06) 50%, transparent);
-    opacity: 0.45;
+    content: none;
   }
 
   .command-surface {
+    position: relative;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .command-surface::after {
+    content: none;
+  }
+
+  html.dark .command-surface {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  /* Sidebar-only glass surface (the only place we keep glass). */
+  .sidebar-surface {
     position: relative;
     background:
       linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.72)),
@@ -268,17 +270,11 @@
     -webkit-backdrop-filter: blur(18px) saturate(1.05);
   }
 
-  .command-surface::after {
-    content: "";
-    position: absolute;
-    inset: 1px;
-    border-radius: inherit;
-    pointer-events: none;
-    background: linear-gradient(135deg, rgba(255,255,255,0.42), transparent 28%, transparent 72%, rgba(201,100,66,0.08));
-    opacity: 1;
+  .sidebar-surface::after {
+    content: none;
   }
 
-  html.dark .command-surface {
+  html.dark .sidebar-surface {
     background:
       linear-gradient(180deg, rgba(250,249,245,0.05), rgba(250,249,245,0.02)),
       rgba(24, 24, 22, 0.82);
@@ -291,9 +287,8 @@
     -webkit-backdrop-filter: blur(18px) saturate(1.05);
   }
 
-  html.dark .command-surface::after {
-    background: linear-gradient(135deg, rgba(250,249,245,0.08), transparent 28%, transparent 72%, rgba(217,119,87,0.12));
-    opacity: 1;
+  html.dark .sidebar-surface::after {
+    content: none;
   }
 
   .editor-frame {
@@ -318,57 +313,39 @@
     overflow: hidden;
     border-radius: 28px;
     border: 1px solid var(--border-default);
-    background:
-      radial-gradient(circle at top left, rgba(201,100,66,0.12), transparent 28%),
-      linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,249,245,0.9)),
-      rgba(250,249,245,0.92);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.78),
-      0 28px 60px rgba(78, 66, 51, 0.12);
-    backdrop-filter: blur(18px) saturate(1.02);
-    -webkit-backdrop-filter: blur(18px) saturate(1.02);
+    background: var(--bg-surface);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   html.dark .page-hero {
     border: 1px solid var(--border-default);
-    background:
-      radial-gradient(circle at top left, rgba(217,119,87,0.14), transparent 30%),
-      linear-gradient(180deg, rgba(250,249,245,0.06), rgba(250,249,245,0.02)),
-      rgba(24, 24, 22, 0.9);
-    box-shadow:
-      inset 0 1px 0 rgba(250,249,245,0.06),
-      0 28px 60px rgba(0, 0, 0, 0.52);
-    backdrop-filter: blur(18px) saturate(1.02);
-    -webkit-backdrop-filter: blur(18px) saturate(1.02);
+    background: var(--bg-surface);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .page-hero::after {
-    content: "";
-    position: absolute;
-    inset: auto 0 0 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(201,100,66,0.15), rgba(201,100,66,0.42), transparent);
+    content: none;
   }
 
   html.dark .page-hero::after {
-    background: linear-gradient(90deg, transparent, rgba(217,119,87,0.08), rgba(217,119,87,0.32), transparent);
+    content: none;
   }
 
   .page-kpi {
     border-radius: 24px;
     border: 1px solid var(--border-default);
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.84), rgba(250,249,245,0.72)),
-      rgba(250,249,245,0.88);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    background: var(--bg-surface);
+    box-shadow: none;
   }
 
   html.dark .page-kpi {
     border: 1px solid var(--border-default);
-    background:
-      linear-gradient(180deg, rgba(250,249,245,0.04), rgba(250,249,245,0.01)),
-      rgba(32, 32, 29, 0.9);
-    box-shadow: inset 0 1px 0 rgba(250,249,245,0.05);
+    background: var(--bg-surface);
+    box-shadow: none;
   }
 
   .aurora-divider {
@@ -377,11 +354,7 @@
   }
 
   .aurora-divider::after {
-    content: "";
-    position: absolute;
-    inset: auto 0 0 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(201,100,66,0.1), rgba(201,100,66,0.36), transparent);
+    content: none;
   }
 
   .glass {
@@ -561,10 +534,10 @@
 
   /* ── Subtle Glow Effects ── */
   .glow-accent {
-    box-shadow: 0 0 20px rgba(201, 100, 66, 0.12), 0 0 40px rgba(201, 100, 66, 0.06);
+    box-shadow: none;
   }
   .glow-accent-hover:hover {
-    box-shadow: 0 0 20px rgba(201, 100, 66, 0.2), 0 0 60px rgba(201, 100, 66, 0.1);
+    box-shadow: none;
   }
   .glow-success {
     box-shadow: 0 0 16px rgba(138, 109, 59, 0.12);

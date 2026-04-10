@@ -86,6 +86,7 @@ export default function EmailPage() {
   const [inbox, setInbox] = useState<InboxEmail[]>([]);
   const [tab, setTab] = useState<"inbox" | "sent">("inbox");
   const [loading, setLoading] = useState(true);
+  const [inboxError, setInboxError] = useState<null | { code?: string; message: string }>(null);
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
   const [selected, setSelected] = useState<InboxEmail | null>(null);
   const [emailBody, setEmailBody] = useState("");
@@ -120,10 +121,12 @@ export default function EmailPage() {
       const d = await r.json();
       if (r.ok) {
         setInbox(d.messages || []);
+        setInboxError(null);
       } else {
         const code = d?.code as string | undefined;
         const message = d?.error || d?.message || "Failed to load inbox";
         const reason = typeof d?.reason === "string" ? d.reason : undefined;
+        setInboxError({ code, message: reason ? `${message} ${reason}` : message });
         if (code === "NOT_CONNECTED") {
           toast.error("Gmail is not connected. Go to Connectors and click Connect for Gmail.");
         } else {
@@ -133,6 +136,7 @@ export default function EmailPage() {
       }
     } catch (e: any) {
       toast.error(e?.message || "Failed to load inbox");
+      setInboxError({ message: e?.message || "Failed to load inbox" });
       setInbox([]);
     } finally {
       setLoading(false);
@@ -393,6 +397,35 @@ export default function EmailPage() {
 
           {/* Email List */}
           <div className="flex-1 flex flex-col">
+            {tab === "inbox" && inboxError && (
+              <div className="px-4 pt-4">
+                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-3 text-sm text-[var(--fg-secondary)]">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[var(--fg-primary)] font-medium">Inbox isn’t loading</p>
+                      <p className="mt-1 text-xs text-[var(--fg-muted)] break-words">{inboxError.message}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => fetchInbox()}
+                        className="border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--fg-primary)] hover:opacity-90"
+                      >
+                        Retry
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => (window.location.href = "/social")}
+                        className="border-0 bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90"
+                      >
+                        Go to Connectors
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Search Bar */}
             <div className="flex items-center gap-4 px-4 py-3 border-b border-[var(--border-subtle)]">
               <div className="flex-1 relative">

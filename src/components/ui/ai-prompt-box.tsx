@@ -155,7 +155,7 @@ export function DashboardAiPrompt({
           onDrop?.(e);
         }}
       >
-        <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+        {/* Plain UI: no glow/gradient rules */}
 
         {files.length > 0 && filePreviews[files[0]!.name] && (
           <div className="mb-1 flex flex-wrap gap-2 px-1">
@@ -309,7 +309,7 @@ export function DashboardAiPrompt({
               className={cn(
                 "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 btn-premium",
                 hasContent && !isLoading
-                  ? "bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 glow-accent-hover"
+                  ? "bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90"
                   : "bg-[var(--bg-elevated)] text-[var(--fg-muted)]",
                 isLoading && "animate-pulse"
               )}

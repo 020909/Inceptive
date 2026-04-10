@@ -73,13 +73,13 @@ function formatRelativeTime(iso: string): string {
 function presetIcon(kind: string) {
   switch (kind) {
     case "browser.probe":
-      return <Bot className="text-[var(--accent)]" size={44} strokeWidth={1.25} />;
+      return <Bot className="text-[var(--fg-primary)]" size={44} strokeWidth={1.25} />;
     case "connector.health":
-      return <CheckCircle2 className="text-[var(--success)]" size={44} strokeWidth={1.25} />;
+      return <CheckCircle2 className="text-[var(--fg-primary)]" size={44} strokeWidth={1.25} />;
     case "inbox.monitor.stub":
-      return <Clock className="text-[var(--warning)]" size={44} strokeWidth={1.25} />;
+      return <Clock className="text-[var(--fg-primary)]" size={44} strokeWidth={1.25} />;
     case "computer.use.stub":
-      return <Play className="text-[var(--fg-secondary)]" size={44} strokeWidth={1.25} />;
+      return <Play className="text-[var(--fg-primary)]" size={44} strokeWidth={1.25} />;
     default:
       return <Bot className="text-[var(--fg-tertiary)]" size={44} strokeWidth={1.25} />;
   }
@@ -308,7 +308,7 @@ export default function AgentPage() {
           {JOB_PRESETS.map(p => (
             <div
               key={p.kind}
-              className="snap-start shrink-0 w-[180px] rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] card-elevated p-4 flex flex-col items-stretch"
+              className="snap-start shrink-0 w-[260px] md:w-[300px] rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] card-elevated p-4 flex flex-col items-stretch"
             >
               <div className="flex justify-center mb-3 opacity-95">
                 {presetIcon(p.kind)}
