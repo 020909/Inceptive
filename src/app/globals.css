@@ -247,6 +247,13 @@
     opacity: 0.38;
   }
 
+  html.dark .dashboard-shell::before {
+    background:
+      linear-gradient(180deg, rgba(250,249,245,0.08), transparent 18%),
+      linear-gradient(90deg, transparent, rgba(250,249,245,0.06) 50%, transparent);
+    opacity: 0.45;
+  }
+
   .command-surface {
     position: relative;
     background:
@@ -268,6 +275,24 @@
     border-radius: inherit;
     pointer-events: none;
     background: linear-gradient(135deg, rgba(255,255,255,0.42), transparent 28%, transparent 72%, rgba(201,100,66,0.08));
+    opacity: 1;
+  }
+
+  html.dark .command-surface {
+    background:
+      linear-gradient(180deg, rgba(250,249,245,0.05), rgba(250,249,245,0.02)),
+      rgba(24, 24, 22, 0.82);
+    border: 1px solid var(--border-default);
+    box-shadow:
+      inset 0 1px 0 rgba(250,249,245,0.06),
+      0 18px 48px rgba(0, 0, 0, 0.42),
+      0 0 0 1px rgba(232, 230, 220, 0.14);
+    backdrop-filter: blur(18px) saturate(1.05);
+    -webkit-backdrop-filter: blur(18px) saturate(1.05);
+  }
+
+  html.dark .command-surface::after {
+    background: linear-gradient(135deg, rgba(250,249,245,0.08), transparent 28%, transparent 72%, rgba(217,119,87,0.12));
     opacity: 1;
   }
 
@@ -304,12 +329,29 @@
     -webkit-backdrop-filter: blur(18px) saturate(1.02);
   }
 
+  html.dark .page-hero {
+    border: 1px solid var(--border-default);
+    background:
+      radial-gradient(circle at top left, rgba(217,119,87,0.14), transparent 30%),
+      linear-gradient(180deg, rgba(250,249,245,0.06), rgba(250,249,245,0.02)),
+      rgba(24, 24, 22, 0.9);
+    box-shadow:
+      inset 0 1px 0 rgba(250,249,245,0.06),
+      0 28px 60px rgba(0, 0, 0, 0.52);
+    backdrop-filter: blur(18px) saturate(1.02);
+    -webkit-backdrop-filter: blur(18px) saturate(1.02);
+  }
+
   .page-hero::after {
     content: "";
     position: absolute;
     inset: auto 0 0 0;
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(201,100,66,0.15), rgba(201,100,66,0.42), transparent);
+  }
+
+  html.dark .page-hero::after {
+    background: linear-gradient(90deg, transparent, rgba(217,119,87,0.08), rgba(217,119,87,0.32), transparent);
   }
 
   .page-kpi {
@@ -319,6 +361,14 @@
       linear-gradient(180deg, rgba(255,255,255,0.84), rgba(250,249,245,0.72)),
       rgba(250,249,245,0.88);
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+
+  html.dark .page-kpi {
+    border: 1px solid var(--border-default);
+    background:
+      linear-gradient(180deg, rgba(250,249,245,0.04), rgba(250,249,245,0.01)),
+      rgba(32, 32, 29, 0.9);
+    box-shadow: inset 0 1px 0 rgba(250,249,245,0.05);
   }
 
   .aurora-divider {
