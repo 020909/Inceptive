@@ -284,7 +284,7 @@ export default function ReportsPage() {
                       <p className="text-2xl md:text-3xl font-light text-[var(--fg-primary)]">{formatReportWhen(latestReport)}</p>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--border-default)] bg-[var(--bg-elevated)] w-fit">
-                      <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                      <div className="h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse" />
                       <span className="text-xs font-semibold tracking-wide text-[var(--fg-primary)] uppercase">All systems running</span>
                     </div>
                   </div>
@@ -331,7 +331,7 @@ export default function ReportsPage() {
                       <div className="flex items-center gap-4">
                         <div className="flex-1 h-1.5 bg-[var(--bg-elevated)] rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-white rounded-full"
+                            className="h-full bg-[var(--accent)] rounded-full"
                             style={{ width: `${topGoal.progress_percent}%` }}
                           />
                         </div>
@@ -354,30 +354,30 @@ export default function ReportsPage() {
                   <div className="h-[250px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={latestReport.chart_data}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
                         <XAxis
                           dataKey="week"
-                          stroke="rgba(255,255,255,0.4)"
+                          stroke="var(--fg-muted)"
                           fontSize={12}
                           tickLine={false}
                           axisLine={false}
                           dy={10}
                         />
                         <YAxis
-                          stroke="rgba(255,255,255,0.4)"
+                          stroke="var(--fg-muted)"
                           fontSize={12}
                           tickLine={false}
                           axisLine={false}
                           dx={-10}
                         />
                         <Tooltip
-                          cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-                          contentStyle={{ backgroundColor: '#262624', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#FFF' }}
-                          itemStyle={{ color: '#FFF' }}
+                          cursor={{ fill: 'var(--accent-soft)' }}
+                          contentStyle={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', color: 'var(--fg-primary)' }}
+                          itemStyle={{ color: 'var(--fg-primary)' }}
                         />
                         <Bar
                           dataKey="tasks_completed"
-                          fill="white"
+                          fill="var(--accent)"
                           radius={[4, 4, 0, 0]}
                           maxBarSize={40}
                         />

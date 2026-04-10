@@ -117,7 +117,7 @@ export function DashboardCodePanel({
             className={cn(
               "rounded-full px-3 py-1 text-xs font-medium transition-colors",
               lang === l
-                ? "bg-white text-black"
+                ? "bg-[var(--bg-overlay)] text-[var(--fg-primary)] border border-[var(--border-default)]"
                 : "bg-[var(--bg-elevated)] text-[var(--fg-secondary)] hover:text-[var(--fg-primary)]"
             )}
           >

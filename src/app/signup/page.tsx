@@ -117,7 +117,7 @@ export default function SignUpPage() {
               type="button"
               disabled={!!oauthLoading}
               onClick={() => handleOAuth("google")}
-              className="w-full h-11 rounded-xl font-medium text-sm text-[var(--bg-base)] bg-white hover:bg-white/90 border-0 transition-colors"
+              className="w-full h-11 rounded-xl font-medium text-sm bg-[var(--bg-elevated)] text-[var(--fg-primary)] border border-[var(--border-default)] hover:bg-[var(--bg-surface)] transition-colors"
             >
               {oauthLoading === "google" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -181,7 +181,7 @@ export default function SignUpPage() {
 
             <motion.div whileTap={{ scale: 0.98 }} className="pt-1">
               <Button type="submit" disabled={loading}
-                className="w-full h-10 rounded-lg font-medium text-sm bg-[var(--fg-primary)] text-[var(--bg-base)] hover:bg-white/90 border-0 transition-colors">
+                className="w-full h-10 rounded-lg font-medium text-sm bg-[var(--accent)] text-[var(--primary-foreground)] border border-[var(--accent)] hover:opacity-90 transition-colors btn-premium">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
               </Button>
             </motion.div>
@@ -201,7 +201,7 @@ export default function SignUpPage() {
 
           <p className="mt-8 text-center text-[13px] text-[var(--fg-muted)]">
             Already have an account?{" "}
-            <Link href="/login" className="text-[var(--fg-primary)] hover:text-white/80 font-medium transition-colors">
+            <Link href="/login" className="text-[var(--fg-primary)] hover:text-[var(--accent)] font-medium transition-colors">
               Sign in
             </Link>
           </p>

@@ -280,13 +280,13 @@ async function runAgent(
     return contribution;
   }
 
-  let system = agent.systemPrompt;
+    let system = agent.systemPrompt;
   if (
     styleContext &&
     (agent.role === "ux-designer" || agent.role === "visual-polish" || agent.role === "coder")
   ) {
-    system += styleContext;
-  }
+      system += styleContext;
+    }
 
   const maxOutputTokens =
     agent.role === "orchestrator" ? 12_000 : agent.role === "coder" ? 6_000 : 5_000;
@@ -326,15 +326,15 @@ async function runAgent(
           break;
         }
         contribution.output = text;
-        contribution.status = "done";
-        contribution.durationMs = Date.now() - start;
+    contribution.status = "done";
+    contribution.durationMs = Date.now() - start;
 
-        onEvent?.({
-          type: "council",
-          agentRole: agent.role,
-          agentName: agent.name,
-          status: "done",
-          phase: agent.phase,
+    onEvent?.({
+      type: "council",
+      agentRole: agent.role,
+      agentName: agent.name,
+      status: "done",
+      phase: agent.phase,
           output: `${step.label} [${step.provider}:${step.modelId}] ${contribution.output.slice(0, 280)}`,
         });
         return contribution;
@@ -350,17 +350,17 @@ async function runAgent(
     }
   }
 
-  contribution.status = "error";
+    contribution.status = "error";
   contribution.output = `Error: ${String((lastErr as Error)?.message || lastErr)}`;
-  contribution.durationMs = Date.now() - start;
+    contribution.durationMs = Date.now() - start;
 
-  onEvent?.({
-    type: "council",
-    agentRole: agent.role,
-    agentName: agent.name,
-    status: "error",
-    phase: agent.phase,
-  });
+    onEvent?.({
+      type: "council",
+      agentRole: agent.role,
+      agentName: agent.name,
+      status: "error",
+      phase: agent.phase,
+    });
 
   return contribution;
 }
@@ -438,19 +438,19 @@ export async function runCouncil(options: CouncilRunOptions): Promise<CouncilRes
       accumulatedContext += `\n\n## User preferences (before design & code)\n${note}`;
     }
   } else {
-    if (context) {
-      accumulatedContext = `\n\n## Project Context\n${context}`;
-    }
+  if (context) {
+    accumulatedContext = `\n\n## Project Context\n${context}`;
+  }
 
-    const phase1Agents = selectedAgents.filter((a) => a.phase === 1);
-    for (const agent of phase1Agents) {
-      const prompt = `## Task\n${task}${accumulatedContext}`;
+  const phase1Agents = selectedAgents.filter((a) => a.phase === 1);
+  for (const agent of phase1Agents) {
+    const prompt = `## Task\n${task}${accumulatedContext}`;
       const result = await runAgent(agent, prompt, keys, onAgentEvent, undefined, plan);
-      contributions.push(result);
-      if (result.status === "done") {
-        accumulatedContext += `\n\n## ${agent.name} Output\n${result.output}`;
-      }
+    contributions.push(result);
+    if (result.status === "done") {
+      accumulatedContext += `\n\n## ${agent.name} Output\n${result.output}`;
     }
+  }
 
     if (stopAfterPlanner) {
       return {

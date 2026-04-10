@@ -20,7 +20,7 @@ export function EmptyState({ icon: Icon, title, description, actionLabel, onActi
       <p className="text-[13px] text-[var(--fg-muted)] text-center max-w-xs mb-6">{description}</p>
       {actionLabel && onAction && (
         <Button onClick={onAction}
-          className="rounded-lg px-5 h-9 text-sm font-medium bg-[var(--fg-primary)] text-[var(--bg-base)] hover:bg-white/90 border-0">
+          className="btn-premium rounded-lg px-5 h-9 text-sm font-medium bg-[var(--accent)] text-[var(--primary-foreground)] border border-[var(--accent)] hover:opacity-90">
           {actionLabel}
         </Button>
       )}

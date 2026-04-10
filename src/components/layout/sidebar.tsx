@@ -98,7 +98,7 @@ function NavItem({
     >
       <span className="flex shrink-0 items-center justify-center size-5 min-w-[20px]">
         <Icon size={18} strokeWidth={isActive ? 2 : 1.6} className={isActive ? "text-[var(--fg-primary)]" : "text-[var(--fg-tertiary)]"} />
-      </span>
+                    </span>
 
       <span
         className={cn(
@@ -187,12 +187,12 @@ export function Sidebar() {
       {/* ── Nav ── */}
       <nav className="flex flex-1 flex-col gap-1 px-2.5 pt-3 overflow-hidden">
         {navItems.map((item) => (
-          <NavItem
+            <NavItem
             key={item.href}
-            item={item}
-            collapsed={collapsed}
+              item={item}
+              collapsed={collapsed}
             isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
-          />
+            />
         ))}
       </nav>
 
@@ -228,9 +228,9 @@ export function Sidebar() {
                 >
                   {chat.title}
                 </button>
-              ))}
-            </div>
-          </div>
+        ))}
+      </div>
+    </div>
         )}
       </div>
 

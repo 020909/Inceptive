@@ -61,7 +61,7 @@ const COUNCIL_RESUME_BRIDGE_MESSAGE =
   "Continue the build: editorial direction, warm neutrals or charcoal, distinctive typography, accessible focus states, multi-file HTML/CSS/JS.";
 
 const PREVIEW_LOADING_HTML = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Building…</title><style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#262624;color:#f5f5f7;font-family:system-ui,sans-serif;}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#141413;color:#faf9f5;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Inter,sans-serif;}
 .p{animation:o 1.35s ease-in-out infinite}@keyframes o{0%,100%{opacity:.35}50%{opacity:1}}
 </style></head><body><div style="text-align:center;max-width:340px;padding:28px"><div class="p" style="font-size:2rem;line-height:1;margin-bottom:14px">◇</div><p style="font-size:14px;line-height:1.55;opacity:.95">Live status appears in the bar above. This view updates when generated HTML arrives.</p></div></body></html>`;
 
@@ -239,7 +239,7 @@ function AsyncImage({ src, alt, onDownload }: { src: string; alt: string; onDown
       {loaded && (
         <button 
           onClick={onDownload}
-          className="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black/80 backdrop-blur-md rounded-lg text-white opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm z-20"
+          className="absolute top-2 right-2 p-2 bg-[var(--bg-overlay)]/80 hover:bg-[var(--bg-overlay)] backdrop-blur-md rounded-lg text-[var(--fg-primary)] opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm z-20 border border-[var(--border-subtle)]"
           title="Download Image"
         >
           <Download size={16} />
@@ -257,7 +257,7 @@ function GeneratedFileCard({ result, toolName }: { result: any; toolName: string
     const paths: string[] | undefined =
       toolName === "multiAgentDebate" ? result.sandboxFilesWritten : result.paths;
     const title = toolName === "multiAgentDebate" ? "Council run complete" : "Sandbox files updated";
-    return (
+  return (
       <div className="mt-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2.5">
         <p className="text-sm font-medium text-[var(--fg-primary)]">{title}</p>
         {msg ? (
@@ -271,9 +271,9 @@ function GeneratedFileCard({ result, toolName }: { result: any; toolName: string
             {paths.length > 4 ? "…" : ""}
           </p>
         )}
-      </div>
-    );
-  }
+    </div>
+  );
+}
 
   const handleDownloadImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -425,7 +425,7 @@ function ChatMessage({
   };
 
   return (
-    <motion.div
+      <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 260, damping: 24 }}
@@ -460,7 +460,7 @@ function ChatMessage({
               {msg.toolResults.map((tr, idx) => (
                 <GeneratedFileCard key={idx} result={tr.result} toolName={tr.toolName} />
               ))}
-            </div>
+        </div>
           )}
         </motion.div>
         {!isUser && msg.content && msg.content.length > 20 && !showGenerating && (
@@ -473,7 +473,7 @@ function ChatMessage({
             <TTSButton text={msg.content} />
           </motion.div>
         )}
-      </div>
+          </div>
     </motion.div>
   );
 }
@@ -575,8 +575,8 @@ function WorkspaceBar({
                   Saving output…
                 </span>
               )}
-            </div>
-          </div>
+        </div>
+        </div>
           <div className="max-w-xl text-xs leading-relaxed text-[var(--fg-muted)]">
             Generated websites, images, decks, sheets, and PDFs now attach to the active project automatically.
           </div>
@@ -801,8 +801,8 @@ function DashboardExperience() {
       setSavingArtifact(true);
       try {
         const res = await fetch("/api/artifacts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...payload, project_id: projectId }),
         });
         if (!res.ok) return;
@@ -955,8 +955,8 @@ function DashboardExperience() {
       setPendingFiles((prev) => {
         const next = [...prev, ...uploaded];
         pendingFilesRef.current = next;
-        return next;
-      });
+              return next;
+            });
       return uploaded;
     },
     [session?.access_token]
@@ -1174,16 +1174,16 @@ function DashboardExperience() {
               messagesRef.current
             );
           }, 200);
-        };
+      };
 
-        while (true) {
+      while (true) {
           resetSafetyTimer();
-          const { done, value } = await reader.read();
+        const { done, value } = await reader.read();
           if (done) break;
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
 
           for (const line of lines) {
             if (!line.trim()) continue;
@@ -1417,7 +1417,7 @@ function DashboardExperience() {
             m.id === assistantId ? { ...m, content: m.content || "Connection error. Please try again." } : m
           )
         );
-      } finally {
+    } finally {
         clearTimeout(safetyTimer);
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
@@ -1604,21 +1604,21 @@ function DashboardExperience() {
   return (
     <div ref={containerRef} className="flex h-screen bg-[var(--bg-app)] text-[var(--fg-primary)] overflow-hidden">
     {/* ── LEFT PANEL (Chat) ── */}
-    <motion.div
+        <motion.div
       className="flex flex-col h-screen overflow-hidden"
       style={{ width: previewCode ? `${splitRatio}%` : "100%" }}
       layout
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <header className="aurora-divider flex shrink-0 items-center justify-between border-b border-[var(--border-subtle)] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent)] px-4 py-3 sm:px-6">
+      <header className="aurora-divider flex shrink-0 items-center justify-between border-b border-[var(--border-subtle)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),transparent)] px-4 py-3 sm:px-6">
         <div className="flex min-w-[120px] items-center gap-2">
           {streaming && <GeneratingEllipsis className="text-xs text-[var(--fg-muted)]" />}
           {incognito && (
-            <span className="rounded-full border border-white/20 bg-white/[0.08] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#D8D8E0]">
+            <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--fg-tertiary)]">
               Incognito
             </span>
           )}
-        </div>
+          </div>
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -1627,9 +1627,9 @@ function DashboardExperience() {
               setSandboxPaths(null);
               void startNewChat();
             }}
-            className="flex h-8 items-center gap-1.5 rounded-xl bg-white px-3 text-xs font-medium text-black transition-opacity hover:opacity-90"
+            className="flex h-8 items-center gap-1.5 rounded-xl bg-[var(--accent)] px-3 text-xs font-medium text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
           >
-            <Plus size={14} className="text-black" />
+            <Plus size={14} className="text-[var(--primary-foreground)]" />
             New chat
           </button>
           <button
@@ -1638,8 +1638,8 @@ function DashboardExperience() {
             className={[
               "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-opacity hover:opacity-95",
               incognito
-                ? "border-[var(--accent)]/45 bg-white ring-1 ring-[var(--accent)]/25"
-                : "border-black/10 bg-white",
+                ? "border-[var(--accent)]/45 bg-[var(--bg-elevated)] ring-1 ring-[var(--accent)]/25"
+                : "border-[var(--border-default)] bg-[var(--bg-elevated)]",
             ].join(" ")}
             title="Incognito: chats are not saved to history or session"
           >
@@ -1702,8 +1702,8 @@ function DashboardExperience() {
                           })
                         }
                       />
-                    ))}
-                  </div>
+                  ))}
+                </div>
                 )}
                 {clarificationPrompt && (
                   <ClarificationOptionBar
@@ -1763,11 +1763,11 @@ function DashboardExperience() {
                     {isMicListening ? <MicOff size={13} /> : <Mic size={13} />}
                     <span>{isMicListening ? 'Stop' : 'Voice'}</span>
                   </button>
-                </div>
+                    </div>
                 <InceptiveV0ActionRow items={actionItems} />
-              </div>
-            </div>
-          </div>
+                    </div>
+                      </div>
+                      </div>
         ) : (
           <>
             <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6">
@@ -1776,7 +1776,7 @@ function DashboardExperience() {
                   {messages.map((msg, i) => {
                     const isLast = i === messages.length - 1;
                     const isLastAssistant = isLast && msg.role === "assistant";
-                    return (
+                          return (
                       <ChatMessage
                         key={msg.id}
                         msg={msg}
@@ -1784,11 +1784,11 @@ function DashboardExperience() {
                         streaming={streaming}
                         onOpenPreview={(code) => setPreviewCode(code)}
                       />
-                    );
-                  })}
+                          );
+                        })}
+                      </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
             <div className="sticky bottom-0 z-20 shrink-0 border-t border-[var(--border-subtle)] bg-[var(--bg-app)]/95 px-4 pt-3 pb-6 backdrop-blur-md sm:px-6">
               <div className="mx-auto w-full max-w-4xl space-y-3">
@@ -1813,7 +1813,7 @@ function DashboardExperience() {
                         }
                       />
                     ))}
-                  </div>
+        </div>
                 )}
                 {clarificationPrompt && (
                   <ClarificationOptionBar
@@ -1865,8 +1865,8 @@ function DashboardExperience() {
                 />
                 {/* Voice mic button */}
                 <div className="flex justify-end -mt-1">
-                  <button
-                    type="button"
+              <button
+                type="button"
                     onClick={startMic}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200 ${
                       isMicListening
@@ -1877,13 +1877,13 @@ function DashboardExperience() {
                   >
                     {isMicListening ? <MicOff size={13} /> : <Mic size={13} />}
                     <span>{isMicListening ? 'Stop' : 'Voice'}</span>
-                  </button>
-                </div>
+              </button>
               </div>
             </div>
+        </div>
           </>
-        )}
-      </div>
+          )}
+        </div>
     </motion.div>
     {/* ── RESIZE HANDLE ── */}
     <AnimatePresence>
@@ -1916,8 +1916,8 @@ function DashboardExperience() {
             }}
             onCodeChange={(newCode) => setPreviewCode(newCode)}
           />
-        </motion.div>
-      )}
+                </motion.div>
+          )}
     </AnimatePresence>
     </div>
   );

@@ -185,9 +185,9 @@ export function WebsitePreviewPanel({
         </div>
       </motion.div>
 
-        {buildStatusLine ? (
+      {buildStatusLine ? (
         <div
-          className="shrink-0 border-b border-[var(--border-subtle)] bg-[linear-gradient(90deg,rgba(15,118,110,0.08),rgba(255,255,255,0.03),rgba(0,0,0,0))] px-3 py-2 text-[11px] leading-snug text-[var(--fg-secondary)]"
+          className="shrink-0 border-b border-[var(--border-subtle)] bg-[linear-gradient(90deg,var(--accent-soft),rgba(255,255,255,0.03),rgba(0,0,0,0))] px-3 py-2 text-[11px] leading-snug text-[var(--fg-secondary)]"
           role="status"
           aria-live="polite"
         >
@@ -206,13 +206,13 @@ export function WebsitePreviewPanel({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="relative flex h-full w-full items-start justify-center overflow-auto bg-[radial-gradient(circle_at_top,rgba(15,118,110,0.16),transparent_24%),linear-gradient(180deg,#0c0c0b,#131312)] p-4"
+              className="relative flex h-full w-full items-start justify-center overflow-auto bg-[radial-gradient(circle_at_top,var(--accent-soft),transparent_26%),linear-gradient(180deg,rgba(20,20,19,0.96),rgba(24,24,22,0.98))] p-4"
             >
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:26px_26px] opacity-[0.16]" />
               <motion.div
                 layout
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="relative overflow-hidden rounded-[26px] border border-white/10 bg-white shadow-[0_40px_100px_rgba(0,0,0,0.5)]"
+                className="relative overflow-hidden rounded-[26px] border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[0_40px_100px_rgba(0,0,0,0.5)]"
                 style={{
                   width: DEVICE_WIDTHS[device],
                   maxWidth: "100%",
@@ -220,11 +220,11 @@ export function WebsitePreviewPanel({
                   minHeight: device !== "desktop" ? "600px" : undefined,
                 }}
               >
-                <div className="flex h-9 items-center gap-1.5 border-b border-black/8 bg-[#f2efe8] px-4">
+                <div className="flex h-9 items-center gap-1.5 border-b border-[var(--border-subtle)] bg-[var(--bg-overlay)] px-4">
                   <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
                   <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
                   <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-                  <div className="ml-3 rounded-full bg-black/5 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-black/45">
+                  <div className="ml-3 rounded-full bg-[var(--bg-surface)]/80 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--fg-muted)]">
                     Live Preview
                   </div>
                 </div>
@@ -254,7 +254,7 @@ export function WebsitePreviewPanel({
                   onCodeChange?.(e.target.value);
                 }}
                 spellCheck={false}
-                className="h-full w-full resize-none bg-[#161616] p-4 font-mono text-sm leading-relaxed text-[#d4d4d4] focus:outline-none"
+                className="h-full w-full resize-none bg-[var(--bg-app)] p-4 font-mono text-sm leading-relaxed text-[var(--fg-secondary)] focus:outline-none"
               />
             </motion.div>
           )}

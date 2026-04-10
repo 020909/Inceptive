@@ -302,9 +302,9 @@ export default function SocialPage() {
   };
 
   const getStatusColor = (status: string) => {
-    if (status === "published") return "bg-white/80";
-    if (status === "draft") return "bg-white/60";
-    return "bg-white/50";
+    if (status === "published") return "bg-[var(--bg-elevated)]";
+    if (status === "draft") return "bg-[var(--bg-overlay)]";
+    return "bg-[var(--bg-surface)]";
   };
 
   const platformProvider: Record<string, string> = {
@@ -479,7 +479,7 @@ export default function SocialPage() {
             )}
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}
-                className="hover:bg-white/10 text-[var(--fg-primary)] hover:text-[var(--fg-primary)]">Cancel</Button>
+                className="hover:bg-[var(--bg-overlay)] text-[var(--fg-primary)] hover:text-[var(--fg-primary)]">Cancel</Button>
               <Button type="submit" disabled={saving} className="border-0 bg-[var(--fg-primary)] text-[var(--bg-base)]">
                 {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{generateWithAi ? "Generating…" : "Saving…"}</> : generateWithAi ? "Generate & Save" : "Schedule Post"}
               </Button>
@@ -514,7 +514,7 @@ export default function SocialPage() {
             </div>
             <DialogFooter className="pt-2">
               <Button type="button" variant="ghost" onClick={() => setIsTelegramModalOpen(false)}
-                className="hover:bg-white/10 text-[var(--fg-primary)] hover:text-[var(--fg-primary)]">Cancel</Button>
+                className="hover:bg-[var(--bg-overlay)] text-[var(--fg-primary)] hover:text-[var(--fg-primary)]">Cancel</Button>
               <Button type="submit" disabled={connectingTelegram} className="border-0 bg-[var(--fg-primary)] text-[var(--bg-base)]">
                 {connectingTelegram ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Connecting…</> : "Connect Bot"}
               </Button>

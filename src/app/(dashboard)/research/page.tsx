@@ -72,7 +72,7 @@ function ReportBody({ content }: { content: string }) {
         if (numbered) {
           return (
             <p
-              key={i}
+            key={i}
               className="font-semibold text-[15px] leading-snug text-[var(--fg-primary)] mt-5 first:mt-0 mb-2 tracking-[-0.02em]"
             >
               {trimmed}
@@ -154,8 +154,8 @@ function ReportCard({ report, index, onOpen }: { report: Report; index: number; 
             >
               <Download size={13} />
             </button>
-            <button
-              type="button"
+      <button
+        type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setExpanded((v) => !v);
@@ -165,7 +165,7 @@ function ReportCard({ report, index, onOpen }: { report: Report; index: number; 
               aria-expanded={expanded}
             >
               {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
+      </button>
           </div>
         </div>
         <h3 className="text-[var(--fg-primary)] font-medium text-sm tracking-[-0.01em] mb-1.5">{report.topic}</h3>
@@ -188,7 +188,7 @@ function ReportCard({ report, index, onOpen }: { report: Report; index: number; 
               <div className="max-w-none text-[13px] leading-relaxed">
                 <ReportBody content={report.content} />
               </div>
-            </div>
+                </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -295,7 +295,7 @@ export default function ResearchPage() {
               </button>
             )}
           </div>
-        </div>
+          </div>
 
         {/* Depth selector + quick topics */}
         <div className="flex items-center justify-between">
@@ -325,8 +325,8 @@ export default function ResearchPage() {
               </button>
             ))}
           </div>
-        </div>
-      </motion.div>
+      </div>
+              </motion.div>
 
       {/* Stats */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-5 gap-3 mb-8">
@@ -367,13 +367,13 @@ export default function ResearchPage() {
           </div>
           <p className="text-sm text-[var(--fg-primary)] font-medium mb-1">No research yet</p>
           <p className="text-xs text-[var(--fg-muted)]">Enter a topic above to generate your first AI research report.</p>
-        </div>
+                    </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
           {reports.map((r, i) => (
             <ReportCard key={r.id} report={r} index={i} onOpen={() => setSelectedReport(r)} />
           ))}
-        </div>
+                  </div>
       )}
 
       <AnimatePresence>
@@ -403,7 +403,7 @@ export default function ResearchPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
+                <button
                     onClick={() => downloadReportAsPdf(selectedReport)}
                     className="h-8 px-3 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] text-xs font-medium flex items-center gap-1.5"
                   >
@@ -412,7 +412,7 @@ export default function ResearchPage() {
                   </button>
                   <button onClick={() => setSelectedReport(null)} className="h-8 w-8 rounded-lg border border-[var(--border-subtle)] flex items-center justify-center text-[var(--fg-tertiary)]">
                     <X size={14} />
-                  </button>
+                </button>
                 </div>
               </div>
               <div className="p-6 overflow-y-auto flex-1 min-h-0">
@@ -422,6 +422,6 @@ export default function ResearchPage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+            </div>
   );
 }

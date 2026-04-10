@@ -353,12 +353,12 @@ export async function POST(req: Request) {
       } else if (geminiKey) {
         model = buildModel(geminiKey, "gemini", "gemini-2.0-flash");
       } else {
-        return new Response(
+      return new Response(
           JSON.stringify({
             error: "AI not configured. Add GROQ_API_KEY, OpenRouter, or Gemini in env, or BYOK in Settings.",
           }),
-          { status: 400 }
-        );
+        { status: 400 }
+      );
       }
     }
 

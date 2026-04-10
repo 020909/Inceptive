@@ -47,7 +47,7 @@ export function HtmlPreview({
       </div>
       <div className="relative w-full">
         {view === "preview" ? (
-          <div className="bg-white rounded-b-xl overflow-hidden">
+          <div className="bg-[var(--bg-elevated)] rounded-b-xl overflow-hidden">
             <iframe
               title="HTML Preview"
               srcDoc={code}

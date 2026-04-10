@@ -107,7 +107,7 @@ export default function MorningBriefing() {
         <div 
           className="rounded-2xl border overflow-hidden p-[1px]"
           style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%)",
+            background: "linear-gradient(135deg, var(--accent-soft) 0%, rgba(255,255,255,0.02) 100%)",
             borderColor: "var(--border)",
             boxShadow: "0 8px 32px rgba(0,0,0,0.12)"
           }}
@@ -119,7 +119,7 @@ export default function MorningBriefing() {
             {/* Close Button */}
             <button 
               onClick={handleDismiss}
-              className="absolute top-4 right-4 p-1.5 rounded-full text-[var(--foreground-secondary)] hover:text-white hover:bg-[var(--card-hover)] transition-colors"
+              className="absolute top-4 right-4 p-1.5 rounded-full text-[var(--foreground-secondary)] hover:text-[var(--fg-primary)] hover:bg-[var(--background-overlay)] transition-colors"
               title="Dismiss Briefing"
             >
               <X className="w-4 h-4" />
@@ -135,7 +135,7 @@ export default function MorningBriefing() {
                 >
                   <img src="/logo.png" alt="Inceptive Agent" className="w-10 h-10 object-contain" />
                 </div>
-                <h2 className="text-xl font-bold tracking-tight text-white max-w-[200px] leading-tight text-center sm:text-left">
+                <h2 className="text-xl font-bold tracking-tight text-[var(--fg-primary)] max-w-[200px] leading-tight text-center sm:text-left">
                   Good morning, {firstName}! 
                   <span className="block text-lg text-[var(--foreground-secondary)] mt-1 font-medium">
                     Here&apos;s what I did while you slept 🔥
@@ -165,7 +165,7 @@ export default function MorningBriefing() {
                     <ul className="space-y-2.5">
                       {bulletPoints.map((action, i) => (
                         <li key={i} className="flex items-start gap-2.5 text-sm text-[var(--foreground-secondary)]">
-                          <CheckCircle2 className="w-4 h-4 mt-0.5 text-[#FFFFFF] shrink-0" />
+                          <CheckCircle2 className="w-4 h-4 mt-0.5 text-[var(--fg-primary)] shrink-0" />
                           <span className="leading-snug">{action}</span>
                         </li>
                       ))}
@@ -175,15 +175,15 @@ export default function MorningBriefing() {
                     <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t" style={{ borderColor: "var(--border-subtle)" }}>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1.5">
-                          <Activity className="w-4 h-4 text-[#FFFFFF]" />
-                          <span className="text-sm font-semibold text-white">
+                          <Activity className="w-4 h-4 text-[var(--fg-primary)]" />
+                          <span className="text-sm font-semibold text-[var(--fg-primary)]">
                             {completedTasks} tasks completed
                           </span>
                         </div>
                       </div>
                       <button 
                         onClick={handleDismiss} 
-                        className="text-[11px] uppercase tracking-wider font-bold text-[var(--foreground-tertiary)] hover:text-white transition-colors"
+                        className="text-[11px] uppercase tracking-wider font-bold text-[var(--foreground-tertiary)] hover:text-[var(--fg-primary)] transition-colors"
                       >
                         Dismiss
                       </button>

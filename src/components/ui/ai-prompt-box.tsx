@@ -175,7 +175,7 @@ export function DashboardAiPrompt({
                   clearFile();
                 }}
               >
-                <X className="h-3 w-3 text-white" />
+                <X className="h-3 w-3 text-[var(--fg-primary)]" />
               </button>
             </div>
           </div>
@@ -234,7 +234,7 @@ export function DashboardAiPrompt({
                 className={cn(
                   "flex h-8 items-center gap-1 rounded-full border px-2 py-1 transition-all",
                   showSearch
-                    ? "border-white/40 bg-white/[0.07] text-white"
+                    ? "border-[var(--border-strong)] bg-[var(--bg-overlay)] text-[var(--fg-primary)]"
                     : "border-transparent text-[var(--fg-muted)] hover:text-[var(--fg-primary)]"
                 )}
               >
@@ -251,7 +251,7 @@ export function DashboardAiPrompt({
                       animate={{ width: "auto", opacity: 1 }}
                       exit={{ width: 0, opacity: 0 }}
                       transition={{ duration: 0.15 }}
-                      className="overflow-hidden whitespace-nowrap text-xs text-white"
+                      className="overflow-hidden whitespace-nowrap text-xs text-[var(--fg-primary)]"
                     >
                       Search
                     </motion.span>
@@ -267,7 +267,7 @@ export function DashboardAiPrompt({
                 className={cn(
                   "flex h-8 items-center gap-1 rounded-full border px-2 py-1 transition-all",
                   showThink
-                    ? "border-white/40 bg-white/[0.07] text-white"
+                    ? "border-[var(--border-strong)] bg-[var(--bg-overlay)] text-[var(--fg-primary)]"
                     : "border-transparent text-[var(--fg-muted)] hover:text-[var(--fg-primary)]"
                 )}
               >
@@ -284,7 +284,7 @@ export function DashboardAiPrompt({
                       animate={{ width: "auto", opacity: 1 }}
                       exit={{ width: 0, opacity: 0 }}
                       transition={{ duration: 0.15 }}
-                      className="overflow-hidden whitespace-nowrap text-xs text-white"
+                      className="overflow-hidden whitespace-nowrap text-xs text-[var(--fg-primary)]"
                     >
                       Think
                     </motion.span>
@@ -295,7 +295,7 @@ export function DashboardAiPrompt({
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <div className="hidden rounded-full border border-white/8 bg-white/[0.035] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--fg-muted)] md:block">
+            <div className="hidden rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/70 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--fg-muted)] md:block">
               Inceptive Studio
             </div>
             <button

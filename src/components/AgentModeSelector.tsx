@@ -77,7 +77,7 @@ export function AgentModeSelector({ onStartAgent }: Props) {
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-10"
       >
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-3">Select Your Agent</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-[var(--fg-primary)] mb-3">Select Your Agent</h1>
         <p className="text-[var(--foreground-secondary)] text-sm max-w-lg mx-auto">
           Choose a highly specialized autonomous agent to act on your behalf.
         </p>
@@ -98,7 +98,7 @@ export function AgentModeSelector({ onStartAgent }: Props) {
               className={`p-5 rounded-2xl border text-left flex flex-col transition-all duration-200 ${
                 isSelected 
                   ? "bg-[var(--foreground)] text-[var(--background)] border-transparent"
-                  : "bg-[var(--background-elevated)] text-white border-[var(--border)] hover:border-[var(--foreground-secondary)]"
+                  : "bg-[var(--background-elevated)] text-[var(--fg-primary)] border-[var(--border)] hover:border-[var(--border-strong)]"
               }`}
             >
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${
@@ -130,7 +130,7 @@ export function AgentModeSelector({ onStartAgent }: Props) {
                 placeholder={`Give the ${selectedMode.name} Agent a primary directive...`}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="w-full bg-[var(--background-elevated)] border border-[var(--border)] text-white text-sm rounded-2xl pl-5 pr-14 py-4 outline-none focus:border-[var(--foreground-secondary)] transition-colors"
+                className="w-full bg-[var(--background-elevated)] border border-[var(--border)] text-[var(--fg-primary)] text-sm rounded-2xl pl-5 pr-14 py-4 outline-none focus:border-[var(--ring)] transition-colors"
                 style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}
               />
               <button

@@ -34,17 +34,17 @@ function relativeTime(iso: string): string {
 const STATUS_CONFIG = {
   running: {
     pill: "Running",
-    bg: "rgba(255,255,255,0.08)",
-    border: "rgba(255,255,255,0.2)",
-    text: "#FFFFFF",
+    bg: "var(--accent-muted)",
+    border: "var(--border-default)",
+    text: "var(--fg-primary)",
     Icon: Loader2,
     animate: true,
   },
   done: {
     pill: "Done",
-    bg: "rgba(255,255,255,0.06)",
-    border: "rgba(255,255,255,0.15)",
-    text: "#FFFFFF",
+    bg: "var(--bg-overlay)",
+    border: "var(--border-default)",
+    text: "var(--fg-primary)",
     Icon: CheckCircle2,
     animate: false,
   },
@@ -58,9 +58,9 @@ const STATUS_CONFIG = {
   },
   undone: {
     pill: "Undone",
-    bg: "rgba(255,255,255,0.04)",
-    border: "rgba(255,255,255,0.1)",
-    text: "#8E8E93",
+    bg: "var(--bg-surface)",
+    border: "var(--border-subtle)",
+    text: "var(--fg-muted)",
     Icon: XCircle,
     animate: false,
   },
@@ -120,7 +120,7 @@ function TaskCard({
       >
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className="text-[12px] font-medium text-white leading-snug">
+          <p className="text-[12px] font-medium text-[var(--fg-primary)] leading-snug">
             {log.action}
           </p>
           <div className="flex items-center gap-2 mt-1">
@@ -150,7 +150,7 @@ function TaskCard({
           {canUndo && (
             <button
               onClick={(e) => { e.stopPropagation(); onUndo(log.id); }}
-              className="w-6 h-6 rounded-md flex items-center justify-center transition-all hover:bg-[#2C2C2E]"
+              className="w-6 h-6 rounded-md flex items-center justify-center transition-all hover:bg-[var(--bg-overlay)]"
               title="Undo this action"
             >
               <Undo2 className="w-3 h-3 text-[var(--foreground-secondary)]" />

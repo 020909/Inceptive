@@ -351,7 +351,7 @@ export default function SettingsPage() {
       <div className="page-frame max-w-5xl">
         <div className="h-7 w-32 rounded-lg bg-[var(--bg-surface)] animate-pulse mb-6" />
         <div className="h-[400px] rounded-xl bg-[var(--bg-surface)] animate-pulse" />
-      </div>
+        </div>
     );
   }
 
@@ -367,7 +367,7 @@ export default function SettingsPage() {
         <p className="mt-2 text-sm text-[var(--fg-muted)]">Control AI behavior, account details, memory, connectors, and agent defaults.</p>
       </motion.div>
 
-      <div className="flex gap-6 items-start">
+        <div className="flex gap-6 items-start">
 
         {/* Left nav */}
         <motion.div
@@ -376,35 +376,35 @@ export default function SettingsPage() {
           className="w-52 shrink-0 sticky top-6"
         >
           <div className="command-surface rounded-[24px] overflow-hidden">
-            {SECTIONS.map((s, i) => {
-              const Icon = s.icon;
-              const isActive = activeSection === s.id;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => setActiveSection(s.id)}
+              {SECTIONS.map((s, i) => {
+                const Icon = s.icon;
+                const isActive = activeSection === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setActiveSection(s.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-150 ${
                     i !== SECTIONS.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
                   } ${isActive ? "bg-[var(--bg-elevated)]" : "hover:bg-[var(--bg-elevated)]"}`}
                 >
                   <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-[var(--fg-primary)]" : "text-[var(--fg-tertiary)]"}`} />
                   <span className={`text-[13px] ${isActive ? "text-[var(--fg-primary)] font-medium" : "text-[var(--fg-secondary)]"}`}>
-                    {s.label}
-                  </span>
+                      {s.label}
+                    </span>
                   {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--fg-primary)]" />}
-                </button>
-              );
-            })}
-          </div>
+                  </button>
+                );
+              })}
+            </div>
         </motion.div>
 
         {/* Right content */}
-        <div className="flex-1 min-w-0">
-          <AnimatePresence mode="wait">
+          <div className="flex-1 min-w-0">
+            <AnimatePresence mode="wait">
 
             {/* AI Configuration */}
-            {activeSection === "ai" && (
-              <motion.div key="ai" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
+              {activeSection === "ai" && (
+                <motion.div key="ai" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
                 <Card>
                   <CardHeader title="AI Configuration" description="Powered by Inceptive's optimized Gemini 2.0 Flash model" />
                   <div className="p-5">
@@ -486,7 +486,7 @@ export default function SettingsPage() {
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4 text-[var(--fg-tertiary)]" />
                             <span className="text-xs text-[var(--fg-primary)]">Sleep after</span>
-                          </div>
+                                  </div>
                           <select value={sleepAfterMinutes} onChange={(e) => setSleepAfterMinutes(Number(e.target.value))} className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-1.5 text-xs text-[var(--fg-primary)]">
                             <option value={1}>1 minute</option>
                             <option value={5}>5 minutes</option>
@@ -494,9 +494,9 @@ export default function SettingsPage() {
                             <option value={30}>30 minutes</option>
                             <option value={60}>1 hour</option>
                           </select>
-                        </div>
-                      </motion.div>
-                    )}
+                            </div>
+                          </motion.div>
+                        )}
                     <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[var(--bg-app)] border border-[var(--border-subtle)]">
                       <div className={`w-2 h-2 rounded-full shrink-0 ${is24_7Mode ? "bg-[var(--success)]" : "bg-[var(--fg-muted)]"}`} />
                       <p className="text-xs text-[var(--fg-tertiary)]">
@@ -515,14 +515,14 @@ export default function SettingsPage() {
                         <p className="text-xs mt-0.5 text-[var(--fg-tertiary)]">Agent pauses before executing each task and waits for your approval.</p>
                       </div>
                       <Toggle on={requiresApproval} onToggle={() => setRequiresApproval(!requiresApproval)} />
-                    </div>
+                            </div>
                     <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[var(--bg-app)] border border-[var(--border-subtle)]">
                       <PauseCircle className={`w-4 h-4 shrink-0 ${requiresApproval ? "text-[var(--warning)]" : "text-[var(--fg-muted)]"}`} />
                       <p className="text-xs text-[var(--fg-tertiary)]">
                         {requiresApproval ? "Agent will pause before each task — you'll need to approve actions" : "Agent runs autonomously without pausing for approval"}
                       </p>
-                    </div>
-                  </div>
+                                  </div>
+                            </div>
                 </Card>
 
                 <Card>
@@ -538,7 +538,7 @@ export default function SettingsPage() {
                         <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Cron (UTC)</Label>
                         <Input value={scheduledCron} onChange={(e) => setScheduledCron(e.target.value)} placeholder="0 9 * * 1"
                           className="h-10 rounded-lg text-sm bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--fg-primary)] font-mono" />
-                      </div>
+                            </div>
                       <div className="space-y-1.5">
                         <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Actions</Label>
                         <div className="flex gap-2">
@@ -550,10 +550,10 @@ export default function SettingsPage() {
                           <Button variant="ghost" onClick={fetchScheduledTasks} className="h-10 px-4 rounded-lg text-sm hover:bg-[var(--bg-elevated)]">
                             Refresh
                           </Button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
+                                </div>
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
                       <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Prompt</Label>
                       <textarea value={scheduledPrompt} onChange={(e) => setScheduledPrompt(e.target.value)} rows={4}
                         placeholder={`Example:\nEvery Monday at 9am: pull my Gmail inbox and summarize what needs a reply.\n\n(Use clear instructions. If Gmail isn't connected, the task will fail with a clear error.)`}
@@ -609,40 +609,40 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </Card>
-              </motion.div>
-            )}
+                </motion.div>
+              )}
 
             {/* My Account */}
-            {activeSection === "account" && (
-              <motion.div key="account" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
+              {activeSection === "account" && (
+                <motion.div key="account" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
                 <Card>
                   <CardHeader title="Profile" description="Your account information" />
-                  <div className="p-5 space-y-5">
-                    <div className="flex items-center gap-4">
+                    <div className="p-5 space-y-5">
+                      <div className="flex items-center gap-4">
                       <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-xl font-bold bg-[var(--fg-primary)] text-[var(--bg-base)] shrink-0">
-                        {(displayName || user?.email || "?").charAt(0).toUpperCase()}
-                      </div>
-                      <div>
+                          {(displayName || user?.email || "?").charAt(0).toUpperCase()}
+                        </div>
+                        <div>
                         <div className="font-medium text-[var(--fg-primary)]">{displayName || user?.email?.split("@")[0] || "User"}</div>
                         <div className="text-sm text-[var(--fg-tertiary)]">{user?.email}</div>
                         {memberSince && <div className="text-xs mt-0.5 text-[var(--fg-muted)]">Member since {memberSince}</div>}
                       </div>
                     </div>
-                    <div className="space-y-1.5">
+                      <div className="space-y-1.5">
                       <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Display Name</Label>
-                      <div className="flex gap-2">
-                        <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Enter your name"
+                        <div className="flex gap-2">
+                          <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Enter your name"
                           className="h-10 rounded-lg text-sm flex-1 bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--fg-primary)] focus:border-[var(--border-strong)] focus:ring-0" />
-                        <Button onClick={handleSaveName} disabled={savingName || !displayName.trim()}
+                          <Button onClick={handleSaveName} disabled={savingName || !displayName.trim()}
                           className="h-10 px-4 rounded-lg text-sm border-0 bg-[var(--fg-primary)] text-[var(--bg-base)] hover:opacity-90 disabled:opacity-40">
-                          {savingName ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
-                        </Button>
+                            {savingName ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-1.5">
+                      <div className="space-y-1.5">
                       <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Email Address</Label>
                       <div className="h-10 flex items-center px-3 rounded-lg text-sm bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--fg-tertiary)]">
-                        {user?.email}
+                          {user?.email}
                       </div>
                     </div>
                   </div>
@@ -651,11 +651,11 @@ export default function SettingsPage() {
                 <Card>
                   <CardHeader title="Security" />
                   <div className="p-5">
-                    <button onClick={handleResetPassword}
+                      <button onClick={handleResetPassword}
                       className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-[var(--border-subtle)] text-left transition-all duration-150 hover:bg-[var(--bg-elevated)]">
-                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3">
                         <Shield className="w-4 h-4 text-[var(--fg-tertiary)]" />
-                        <div>
+                          <div>
                           <div className="text-sm font-medium text-[var(--fg-primary)]">Change Password</div>
                           <div className="text-xs text-[var(--fg-tertiary)]">Send a reset link to your email</div>
                         </div>
@@ -678,7 +678,7 @@ export default function SettingsPage() {
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-xs text-[var(--fg-muted)]">Plan</span>
                         <span className="text-xs uppercase tracking-wide text-[var(--fg-secondary)]">{creditInfo?.plan ?? "free"}</span>
-                      </div>
+                          </div>
                       {!creditInfo?.unlimited && (
                         <div className="h-2 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
                           <div className="h-full bg-[var(--fg-primary)]"
@@ -692,13 +692,13 @@ export default function SettingsPage() {
                 <Card className="border-[var(--destructive-soft)]">
                   <div className="px-5 py-4 border-b border-[var(--destructive-soft)]">
                     <h2 className="text-sm font-semibold text-[var(--destructive)]">Danger Zone</h2>
-                  </div>
-                  <div className="p-5">
-                    <button onClick={() => toast.error("To delete your account, contact support@inceptive.ai")}
+                    </div>
+                    <div className="p-5">
+                      <button onClick={() => toast.error("To delete your account, contact support@inceptive.ai")}
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--destructive-soft)] bg-[var(--destructive-soft)] text-left transition-all duration-150 hover:opacity-80">
                       <span className="text-sm font-medium text-[var(--destructive)]">Delete Account</span>
                       <span className="text-xs text-[var(--fg-tertiary)]">— permanently removes all data</span>
-                    </button>
+                      </button>
                   </div>
                 </Card>
               </motion.div>
@@ -734,68 +734,68 @@ export default function SettingsPage() {
                     </Button>
                   </div>
                 </Card>
-              </motion.div>
-            )}
+                </motion.div>
+              )}
 
             {/* Appearance */}
-            {activeSection === "appearance" && (
-              <motion.div key="appearance" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
+              {activeSection === "appearance" && (
+                <motion.div key="appearance" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
                 <Card>
                   <CardHeader title="Theme" description="Choose how Inceptive looks" />
-                  <div className="p-5">
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
+                    <div className="p-5">
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
                         { id: "dark" as const, label: "Dark", icon: Moon, preview: "#0A0A0A", surface: "#1A1A1A", border: "#333", text: "#FFF", sub: "#888" },
                         { id: "light" as const, label: "Light", icon: Sun, preview: "#F5F5F7", surface: "#FFFFFF", border: "#D2D2D7", text: "#0A0A0A", sub: "#6E6E73" },
-                      ].map(t => {
-                        const Icon = t.icon;
-                        const isActive = theme === t.id;
-                        return (
-                          <motion.button key={t.id} whileTap={{ scale: 0.97 }}
-                            onClick={() => setTheme(t.id)}
+                        ].map(t => {
+                          const Icon = t.icon;
+                          const isActive = theme === t.id;
+                          return (
+                            <motion.button key={t.id} whileTap={{ scale: 0.97 }}
+                              onClick={() => setTheme(t.id)}
                             className={`relative flex flex-col overflow-hidden rounded-xl transition-all duration-200 border-2 ${isActive ? "border-[var(--fg-primary)]" : "border-[var(--border-subtle)]"}`}>
-                            <div className="w-full aspect-[4/3] p-3 flex flex-col gap-2" style={{ background: t.preview }}>
-                              <div className="h-1.5 w-3/4 rounded-full" style={{ background: t.surface, border: `1px solid ${t.border}` }} />
-                              <div className="flex gap-1.5 flex-1">
-                                <div className="w-7 rounded-md" style={{ background: t.surface, border: `1px solid ${t.border}` }} />
-                                <div className="flex-1 flex flex-col gap-1 justify-center">
-                                  <div className="h-1.5 w-4/5 rounded-full" style={{ background: t.text, opacity: 0.85 }} />
-                                  <div className="h-1.5 w-1/2 rounded-full" style={{ background: t.sub }} />
+                              <div className="w-full aspect-[4/3] p-3 flex flex-col gap-2" style={{ background: t.preview }}>
+                                <div className="h-1.5 w-3/4 rounded-full" style={{ background: t.surface, border: `1px solid ${t.border}` }} />
+                                <div className="flex gap-1.5 flex-1">
+                                  <div className="w-7 rounded-md" style={{ background: t.surface, border: `1px solid ${t.border}` }} />
+                                  <div className="flex-1 flex flex-col gap-1 justify-center">
+                                    <div className="h-1.5 w-4/5 rounded-full" style={{ background: t.text, opacity: 0.85 }} />
+                                    <div className="h-1.5 w-1/2 rounded-full" style={{ background: t.sub }} />
                                 </div>
                               </div>
                             </div>
                             <div className="flex items-center justify-between px-3 py-2.5 bg-[var(--bg-elevated)]">
-                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2">
                                 <Icon className={`w-3.5 h-3.5 ${isActive ? "text-[var(--fg-primary)]" : "text-[var(--fg-tertiary)]"}`} />
                                 <span className="text-sm font-medium text-[var(--fg-primary)]">{t.label}</span>
                               </div>
                               {isActive && <Check className="w-3.5 h-3.5 text-[var(--fg-primary)]" />}
-                            </div>
-                          </motion.button>
-                        );
-                      })}
+                              </div>
+                            </motion.button>
+                          );
+                        })}
                     </div>
                   </div>
                 </Card>
 
                 <Card>
                   <CardHeader title="Notifications" />
-                  <div className="p-5 flex items-center gap-3 opacity-50">
+                    <div className="p-5 flex items-center gap-3 opacity-50">
                     <Bell className="w-4 h-4 text-[var(--fg-tertiary)]" />
                     <span className="text-sm text-[var(--fg-tertiary)]">Notification preferences coming soon</span>
                   </div>
                 </Card>
-              </motion.div>
-            )}
+                </motion.div>
+              )}
 
             {/* Memory */}
-            {activeSection === "memory" && (
-              <motion.div key="memory" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
+              {activeSection === "memory" && (
+                <motion.div key="memory" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
                 <Card>
                   <CardHeader title="Memory" description="Save chat history so you can pick up where you left off" />
-                  <div className="p-5 space-y-5">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
+                    <div className="p-5 space-y-5">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
                         <p className="text-sm font-medium text-[var(--fg-primary)]">Enable Memory</p>
                         <p className="text-xs mt-0.5 text-[var(--fg-tertiary)]">Your recent chats will be saved and appear in the Recents section.</p>
                       </div>
@@ -813,10 +813,10 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </Card>
-              </motion.div>
-            )}
+                </motion.div>
+              )}
 
-          </AnimatePresence>
+            </AnimatePresence>
         </div>
       </div>
     </div>

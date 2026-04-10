@@ -140,7 +140,7 @@ export default function SkillsPage() {
               setSkillTagsText("");
               setSkillPrompt("");
             }}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white text-black border border-white hover:opacity-90 transition-colors text-xs font-semibold"
+            className="btn-premium flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--accent)] text-[var(--primary-foreground)] border border-[var(--accent)] hover:opacity-90 transition-colors text-xs font-semibold"
           >
             <Plus size={14} />
             Add Skill
@@ -328,7 +328,7 @@ export default function SkillsPage() {
                       className="mt-2 w-full px-3 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--fg-primary)] text-sm outline-none focus:border-[var(--border-strong)]"
                     >
                       {CATS.filter((c) => c !== "All").map((c) => (
-                        <option key={c} value={c} className="bg-black text-white">
+                        <option key={c} value={c} className="bg-[var(--bg-surface)] text-[var(--fg-primary)]">
                           {c}
                         </option>
                       ))}

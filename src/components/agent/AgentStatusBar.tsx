@@ -117,7 +117,7 @@ export function AgentStatusBar({ status, onPause, onResume, taskCount }: AgentSt
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={onResume}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--success)] text-white text-xs font-medium hover:bg-[var(--success)]/90 transition-colors"
+            className="btn-premium flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--success)] text-[var(--bg-base)] text-xs font-medium hover:opacity-90 transition-colors"
           >
             <Play className="w-3.5 h-3.5" />
             Resume
