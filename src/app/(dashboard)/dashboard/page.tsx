@@ -1647,13 +1647,6 @@ function DashboardExperience() {
           </button>
         </div>
       </header>
-      <WorkspaceBar
-        projects={projects}
-        activeProjectId={activeProjectId}
-        onProjectChange={setActiveProjectId}
-        artifacts={recentArtifacts}
-        savingArtifact={savingArtifact}
-      />
 
       <input
         ref={fileInputRef}

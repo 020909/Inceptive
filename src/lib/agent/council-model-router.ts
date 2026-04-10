@@ -5,7 +5,7 @@
  * Optional fallback: **Gemini** (Google AI Studio) when `GEMINI_API_KEY` / `GOOGLE_AI_API_KEY` is present.
  *
  * For website builds we keep the model surface intentionally small and stable:
- * OpenRouter Qwen (primary) → OpenRouter MiniMax M2 (fallback) → Gemini (fallback).
+ * OpenRouter Gemini (primary) → OpenRouter MiniMax M2 (fallback) → Gemini (fallback).
  *
  * Env overrides:
  * - COUNCIL_OPENROUTER_QWEN — primary OpenRouter slug (default `qwen/qwen3.6-plus:free`)
@@ -26,7 +26,8 @@ export type CouncilModelStep = {
 
 /** Heavy / coding agents — first choice on OpenRouter when a key is present. */
 export function defaultCouncilOpenRouterQwenId(): string {
-  return process.env.COUNCIL_OPENROUTER_QWEN?.trim() || "qwen/qwen3.6-plus:free";
+  // Default to Gemini via OpenRouter for the website builder reliability.
+  return process.env.COUNCIL_OPENROUTER_QWEN?.trim() || "google/gemini-2.0-flash-001";
 }
 
 export function defaultCouncilOpenRouterMiniMaxId(): string {

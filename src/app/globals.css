@@ -45,11 +45,12 @@
     --border-default: #e8e6dc;
     --border-strong: #d1cfc5;
 
-    --accent: #c96442;
-    --accent-soft: rgba(201, 100, 66, 0.12);
-    --accent-muted: rgba(201, 100, 66, 0.08);
-    --accent-glow: rgba(201, 100, 66, 0.2);
-    --accent-subtle: rgba(201, 100, 66, 0.16);
+    /* Accent → plain white (no orange). */
+    --accent: #ffffff;
+    --accent-soft: rgba(255, 255, 255, 0.12);
+    --accent-muted: rgba(255, 255, 255, 0.08);
+    --accent-glow: rgba(255, 255, 255, 0.22);
+    --accent-subtle: rgba(255, 255, 255, 0.16);
 
     --success: #8a6d3b;
     --success-soft: rgba(138, 109, 59, 0.12);
@@ -100,8 +101,9 @@
     --card-foreground: var(--fg-primary);
     --popover: var(--bg-elevated);
     --popover-foreground: var(--fg-primary);
+    /* White primary button needs dark text in light mode. */
     --primary: var(--accent);
-    --primary-foreground: #faf9f5;
+    --primary-foreground: var(--fg-primary);
     --secondary: var(--bg-overlay);
     --secondary-foreground: var(--fg-secondary);
     --muted: var(--bg-overlay);
@@ -131,11 +133,12 @@
     --border-default: rgba(232, 230, 220, 0.16);
     --border-strong: rgba(232, 230, 220, 0.26);
 
-    --accent: #d97757;
-    --accent-soft: rgba(217, 119, 87, 0.16);
-    --accent-muted: rgba(217, 119, 87, 0.1);
-    --accent-glow: rgba(217, 119, 87, 0.22);
-    --accent-subtle: rgba(217, 119, 87, 0.18);
+    /* Accent → plain white (no orange). */
+    --accent: #ffffff;
+    --accent-soft: rgba(255, 255, 255, 0.14);
+    --accent-muted: rgba(255, 255, 255, 0.1);
+    --accent-glow: rgba(255, 255, 255, 0.22);
+    --accent-subtle: rgba(255, 255, 255, 0.16);
 
     --success: #b89b62;
     --success-soft: rgba(184, 155, 98, 0.16);
@@ -150,8 +153,9 @@
     --card-foreground: var(--fg-primary);
     --popover: var(--bg-elevated);
     --popover-foreground: var(--fg-primary);
+    /* White primary button needs dark text even in dark mode. */
     --primary: var(--accent);
-    --primary-foreground: #faf9f5;
+    --primary-foreground: #141413;
     --secondary: var(--bg-overlay);
     --secondary-foreground: var(--fg-primary);
     --muted: var(--bg-overlay);
