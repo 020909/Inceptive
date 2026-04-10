@@ -471,7 +471,7 @@ export async function POST(req: Request) {
             if (!String(councilOpenRouterKey).trim() && !String(councilGeminiKey).trim()) {
               enqueue(
                 `3:${JSON.stringify(
-                  "Council needs GEMINI_API_KEY / GOOGLE_AI_API_KEY and/or OPENROUTER_KEY / OPENROUTER_API_KEY. Or BYOK in Settings (Google or OpenRouter)."
+                  "Council needs OPENROUTER_KEY / OPENROUTER_API_KEY (or BYOK in Settings)."
                 )}\n`
               );
               controller.close();
@@ -546,7 +546,7 @@ export async function POST(req: Request) {
                 if (step === "run_phase2" && plannerFailed(resumeState.contributions)) {
                   enqueue(
                     `3:${JSON.stringify(
-                      "Council cannot continue: the Planner step already failed. Fix OpenRouter/Gemini keys and quotas, then start a new website request."
+                      "Council cannot continue: the Planner step already failed. Fix OpenRouter key/quotas, then start a new website request."
                     )}\n`
                   );
                   enqueue(
@@ -812,7 +812,7 @@ export async function POST(req: Request) {
             if (!String(councilOpenRouterKey).trim() && !String(councilGeminiKey).trim()) {
               return {
                 error:
-                  "Council needs GEMINI_API_KEY / GOOGLE_AI_API_KEY and/or OPENROUTER_KEY / OPENROUTER_API_KEY. Set in Vercel env or BYOK in Settings (Google or OpenRouter).",
+                  "Council needs OPENROUTER_KEY / OPENROUTER_API_KEY (or BYOK in Settings).",
               };
             }
 

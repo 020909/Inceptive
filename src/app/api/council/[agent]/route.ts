@@ -5,8 +5,8 @@ import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 import { buildModel } from "@/lib/ai-model";
 import { serverOpenRouterKeyFromEnv } from "@/lib/ai/openrouter-env";
 import {
-  defaultCouncilOpenRouterHeavyId,
-  defaultOpenRouterLightId,
+  defaultCouncilOpenRouterMiniMaxId,
+  defaultCouncilOpenRouterQwenId,
 } from "@/lib/agent/council-model-router";
 import {
   AGENT_CHAINS,
@@ -24,7 +24,8 @@ export const maxDuration = 300;
 function openRouterModelForSessionAgent(agent: string): string {
   const single = process.env.COUNCIL_SESSION_OPENROUTER_MODEL?.trim();
   if (single) return single;
-  return agent === "planner" ? defaultOpenRouterLightId() : defaultCouncilOpenRouterHeavyId();
+  // Keep session agents on the same stable pair: Qwen (primary) / MiniMax (planner bias).
+  return agent === "planner" ? defaultCouncilOpenRouterMiniMaxId() : defaultCouncilOpenRouterQwenId();
 }
 
 function maxOutTokensForAgent(agent: string): number {

@@ -72,17 +72,19 @@ function generateTimeoutMsForRole(role: AgentRole, plan: PlanId = "unlimited"): 
     plan === "free" ? "free" : plan === "basic" || plan === "pro" ? "mid" : "full";
   switch (role) {
     case "coder":
-      if (tier === "free") return 90_000;
-      if (tier === "mid") return 150_000;
-      return 240_000;
+      // Websites: give the coder most of the wall-time budget.
+      if (tier === "free") return 210_000;
+      if (tier === "mid") return 240_000;
+      return 270_000;
     case "orchestrator":
-      if (tier === "free") return 100_000;
+      if (tier === "free") return 120_000;
       if (tier === "mid") return 180_000;
-      return 300_000;
+      return 240_000;
     default:
-      if (tier === "free") return 55_000;
-      if (tier === "mid") return 85_000;
-      return 120_000;
+      // Keep planner / UX / architect fast so coder has time to implement within 300s.
+      if (tier === "free") return 35_000;
+      if (tier === "mid") return 55_000;
+      return 75_000;
   }
 }
 
@@ -309,11 +311,8 @@ async function runAgent(
   let lastErr: unknown = null;
 
   for (const step of chain) {
-    const keyForStep = step.provider === "gemini" ? geminiKey : orKey;
-    if (!String(keyForStep).trim()) continue;
-
-    const provider = step.provider === "gemini" ? "gemini" : "openrouter";
-    const model = buildModel(keyForStep.trim(), provider, step.modelId);
+    if (!String(orKey).trim()) continue;
+    const model = buildModel(orKey.trim(), "openrouter", step.modelId);
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
         const result = await runOnce(model);
