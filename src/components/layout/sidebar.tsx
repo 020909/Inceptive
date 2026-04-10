@@ -78,32 +78,32 @@ function NavItem({
     <Link
       href={item.href}
       className={cn(
-        "group/item relative flex h-10 w-full items-center overflow-hidden rounded-lg transition-all duration-200",
+        "group/item relative flex h-11 w-full items-center overflow-hidden rounded-xl transition-all duration-300",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--ring)]",
         collapsed
           ? "justify-center gap-0 px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3"
           : "justify-start gap-3",
         isActive
           ? cn(
-              "border-l-2 border-[var(--text-primary)] bg-[rgba(255,255,255,0.04)]",
+              "border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[0_0_0_1px_rgba(232,230,220,0.8),0_12px_30px_rgba(78,66,51,0.08)]",
               collapsed
-                ? "pl-0 group-hover/sidebar:pl-[14px]"
-                : "pl-[14px]",
+                ? "pl-0 group-hover/sidebar:pl-[12px]"
+                : "pl-[12px]",
             )
           : cn(
-              "border-l-2 border-transparent hover:-translate-y-px hover:bg-[rgba(255,255,255,0.06)]",
-              collapsed ? "pl-0 group-hover/sidebar:pl-4" : "pl-4",
+              "border border-transparent hover:-translate-y-px hover:bg-[var(--accent-soft)]",
+              collapsed ? "pl-0 group-hover/sidebar:pl-3.5" : "pl-3.5",
             ),
       )}
     >
       <span className="flex shrink-0 items-center justify-center size-5 min-w-[20px]">
-        <Icon size={20} strokeWidth={isActive ? 2 : 1.5} className={isActive ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]"} />
+        <Icon size={18} strokeWidth={isActive ? 2 : 1.6} className={isActive ? "text-[var(--fg-primary)]" : "text-[var(--fg-tertiary)]"} />
       </span>
 
       <span
         className={cn(
-          "max-w-[140px] overflow-hidden whitespace-nowrap text-sm font-medium transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
-          isActive ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]",
+          "max-w-[140px] overflow-hidden whitespace-nowrap text-[13px] font-medium tracking-[0.01em] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+          isActive ? "text-[var(--fg-primary)]" : "text-[var(--fg-secondary)]",
           collapsed
             ? "max-w-0 opacity-0 group-hover/sidebar:max-w-[140px] group-hover/sidebar:opacity-100"
             : "opacity-100",
@@ -132,10 +132,10 @@ export function Sidebar() {
       className={`
         group/sidebar
         command-surface
-        flex flex-col shrink-0
-        h-screen sticky top-0 z-40 overflow-hidden
+        m-3 flex h-[calc(100vh-1.5rem)] shrink-0 flex-col overflow-hidden rounded-[28px]
+        sticky top-3 z-40
         transition-[width] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]
-        border-r border-[rgba(255,255,255,0.08)]
+        border border-[var(--border-default)]
         ${collapsed ? "w-[64px] hover:w-[220px]" : "w-[220px]"}
       `}
     >
@@ -144,13 +144,13 @@ export function Sidebar() {
         className={cn(
           "aurora-divider flex shrink-0 overflow-hidden transition-[padding] duration-300",
           collapsed
-            ? "flex-col items-center gap-1.5 py-2.5 px-2 group-hover/sidebar:h-14 group-hover/sidebar:flex-row group-hover/sidebar:items-center group-hover/sidebar:justify-start group-hover/sidebar:gap-2 group-hover/sidebar:py-0 group-hover/sidebar:px-3"
-            : "h-14 flex-row items-center justify-start gap-2 px-3",
+            ? "flex-col items-center gap-1.5 px-2 py-3 group-hover/sidebar:h-16 group-hover/sidebar:flex-row group-hover/sidebar:items-center group-hover/sidebar:justify-start group-hover/sidebar:gap-2.5 group-hover/sidebar:py-0 group-hover/sidebar:px-3.5"
+            : "h-16 flex-row items-center justify-start gap-2.5 px-3.5",
         )}
       >
         <button
           onClick={() => router.push("/dashboard")}
-          className="flex h-8 w-8 shrink-0 items-center justify-center"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-surface)] shadow-[0_0_0_1px_rgba(232,230,220,0.9)]"
           aria-label="Home"
         >
           <Image
@@ -158,13 +158,13 @@ export function Sidebar() {
             alt="Inceptive"
             width={32}
             height={32}
-            className="rounded-lg object-contain"
+            className="rounded-xl object-contain"
           />
         </button>
 
         <span
           className={cn(
-            "min-w-0 truncate text-sm font-semibold tracking-tight text-[#F5F5F7] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+            "min-w-0 truncate text-[1.05rem] leading-none text-[var(--fg-primary)] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
             collapsed
               ? "hidden max-w-0 overflow-hidden opacity-0 group-hover/sidebar:block group-hover/sidebar:max-w-[120px] group-hover/sidebar:flex-1 group-hover/sidebar:opacity-100"
               : "flex-1 opacity-100",
@@ -178,14 +178,14 @@ export function Sidebar() {
           type="button"
           onClick={() => setCollapsed(!collapsed)}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--fg-tertiary)] transition-colors hover:bg-white/[0.06] hover:text-[var(--fg-primary)]"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--fg-muted)] transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--fg-primary)]"
         >
           <SidebarToggleIcon className="h-4 w-4" />
         </button>
       </div>
 
       {/* ── Nav ── */}
-      <nav className="flex flex-col gap-0.5 flex-1 px-2 pt-2 overflow-hidden">
+      <nav className="flex flex-1 flex-col gap-1 px-2.5 pt-3 overflow-hidden">
         {navItems.map((item) => (
           <NavItem
             key={item.href}
@@ -206,13 +206,13 @@ export function Sidebar() {
       >
         {recentChats.length > 0 && (
           <div className="mt-2">
-            <div className="flex items-center justify-between px-2 mb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--fg-muted)] whitespace-nowrap">
+            <div className="mb-1 flex items-center justify-between px-2">
+              <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--fg-muted)]">
                 Recent
               </span>
               <button
                 onClick={() => { startNewChat(); router.push('/dashboard'); }}
-                className="flex items-center justify-center w-5 h-5 rounded-md text-[var(--fg-muted)] hover:bg-[var(--border-subtle)] hover:text-[var(--fg-primary)] transition-colors"
+                className="flex h-6 w-6 items-center justify-center rounded-md text-[var(--fg-muted)] transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--fg-primary)]"
                 title="New chat"
               >
                 <Plus size={12} />
@@ -223,7 +223,7 @@ export function Sidebar() {
                 <button
                   key={chat.id}
                   onClick={() => handleLoadChat(chat)}
-                  className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-[var(--fg-secondary)] hover:text-[#F5F5F7] hover:bg-[rgba(255,255,255,0.04)] transition-colors truncate whitespace-nowrap"
+                  className="w-full truncate whitespace-nowrap rounded-xl px-2.5 py-2 text-left text-xs text-[var(--fg-secondary)] transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--fg-primary)]"
                   title={chat.title}
                 >
                   {chat.title}
@@ -235,38 +235,38 @@ export function Sidebar() {
       </div>
 
       {/* ── Bottom: Settings ── */}
-      <div className="aurora-divider px-2 pb-4 pt-2 border-t border-[rgba(255,255,255,0.06)] shrink-0">
+      <div className="aurora-divider shrink-0 border-t border-[var(--border-default)] px-2.5 pb-4 pt-2.5">
         <Link
           href="/settings"
           className={cn(
-            "group/item relative flex h-10 w-full items-center overflow-hidden rounded-lg transition-all duration-200",
+            "group/item relative flex h-11 w-full items-center overflow-hidden rounded-xl transition-all duration-300",
             collapsed
               ? "justify-center gap-0 px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3"
               : "justify-start gap-3",
             pathname === "/settings"
               ? cn(
-                  "border-l-2 border-[var(--text-primary)] bg-[rgba(255,255,255,0.04)]",
+                  "border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[0_0_0_1px_rgba(232,230,220,0.8),0_12px_30px_rgba(78,66,51,0.08)]",
                   collapsed
-                    ? "pl-0 group-hover/sidebar:pl-[14px]"
-                    : "pl-[14px]",
+                    ? "pl-0 group-hover/sidebar:pl-[12px]"
+                    : "pl-[12px]",
                 )
               : cn(
-                  "border-l-2 border-transparent hover:-translate-y-px hover:bg-[rgba(255,255,255,0.06)]",
-                  collapsed ? "pl-0 group-hover/sidebar:pl-4" : "pl-4",
+                  "border border-transparent hover:-translate-y-px hover:bg-[var(--accent-soft)]",
+                  collapsed ? "pl-0 group-hover/sidebar:pl-3.5" : "pl-3.5",
                 ),
           )}
         >
           <span className="flex shrink-0 items-center justify-center size-5 min-w-[20px]">
             <Settings
-              size={20}
-              strokeWidth={pathname === "/settings" ? 2 : 1.5}
-              className={pathname === "/settings" ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]"}
+              size={18}
+              strokeWidth={pathname === "/settings" ? 2 : 1.6}
+              className={pathname === "/settings" ? "text-[var(--fg-primary)]" : "text-[var(--fg-tertiary)]"}
             />
           </span>
           <span
             className={cn(
-              "max-w-[140px] overflow-hidden whitespace-nowrap text-sm font-medium transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
-              pathname === "/settings" ? "text-[var(--text-primary)]" : "text-[var(--fg-secondary)]",
+              "max-w-[140px] overflow-hidden whitespace-nowrap text-[13px] font-medium tracking-[0.01em] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+              pathname === "/settings" ? "text-[var(--fg-primary)]" : "text-[var(--fg-secondary)]",
               collapsed
                 ? "max-w-0 opacity-0 group-hover/sidebar:max-w-[140px] group-hover/sidebar:opacity-100"
                 : "opacity-100",

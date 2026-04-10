@@ -71,69 +71,89 @@ export default function LoginPage() {
   return (
     <div 
       className="min-h-screen flex bg-[var(--bg-base)]"
-      style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(245,245,247,0.08) 0%, transparent 80%), var(--bg-base)" }}
+      style={{
+        background:
+          "radial-gradient(ellipse at top, rgba(201,100,66,0.12) 0%, transparent 52%), linear-gradient(180deg, rgba(255,255,255,0.45), transparent 28%), var(--bg-base)",
+      }}
     >
-      {/* ── Left branding panel ── */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="hidden lg:flex lg:w-[45%] flex-col justify-between p-10 border-r border-[var(--border-subtle)] relative overflow-hidden"
+        transition={{ duration: 0.8 }}
+        className="relative hidden overflow-hidden border-r border-[var(--border-default)] lg:flex lg:w-[52%] lg:flex-col lg:justify-between p-12"
       >
-        {/* Ambient glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(245,245,247,0.06) 0%, transparent 65%)" }}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(circle at 20% 18%, rgba(201,100,66,0.14), transparent 28%), radial-gradient(circle at 82% 80%, rgba(20,20,19,0.08), transparent 32%)",
+          }}
         />
 
-        <div className="flex items-center gap-2.5 relative z-10">
-          <div className="relative h-8 w-8 rounded-lg overflow-hidden border border-[var(--border-subtle)]">
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[0_0_0_1px_rgba(232,230,220,0.8)]">
             <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
           </div>
-          <span className="text-[var(--fg-primary)] font-semibold text-base tracking-[-0.03em]">Inceptive</span>
+          <span className="text-lg text-[var(--fg-primary)]" style={{ fontFamily: "var(--font-header)" }}>Inceptive</span>
         </div>
 
-        <div className="relative z-10 space-y-5">
-          <h1 className="text-[40px] font-bold text-[var(--fg-primary)] leading-[1.1] tracking-[-0.04em] text-balance">
-            The AI that works<br />while you sleep.
+        <div className="relative z-10 max-w-xl space-y-8">
+          <div className="inline-flex rounded-full border border-[var(--border-default)] bg-[rgba(255,255,255,0.62)] px-4 py-1.5 text-[11px] uppercase tracking-[0.18em] text-[var(--fg-tertiary)] shadow-[0_0_0_1px_rgba(232,230,220,0.65)]">
+            Autonomous Operating System
+          </div>
+          <h1 className="text-balance text-[4.3rem] leading-[0.96] text-[var(--fg-primary)]">
+            Quiet power for
+            <br />
+            ambitious teams.
           </h1>
-          <p className="text-[var(--fg-tertiary)] text-base leading-relaxed max-w-sm">
-            Research, email, outreach — all running autonomously, around the clock.
+          <p className="max-w-md text-[1.05rem] leading-7 text-[var(--fg-tertiary)]">
+            Inceptive should feel composed, premium, and inevitable. Research, operations, and execution in one warm, editorial workspace.
           </p>
+          <div className="grid max-w-lg grid-cols-2 gap-4">
+            <div className="rounded-[24px] border border-[var(--border-default)] bg-[rgba(255,255,255,0.72)] p-5 shadow-[0_18px_50px_rgba(78,66,51,0.08)]">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--fg-muted)]">Response</p>
+              <p className="mt-3 text-3xl text-[var(--fg-primary)]" style={{ fontFamily: "var(--font-header)" }}>24/7</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--fg-tertiary)]">A calmer command layer for work that keeps moving.</p>
+            </div>
+            <div className="rounded-[24px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-5 shadow-[0_18px_50px_rgba(78,66,51,0.06)]">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--fg-muted)]">Signal</p>
+              <p className="mt-3 text-3xl text-[var(--fg-primary)]" style={{ fontFamily: "var(--font-header)" }}>Focused</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--fg-tertiary)]">Warm surfaces, clear hierarchy, no stray color noise.</p>
+            </div>
+          </div>
         </div>
 
-        <p className="text-[11px] text-[var(--fg-muted)] relative z-10">
+        <p className="relative z-10 text-[11px] uppercase tracking-[0.16em] text-[var(--fg-muted)]">
           © {new Date().getFullYear()} Inceptive AI
         </p>
       </motion.div>
 
-      {/* ── Right auth form ── */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
+        transition={{ duration: 0.5, delay: 0.08 }}
         className="flex flex-1 items-center justify-center p-6 lg:p-16"
       >
-        <div className="w-full max-w-[480px] glass rounded-[32px] p-16">
-          {/* Mobile logo */}
-          <div className="flex items-center gap-2.5 mb-10 lg:hidden">
-            <div className="relative h-8 w-8 rounded-lg overflow-hidden border border-[var(--border-subtle)]">
+        <div className="glass w-full max-w-[520px] rounded-[32px] p-8 shadow-[0_30px_80px_rgba(78,66,51,0.12)] lg:p-14">
+          <div className="mb-10 flex items-center gap-3 lg:hidden">
+            <div className="relative h-9 w-9 overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)]">
               <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
             </div>
-            <span className="text-[var(--fg-primary)] font-semibold text-base">Inceptive</span>
+            <span className="text-lg text-[var(--fg-primary)]" style={{ fontFamily: "var(--font-header)" }}>Inceptive</span>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-[var(--fg-primary)] tracking-[-0.03em] mb-1">Welcome back</h2>
-            <p className="text-sm text-[var(--fg-tertiary)]">Sign in to your account</p>
+          <div className="mb-8 space-y-2">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--fg-muted)]">Welcome back</p>
+            <h2 className="text-[2.6rem] leading-[0.95] text-[var(--fg-primary)]">Sign in to Inceptive</h2>
+            <p className="text-sm leading-6 text-[var(--fg-tertiary)]">Access the redesigned workspace and continue where your team left off.</p>
           </div>
 
-          {/* Google OAuth */}
           <motion.div whileTap={{ scale: 0.98 }} className="mb-6">
             <Button
               type="button"
               disabled={!!oauthLoading}
               onClick={() => handleOAuth("google")}
-              className="w-full h-11 rounded-xl font-medium text-sm text-[var(--bg-base)] bg-white hover:bg-white/90 border-0 transition-colors"
+              className="h-12 w-full rounded-2xl border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--fg-primary)] shadow-[0_0_0_1px_rgba(232,230,220,0.78)] hover:bg-[var(--bg-surface)]"
             >
               {oauthLoading === "google" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -151,43 +171,41 @@ export default function LoginPage() {
             </Button>
           </motion.div>
 
-          {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[var(--border-subtle)]" />
+              <div className="w-full border-t border-[var(--border-default)]" />
             </div>
             <div className="relative flex justify-center">
-              <span className="px-3 text-[11px] text-[var(--fg-muted)] bg-[var(--bg-base)]">or continue with email</span>
+              <span className="bg-[var(--bg-base)] px-3 text-[11px] uppercase tracking-[0.16em] text-[var(--fg-muted)]">or continue with email</span>
             </div>
           </div>
 
-          {/* Email form */}
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Email</Label>
+              <Label htmlFor="email" className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--fg-tertiary)]">Email</Label>
               <Input
                 id="email" type="email" placeholder="you@example.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setErrors(p => ({ ...p, email: undefined })); }}
-                className="h-10 rounded-lg text-sm bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus:border-[var(--border-strong)] focus:ring-0 transition-colors"
+                className="h-12 rounded-2xl border-[var(--border-default)] bg-[var(--bg-surface)] px-4 text-sm text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus:border-[var(--ring)] focus:ring-0"
               />
               {errors.email && <p className="text-[11px] text-[var(--destructive)]">{errors.email}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Password</Label>
+              <Label htmlFor="password" className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--fg-tertiary)]">Password</Label>
               <Input
                 id="password" type="password" placeholder="••••••••"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setErrors(p => ({ ...p, password: undefined })); }}
-                className="h-10 rounded-lg text-sm bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus:border-[var(--border-strong)] focus:ring-0 transition-colors"
+                className="h-12 rounded-2xl border-[var(--border-default)] bg-[var(--bg-surface)] px-4 text-sm text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus:border-[var(--ring)] focus:ring-0"
               />
               {errors.password && <p className="text-[11px] text-[var(--destructive)]">{errors.password}</p>}
             </div>
 
             <motion.div whileTap={{ scale: 0.98 }} className="pt-1">
               <Button type="submit" disabled={loading}
-                className="w-full h-10 rounded-lg font-medium text-sm bg-[var(--fg-primary)] text-[var(--bg-base)] hover:bg-white/90 border-0 transition-colors">
+                className="h-12 w-full rounded-2xl text-sm font-medium">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
               </Button>
             </motion.div>
@@ -205,17 +223,16 @@ export default function LoginPage() {
             )}
           </form>
 
-          {/* Magic link */}
           <motion.div whileTap={{ scale: 0.98 }} className="mt-3">
             <Button onClick={handleMagicLink} disabled={magicLinkLoading} variant="outline"
-              className="w-full h-10 rounded-lg font-medium text-[13px] bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--fg-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--fg-primary)] transition-colors">
+              className="h-12 w-full rounded-2xl text-[13px] font-medium">
               {magicLinkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send magic link"}
             </Button>
           </motion.div>
 
           <p className="mt-8 text-center text-[13px] text-[var(--fg-muted)]">
             No account?{" "}
-            <Link href="/signup" className="text-[var(--fg-primary)] hover:text-white/80 font-medium transition-colors">
+            <Link href="/signup" className="font-medium text-[var(--accent)] transition-colors hover:text-[#d97757]">
               Sign up free
             </Link>
           </p>

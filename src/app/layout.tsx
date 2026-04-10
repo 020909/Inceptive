@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Cormorant_Garamond, Inter } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { MotionConfig } from 'framer-motion';
@@ -7,6 +7,13 @@ import { MotionConfig } from 'framer-motion';
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+  display: 'swap',
+});
+
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  variable: '--font-cormorant',
+  weight: ['500', '600'],
   display: 'swap',
 });
 
@@ -23,11 +30,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       style={
         {
           '--font-body': "var(--font-inter), 'Inter', system-ui, sans-serif",
-          '--font-header': "'Times New Roman', serif",
+          '--font-header': "var(--font-cormorant), 'Cormorant Garamond', 'Times New Roman', serif",
         } as React.CSSProperties
       }
     >
-      <body className={cn(inter.variable, inter.className, 'antialiased')}>
+      <body className={cn(inter.variable, cormorant.variable, inter.className, 'antialiased')}>
         {/*
           Use "never" so UI polish (sidebar, pages, panels) always animates in the product.
           Switch to reducedMotion="user" if you want to honor OS "Reduce motion" (Framer
