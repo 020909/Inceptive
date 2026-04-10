@@ -311,40 +311,92 @@ async function runAgent(
   let lastErr: unknown = null;
 
   for (const step of chain) {
-    if (!String(orKey).trim()) continue;
-    const model = buildModel(orKey.trim(), "openrouter", step.modelId);
-    for (let attempt = 0; attempt < 4; attempt++) {
-      try {
-        const result = await runOnce(model);
-        const text = ((result?.text as string) || "").trim();
-        if (!text) {
-          lastErr = new Error("Empty model response");
-          if (attempt < 3) {
-            await sleep(400 + Math.floor(Math.random() * 400));
+    if (step.provider === "openrouter") {
+      if (!orKey) continue;
+      const model = buildModel(orKey, "openrouter", step.modelId);
+      for (let attempt = 0; attempt < 4; attempt++) {
+        try {
+          const result = await runOnce(model);
+          const text = ((result?.text as string) || "").trim();
+          if (!text) {
+            lastErr = new Error("Empty model response");
+            if (attempt < 3) {
+              await sleep(400 + Math.floor(Math.random() * 400));
+              continue;
+            }
+            break;
+          }
+          contribution.output = text;
+          contribution.status = "done";
+          contribution.durationMs = Date.now() - start;
+
+          onEvent?.({
+            type: "council",
+            agentRole: agent.role,
+            agentName: agent.name,
+            status: "done",
+            phase: agent.phase,
+            output: `${step.label} [${step.provider}:${step.modelId}] ${contribution.output.slice(0, 280)}`,
+          });
+          return contribution;
+        } catch (e) {
+          lastErr = e;
+          if (attempt < 3 && isRetriableModelError(e)) {
+            const backoff = 900 * Math.pow(2, attempt) + Math.floor(Math.random() * 350);
+            await sleep(backoff);
             continue;
           }
           break;
         }
-        contribution.output = text;
-    contribution.status = "done";
-    contribution.durationMs = Date.now() - start;
+      }
+      continue;
+    }
 
-    onEvent?.({
-      type: "council",
-      agentRole: agent.role,
-      agentName: agent.name,
-      status: "done",
-      phase: agent.phase,
-          output: `${step.label} [${step.provider}:${step.modelId}] ${contribution.output.slice(0, 280)}`,
-        });
-        return contribution;
-      } catch (e) {
-        lastErr = e;
-        if (attempt < 3 && isRetriableModelError(e)) {
-          const backoff = 900 * Math.pow(2, attempt) + Math.floor(Math.random() * 350);
-          await sleep(backoff);
-          continue;
+    if (step.provider === "gemini") {
+      if (!geminiKey) continue;
+      const model = buildModel(geminiKey, "gemini", step.modelId);
+      for (let attempt = 0; attempt < 4; attempt++) {
+        try {
+          const result = await runOnce(model);
+          const text = ((result?.text as string) || "").trim();
+          if (!text) {
+            lastErr = new Error("Empty model response");
+            if (attempt < 3) {
+              await sleep(400 + Math.floor(Math.random() * 400));
+              continue;
+            }
+            break;
+          }
+          contribution.output = text;
+          contribution.status = "done";
+          contribution.durationMs = Date.now() - start;
+
+          onEvent?.({
+            type: "council",
+            agentRole: agent.role,
+            agentName: agent.name,
+            status: "done",
+            phase: agent.phase,
+            output: `${step.label} [${step.provider}:${step.modelId}] ${contribution.output.slice(0, 280)}`,
+          });
+          return contribution;
+        } catch (e) {
+          lastErr = e;
+          if (attempt < 3 && isRetriableModelError(e)) {
+            const backoff = 900 * Math.pow(2, attempt) + Math.floor(Math.random() * 350);
+            await sleep(backoff);
+            continue;
+          }
+          break;
         }
+      }
+      continue;
+    }
+
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        break;
+      } catch (e) {
         break;
       }
     }

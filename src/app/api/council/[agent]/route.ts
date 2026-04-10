@@ -61,11 +61,12 @@ export async function POST(req: NextRequest, segment: { params: Promise<{ agent:
   }
 
   const openrouterKey = serverOpenRouterKeyFromEnv();
-  if (!openrouterKey) {
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
+  if (!openrouterKey && !geminiKey) {
     return NextResponse.json(
       {
         error:
-          "Session Council needs OpenRouter: set OPENROUTER_KEY or OPENROUTER_API_KEY in Vercel env.",
+          "Session Council needs OpenRouter (OPENROUTER_KEY / OPENROUTER_API_KEY) and/or Gemini (GEMINI_API_KEY / GOOGLE_AI_API_KEY) in Vercel env.",
       },
       { status: 503 }
     );
@@ -111,7 +112,9 @@ export async function POST(req: NextRequest, segment: { params: Promise<{ agent:
 
   let agentOutput = "";
   try {
-    const model = buildModel(openrouterKey, "openrouter", openRouterModelForSessionAgent(agent));
+    const model = openrouterKey
+      ? buildModel(openrouterKey, "openrouter", openRouterModelForSessionAgent(agent))
+      : buildModel(geminiKey, "gemini", "gemini-2.0-flash");
     const { text } = await generateText({
       model,
       system: SYSTEM_PROMPTS[agent],
