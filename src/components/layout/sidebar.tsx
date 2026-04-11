@@ -297,18 +297,20 @@ export function Sidebar() {
   };
 
   return (
-    /* group/sidebar — drives the label reveal on hover via group-hover/sidebar: */
-    <aside
-      className={`
-        group/sidebar
-        sidebar-surface
-        m-3 flex h-[calc(100vh-1.5rem)] shrink-0 flex-col overflow-hidden rounded-[28px]
-        sticky top-3 z-40
-        transition-[width] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]
-        border border-[var(--border-default)]
-        ${collapsed ? "w-[64px] hover:w-[220px]" : "w-[220px]"}
-      `}
-    >
+    /* Equal top/bottom space outside the rail (py-3): wrapper is full viewport height in the shell; aside fills the padded area. */
+    <div className="box-border flex h-full min-h-0 shrink-0 flex-col py-3 pl-3 pr-3">
+      {/* group/sidebar — drives the label reveal on hover via group-hover/sidebar: */}
+      <aside
+        className={`
+          group/sidebar
+          sidebar-surface
+          flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-[28px]
+          z-40
+          transition-[width] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]
+          border border-[var(--border-default)]
+          ${collapsed ? "w-[64px] hover:w-[220px]" : "w-[220px]"}
+        `}
+      >
       {/* ── Logo row: stacked logo + toggle when squeezed; horizontal when expanded or rail hover ── */}
       <div
         className={cn(
@@ -501,5 +503,6 @@ export function Sidebar() {
         </Link>
       </div>
     </aside>
+    </div>
   );
 }

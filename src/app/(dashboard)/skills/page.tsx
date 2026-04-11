@@ -173,15 +173,24 @@ export default function SkillsPage() {
                 className="flex flex-col rounded-2xl border border-[var(--border-subtle)] overflow-hidden transition-all duration-200 bg-[var(--bg-elevated)] hover:border-[var(--border-strong)]">
                 <div className="p-5 flex-1">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--bg-overlay)] border border-[var(--border-subtle)]">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
                       <Icon className="w-4 h-4 text-[var(--fg-primary)]" />
                     </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-neutral-200/90 text-[var(--fg-secondary)] border border-neutral-300/80 dark:bg-neutral-700/70 dark:border-neutral-600/80">{skill.time}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--bg-surface)] text-[var(--fg-secondary)] border border-[var(--border-subtle)]">
+                      {skill.time}
+                    </span>
                   </div>
                   <h3 className="text-sm font-bold text-[var(--fg-primary)] mb-1.5">{skill.title}</h3>
                   <p className="text-xs leading-relaxed text-[var(--fg-secondary)]">{skill.description}</p>
                   <div className="flex flex-wrap gap-1.5 mt-3">
-                    {skill.tags.map(t => <span key={t} className="text-[10px] px-2 py-0.5 rounded-md bg-neutral-200/80 text-[var(--fg-tertiary)] dark:bg-neutral-700/60">{t}</span>)}
+                    {skill.tags.map(t => (
+                      <span
+                        key={t}
+                        className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--bg-surface)] text-[var(--fg-tertiary)] border border-[var(--border-subtle)]"
+                      >
+                        {t}
+                      </span>
+                    ))}
                   </div>
                 </div>
                 <div className="px-5 pb-5">

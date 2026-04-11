@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Play, Clock, Plus, RefreshCw, Loader2, CheckCircle2, XCircle, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface AgentJob {
   id: string;
@@ -276,23 +277,30 @@ export default function AgentPage() {
             </button>
           </div>
         </div>
-        <div className="mt-6 grid w-full min-w-0 grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
-          <div className="page-kpi min-w-0 px-2.5 py-3 sm:px-3 sm:py-4">
-            <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]">Total</p>
-            <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--fg-primary)] sm:mt-2 sm:text-2xl">{counts.total}</p>
-          </div>
-          <div className="page-kpi min-w-0 px-2.5 py-3 sm:px-3 sm:py-4">
-            <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]">Running</p>
-            <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--fg-primary)] sm:mt-2 sm:text-2xl">{counts.running}</p>
-          </div>
-          <div className="page-kpi min-w-0 px-2.5 py-3 sm:px-3 sm:py-4">
-            <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]">Completed</p>
-            <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--fg-primary)] sm:mt-2 sm:text-2xl">{counts.completed}</p>
-          </div>
-          <div className="page-kpi min-w-0 px-2.5 py-3 sm:px-3 sm:py-4">
-            <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]">Failed</p>
-            <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--fg-primary)] sm:mt-2 sm:text-2xl">{counts.failed}</p>
-          </div>
+        {/* KPI row: lg = one full-width bar (edges align with hero inner content); smaller breakpoints = 2×2 cards with gap */}
+        <div className="mt-6 w-full min-w-0 grid grid-cols-2 gap-2 sm:gap-2.5 lg:grid-cols-4 lg:gap-0 lg:overflow-hidden lg:rounded-[24px] lg:border lg:border-[var(--border-default)] lg:bg-[var(--bg-surface)]">
+          {(
+            [
+              ['Total', counts.total],
+              ['Running', counts.running],
+              ['Completed', counts.completed],
+              ['Failed', counts.failed],
+            ] as const
+          ).map(([label, value]) => (
+            <div
+              key={label}
+              className={cn(
+                'min-w-0 px-4 py-3.5 sm:py-4',
+                'rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)]',
+                'lg:rounded-none lg:border-0 lg:border-r lg:border-[var(--border-default)] lg:bg-transparent lg:last:border-r-0',
+              )}
+            >
+              <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]">
+                {label}
+              </p>
+              <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--fg-primary)] sm:mt-2 sm:text-2xl">{value}</p>
+            </div>
+          ))}
         </div>
       </motion.div>
 
