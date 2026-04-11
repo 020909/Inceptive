@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { trackClientEvent } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase";
 import { inviteMember } from "@/lib/supabase/org-browser";
 import { useAuth } from "@/lib/auth-context";
@@ -49,6 +50,7 @@ export function InviteMemberForm({
     try {
       await inviteMember(orgId, email, user.id, createClient());
       const normalizedEmail = email.trim().toLowerCase();
+      trackClientEvent(orgId, user.id, "team_member_invited");
       setEmail("");
       setSuccess(`Saved a pending invite for ${normalizedEmail}.`);
       onInvited?.();

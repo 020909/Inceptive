@@ -21,6 +21,7 @@ import {
   ListChecks,
   GitBranch,
   Globe,
+  BarChart2,
 } from "lucide-react";
 import { useChat } from "@/lib/chat-context";
 import { useOrg } from "@/lib/org-context";
@@ -388,6 +389,20 @@ export function Sidebar() {
               icon={ListChecks}
               collapsed={collapsed}
               isActive={pathname === `/org/${currentOrg.slug}/activity`}
+            />
+            <WorkspaceNavItem
+              href={`/org/${currentOrg.slug}/analytics`}
+              label="Analytics"
+              icon={BarChart2}
+              collapsed={collapsed}
+              isActive={pathname === `/org/${currentOrg.slug}/analytics`}
+            />
+            <WorkspaceNavItem
+              href={`/org/${currentOrg.slug}/settings`}
+              label="Security"
+              icon={Settings}
+              collapsed={collapsed}
+              isActive={pathname === `/org/${currentOrg.slug}/settings`}
             />
           </div>
         </div>

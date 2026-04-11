@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { InviteMemberDialog } from "@/components/org/invite-member-dialog";
+import { RunAgentButton } from "@/components/org/run-agent-button";
 import { Button } from "@/components/ui/button";
 
 interface OrgDashboardPageProps {
@@ -78,6 +79,13 @@ export default async function OrgDashboardPage({ params }: OrgDashboardPageProps
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              <RunAgentButton
+                orgId={organization.id}
+                orgSlug={organization.slug}
+                userId={user.id}
+                userEmail={user.email ?? ""}
+                userName={user.email?.split("@")[0] || "Admin"}
+              />
               <Button
                 size="lg"
                 className="h-11 rounded-xl px-5"

@@ -4,16 +4,21 @@ import React, { useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import {
   Activity,
+  Search,
   FileSearch,
   FileText,
   ListChecks,
   Mail,
+  X,
   PenSquare,
   UserRoundSearch,
 } from "lucide-react";
+import { ExportButtons } from "@/components/ExportButtons";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useFuseSearch } from "@/hooks/useFuseSearch";
 import { cn } from "@/lib/utils";
 import type {
   ActivityDateRange,
@@ -24,6 +29,9 @@ import type {
 
 interface OrgActivityDashboardProps {
   logs: AgentActivityLogWithUser[];
+  orgName: string;
+  orgId: string;
+  userId: string;
 }
 
 const ACTION_GROUP_LABELS: Array<{ value: ActivityFilterGroup; label: string }> = [
@@ -114,17 +122,18 @@ function initialsFromName(name: string) {
     .join("");
 }
 
-export function OrgActivityDashboard({ logs }: OrgActivityDashboardProps) {
+export function OrgActivityDashboard({ logs, orgName, orgId, userId }: OrgActivityDashboardProps) {
   const [actionGroup, setActionGroup] = useState<ActivityFilterGroup>("all");
   const [dateRange, setDateRange] = useState<ActivityDateRange>("this_week");
+  const { query, setQuery, results } = useFuseSearch(logs, ["title", "description", "action_type"]);
 
   const visibleLogs = useMemo(() => {
     const start = getRangeStart(dateRange).getTime();
-    return logs.filter((log) => {
+    return results.filter((log) => {
       const createdAt = new Date(log.created_at).getTime();
       return createdAt >= start && matchesActionGroup(log, actionGroup);
     });
-  }, [actionGroup, dateRange, logs]);
+  }, [actionGroup, dateRange, results]);
 
   const stats = useMemo(() => {
     const weekStart = getRangeStart("this_week").getTime();
@@ -148,8 +157,65 @@ export function OrgActivityDashboard({ logs }: OrgActivityDashboardProps) {
     };
   }, [logs]);
 
+  const exportPayloads = useMemo(() => {
+    const highlights = logs
+      .slice(0, 5)
+      .map((log) => log.description?.trim() || log.title)
+      .filter(Boolean);
+
+    const agentLog = logs.slice(0, 20).map((log) => ({
+      time: new Date(log.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      action: log.title,
+      result: log.description?.trim() || statusLabel(log.status),
+    }));
+
+    const activityRows = logs.map((log) => ({
+      dateTime: new Date(log.created_at).toLocaleString(),
+      actionType: log.action_type,
+      title: log.title,
+      description: log.description ?? "",
+      status: statusLabel(log.status),
+      duration: typeof log.metadata?.duration === "string" ? log.metadata.duration : "",
+    }));
+
+    return {
+      pdfData: {
+        date: new Date().toLocaleDateString(),
+        orgName,
+        stats: {
+          tasks: stats.completedTasks,
+          emails: stats.emailsHandled,
+          leads: stats.leadsResearched,
+          hoursSaved: stats.hoursSaved,
+        },
+        highlights,
+        agentLog,
+      },
+      excelData: activityRows,
+    };
+  }, [logs, orgName, stats.completedTasks, stats.emailsHandled, stats.hoursSaved, stats.leadsResearched]);
+
   return (
     <div className="flex flex-col gap-6">
+      <Card className="rounded-[32px]">
+        <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-[var(--fg-primary)]">Export activity reports</p>
+            <p className="text-sm text-[var(--fg-muted)]">
+              Generate a PDF summary for the morning handoff or download the full activity log as Excel.
+            </p>
+          </div>
+          <ExportButtons
+            orgId={orgId}
+            userId={userId}
+            pdfType="morning_report"
+            pdfData={exportPayloads.pdfData}
+            excelType="activity"
+            excelData={exportPayloads.excelData}
+          />
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader>
@@ -204,6 +270,35 @@ export function OrgActivityDashboard({ logs }: OrgActivityDashboardProps) {
               </TabsList>
             </Tabs>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-[32px]">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] px-4 py-3">
+            <Search size={18} className="text-[var(--fg-muted)]" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search activity by title, description, or action type..."
+              className="h-auto border-0 bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0"
+            />
+            {query.trim() ? (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="flex size-7 items-center justify-center rounded-full text-[var(--fg-muted)] transition-colors hover:bg-[var(--bg-base)] hover:text-[var(--fg-primary)]"
+                aria-label="Clear search"
+              >
+                <X size={16} />
+              </button>
+            ) : null}
+          </div>
+          <p className="mt-3 text-sm text-[var(--fg-muted)]">
+            {query.trim()
+              ? `Searching "${query}" — ${visibleLogs.length} results found`
+              : `${visibleLogs.length} activity results`}
+          </p>
         </CardContent>
       </Card>
 

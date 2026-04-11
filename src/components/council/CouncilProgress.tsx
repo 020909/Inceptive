@@ -57,8 +57,6 @@ export function CouncilProgress({
   error,
   onCancel,
 }: Props) {
-  if (status === "idle") return null;
-
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
@@ -80,6 +78,8 @@ export function CouncilProgress({
 
   const anyRunning = agents.some((a) => a.status === "running");
   const finished = status === "done" || status === "error";
+
+  if (status === "idle") return null;
 
   return (
     <motion.div

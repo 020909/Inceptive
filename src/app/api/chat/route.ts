@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
+import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 const getAdmin = () =>
   createClient(
@@ -36,6 +37,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const limit = await checkRateLimit({
+    identifier: userId,
+    route: "/api/chat",
+    maxRequests: 50,
+    windowMinutes: 60,
+  });
+  if (!limit.allowed) return rateLimitResponse(limit.resetAt);
 
   const body = await req.json();
   const { title: clientTitle, messages } = body;

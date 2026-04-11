@@ -1,8 +1,9 @@
 "use server";
 
-import Anthropic from "@anthropic-ai/sdk";
 import Browserbase from "@browserbasehq/sdk";
 import { chromium } from "playwright-core";
+import { trackEvent } from "@/lib/analytics";
+import { chatWithGemini } from "@/lib/ai/proxy";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { logActivity } from "@/lib/supabase/activity";
 
@@ -13,6 +14,59 @@ type BrowserTaskStep =
   | { type: "screenshot" }
   | { type: "extract"; description: string };
 
+const DEFAULT_BROWSER_PLANNER_MODEL =
+  process.env.BROWSER_AGENT_MODEL || process.env.OPENROUTER_BROWSER_MODEL || "google/gemini-2.0-flash-001";
+
+function hasOpenRouterKey() {
+  return Boolean(
+    process.env.OPENROUTER_KEY || process.env.OPENROUTER_DEFAULT_KEY || process.env.OPENROUTER_API_KEY
+  );
+}
+
+function fallbackBrowserPlan(url: string): BrowserTaskStep[] {
+  return [
+    { type: "navigate", url },
+    { type: "extract", description: "Key page content" },
+    { type: "screenshot" },
+  ];
+}
+
+async function generateBrowserPlan(taskDescription: string, url: string) {
+  if (!hasOpenRouterKey()) {
+    return fallbackBrowserPlan(url);
+  }
+
+  try {
+    const response = await chatWithGemini({
+      model: DEFAULT_BROWSER_PLANNER_MODEL,
+      temperature: 0.2,
+      max_tokens: 1200,
+      messages: [
+        {
+          role: "system",
+          content: [
+            "You are a browser automation planner.",
+            "Return only valid JSON.",
+            "Return an array of steps.",
+            'Each step must be exactly one of: {"type":"navigate","url":"https://..."} or {"type":"click","selector":"...","description":"..."} or {"type":"type","selector":"...","text":"..."} or {"type":"screenshot"} or {"type":"extract","description":"..."}',
+            "Prefer resilient CSS selectors.",
+            "Keep the plan short and realistic.",
+          ].join(" "),
+        },
+        {
+          role: "user",
+          content: `Starting URL: ${url}\nTask: ${taskDescription}\nReturn only the JSON array.`,
+        },
+      ],
+    });
+
+    return parsePlannedSteps(response.content, url);
+  } catch (error) {
+    console.warn("[browser-agent] Falling back to deterministic plan", error);
+    return fallbackBrowserPlan(url);
+  }
+}
+
 export async function runBrowserTask(
   taskDescription: string,
   targetUrl: string,
@@ -20,14 +74,9 @@ export async function runBrowserTask(
 ) {
   const browserbaseApiKey = process.env.BROWSERBASE_API_KEY;
   const browserbaseProjectId = process.env.BROWSERBASE_PROJECT_ID;
-  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!browserbaseApiKey || !browserbaseProjectId) {
     throw new Error("Browserbase is not configured. Add the Browserbase environment variables first.");
-  }
-
-  if (!anthropicApiKey) {
-    throw new Error("ANTHROPIC_API_KEY is missing.");
   }
 
   if (!taskDescription.trim()) {
@@ -36,7 +85,6 @@ export async function runBrowserTask(
 
   const normalizedUrl = (targetUrl || "https://www.google.com").trim();
   const bb = new Browserbase({ apiKey: browserbaseApiKey });
-  const anthropic = new Anthropic({ apiKey: anthropicApiKey });
 
   let session: Awaited<ReturnType<typeof bb.sessions.create>> | null = null;
   let browser: Awaited<ReturnType<typeof chromium.connectOverCDP>> | null = null;
@@ -63,36 +111,7 @@ export async function runBrowserTask(
     page = context.pages()[0] ?? (await context.newPage());
     await page.goto(normalizedUrl, { waitUntil: "domcontentloaded" });
 
-    const plannerResponse = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1200,
-      system: [
-        "You are a browser automation planner.",
-        "Return only valid JSON.",
-        "Return an array of steps.",
-        'Each step must be exactly one of: {"type":"navigate","url":"https://..."} or {"type":"click","selector":"...","description":"..."} or {"type":"type","selector":"...","text":"..."} or {"type":"screenshot"} or {"type":"extract","description":"..."}',
-        "Prefer resilient CSS selectors.",
-        "Keep the plan short and realistic.",
-      ].join(" "),
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `Starting URL: ${normalizedUrl}\nTask: ${taskDescription}\nReturn only the JSON array.`,
-            },
-          ],
-        },
-      ],
-    });
-
-    const plannerText = plannerResponse.content
-      .filter((item) => item.type === "text")
-      .map((item) => item.text)
-      .join("\n");
-
-    const stepPlan = parsePlannedSteps(plannerText, normalizedUrl);
+    const stepPlan = await generateBrowserPlan(taskDescription, normalizedUrl);
 
     for (const step of stepPlan) {
       if (!page) break;
@@ -136,6 +155,17 @@ export async function runBrowserTask(
     const summary = buildSummary(taskDescription, extracts, stepsCompleted);
 
     if (organizationId) {
+      const supabase = await createServerSupabaseClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user?.id) {
+        void trackEvent(organizationId, user.id, "browser_agent_used", {
+          task_length: taskDescription.length,
+        });
+      }
+
       await safeLogActivity({
         organizationId,
         actionType: "browser_task",

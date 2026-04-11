@@ -5,6 +5,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 import { checkCredits, deductCredits } from "@/lib/credits";
+import { checkRateLimit, getClientIP, rateLimitResponse } from "@/lib/rate-limit";
 import { browseUrlText, extractUrls, formatSearchResultsForPrompt, searchWeb } from "@/lib/search/provider";
 import { gatherResearchEnrichment } from "@/lib/research/enrichment";
 import {
@@ -168,6 +169,15 @@ export async function POST(request: Request) {
   let contextTopic = "";
   let contextDepth = "Deep";
   try {
+    const ip = getClientIP(request);
+    const limit = await checkRateLimit({
+      identifier: ip,
+      route: "/api/research",
+      maxRequests: 20,
+      windowMinutes: 60,
+    });
+    if (!limit.allowed) return rateLimitResponse(limit.resetAt);
+
     const requestId = crypto.randomUUID();
     const user_id = await getAuthenticatedUserIdFromRequest(request);
     contextUserId = user_id;

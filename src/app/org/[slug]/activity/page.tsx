@@ -60,7 +60,7 @@ export default async function OrgActivityPage({ params, searchParams }: OrgActiv
           </div>
         </div>
 
-        <OrgActivityDashboard logs={logs} />
+        <OrgActivityDashboard logs={logs} orgName={organization.name} orgId={organization.id} userId={user.id} />
       </div>
     </section>
   );

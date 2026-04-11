@@ -9,7 +9,8 @@ export type AgentActivityActionType =
   | "report_generated"
   | "content_created"
   | "task_completed"
-  | "browser_task";
+  | "browser_task"
+  | "overnight_run_complete";
 
 export type AgentActivityStatus = "completed" | "failed" | "in_progress";
 export type ActivityFilterGroup = "all" | "emails" | "research" | "content" | "tasks";

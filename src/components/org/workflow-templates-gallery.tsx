@@ -3,6 +3,9 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { Search } from "lucide-react";
+import { trackClientEvent } from "@/lib/analytics";
+import { useFuseSearch } from "@/hooks/useFuseSearch";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -14,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getWorkflowIcon } from "@/components/org/workflow-icons";
 
@@ -43,6 +47,7 @@ export function WorkflowTemplatesGallery({
   const [category, setCategory] = useState<"all" | WorkflowCategory>("all");
   const [activeWorkflows, setActiveWorkflows] = useState(initialActiveWorkflows);
   const [activatingTemplateId, setActivatingTemplateId] = useState<string | null>(null);
+  const { query, setQuery, results } = useFuseSearch(templates, ["name", "description", "category"]);
 
   const activeByTemplateId = useMemo(
     () => new Map(activeWorkflows.map((workflow) => [workflow.template_id, workflow])),
@@ -50,9 +55,9 @@ export function WorkflowTemplatesGallery({
   );
 
   const visibleTemplates = useMemo(() => {
-    if (category === "all") return templates;
-    return templates.filter((template) => template.category === category);
-  }, [category, templates]);
+    if (category === "all") return results;
+    return results.filter((template) => template.category === category);
+  }, [category, results]);
 
   const handleActivate = async (template: WorkflowTemplate) => {
     if (!user?.id) {
@@ -81,6 +86,11 @@ export function WorkflowTemplatesGallery({
         ...current,
       ]);
 
+      trackClientEvent(orgId, user.id, "workflow_activated", {
+        workflow_name: template.name,
+        workflow_category: template.category,
+      });
+
       toast.success("Workflow activated! Your AI agent will begin tonight.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to activate workflow.";
@@ -93,6 +103,20 @@ export function WorkflowTemplatesGallery({
   return (
     <div className="flex flex-col gap-6">
       <div className="command-surface rounded-[32px] border border-[var(--border-default)] p-6">
+        <div className="mb-5">
+          <p className="mb-3 text-xs uppercase tracking-[0.18em] text-[var(--fg-muted)]">Search Templates</p>
+          <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] px-4 py-3">
+            <Search size={18} className="text-[var(--fg-muted)]" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by workflow name, description, or category..."
+              className="h-auto border-0 bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0"
+            />
+          </div>
+          <p className="mt-3 text-sm text-[var(--fg-muted)]">{visibleTemplates.length} results</p>
+        </div>
+
         <p className="mb-3 text-xs uppercase tracking-[0.18em] text-[var(--fg-muted)]">Category</p>
         <Tabs value={category} onValueChange={(value) => setCategory(value as "all" | WorkflowCategory)}>
           <TabsList>
@@ -173,6 +197,14 @@ export function WorkflowTemplatesGallery({
           );
         })}
       </div>
+
+      {visibleTemplates.length === 0 ? (
+        <Card className="rounded-[32px]">
+          <CardContent className="p-6 text-sm text-[var(--fg-muted)]">
+            No workflows matched your current search and category filter.
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }
