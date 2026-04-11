@@ -110,15 +110,18 @@ const SECTIONS: { id: Section; label: string; icon: typeof Cpu }[] = [
 function Toggle({ on, onToggle, disabled }: { on: boolean; onToggle: () => void; disabled?: boolean }) {
   return (
     <button
+      type="button"
       onClick={onToggle}
       disabled={disabled}
-      className={`relative shrink-0 h-7 w-12 rounded-full transition-colors duration-200 border border-[var(--border-default)] disabled:opacity-50 ${on ? "bg-[var(--fg-primary)]" : "bg-[var(--bg-overlay)]"}`}
+      className={`relative inline-flex h-7 w-11 shrink-0 cursor-pointer items-center overflow-hidden rounded-full border border-[var(--border-default)] p-[3px] transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${on ? "bg-[var(--fg-primary)]" : "bg-[var(--bg-overlay)]"}`}
       aria-label="Toggle"
+      aria-pressed={on}
     >
-      <motion.div
-        className={`absolute top-0.5 h-6 w-6 rounded-full ${on ? "bg-[var(--bg-base)]" : "bg-[var(--fg-tertiary)]"}`}
-        animate={{ left: on ? "calc(100% - 26px)" : "2px" }}
-        transition={{ type: "spring", stiffness: 500, damping: 35 }}
+      <motion.span
+        className={`pointer-events-none block h-5 w-5 shrink-0 rounded-full shadow-sm ${on ? "bg-[var(--bg-base)]" : "bg-[var(--fg-tertiary)]"}`}
+        initial={false}
+        animate={{ x: on ? 18 : 0 }}
+        transition={{ type: "spring", stiffness: 520, damping: 38 }}
       />
     </button>
   );

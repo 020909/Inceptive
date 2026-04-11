@@ -11,7 +11,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "border-[var(--accent)] bg-[var(--accent)] text-[var(--primary-foreground)] shadow-[0_0_0_1px_var(--accent)] hover:-translate-y-px hover:bg-[#d97757] hover:border-[#d97757] active:translate-y-0 active:scale-[0.98]",
+          "border-[var(--accent)] bg-[var(--accent)] text-[var(--primary-foreground)] shadow-[0_0_0_1px_var(--accent)] hover:-translate-y-px hover:bg-[var(--accent-hover)] hover:border-[var(--accent-hover)] active:translate-y-0 active:scale-[0.98]",
         outline:
           "border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--fg-primary)] shadow-[0_0_0_1px_rgba(232,230,220,0.68)] hover:-translate-y-px hover:bg-[var(--bg-surface)] hover:text-[var(--fg-primary)] aria-expanded:bg-[var(--bg-overlay)] aria-expanded:text-[var(--fg-primary)]",
         secondary:

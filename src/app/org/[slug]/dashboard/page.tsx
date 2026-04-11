@@ -98,31 +98,6 @@ export default async function OrgDashboardPage({ params }: OrgDashboardPageProps
           </div>
         </div>
 
-        <div className="rounded-[32px] border border-[var(--border-default)] bg-[var(--bg-elevated)] p-8 shadow-[0_0_0_1px_rgba(232,230,220,0.58),0_24px_60px_rgba(24,24,24,0.06)]">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.22em] text-[var(--fg-muted)]">Featured</p>
-              <h2
-                className="text-3xl text-[var(--fg-primary)]"
-                style={{ fontFamily: "var(--font-header)" }}
-              >
-                Turn on enterprise workflows in one click
-              </h2>
-              <p className="max-w-3xl text-sm leading-6 text-[var(--fg-secondary)]">
-                Browse pre-built agent workflows for sales, research, operations, and content so your workspace starts delivering value immediately.
-              </p>
-            </div>
-
-            <Button
-              size="lg"
-              className="h-12 rounded-xl px-6"
-              render={<Link href={`/org/${organization.slug}/workflows`} />}
-            >
-              Browse Workflows
-            </Button>
-          </div>
-        </div>
-
         <div className="command-surface overflow-hidden rounded-[32px] border border-[var(--border-default)]">
           <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-6 py-5">
             <div>

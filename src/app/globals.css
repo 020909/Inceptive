@@ -45,12 +45,14 @@
     --border-default: #e8e6dc;
     --border-strong: #d1cfc5;
 
-    /* Accent → plain white (no orange). */
-    --accent: #ffffff;
-    --accent-soft: rgba(255, 255, 255, 0.12);
-    --accent-muted: rgba(255, 255, 255, 0.08);
-    --accent-glow: rgba(255, 255, 255, 0.22);
-    --accent-subtle: rgba(255, 255, 255, 0.16);
+    /* Brand accent — pure orange (not legacy terracotta). */
+    --accent: #ff4f00;
+    --accent-hover: #e54300;
+    --accent-bright: #ff7a4d;
+    --accent-soft: rgba(255, 79, 0, 0.12);
+    --accent-muted: rgba(255, 79, 0, 0.08);
+    --accent-glow: rgba(255, 79, 0, 0.32);
+    --accent-subtle: rgba(255, 79, 0, 0.16);
 
     --success: #8a6d3b;
     --success-soft: rgba(138, 109, 59, 0.12);
@@ -86,11 +88,11 @@
     --background-overlay: var(--bg-overlay);
     --surface: var(--bg-surface);
 
-    --premium-radial: radial-gradient(ellipse 120% 90% at 50% -10%, rgba(201, 100, 66, 0.12), transparent 56%);
+    --premium-radial: radial-gradient(ellipse 120% 90% at 50% -10%, rgba(255, 79, 0, 0.12), transparent 56%);
     --premium-radial-side: radial-gradient(ellipse 68% 54% at 100% 0%, rgba(20, 20, 19, 0.03), transparent 48%);
     --premium-border-glow: 0 0 0 1px rgba(232, 230, 220, 0.95), 0 24px 60px -36px rgba(54, 42, 32, 0.22);
     --premium-grid: linear-gradient(rgba(77, 76, 72, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(77, 76, 72, 0.04) 1px, transparent 1px);
-    --premium-orb-top: radial-gradient(circle at 18% 8%, rgba(201, 100, 66, 0.1), transparent 24%);
+    --premium-orb-top: radial-gradient(circle at 18% 8%, rgba(255, 79, 0, 0.1), transparent 24%);
     --premium-orb-bottom: radial-gradient(circle at 82% 82%, rgba(48, 48, 46, 0.08), transparent 24%);
   }
 
@@ -101,14 +103,14 @@
     --card-foreground: var(--fg-primary);
     --popover: var(--bg-elevated);
     --popover-foreground: var(--fg-primary);
-    /* White primary button needs dark text in light mode. */
+    /* Primary CTA = brand orange; label stays light for contrast. */
     --primary: var(--accent);
-    --primary-foreground: var(--fg-primary);
+    --primary-foreground: #ffffff;
     --secondary: var(--bg-overlay);
     --secondary-foreground: var(--fg-secondary);
     --muted: var(--bg-overlay);
     --muted-foreground: var(--fg-tertiary);
-    --accent-foreground: #faf9f5;
+    --accent-foreground: #ffffff;
     --destructive-foreground: #faf9f5;
     --border: var(--border-default);
     --input: var(--border-default);
@@ -121,24 +123,26 @@
     --bg-elevated: #252522;
     --bg-overlay: #30302e;
 
-    --text-primary: #faf9f5;
-    --text-secondary: #e4ddd1;
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.88);
 
-    --fg-primary: #faf9f5;
-    --fg-secondary: #d6cfbf;
-    --fg-tertiary: #b0aea5;
-    --fg-muted: #87867f;
+    --fg-primary: #ffffff;
+    --fg-secondary: rgba(255, 255, 255, 0.82);
+    --fg-tertiary: rgba(255, 255, 255, 0.68);
+    --fg-muted: rgba(255, 255, 255, 0.5);
 
     --border-subtle: rgba(240, 238, 230, 0.08);
     --border-default: rgba(232, 230, 220, 0.16);
     --border-strong: rgba(232, 230, 220, 0.26);
 
-    /* Accent → plain white (no orange). */
-    --accent: #ffffff;
-    --accent-soft: rgba(255, 255, 255, 0.14);
-    --accent-muted: rgba(255, 255, 255, 0.1);
-    --accent-glow: rgba(255, 255, 255, 0.22);
-    --accent-subtle: rgba(255, 255, 255, 0.16);
+    /* Brand accent — same orange in dark mode. */
+    --accent: #ff4f00;
+    --accent-hover: #e54300;
+    --accent-bright: #ff8f66;
+    --accent-soft: rgba(255, 79, 0, 0.16);
+    --accent-muted: rgba(255, 79, 0, 0.12);
+    --accent-glow: rgba(255, 79, 0, 0.38);
+    --accent-subtle: rgba(255, 79, 0, 0.22);
 
     --success: #b89b62;
     --success-soft: rgba(184, 155, 98, 0.16);
@@ -153,14 +157,14 @@
     --card-foreground: var(--fg-primary);
     --popover: var(--bg-elevated);
     --popover-foreground: var(--fg-primary);
-    /* White primary button needs dark text even in dark mode. */
+    /* Primary CTA = brand orange; light label on top. */
     --primary: var(--accent);
-    --primary-foreground: #141413;
+    --primary-foreground: #ffffff;
     --secondary: var(--bg-overlay);
     --secondary-foreground: var(--fg-primary);
     --muted: var(--bg-overlay);
     --muted-foreground: var(--fg-tertiary);
-    --accent-foreground: #faf9f5;
+    --accent-foreground: #ffffff;
     --destructive-foreground: #faf9f5;
     --border: var(--border-default);
     --input: var(--border-default);
@@ -171,11 +175,11 @@
     --background-overlay: var(--bg-overlay);
     --surface: var(--bg-surface);
 
-    --premium-radial: radial-gradient(ellipse 120% 90% at 50% -10%, rgba(217, 119, 87, 0.14), transparent 56%);
+    --premium-radial: radial-gradient(ellipse 120% 90% at 50% -10%, rgba(255, 79, 0, 0.14), transparent 56%);
     --premium-radial-side: radial-gradient(ellipse 68% 54% at 100% 0%, rgba(250, 249, 245, 0.05), transparent 48%);
     --premium-border-glow: 0 0 0 1px rgba(232, 230, 220, 0.14), 0 28px 64px -36px rgba(0, 0, 0, 0.58);
     --premium-grid: linear-gradient(rgba(250, 249, 245, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(250, 249, 245, 0.035) 1px, transparent 1px);
-    --premium-orb-top: radial-gradient(circle at 18% 8%, rgba(217, 119, 87, 0.12), transparent 24%);
+    --premium-orb-top: radial-gradient(circle at 18% 8%, rgba(255, 79, 0, 0.14), transparent 24%);
     --premium-orb-bottom: radial-gradient(circle at 82% 82%, rgba(250, 249, 245, 0.05), transparent 24%);
   }
 
@@ -210,7 +214,7 @@
   }
 
   ::selection {
-    background: rgba(201, 100, 66, 0.18);
+    background: rgba(255, 79, 0, 0.22);
     color: var(--fg-primary);
   }
 
@@ -663,8 +667,8 @@
 
 /* ── Trillion-Dollar: Beige Pulse Ring for AI Thinking States ── */
 @keyframes pulse-beige {
-  0%   { box-shadow: 0 0 0 0 rgba(201, 100, 66, 0.24); }
-  70%  { box-shadow: 0 0 0 10px rgba(201, 100, 66, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(255, 79, 0, 0.28); }
+  70%  { box-shadow: 0 0 0 10px rgba(255, 79, 0, 0); }
   100% { box-shadow: 0 0 0 0 rgba(245, 245, 247, 0); }
 }
 
@@ -679,8 +683,8 @@
 }
 
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 100, 66, 0); }
-  50% { box-shadow: 0 0 12px 2px rgba(201, 100, 66, 0.16); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 79, 0, 0); }
+  50% { box-shadow: 0 0 12px 2px rgba(255, 79, 0, 0.22); }
 }
 
 @keyframes breathe {

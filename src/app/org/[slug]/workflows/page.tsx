@@ -4,14 +4,18 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getOrgBySlug, getOrgMembershipForUser } from "@/lib/supabase/org";
 import { getOrgWorkflows, getWorkflowTemplates } from "@/lib/supabase/workflows";
 import { WorkflowTemplatesGallery } from "@/components/org/workflow-templates-gallery";
+import { MyWorkflowsGrid } from "@/components/org/my-workflows-grid";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList } from "@/components/ui/tabs";
 
 interface OrgWorkflowsPageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }
 
-export default async function OrgWorkflowsPage({ params }: OrgWorkflowsPageProps) {
+export default async function OrgWorkflowsPage({ params, searchParams }: OrgWorkflowsPageProps) {
   const { slug } = await params;
+  const { tab = "templates" } = await searchParams;
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -36,6 +40,12 @@ export default async function OrgWorkflowsPage({ params }: OrgWorkflowsPageProps
     getOrgWorkflows(organization.id, supabase),
   ]);
 
+  const { data: myWorkflows = [] } = await supabase
+    .from("agent_workflows")
+    .select("id, name, status, last_run_at, nodes")
+    .eq("organization_id", organization.id)
+    .order("updated_at", { ascending: false });
+
   return (
     <section className="mx-auto flex min-h-full w-full max-w-7xl px-6 py-10">
       <div className="flex w-full flex-col gap-6">
@@ -54,23 +64,74 @@ export default async function OrgWorkflowsPage({ params }: OrgWorkflowsPageProps
               </p>
             </div>
 
-            <Button
-              variant="outline"
-              size="lg"
-              className="h-11 rounded-xl px-5"
-              render={<Link href={`/org/${organization.slug}/workflows/active`} />}
-            >
-              View Active Workflows
-            </Button>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-11 rounded-xl px-5"
+                render={<Link href={`/org/${organization.slug}/workflows/active`} />}
+              >
+                View Active Workflows
+              </Button>
+              <Button
+                size="lg"
+                className="h-11 rounded-xl px-5"
+                render={<Link href={`/org/${organization.slug}/workflows/builder`} />}
+              >
+                New Workflow
+              </Button>
+            </div>
           </div>
         </div>
 
-        <WorkflowTemplatesGallery
-          orgId={organization.id}
-          orgSlug={organization.slug}
-          templates={templates}
-          initialActiveWorkflows={activeWorkflows}
-        />
+        <Tabs value={tab}>
+          <TabsList>
+            <Link
+              href={`/org/${organization.slug}/workflows?tab=templates`}
+              className={[
+                "rounded-xl px-3 py-2 text-sm transition-colors",
+                tab === "templates"
+                  ? "bg-[var(--bg-surface)] text-[var(--fg-primary)] shadow-[0_0_0_1px_rgba(232,230,220,0.68)]"
+                  : "text-[var(--fg-muted)] hover:text-[var(--fg-primary)]",
+              ].join(" ")}
+            >
+              Templates
+            </Link>
+            <Link
+              href={`/org/${organization.slug}/workflows?tab=my-workflows`}
+              className={[
+                "rounded-xl px-3 py-2 text-sm transition-colors",
+                tab === "my-workflows"
+                  ? "bg-[var(--bg-surface)] text-[var(--fg-primary)] shadow-[0_0_0_1px_rgba(232,230,220,0.68)]"
+                  : "text-[var(--fg-muted)] hover:text-[var(--fg-primary)]",
+              ].join(" ")}
+            >
+              My Workflows
+            </Link>
+          </TabsList>
+        </Tabs>
+
+        {tab === "my-workflows" ? (
+          <MyWorkflowsGrid
+            orgSlug={organization.slug}
+            initialWorkflows={
+              myWorkflows as Array<{
+                id: string;
+                name: string;
+                status: "draft" | "active" | "paused";
+                last_run_at: string | null;
+                nodes: unknown[] | null;
+              }>
+            }
+          />
+        ) : (
+          <WorkflowTemplatesGallery
+            orgId={organization.id}
+            orgSlug={organization.slug}
+            templates={templates}
+            initialActiveWorkflows={activeWorkflows}
+          />
+        )}
       </div>
     </section>
   );

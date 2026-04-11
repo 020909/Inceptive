@@ -15,7 +15,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Share2, Plus, Loader2, Calendar, Check, Unlink, ExternalLink, Send, Bot, Plug, RefreshCw, Settings, AlertCircle } from "lucide-react";
+import { Share2, Plus, Loader2, Calendar, Check, Unlink, ExternalLink, Send, Bot, Plug, RefreshCw, Settings, AlertCircle, Github } from "lucide-react";
 import { toast } from "sonner";
 import { formatTimeAgo } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,6 +32,17 @@ interface ConnectedAccount {
 }
 
 const SOCIAL_CONNECTORS = [
+  {
+    id: "github",
+    provider: "github",
+    name: "GitHub",
+    logo: "",
+    users: "—",
+    telegramInput: false,
+    type: "dev",
+    description: "Link repositories with a Personal Access Token for code-aware workflows.",
+    linkTo: "/github",
+  },
   { id: "gmail",     provider: "gmail",     name: "Gmail",       logo: "/logos/email/gmail.png",   users: "1.8B+",  telegramInput: false, type: "email", description: "Send and receive emails" },
   { id: "outlook",   provider: "outlook",   name: "Outlook",     logo: "/logos/email/outlook.png", users: "400M+",  telegramInput: false, type: "email", description: "Microsoft 365 email" },
   { id: "x",         provider: "twitter",    name: "X (Twitter)", logo: "/logos/social/x.png",         users: "600M+",  telegramInput: false, type: "social", description: "Post tweets and read basic profile" },
@@ -82,7 +93,11 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
     >
       <div className="flex items-start justify-between mb-4">
         <div className="h-12 w-12 flex items-center justify-center">
-          <img src={connector.logo} alt={connector.name} width={34} height={34} className="h-[34px] w-[34px] object-contain" />
+          {connector.logo ? (
+            <img src={connector.logo} alt={connector.name} width={34} height={34} className="h-[34px] w-[34px] object-contain" />
+          ) : (
+            <Github size={34} strokeWidth={1.5} className="text-[var(--fg-primary)]" aria-hidden />
+          )}
         </div>
         <StatusBadge status={connected ? 'connected' : 'disconnected'} />
       </div>
@@ -144,7 +159,7 @@ export default function SocialPage() {
   const [botToken, setBotToken] = useState("");
   const [chatId, setChatId] = useState("");
   const [connectingTelegram, setConnectingTelegram] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'email' | 'social'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'email' | 'social' | 'dev'>('all');
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -207,6 +222,10 @@ export default function SocialPage() {
 
   const handleConnect = (connector: typeof SOCIAL_CONNECTORS[0]) => {
     if (!session?.access_token) { toast.error("Please sign in first"); return; }
+    if ("linkTo" in connector && connector.linkTo) {
+      window.location.href = connector.linkTo;
+      return;
+    }
     if (connector.telegramInput) { setIsTelegramModalOpen(true); return; }
     const authSlug = PROVIDER_AUTH_PATH[connector.provider] || connector.provider;
     const base = connector.type === "email" ? `/api/auth/${authSlug}/connect` : `/api/connectors/${connector.provider}?mode=connect`;
@@ -366,7 +385,7 @@ export default function SocialPage() {
           </div>
 
           <div className="flex items-center gap-2 mb-6">
-            {(['all', 'email', 'social'] as const).map((category) => (
+            {(['all', 'email', 'social', 'dev'] as const).map((category) => (
               <button key={category} onClick={() => setSelectedCategory(category)}
                 className={`px-4 py-2 rounded-lg text-sm capitalize transition-all duration-200
                   ${selectedCategory === category ? 'bg-[var(--bg-elevated)] text-[var(--fg-primary)]' : 'text-[var(--fg-tertiary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--fg-primary)]'}`}>

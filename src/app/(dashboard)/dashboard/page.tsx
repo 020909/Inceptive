@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X, FileSpreadsheet, Presentation, FileText, Download, Mic, MicOff, Globe, Sparkles, Layers3 } from "lucide-react";
@@ -1718,23 +1717,6 @@ function DashboardExperience() {
                   error={council.error}
                   onCancel={council.cancel}
                 />
-                <Link
-                  href="/browser-agent"
-                  className="block rounded-[28px] border border-[var(--border-default)] bg-[var(--bg-elevated)] p-5 shadow-[0_0_0_1px_rgba(232,230,220,0.58),0_20px_50px_rgba(24,24,24,0.05)] transition-transform hover:-translate-y-0.5"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-2">
-                      <p className="text-xs uppercase tracking-[0.18em] text-[var(--fg-muted)]">Feature Spotlight</p>
-                      <h2 className="text-xl font-semibold text-[var(--fg-primary)]">Browser Agent</h2>
-                      <p className="max-w-2xl text-sm leading-6 text-[var(--fg-secondary)]">
-                        Control any website with plain English. Research leads, fill forms, and extract data.
-                      </p>
-                    </div>
-                    <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-1 text-xs text-[var(--fg-secondary)]">
-                      Open
-                    </span>
-                  </div>
-                </Link>
                 <BuildRecipeStrip
                   title="Website Recipes"
                   recipes={WEBSITE_RECIPES}

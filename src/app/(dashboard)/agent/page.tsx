@@ -240,7 +240,7 @@ export default function AgentPage() {
               className="mt-2 text-3xl md:text-4xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]"
               style={{ fontFamily: "var(--font-header)" }}
             >
-              Agent Command Center
+              Agents Command Center
             </h1>
             <p className="text-[var(--fg-tertiary)] text-sm md:text-base mt-2">
               Autonomous tasks running in your background
@@ -276,22 +276,22 @@ export default function AgentPage() {
             </button>
           </div>
         </div>
-        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <div className="page-kpi p-4">
-            <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-[0.2em]">Total</p>
-            <p className="mt-2 text-2xl font-semibold text-[var(--fg-primary)]">{counts.total}</p>
+        <div className="mt-6 grid w-full min-w-0 grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+          <div className="page-kpi min-w-0 px-3 py-3 sm:p-4">
+            <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]">Total</p>
+            <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--fg-primary)] sm:mt-2 sm:text-2xl">{counts.total}</p>
           </div>
-          <div className="page-kpi p-4">
-            <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-[0.2em]">Running</p>
-            <p className="mt-2 text-2xl font-semibold text-[var(--fg-primary)]">{counts.running}</p>
+          <div className="page-kpi min-w-0 px-3 py-3 sm:p-4">
+            <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]">Running</p>
+            <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--fg-primary)] sm:mt-2 sm:text-2xl">{counts.running}</p>
           </div>
-          <div className="page-kpi p-4">
-            <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-[0.2em]">Completed</p>
-            <p className="mt-2 text-2xl font-semibold text-[var(--fg-primary)]">{counts.completed}</p>
+          <div className="page-kpi min-w-0 px-3 py-3 sm:p-4">
+            <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]">Completed</p>
+            <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--fg-primary)] sm:mt-2 sm:text-2xl">{counts.completed}</p>
           </div>
-          <div className="page-kpi p-4">
-            <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-[0.2em]">Failed</p>
-            <p className="mt-2 text-2xl font-semibold text-[var(--fg-primary)]">{counts.failed}</p>
+          <div className="page-kpi min-w-0 px-3 py-3 sm:p-4">
+            <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]">Failed</p>
+            <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--fg-primary)] sm:mt-2 sm:text-2xl">{counts.failed}</p>
           </div>
         </div>
       </motion.div>
@@ -304,11 +304,11 @@ export default function AgentPage() {
         className="mb-10"
       >
         <p className="text-[11px] text-[var(--fg-muted)] uppercase tracking-wider mb-4">Quick launch</p>
-        <div className="flex gap-4 overflow-x-auto pb-3 -mx-1 px-1 snap-x snap-mandatory">
+        <div className="flex gap-3 overflow-x-auto pb-3 -mx-1 px-1 snap-x snap-mandatory [scrollbar-gutter:stable]">
           {JOB_PRESETS.map(p => (
             <div
               key={p.kind}
-              className="snap-start shrink-0 w-[260px] md:w-[300px] rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] card-elevated p-4 flex flex-col items-stretch"
+              className="snap-start shrink-0 w-[220px] sm:w-[236px] md:w-[252px] rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] card-elevated p-3.5 sm:p-4 flex flex-col items-stretch"
             >
               <div className="flex justify-center mb-3 opacity-95">
                 {presetIcon(p.kind)}

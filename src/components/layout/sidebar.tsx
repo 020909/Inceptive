@@ -16,7 +16,6 @@ import {
   Sparkles,
   Plus,
   FolderKanban,
-  Github,
   Building2,
   ChevronsUpDown,
   ListChecks,
@@ -26,7 +25,6 @@ import {
 import { useChat } from "@/lib/chat-context";
 import { useOrg } from "@/lib/org-context";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,7 +66,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
   { label: "Browser Agent", href: "/browser-agent", icon: Globe },
-  { label: "Agent", href: "/agent", icon: Bot },
+  { label: "Agents", href: "/agent", icon: Bot },
   { label: "Projects", href: "/projects", icon: FolderKanban },
   { label: "Skills", href: "/skills", icon: Sparkles },
   { label: "Email", href: "/email", icon: Mail },
@@ -76,7 +74,6 @@ const navItems = [
   { label: "Connectors", href: "/social", icon: Plug },
   { label: "Goals", href: "/goals", icon: Target },
   { label: "Reports", href: "/reports", icon: FileText },
-  { label: "GitHub", href: "/github", icon: Github },
 ];
 
 function NavItem({
@@ -202,13 +199,6 @@ function OrganizationSwitcher({ collapsed }: { collapsed: boolean }) {
                 </span>
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => router.push("/org/create")}
-              className="rounded-xl px-3 py-2"
-            >
-              Create Workspace
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
@@ -239,28 +229,6 @@ function OrganizationSwitcher({ collapsed }: { collapsed: boolean }) {
         </button>
       )}
 
-      {!loading && orgs.length === 0 ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "mt-2 h-8 w-full justify-start rounded-xl text-[var(--fg-secondary)]",
-            collapsed ? "px-0 group-hover/sidebar:px-2.5" : "px-2.5"
-          )}
-          onClick={() => router.push("/org/create")}
-        >
-          <Plus size={14} />
-          <span
-            className={cn(
-              collapsed
-                ? "max-w-0 overflow-hidden opacity-0 group-hover/sidebar:max-w-[120px] group-hover/sidebar:opacity-100"
-                : "opacity-100"
-            )}
-          >
-            Create Workspace
-          </span>
-        </Button>
-      ) : null}
     </div>
   );
 }
@@ -350,16 +318,18 @@ export function Sidebar() {
         )}
       >
         <button
+          type="button"
           onClick={() => router.push("/dashboard")}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-surface)] shadow-[0_0_0_1px_rgba(232,230,220,0.9)]"
+          className="shrink-0 border-0 bg-transparent p-0 shadow-none outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)]"
           aria-label="Home"
         >
           <Image
             src="/logo.png"
             alt="Inceptive"
-            width={32}
-            height={32}
-            className="rounded-xl object-contain"
+            width={36}
+            height={36}
+            className="h-9 w-9 object-contain"
+            priority
           />
         </button>
 
@@ -404,6 +374,13 @@ export function Sidebar() {
               icon={GitBranch}
               collapsed={collapsed}
               isActive={pathname === `/org/${currentOrg.slug}/workflows` || pathname.startsWith(`/org/${currentOrg.slug}/workflows/`)}
+            />
+            <WorkspaceNavItem
+              href={`/org/${currentOrg.slug}/workflows/builder`}
+              label="Workflow Builder"
+              icon={GitBranch}
+              collapsed={collapsed}
+              isActive={pathname === `/org/${currentOrg.slug}/workflows/builder`}
             />
             <WorkspaceNavItem
               href={`/org/${currentOrg.slug}/activity`}

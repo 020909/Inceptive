@@ -73,7 +73,7 @@ export default function LoginPage() {
       className="min-h-screen flex bg-[var(--bg-base)]"
       style={{
         background:
-          "radial-gradient(ellipse at top, rgba(201,100,66,0.12) 0%, transparent 52%), linear-gradient(180deg, rgba(255,255,255,0.45), transparent 28%), var(--bg-base)",
+          "radial-gradient(ellipse at top, rgba(255,79,0,0.1) 0%, transparent 52%), linear-gradient(180deg, rgba(255,255,255,0.45), transparent 28%), var(--bg-base)",
       }}
     >
       <motion.div
@@ -86,7 +86,7 @@ export default function LoginPage() {
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(circle at 20% 18%, rgba(201,100,66,0.14), transparent 28%), radial-gradient(circle at 82% 80%, rgba(20,20,19,0.08), transparent 32%)",
+              "radial-gradient(circle at 20% 18%, rgba(255,79,0,0.12), transparent 28%), radial-gradient(circle at 82% 80%, rgba(20,20,19,0.08), transparent 32%)",
           }}
         />
 
@@ -232,7 +232,7 @@ export default function LoginPage() {
 
           <p className="mt-8 text-center text-[13px] text-[var(--fg-muted)]">
             No account?{" "}
-            <Link href="/signup" className="font-medium text-[var(--accent)] transition-colors hover:text-[#d97757]">
+            <Link href="/signup" className="font-medium text-[var(--accent)] transition-colors hover:text-[var(--accent-bright)]">
               Sign up free
             </Link>
           </p>
