@@ -620,7 +620,7 @@ const WEBSITE_RECIPES = [
   {
     label: "Startup Site",
     prompt:
-      "Design a bold startup website with a sharp product pitch, founder credibility, social proof, roadmap, and strong call-to-action sections.",
+      "Design a bold B2B marketing site with a sharp product pitch for enterprise buyers, proof and security posture, roadmap, and strong call-to-action sections.",
   },
   {
     label: "Dashboard UI",

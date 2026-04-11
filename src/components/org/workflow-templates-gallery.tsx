@@ -10,7 +10,7 @@ import {
   type WorkflowCategory,
   type WorkflowTemplate,
   type OrgWorkflowWithTemplate,
-} from "@/lib/supabase/workflows";
+} from "@/lib/supabase/workflows-browser";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

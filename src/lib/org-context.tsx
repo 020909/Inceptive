@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase";
-import { getUserOrgs, type UserOrganization } from "@/lib/supabase/org";
+import { getUserOrgs, type UserOrganization } from "@/lib/supabase/org-browser";
 
 interface OrgContextValue {
   orgs: UserOrganization[];

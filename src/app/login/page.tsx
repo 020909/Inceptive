@@ -107,7 +107,7 @@ export default function LoginPage() {
             ambitious teams.
           </h1>
           <p className="max-w-md text-[1.05rem] leading-7 text-[var(--fg-tertiary)]">
-            Inceptive should feel composed, premium, and inevitable. Research, operations, and execution in one warm, editorial workspace.
+            Built for enterprises that want AI to execute real work: research, operations, and delivery in one secure, editorial workspace.
           </p>
           <div className="grid max-w-lg grid-cols-2 gap-4">
             <div className="rounded-[24px] border border-[var(--border-default)] bg-[rgba(255,255,255,0.72)] p-5 shadow-[0_18px_50px_rgba(78,66,51,0.08)]">

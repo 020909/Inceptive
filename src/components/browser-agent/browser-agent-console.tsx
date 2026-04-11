@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 const TASK_TEMPLATES = [
   {
     label: "Research leads on LinkedIn",
-    task: "Search LinkedIn for [industry] founders, extract their names, titles, company, and LinkedIn URL into a list",
+    task: "Search LinkedIn for [industry] decision makers (VP/Director+), extract their names, titles, company, and LinkedIn URL into a list",
   },
   {
     label: "Monitor competitor pricing",
@@ -188,7 +188,7 @@ export function BrowserAgentConsole() {
               id="browser-task"
               value={taskDescription}
               onChange={(event) => setTaskDescription(event.target.value)}
-              placeholder="Go to linkedin.com and search for 'SaaS founders in Boston', then extract the first 10 names and job titles"
+              placeholder="Go to linkedin.com and search for 'enterprise IT leaders in Boston', then extract the first 10 names and job titles"
               className="min-h-44 rounded-2xl border-[var(--border-default)] bg-[var(--bg-surface)] px-4 py-3 text-[var(--fg-primary)]"
             />
           </div>

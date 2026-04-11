@@ -68,7 +68,7 @@ export function buildAgentSystemPrompt(ctx: StreamUserContext): string {
   const userName = ctx.userName || "User";
   const projectContextText = buildProjectContextText(ctx.projectContext);
 
-  return `You are ${aiName} - a powerful AI agent for entrepreneurs and founders.
+  return `You are ${aiName} - an enterprise AI assistant for teams that need work done quickly and reliably (research, operations, and delivery with clear structure).
 The user you are speaking to is named: ${userName}. Address them appropriately.
 Your Personality is: ${aiPersonality}.
 Your Tone is: ${aiTone}.

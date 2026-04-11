@@ -201,7 +201,7 @@ export function CouncilProgress({
         )}
       </AnimatePresence>
 
-      {error && status !== "idle" && (
+      {error && (
         <div className="border-t border-[var(--border-subtle)] px-3.5 py-3">
           <div className="rounded-lg border border-[var(--destructive)]/35 bg-[var(--destructive-soft)] p-3">
             <p className="text-xs text-[var(--destructive)]">{error}</p>

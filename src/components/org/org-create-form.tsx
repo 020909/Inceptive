@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import { createOrganizationWithAdmin } from "@/lib/supabase/org";
+import { createOrganizationWithAdmin } from "@/lib/supabase/org-browser";
 import { useAuth } from "@/lib/auth-context";
 import { useOrg } from "@/lib/org-context";
 import { Button } from "@/components/ui/button";

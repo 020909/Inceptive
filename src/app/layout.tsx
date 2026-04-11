@@ -4,8 +4,9 @@ import { cn } from '@/lib/utils';
 import { MotionConfig } from 'framer-motion';
 
 export const metadata: Metadata = {
-  title: 'Inceptive AI — Your 24/7 AI Employee',
-  description: 'The autonomous AI platform that works while you sleep. Research, email, social media, and more.',
+  title: 'Inceptive — Enterprise AI for fast-moving teams',
+  description:
+    'B2B SaaS that helps enterprises delegate work to AI: research, execution, and integrations with guardrails your org can trust.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
