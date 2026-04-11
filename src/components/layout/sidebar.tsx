@@ -17,9 +17,24 @@ import {
   Plus,
   FolderKanban,
   Github,
+  Building2,
+  ChevronsUpDown,
+  ListChecks,
+  GitBranch,
+  Globe,
 } from "lucide-react";
 import { useChat } from "@/lib/chat-context";
+import { useOrg } from "@/lib/org-context";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 /** Rounded rectangle with inner vertical rule (sidebar layout cue), white stroke */
 function SidebarToggleIcon({ className }: { className?: string }) {
@@ -52,6 +67,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
+  { label: "Browser Agent", href: "/browser-agent", icon: Globe },
   { label: "Agent", href: "/agent", icon: Bot },
   { label: "Projects", href: "/projects", icon: FolderKanban },
   { label: "Skills", href: "/skills", icon: Sparkles },
@@ -115,11 +131,196 @@ function NavItem({
   );
 }
 
+function OrganizationSwitcher({ collapsed }: { collapsed: boolean }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { orgs, currentOrg, loading } = useOrg();
+
+  const label = currentOrg?.name ?? (loading ? "Loading workspace" : "No workspace");
+  const href = currentOrg ? `/org/${currentOrg.slug}/dashboard` : "/org/create";
+
+  return (
+    <div className="px-2.5 pt-3">
+      {orgs.length > 1 ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button
+                type="button"
+                className={cn(
+                  "flex h-14 w-full items-center rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 text-left transition-colors hover:bg-[var(--bg-surface)]",
+                  collapsed
+                    ? "justify-center gap-0 px-0 group-hover/sidebar:justify-between group-hover/sidebar:px-3"
+                    : "justify-between gap-3"
+                )}
+              />
+            }
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--bg-base)]">
+                <Building2 size={16} className="text-[var(--fg-primary)]" />
+              </span>
+              <div
+                className={cn(
+                  "min-w-0 transition-[opacity,max-width] duration-300",
+                  collapsed
+                    ? "max-w-0 overflow-hidden opacity-0 group-hover/sidebar:max-w-[132px] group-hover/sidebar:opacity-100"
+                    : "max-w-[132px] opacity-100"
+                )}
+              >
+                <p className="truncate text-[11px] uppercase tracking-[0.18em] text-[var(--fg-muted)]">
+                  Workspace
+                </p>
+                <p className="truncate text-sm font-medium text-[var(--fg-primary)]">{label}</p>
+              </div>
+            </div>
+            <ChevronsUpDown
+              size={15}
+              className={cn(
+                "shrink-0 text-[var(--fg-muted)] transition-[opacity] duration-300",
+                collapsed ? "opacity-0 group-hover/sidebar:opacity-100" : "opacity-100"
+              )}
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-64 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-1.5"
+            align="start"
+          >
+            <DropdownMenuLabel>Switch Workspace</DropdownMenuLabel>
+            {orgs.map((org) => (
+              <DropdownMenuItem
+                key={org.id}
+                onClick={() => router.push(`/org/${org.slug}/dashboard`)}
+                className={cn(
+                  "flex items-center justify-between rounded-xl px-3 py-2",
+                  pathname.startsWith(`/org/${org.slug}`) && "bg-[var(--accent-soft)] text-[var(--fg-primary)]"
+                )}
+              >
+                <span className="truncate">{org.name}</span>
+                <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--fg-muted)]">
+                  {org.membership_role}
+                </span>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => router.push("/org/create")}
+              className="rounded-xl px-3 py-2"
+            >
+              Create Workspace
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <button
+          type="button"
+          onClick={() => router.push(href)}
+          className={cn(
+            "flex h-14 w-full items-center rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 text-left transition-colors hover:bg-[var(--bg-surface)]",
+            collapsed ? "justify-center px-0 group-hover/sidebar:justify-start group-hover/sidebar:px-3" : "gap-3"
+          )}
+        >
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--bg-base)]">
+            <Building2 size={16} className="text-[var(--fg-primary)]" />
+          </span>
+          <div
+            className={cn(
+              "min-w-0 transition-[opacity,max-width] duration-300",
+              collapsed
+                ? "max-w-0 overflow-hidden opacity-0 group-hover/sidebar:max-w-[132px] group-hover/sidebar:opacity-100"
+                : "max-w-[132px] opacity-100"
+            )}
+          >
+            <p className="truncate text-[11px] uppercase tracking-[0.18em] text-[var(--fg-muted)]">
+              Workspace
+            </p>
+            <p className="truncate text-sm font-medium text-[var(--fg-primary)]">{label}</p>
+          </div>
+        </button>
+      )}
+
+      {!loading && orgs.length === 0 ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            "mt-2 h-8 w-full justify-start rounded-xl text-[var(--fg-secondary)]",
+            collapsed ? "px-0 group-hover/sidebar:px-2.5" : "px-2.5"
+          )}
+          onClick={() => router.push("/org/create")}
+        >
+          <Plus size={14} />
+          <span
+            className={cn(
+              collapsed
+                ? "max-w-0 overflow-hidden opacity-0 group-hover/sidebar:max-w-[120px] group-hover/sidebar:opacity-100"
+                : "opacity-100"
+            )}
+          >
+            Create Workspace
+          </span>
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+function WorkspaceNavItem({
+  href,
+  label,
+  icon: Icon,
+  collapsed,
+  isActive,
+}: {
+  href: string;
+  label: string;
+  icon: typeof ListChecks;
+  collapsed: boolean;
+  isActive: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "group/item relative flex h-11 w-full items-center overflow-hidden rounded-xl transition-all duration-300",
+        collapsed
+          ? "justify-center gap-0 px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3"
+          : "justify-start gap-3 pl-3.5",
+        isActive
+          ? cn(
+              "border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[0_0_0_1px_rgba(232,230,220,0.8),0_12px_30px_rgba(78,66,51,0.08)]",
+              collapsed ? "pl-0 group-hover/sidebar:pl-[12px]" : "pl-[12px]"
+            )
+          : cn(
+              "border border-transparent hover:-translate-y-px hover:bg-[var(--accent-soft)]",
+              collapsed ? "pl-0 group-hover/sidebar:pl-3.5" : ""
+            )
+      )}
+    >
+      <span className="flex shrink-0 items-center justify-center size-5 min-w-[20px]">
+        <Icon size={18} strokeWidth={isActive ? 2 : 1.6} className={isActive ? "text-[var(--fg-primary)]" : "text-[var(--fg-tertiary)]"} />
+      </span>
+      <span
+        className={cn(
+          "max-w-[140px] overflow-hidden whitespace-nowrap text-[13px] font-medium tracking-[0.01em] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+          isActive ? "text-[var(--fg-primary)]" : "text-[var(--fg-secondary)]",
+          collapsed
+            ? "max-w-0 opacity-0 group-hover/sidebar:max-w-[140px] group-hover/sidebar:opacity-100"
+            : "opacity-100"
+        )}
+      >
+        {label}
+      </span>
+    </Link>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { collapsed, setCollapsed } = useSidebar();
   const { recentChats, loadChat, startNewChat } = useChat();
+  const { currentOrg } = useOrg();
 
   const handleLoadChat = (chat: ReturnType<typeof useChat>['recentChats'][0]) => {
     loadChat(chat);
@@ -183,6 +384,37 @@ export function Sidebar() {
           <SidebarToggleIcon className="h-4 w-4" />
         </button>
       </div>
+
+      <OrganizationSwitcher collapsed={collapsed} />
+
+      {currentOrg ? (
+        <div className="px-2.5 pt-3">
+          <p
+            className={cn(
+              "px-2.5 text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--fg-muted)] transition-[opacity,max-width] duration-300",
+              collapsed ? "max-w-0 overflow-hidden opacity-0 group-hover/sidebar:max-w-[140px] group-hover/sidebar:opacity-100" : "opacity-100"
+            )}
+          >
+            Workspace
+          </p>
+          <div className="mt-2">
+            <WorkspaceNavItem
+              href={`/org/${currentOrg.slug}/workflows`}
+              label="Workflows"
+              icon={GitBranch}
+              collapsed={collapsed}
+              isActive={pathname === `/org/${currentOrg.slug}/workflows` || pathname.startsWith(`/org/${currentOrg.slug}/workflows/`)}
+            />
+            <WorkspaceNavItem
+              href={`/org/${currentOrg.slug}/activity`}
+              label="Activity Log"
+              icon={ListChecks}
+              collapsed={collapsed}
+              isActive={pathname === `/org/${currentOrg.slug}/activity`}
+            />
+          </div>
+        </div>
+      ) : null}
 
       {/* ── Nav ── */}
       <nav className="flex flex-1 flex-col gap-1 px-2.5 pt-3 overflow-hidden">

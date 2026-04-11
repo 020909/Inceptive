@@ -19,16 +19,16 @@ export const AGENT_CHAINS: Record<string, string[]> = {
 };
 
 export const AGENT_LABELS: Record<string, string> = {
-  planner: "🧠 Planner",
-  ux_designer: "🎨 UX Designer",
-  architect: "🏗️ Architect",
-  coder: "💻 Coder",
-  critic: "🔍 Critic",
-  tester: "🧪 Tester",
-  visual_polish: "✨ Visual Polish",
-  document_specialist: "📄 Document Specialist",
-  deployer: "🚀 Deployer",
-  orchestrator: "🎯 Orchestrator",
+  planner: "Planner",
+  ux_designer: "UX Designer",
+  architect: "Architect",
+  coder: "Coder",
+  critic: "Critic",
+  tester: "Tester",
+  visual_polish: "Visual Polish",
+  document_specialist: "Document Specialist",
+  deployer: "Deployer",
+  orchestrator: "Orchestrator",
 };
 
 export const SYSTEM_PROMPTS: Record<string, string> = {

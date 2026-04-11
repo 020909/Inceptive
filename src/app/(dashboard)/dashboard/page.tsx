@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X, FileSpreadsheet, Presentation, FileText, Download, Mic, MicOff, Globe, Sparkles, Layers3 } from "lucide-react";
@@ -715,6 +716,7 @@ function DashboardExperience() {
     headline: string;
     choices: string[];
   } | null>(null);
+  const orgAccessError = searchParams.get("error");
 
   const getAccessToken = useCallback(() => session?.access_token ?? null, [session?.access_token]);
   const council = useCouncil(getAccessToken);
@@ -1595,7 +1597,14 @@ function DashboardExperience() {
   }, [messages, previewCode, streaming, persistArtifact]);
 
   return (
-    <div ref={containerRef} className="flex h-screen bg-[var(--bg-app)] text-[var(--fg-primary)] overflow-hidden">
+    <div ref={containerRef} className="flex h-screen bg-[var(--bg-base)] text-[var(--fg-primary)] overflow-hidden">
+    {orgAccessError === "org-access-denied" ? (
+      <div className="absolute left-0 right-0 top-0 z-20 mx-auto w-full max-w-6xl px-4 pt-4">
+        <div className="rounded-2xl border border-[rgba(181,51,51,0.18)] bg-[var(--destructive-soft)] px-4 py-3 text-sm text-[var(--destructive)]">
+          You do not have access to that organization workspace.
+        </div>
+      </div>
+    ) : null}
     {/* ── LEFT PANEL (Chat) ── */}
         <motion.div
       className="flex flex-col h-screen overflow-hidden"
@@ -1603,7 +1612,7 @@ function DashboardExperience() {
       layout
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <header className="aurora-divider flex shrink-0 items-center justify-between border-b border-[var(--border-subtle)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),transparent)] px-4 py-3 sm:px-6">
+      <header className="flex shrink-0 items-center justify-between px-4 py-3 sm:px-6">
         <div className="flex min-w-[120px] items-center gap-2">
           {streaming && <GeneratingEllipsis className="text-xs text-[var(--fg-muted)]" />}
           {incognito && (
@@ -1709,6 +1718,23 @@ function DashboardExperience() {
                   error={council.error}
                   onCancel={council.cancel}
                 />
+                <Link
+                  href="/browser-agent"
+                  className="block rounded-[28px] border border-[var(--border-default)] bg-[var(--bg-elevated)] p-5 shadow-[0_0_0_1px_rgba(232,230,220,0.58),0_20px_50px_rgba(24,24,24,0.05)] transition-transform hover:-translate-y-0.5"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-2">
+                      <p className="text-xs uppercase tracking-[0.18em] text-[var(--fg-muted)]">Feature Spotlight</p>
+                      <h2 className="text-xl font-semibold text-[var(--fg-primary)]">Browser Agent</h2>
+                      <p className="max-w-2xl text-sm leading-6 text-[var(--fg-secondary)]">
+                        Control any website with plain English. Research leads, fill forms, and extract data.
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-1 text-xs text-[var(--fg-secondary)]">
+                      Open
+                    </span>
+                  </div>
+                </Link>
                 <BuildRecipeStrip
                   title="Website Recipes"
                   recipes={WEBSITE_RECIPES}
@@ -1776,7 +1802,7 @@ function DashboardExperience() {
                   </div>
                 </div>
 
-            <div className="sticky bottom-0 z-20 shrink-0 border-t border-[var(--border-subtle)] bg-[var(--bg-app)]/95 px-4 pt-3 pb-6 backdrop-blur-md sm:px-6">
+            <div className="sticky bottom-0 z-20 shrink-0 border-t border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 pt-3 pb-6 sm:px-6">
               <div className="mx-auto w-full max-w-4xl space-y-3">
                 <DashboardCodePanel
                   open={codePanelOpen}
