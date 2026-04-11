@@ -2,13 +2,13 @@
 
 import React, { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Code2, FolderUp, Image as ImageIcon, PenLine, Plus, X, FileSpreadsheet, Presentation, FileText, Download, Mic, MicOff, Globe, Sparkles, Layers3 } from "lucide-react";
+import { Image as ImageIcon, Plus, X, FileSpreadsheet, Presentation, FileText, Download, Mic, MicOff, Globe, Sparkles, Layers3 } from "lucide-react";
 import { useChat, type Message, type ToolResult, type TaskLog } from "@/lib/chat-context";
 import { useAuth } from "@/lib/auth-context";
 import { useSidebar } from "@/components/layout/sidebar";
-import { InceptiveV0ActionRow } from "@/components/ui/inceptive-v0-chat";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import { DashboardAiPrompt } from "@/components/ui/ai-prompt-box";
 import { DashboardCodePanel } from "@/components/dashboard/dashboard-code-panel";
 import { HtmlPreview } from "@/components/ui/html-preview";
@@ -610,29 +610,6 @@ function WorkspaceBar({
   );
 }
 
-const WEBSITE_RECIPES = [
-  {
-    label: "SaaS Landing",
-    prompt:
-      "Build a premium SaaS landing page with a strong hero, product story, feature grid, testimonials, pricing, FAQ, and polished mobile layout.",
-  },
-  {
-    label: "Startup Site",
-    prompt:
-      "Design a bold B2B marketing site with a sharp product pitch for enterprise buyers, proof and security posture, roadmap, and strong call-to-action sections.",
-  },
-  {
-    label: "Dashboard UI",
-    prompt:
-      "Create a modern web app dashboard with sidebar navigation, KPI cards, activity feed, charts, settings area, and polished empty states.",
-  },
-  {
-    label: "Portfolio",
-    prompt:
-      "Build a standout portfolio website with case studies, about section, proof of work, testimonials, and contact CTA.",
-  },
-];
-
 const REFINE_RECIPES = [
   "Make the hero feel more premium and high-conviction.",
   "Improve typography, spacing, and visual hierarchy.",
@@ -669,7 +646,6 @@ function BuildRecipeStrip({
 }
 
 function DashboardExperience() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { messages, setMessages, startNewChat, incognito, setIncognito } = useChat();
   const { session } = useAuth();
@@ -1453,23 +1429,6 @@ function DashboardExperience() {
     [streaming, uploadFiles, sendMessage]
   );
 
-  const actionItems = [
-    { icon: Code2, label: "</> Code", onClick: () => setCodePanelOpen(true) },
-    {
-      icon: PenLine,
-      label: "Write",
-      onClick: () =>
-        router.push(`/dashboard?prefill=${encodeURIComponent("Help me write ")}`),
-    },
-    {
-      icon: ImageIcon,
-      label: "Image",
-      onClick: () =>
-        router.push(`/dashboard?prefill=${encodeURIComponent("Create or refine an image concept: ")}`),
-    },
-    { icon: FolderUp, label: "Upload Project", onClick: () => fileInputRef.current?.click() },
-  ];
-
   // Auto-detect HTML in the latest assistant message — merge CSS for blob preview; skip when sandbox bundle owns the iframe
   useEffect(() => {
     if (preferSandboxPreviewRef.current) return;
@@ -1611,16 +1570,17 @@ function DashboardExperience() {
       layout
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <header className="flex shrink-0 items-center justify-between px-4 py-3 sm:px-6">
-        <div className="flex min-w-[120px] items-center gap-2">
+      <header className="flex shrink-0 items-start justify-between px-4 py-3 sm:px-6">
+        <div className="flex min-w-[120px] items-center gap-2 pt-0.5">
           {streaming && <GeneratingEllipsis className="text-xs text-[var(--fg-muted)]" />}
           {incognito && (
             <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--fg-tertiary)]">
               Incognito
             </span>
           )}
-          </div>
-        <div className="flex items-center gap-3">
+        </div>
+        <div className="flex items-start gap-2">
+          <GlobalSearch variant="compact" />
           <button
             type="button"
             onClick={() => {
@@ -1628,7 +1588,7 @@ function DashboardExperience() {
               setSandboxPaths(null);
               void startNewChat();
             }}
-            className="flex h-8 items-center gap-1.5 rounded-xl bg-[var(--accent)] px-3 text-xs font-medium text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-xl bg-[var(--accent)] px-3 text-xs font-medium text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
           >
             <Plus size={14} className="text-[var(--primary-foreground)]" />
             New chat
@@ -1717,11 +1677,6 @@ function DashboardExperience() {
                   error={council.error}
                   onCancel={council.cancel}
                 />
-                <BuildRecipeStrip
-                  title="Website Recipes"
-                  recipes={WEBSITE_RECIPES}
-                  onPick={(prompt) => setInput(prompt)}
-                />
                 <DashboardAiPrompt
                   value={input}
                   onChange={setInput}
@@ -1758,7 +1713,6 @@ function DashboardExperience() {
                     <span>{isMicListening ? 'Stop' : 'Voice'}</span>
                   </button>
                     </div>
-                <InceptiveV0ActionRow items={actionItems} />
                     </div>
                       </div>
                       </div>

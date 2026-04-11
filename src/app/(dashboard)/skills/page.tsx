@@ -176,12 +176,12 @@ export default function SkillsPage() {
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--bg-overlay)] border border-[var(--border-subtle)]">
                       <Icon className="w-4 h-4 text-[var(--fg-primary)]" />
                     </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--bg-overlay)] text-[var(--fg-secondary)] border border-[var(--border-subtle)]">{skill.time}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-neutral-200/90 text-[var(--fg-secondary)] border border-neutral-300/80 dark:bg-neutral-700/70 dark:border-neutral-600/80">{skill.time}</span>
                   </div>
                   <h3 className="text-sm font-bold text-[var(--fg-primary)] mb-1.5">{skill.title}</h3>
                   <p className="text-xs leading-relaxed text-[var(--fg-secondary)]">{skill.description}</p>
                   <div className="flex flex-wrap gap-1.5 mt-3">
-                    {skill.tags.map(t => <span key={t} className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--bg-overlay)] text-[var(--fg-tertiary)]">{t}</span>)}
+                    {skill.tags.map(t => <span key={t} className="text-[10px] px-2 py-0.5 rounded-md bg-neutral-200/80 text-[var(--fg-tertiary)] dark:bg-neutral-700/60">{t}</span>)}
                   </div>
                 </div>
                 <div className="px-5 pb-5">
@@ -202,13 +202,13 @@ export default function SkillsPage() {
           })}
         </div>
 
-        <div className="mt-10 p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
+        <div className="mt-10 border-t border-[var(--border-subtle)] pt-8">
           <h3 className="text-sm font-bold text-[var(--fg-primary)] mb-3">Slash Commands in Dashboard</h3>
           <p className="text-xs mb-4 text-[var(--fg-secondary)]">Type these shortcuts directly in the chat:</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {[["/inbox","Read Gmail inbox"],[" /research [topic]","Deep research + save"],[" /email [to] [topic]","Compose and send"],[" /post [content]","Schedule social post"],[" /goal [title]","Create a goal"],[" /brief","Morning briefing"]].map(([cmd,desc]) => (
               <div key={cmd} className="flex flex-col gap-1">
-                <code className="text-xs font-mono text-[var(--fg-primary)] px-2 py-1 rounded-lg bg-[var(--bg-overlay)]">{cmd}</code>
+                <code className="text-xs font-mono text-[var(--fg-primary)] px-0 py-0.5 rounded-none bg-transparent">{cmd}</code>
                 <span className="text-[10px] text-[var(--fg-tertiary)]">{desc}</span>
               </div>
             ))}

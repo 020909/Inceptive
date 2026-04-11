@@ -295,9 +295,6 @@ export function DashboardAiPrompt({
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <div className="hidden rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/70 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--fg-muted)] md:block">
-              Inceptive Studio
-            </div>
             <button
               type="button"
               title={isLoading ? "Working…" : "Send"}

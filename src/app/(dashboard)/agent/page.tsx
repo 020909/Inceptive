@@ -276,20 +276,20 @@ export default function AgentPage() {
             </button>
           </div>
         </div>
-        <div className="mt-6 grid w-full min-w-0 grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-          <div className="page-kpi min-w-0 px-3 py-3 sm:p-4">
+        <div className="mt-6 grid w-full min-w-0 grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
+          <div className="page-kpi min-w-0 px-2.5 py-3 sm:px-3 sm:py-4">
             <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]">Total</p>
             <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--fg-primary)] sm:mt-2 sm:text-2xl">{counts.total}</p>
           </div>
-          <div className="page-kpi min-w-0 px-3 py-3 sm:p-4">
+          <div className="page-kpi min-w-0 px-2.5 py-3 sm:px-3 sm:py-4">
             <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]">Running</p>
             <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--fg-primary)] sm:mt-2 sm:text-2xl">{counts.running}</p>
           </div>
-          <div className="page-kpi min-w-0 px-3 py-3 sm:p-4">
+          <div className="page-kpi min-w-0 px-2.5 py-3 sm:px-3 sm:py-4">
             <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]">Completed</p>
             <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--fg-primary)] sm:mt-2 sm:text-2xl">{counts.completed}</p>
           </div>
-          <div className="page-kpi min-w-0 px-3 py-3 sm:p-4">
+          <div className="page-kpi min-w-0 px-2.5 py-3 sm:px-3 sm:py-4">
             <p className="text-[10px] text-[var(--fg-muted)] uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.2em]">Failed</p>
             <p className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--fg-primary)] sm:mt-2 sm:text-2xl">{counts.failed}</p>
           </div>

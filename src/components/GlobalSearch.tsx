@@ -47,7 +47,12 @@ function iconForName(name: string) {
   return iconMap[name as keyof typeof iconMap] ?? Search;
 }
 
-export function GlobalSearch() {
+type GlobalSearchProps = {
+  /** Matches dashboard header controls (e.g. New chat at h-8). */
+  variant?: "default" | "compact";
+};
+
+export function GlobalSearch({ variant = "default" }: GlobalSearchProps) {
   const router = useRouter();
   const { user } = useAuth();
   const { currentOrg } = useOrg();
@@ -159,12 +164,28 @@ export function GlobalSearch() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeIndex, open, results, router]);
 
+  const compact = variant === "compact";
+
   return (
     <>
-      <Button variant="outline" size="lg" className="h-10 rounded-xl px-3" onClick={() => setOpen(true)}>
-        <Search />
+      <Button
+        variant="outline"
+        size={compact ? "sm" : "lg"}
+        className={cn(
+          compact
+            ? "h-8 shrink-0 gap-1.5 rounded-xl px-2.5 text-xs font-medium [&_svg]:size-3.5"
+            : "h-10 rounded-xl px-3"
+        )}
+        onClick={() => setOpen(true)}
+      >
+        <Search className={compact ? "size-3.5" : undefined} />
         Search
-        <span className="ml-1 rounded-md border border-[var(--border-default)] px-1.5 py-0.5 text-[11px] text-[var(--fg-muted)]">
+        <span
+          className={cn(
+            "ml-0.5 rounded-md border border-[var(--border-default)] px-1 py-0.5 text-[var(--fg-muted)]",
+            compact ? "text-[10px] leading-none" : "px-1.5 py-0.5 text-[11px]"
+          )}
+        >
           ⌘K
         </span>
       </Button>

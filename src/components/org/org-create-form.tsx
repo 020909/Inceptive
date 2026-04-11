@@ -77,7 +77,7 @@ export function OrgCreateForm() {
           id="org-name"
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Acme Labs"
+          placeholder=""
           className="h-11 rounded-xl border-[var(--border-default)] bg-[var(--bg-surface)] px-4 text-[var(--fg-primary)]"
         />
         <p className="text-xs text-[var(--fg-muted)]">
