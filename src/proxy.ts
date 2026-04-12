@@ -2,17 +2,30 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const SECURITY_HEADERS: Record<string, string> = {
-  "X-Frame-Options": "DENY",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "X-XSS-Protection": "1; mode=block",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
 };
 
-function withSecurityHeaders(response: NextResponse) {
+/** Demo / preview / video tools often embed the app in an iframe; DENY makes that view blank. */
+function allowIframeEmbed(request: NextRequest): boolean {
+  if (request.method !== "GET") return false;
+  const p = request.nextUrl.pathname;
+  if (p.startsWith("/api")) return false;
+  if (p.startsWith("/_next")) return false;
+  return true;
+}
+
+function withSecurityHeaders(response: NextResponse, request?: NextRequest) {
   Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
+  if (request && allowIframeEmbed(request)) {
+    response.headers.set("Content-Security-Policy", "frame-ancestors *");
+  } else {
+    response.headers.set("X-Frame-Options", "DENY");
+  }
   return response;
 }
 
@@ -30,9 +43,7 @@ function hasValidCronAuthorization(request: NextRequest) {
 export async function proxy(request: NextRequest) {
   const contentLength = Number(request.headers.get("content-length") || "0");
   if (contentLength > 1024 * 1024) {
-    return withSecurityHeaders(
-      NextResponse.json({ error: "Request too large." }, { status: 413 })
-    );
+    return withSecurityHeaders(NextResponse.json({ error: "Request too large." }, { status: 413 }), request);
   }
 
   const userAgent = (request.headers.get("user-agent") || "").toLowerCase();
@@ -53,9 +64,7 @@ export async function proxy(request: NextRequest) {
     const fromVercelCron = Boolean(request.headers.get("x-vercel-cron")?.trim());
 
     if (!fromVercelCron && !hasValidCronAuthorization(request)) {
-      return withSecurityHeaders(
-        NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-      );
+      return withSecurityHeaders(NextResponse.json({ error: "Unauthorized" }, { status: 401 }), request);
     }
   }
 
@@ -92,14 +101,14 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     const nextPath = url.searchParams.get("next");
     if (nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")) {
-      return withSecurityHeaders(NextResponse.redirect(new URL(nextPath, url.origin)));
+      return withSecurityHeaders(NextResponse.redirect(new URL(nextPath, url.origin)), request);
     }
     url.pathname = "/dashboard";
     url.search = "";
-    return withSecurityHeaders(NextResponse.redirect(url));
+    return withSecurityHeaders(NextResponse.redirect(url), request);
   }
 
-  return withSecurityHeaders(supabaseResponse);
+  return withSecurityHeaders(supabaseResponse, request);
 }
 
 export const config = {
