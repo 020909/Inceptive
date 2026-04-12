@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Play, Clock, Plus, RefreshCw, Loader2, CheckCircle2, XCircle, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth-context';
+import { redirectToSignIn } from '@/lib/auth-gate';
 
 interface AgentJob {
   id: string;
@@ -158,6 +160,7 @@ function JobCard({ job, index }: { job: AgentJob; index: number }) {
 }
 
 export default function AgentPage() {
+  const { user } = useAuth();
   const [jobs, setJobs] = useState<AgentJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [enqueuing, setEnqueuing] = useState<string | null>(null);
@@ -202,6 +205,10 @@ export default function AgentPage() {
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
   const enqueue = async (kind: string, payload: Record<string, unknown> = {}) => {
+    if (!user) {
+      redirectToSignIn();
+      return;
+    }
     setEnqueuing(kind);
     try {
       const res = await fetch("/api/agent/jobs", {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
@@ -11,9 +11,16 @@ import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
+function getReturnPath(): string {
+  if (typeof window === "undefined") return "/dashboard";
+  const n = new URLSearchParams(window.location.search).get("next");
+  return n && n.startsWith("/") && !n.startsWith("//") ? n : "/dashboard";
+}
+
 export default function SignUpPage() {
   const router = useRouter();
   const supabase = createClient();
+  const [loginHref, setLoginHref] = useState("/login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,6 +28,13 @@ export default function SignUpPage() {
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [authFeedback, setAuthFeedback] = useState<null | { type: "error" | "success"; message: string }>(null);
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
+
+  useEffect(() => {
+    const next = new URLSearchParams(window.location.search).get("next");
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+      setLoginHref(`/login?next=${encodeURIComponent(next)}`);
+    }
+  }, []);
 
   const validate = () => {
     const e: typeof errors = {};
@@ -36,9 +50,10 @@ export default function SignUpPage() {
   const handleOAuth = async (provider: "google" | "facebook") => {
     setAuthFeedback(null);
     setOauthLoading(provider);
+    const next = encodeURIComponent(getReturnPath());
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=${next}` },
     });
     if (error) setAuthFeedback({ type: "error", message: error.message });
     setOauthLoading(null);
@@ -56,7 +71,7 @@ export default function SignUpPage() {
       return;
     }
     setAuthFeedback({ type: "success", message: "Account created! Check your email to verify." });
-    router.push("/dashboard");
+    router.push(getReturnPath());
     router.refresh();
   };
 
@@ -201,7 +216,7 @@ export default function SignUpPage() {
 
           <p className="mt-8 text-center text-[13px] text-[var(--fg-muted)]">
             Already have an account?{" "}
-            <Link href="/login" className="text-[var(--fg-primary)] hover:text-[var(--accent)] font-medium transition-colors">
+            <Link href={loginHref} className="text-[var(--fg-primary)] hover:text-[var(--accent)] font-medium transition-colors">
               Sign in
             </Link>
           </p>

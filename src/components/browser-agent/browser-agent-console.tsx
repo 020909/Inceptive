@@ -4,6 +4,8 @@ import React, { useEffect, useState, useTransition } from "react";
 import Image from "next/image";
 import { Globe, Loader2, Monitor, Sparkles } from "lucide-react";
 import { runBrowserTask } from "@/app/actions/browser-agent";
+import { useAuth } from "@/lib/auth-context";
+import { redirectToSignIn } from "@/lib/auth-gate";
 import { useOrg } from "@/lib/org-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +24,7 @@ const REAL_MODE_PROGRESS = [
 type BrowserTaskResult = Awaited<ReturnType<typeof runBrowserTask>>;
 
 export function BrowserAgentConsole() {
+  const { session } = useAuth();
   const { currentOrg } = useOrg();
   const [taskDescription, setTaskDescription] = useState("");
   const [targetUrl, setTargetUrl] = useState("");
@@ -61,6 +64,10 @@ export function BrowserAgentConsole() {
 
   const handleRunTask = () => {
     if (!taskDescription.trim()) return;
+    if (!session?.access_token) {
+      redirectToSignIn();
+      return;
+    }
 
     startTransition(async () => {
       await runRealMode();

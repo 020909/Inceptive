@@ -86,37 +86,16 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const protectedPaths = [
-    "/dashboard",
-    "/browser-agent",
-    "/agent",
-    "/email",
-    "/email-preview",
-    "/research",
-    "/social",
-    "/goals",
-    "/reports",
-    "/settings",
-    "/projects",
-    "/skills",
-    "/upgrade",
-    "/github",
-    "/org",
-  ];
-
-  const isProtected = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  );
-
-  if (isProtected && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return withSecurityHeaders(NextResponse.redirect(url));
-  }
+  /* App routes are browsable without a session; sign-in is enforced client-side for credit/API actions. */
 
   if (user && (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup")) {
     const url = request.nextUrl.clone();
+    const nextPath = url.searchParams.get("next");
+    if (nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")) {
+      return withSecurityHeaders(NextResponse.redirect(new URL(nextPath, url.origin)));
+    }
     url.pathname = "/dashboard";
+    url.search = "";
     return withSecurityHeaders(NextResponse.redirect(url));
   }
 

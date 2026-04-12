@@ -2,6 +2,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useChat } from "@/lib/chat-context";
+import { useAuth } from "@/lib/auth-context";
+import { redirectToSignIn } from "@/lib/auth-gate";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Search, Mail, Share2, Target, TrendingUp, Users, FileText, Rocket, ChevronRight, Play, Plus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -74,6 +76,7 @@ function normalizeUserSkill(skill: UserSkill): SkillCard {
 
 export default function SkillsPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const { startNewChat } = useChat();
   const [cat, setCat] = useState("All");
   const [running, setRunning] = useState<string|null>(null);
@@ -109,6 +112,10 @@ export default function SkillsPage() {
     : allSkills.filter(s => s.category === cat || s.tags.includes(cat));
 
   const runSkill = async (skill: SkillCard) => {
+    if (!user) {
+      redirectToSignIn();
+      return;
+    }
     setRunning(skill.id);
     toast.success("Starting " + skill.title + "...");
     await startNewChat();
@@ -133,6 +140,10 @@ export default function SkillsPage() {
           </div>
           <button
             onClick={() => {
+              if (!user) {
+                redirectToSignIn();
+                return;
+              }
               setAddOpen(true);
               setSkillTitle("");
               setSkillDescription("");

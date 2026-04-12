@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
+import { redirectToSignIn } from "@/lib/auth-gate";
 import { motion, AnimatePresence } from "framer-motion";
 import { Image as ImageIcon, Plus, X, FileSpreadsheet, Presentation, FileText, Download, Mic, MicOff, Globe, Sparkles, Layers3 } from "lucide-react";
 import { useChat, type Message, type ToolResult, type TaskLog } from "@/lib/chat-context";
@@ -945,6 +946,7 @@ function DashboardExperience() {
       const token = session?.access_token;
       if (!token) {
         sendLockRef.current = false;
+        redirectToSignIn();
         return;
       }
 

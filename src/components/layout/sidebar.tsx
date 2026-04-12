@@ -13,6 +13,7 @@ import {
   Target,
   FileText,
   Settings,
+  LogIn,
   Sparkles,
   Plus,
   FolderKanban,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import { useChat } from "@/lib/chat-context";
 import { useOrg } from "@/lib/org-context";
+import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -290,6 +292,7 @@ export function Sidebar() {
   const { collapsed, setCollapsed } = useSidebar();
   const { recentChats, loadChat, startNewChat } = useChat();
   const { currentOrg } = useOrg();
+  const { user, loading: authLoading } = useAuth();
 
   const handleLoadChat = (chat: ReturnType<typeof useChat>['recentChats'][0]) => {
     loadChat(chat);
@@ -460,8 +463,35 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* ── Bottom: Settings ── */}
-      <div className="aurora-divider shrink-0 border-t border-[var(--border-default)] px-2.5 pb-4 pt-2.5">
+      {/* ── Bottom: Sign in (guests) + Settings ── */}
+      <div className="aurora-divider shrink-0 border-t border-[var(--border-default)] px-2.5 pb-4 pt-2.5 space-y-1">
+        {!authLoading && !user ? (
+          <Link
+            href={`/login?next=${encodeURIComponent(pathname)}`}
+            className={cn(
+              "group/item relative flex h-11 w-full items-center overflow-hidden rounded-xl transition-all duration-300",
+              collapsed
+                ? "justify-center gap-0 px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3"
+                : "justify-start gap-3",
+              "border border-transparent bg-[var(--accent-soft)]/80 hover:-translate-y-px hover:bg-[var(--accent-soft)]",
+              collapsed ? "pl-0 group-hover/sidebar:pl-3.5" : "pl-3.5",
+            )}
+          >
+            <span className="flex shrink-0 items-center justify-center size-5 min-w-[20px]">
+              <LogIn size={18} strokeWidth={1.6} className="text-[var(--accent)]" />
+            </span>
+            <span
+              className={cn(
+                "max-w-[140px] overflow-hidden whitespace-nowrap text-[13px] font-semibold tracking-[0.01em] text-[var(--fg-primary)] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+                collapsed
+                  ? "max-w-0 opacity-0 group-hover/sidebar:max-w-[140px] group-hover/sidebar:opacity-100"
+                  : "opacity-100",
+              )}
+            >
+              Sign in
+            </span>
+          </Link>
+        ) : null}
         <Link
           href="/settings"
           className={cn(

@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
-    window.location.href = "/login";
+    window.location.href = "/dashboard";
   };
 
   // Force refresh on OAuth redirect
