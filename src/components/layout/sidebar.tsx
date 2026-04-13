@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   LayoutGrid,
-  Bot,
+  MessageSquare,
   Mail,
   Search,
   Plug,
@@ -33,7 +33,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -53,7 +52,10 @@ function SidebarToggleIcon({ className }: { className?: string }) {
 }
 
 // ── Sidebar context so layout can react to collapse ──
-const SidebarContext = createContext({ collapsed: false, setCollapsed: (_collapsed: boolean) => {} });
+const SidebarContext = createContext<{
+  collapsed: boolean;
+  setCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+}>({ collapsed: false, setCollapsed: () => {} });
 export function useSidebar() { return useContext(SidebarContext); }
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
@@ -69,7 +71,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
   { label: "Browser Agent", href: "/browser-agent", icon: Globe },
-  { label: "Agents", href: "/agent", icon: Bot },
+  { label: "Chat", href: "/agent", icon: MessageSquare },
   { label: "Projects", href: "/projects", icon: FolderKanban },
   { label: "Skills", href: "/skills", icon: Sparkles },
   { label: "Email", href: "/email", icon: Mail },
@@ -101,13 +103,13 @@ function NavItem({
           : "justify-start gap-3",
         isActive
           ? cn(
-              "border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[0_0_0_1px_rgba(232,230,220,0.8),0_12px_30px_rgba(78,66,51,0.08)]",
+              "border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[0_16px_36px_rgba(0,0,0,0.28)]",
               collapsed
                 ? "pl-0 group-hover/sidebar:pl-[12px]"
                 : "pl-[12px]",
             )
           : cn(
-              "border border-transparent hover:-translate-y-px hover:bg-[var(--accent-soft)]",
+              "border border-transparent hover:bg-[var(--bg-overlay)]",
               collapsed ? "pl-0 group-hover/sidebar:pl-3.5" : "pl-3.5",
             ),
       )}
@@ -148,7 +150,7 @@ function OrganizationSwitcher({ collapsed }: { collapsed: boolean }) {
               <button
                 type="button"
                 className={cn(
-                  "flex h-14 w-full items-center rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 text-left transition-colors hover:bg-[var(--bg-surface)]",
+                  "flex h-14 w-full items-center rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 text-left transition-colors hover:bg-[var(--bg-overlay)]",
                   collapsed
                     ? "justify-center gap-0 px-0 group-hover/sidebar:justify-between group-hover/sidebar:px-3"
                     : "justify-between gap-3"
@@ -209,7 +211,7 @@ function OrganizationSwitcher({ collapsed }: { collapsed: boolean }) {
           type="button"
           onClick={() => router.push(href)}
           className={cn(
-            "flex h-14 w-full items-center rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 text-left transition-colors hover:bg-[var(--bg-surface)]",
+            "flex h-14 w-full items-center rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 text-left transition-colors hover:bg-[var(--bg-overlay)]",
             collapsed ? "justify-center px-0 group-hover/sidebar:justify-start group-hover/sidebar:px-3" : "gap-3"
           )}
         >
@@ -259,11 +261,11 @@ function WorkspaceNavItem({
           : "justify-start gap-3 pl-3.5",
         isActive
           ? cn(
-              "border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[0_0_0_1px_rgba(232,230,220,0.8),0_12px_30px_rgba(78,66,51,0.08)]",
+              "border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[0_16px_36px_rgba(0,0,0,0.28)]",
               collapsed ? "pl-0 group-hover/sidebar:pl-[12px]" : "pl-[12px]"
             )
           : cn(
-              "border border-transparent hover:-translate-y-px hover:bg-[var(--accent-soft)]",
+              "border border-transparent hover:bg-[var(--bg-overlay)]",
               collapsed ? "pl-0 group-hover/sidebar:pl-3.5" : ""
             )
       )}
@@ -296,7 +298,7 @@ export function Sidebar() {
 
   const handleLoadChat = (chat: ReturnType<typeof useChat>['recentChats'][0]) => {
     loadChat(chat);
-    router.push('/dashboard');
+    router.push('/agent');
   };
 
   return (
@@ -355,7 +357,7 @@ export function Sidebar() {
           type="button"
           onClick={() => setCollapsed(!collapsed)}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--fg-muted)] transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--fg-primary)]"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--fg-muted)] transition-colors hover:bg-[var(--bg-overlay)] hover:text-[var(--fg-primary)]"
         >
           <SidebarToggleIcon className="h-4 w-4" />
         </button>
@@ -440,8 +442,8 @@ export function Sidebar() {
                 Recent
               </span>
               <button
-                onClick={() => { startNewChat(); router.push('/dashboard'); }}
-                className="flex h-6 w-6 items-center justify-center rounded-md text-[var(--fg-muted)] transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--fg-primary)]"
+                onClick={() => { startNewChat(); router.push('/agent'); }}
+                className="flex h-6 w-6 items-center justify-center rounded-md text-[var(--fg-muted)] transition-colors hover:bg-[var(--bg-overlay)] hover:text-[var(--fg-primary)]"
                 title="New chat"
               >
                 <Plus size={12} />
@@ -452,7 +454,7 @@ export function Sidebar() {
                 <button
                   key={chat.id}
                   onClick={() => handleLoadChat(chat)}
-                  className="w-full truncate whitespace-nowrap rounded-xl px-2.5 py-2 text-left text-xs text-[var(--fg-secondary)] transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--fg-primary)]"
+                  className="w-full truncate whitespace-nowrap rounded-xl px-2.5 py-2 text-left text-xs text-[var(--fg-secondary)] transition-colors hover:bg-[var(--bg-overlay)] hover:text-[var(--fg-primary)]"
                   title={chat.title}
                 >
                   {chat.title}
@@ -473,7 +475,7 @@ export function Sidebar() {
               collapsed
                 ? "justify-center gap-0 px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3"
                 : "justify-start gap-3",
-              "border border-transparent bg-[var(--accent-soft)]/80 hover:-translate-y-px hover:bg-[var(--accent-soft)]",
+              "border border-transparent bg-[var(--accent-soft)]/80 hover:bg-[var(--accent-soft)]",
               collapsed ? "pl-0 group-hover/sidebar:pl-3.5" : "pl-3.5",
             )}
           >
@@ -501,13 +503,13 @@ export function Sidebar() {
               : "justify-start gap-3",
             pathname === "/settings"
               ? cn(
-                  "border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[0_0_0_1px_rgba(232,230,220,0.8),0_12px_30px_rgba(78,66,51,0.08)]",
+                  "border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[0_16px_36px_rgba(0,0,0,0.28)]",
                   collapsed
                     ? "pl-0 group-hover/sidebar:pl-[12px]"
                     : "pl-[12px]",
                 )
               : cn(
-                  "border border-transparent hover:-translate-y-px hover:bg-[var(--accent-soft)]",
+                  "border border-transparent hover:bg-[var(--bg-overlay)]",
                   collapsed ? "pl-0 group-hover/sidebar:pl-3.5" : "pl-3.5",
                 ),
           )}

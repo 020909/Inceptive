@@ -17,7 +17,7 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
+  const [theme, setThemeState] = useState<Theme>("dark");
 
   const applyTheme = useCallback((t: Theme) => {
     const root = document.documentElement;
@@ -27,8 +27,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("inceptive-theme") as Theme | null;
-    const initial = stored || "light";
+    const initial = stored === "light" || stored === "dark" ? stored : "dark";
     setThemeState(initial);
+    localStorage.setItem("inceptive-theme", initial);
     applyTheme(initial);
   }, [applyTheme]);
 

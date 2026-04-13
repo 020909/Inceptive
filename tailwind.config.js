@@ -9,8 +9,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#3490dc",
-        secondary: "#6574cd",
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        card: "var(--card)",
+        border: "var(--border)",
+        input: "var(--input)",
+        primary: "var(--primary)",
+        secondary: "var(--secondary)",
+        muted: "var(--muted)",
+        accent: "var(--accent)",
       },
     },
   },

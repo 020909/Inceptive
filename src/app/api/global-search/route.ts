@@ -90,7 +90,7 @@ export async function GET(request: Request) {
       { id: "analytics", title: "Analytics", subtitle: "Usage and activity metrics", href: `/org/${orgSlug}/analytics`, category: "Pages", icon: "BarChart2" },
       { id: "team", title: "Team", subtitle: "Workspace members and invites", href: `/org/${orgSlug}/dashboard`, category: "Pages", icon: "Users" },
       { id: "browser-agent", title: "Browser Agent", subtitle: "Run browser tasks", href: "/browser-agent", category: "Pages", icon: "Globe" },
-      { id: "code-agent", title: "Code Agent", subtitle: "Work with autonomous agents", href: "/agent", category: "Pages", icon: "Bot" },
+      { id: "chat", title: "Chat", subtitle: "Work with the Inceptive chat workspace", href: "/agent", category: "Pages", icon: "MessageSquare" },
       { id: "workflows", title: "Workflows", subtitle: "Activate workflow templates", href: `/org/${orgSlug}/workflows`, category: "Pages", icon: "GitBranch" },
     ];
 

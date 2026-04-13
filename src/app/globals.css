@@ -24,63 +24,61 @@
 
 @layer base {
   :root {
-    --font-header: 'Cormorant Garamond', 'Times New Roman', serif;
+    --font-header: 'Inter', system-ui, sans-serif;
     --font-body: 'Inter', system-ui, sans-serif;
 
-    --bg-base: #f5f4ed;
-    --bg-app: #f7f5ef;
-    --bg-surface: #faf9f5;
-    --bg-elevated: #ffffff;
-    --bg-overlay: #ede9dc;
+    --bg-base: #0a0a0a;
+    --bg-app: #0a0a0a;
+    --bg-surface: #1a1a1a;
+    --bg-elevated: #1a1a1a;
+    --bg-overlay: #222222;
+    --bg-sidebar: #111111;
 
-    --text-primary: #141413;
-    --text-secondary: #30302e;
+    --text-primary: #ffffff;
+    --text-secondary: #888888;
 
-    --fg-primary: #141413;
-    --fg-secondary: #4d4c48;
-    --fg-tertiary: #5e5d59;
-    --fg-muted: #87867f;
+    --fg-primary: #ffffff;
+    --fg-secondary: #c7c7c7;
+    --fg-tertiary: #888888;
+    --fg-muted: #888888;
 
-    --border-subtle: rgba(61, 61, 58, 0.08);
-    --border-default: #e8e6dc;
-    --border-strong: #d1cfc5;
+    --border-subtle: rgba(42, 42, 42, 0.72);
+    --border-default: #2a2a2a;
+    --border-strong: #3a3a3a;
 
-    /* Brand accent — pure orange (not legacy terracotta). */
-    --accent: #ff4f00;
-    --accent-hover: #e54300;
-    --accent-bright: #ff7a4d;
-    --accent-soft: rgba(255, 79, 0, 0.12);
-    --accent-muted: rgba(255, 79, 0, 0.08);
-    --accent-glow: rgba(255, 79, 0, 0.32);
-    --accent-subtle: rgba(255, 79, 0, 0.16);
+    --accent: #e8440a;
+    --accent-hover: #f2531b;
+    --accent-bright: #ff6b37;
+    --accent-soft: rgba(232, 68, 10, 0.14);
+    --accent-muted: rgba(232, 68, 10, 0.1);
+    --accent-glow: rgba(232, 68, 10, 0.28);
+    --accent-subtle: rgba(232, 68, 10, 0.18);
 
-    --success: #8a6d3b;
-    --success-soft: rgba(138, 109, 59, 0.12);
-    --destructive: #b53333;
-    --destructive-soft: rgba(181, 51, 51, 0.12);
-    --warning: #af7c31;
-    --warning-soft: rgba(175, 124, 49, 0.14);
+    --success: #34c759;
+    --success-soft: rgba(52, 199, 89, 0.16);
+    --destructive: #ff5d5d;
+    --destructive-soft: rgba(255, 93, 93, 0.14);
+    --warning: #f5a524;
+    --warning-soft: rgba(245, 165, 36, 0.16);
 
     --ring: #3898ec;
 
-    /* ── Shadcn compat aliases ── */
     --background: var(--bg-app);
     --foreground: var(--fg-primary);
     --card: var(--bg-surface);
     --card-foreground: var(--fg-primary);
     --popover: var(--bg-elevated);
     --popover-foreground: var(--fg-primary);
-    --primary: var(--fg-primary);
-    --primary-foreground: var(--bg-base);
-    --secondary: var(--bg-surface);
+    --primary: var(--accent);
+    --primary-foreground: #ffffff;
+    --secondary: var(--bg-overlay);
     --secondary-foreground: var(--fg-primary);
     --muted: var(--bg-surface);
-    /* Keep placeholders / helper text subdued while body copy uses --fg-secondary */
     --muted-foreground: var(--fg-tertiary);
-    --accent-foreground: var(--fg-primary);
-    --destructive-foreground: var(--fg-primary);
+    --accent-foreground: #ffffff;
+    --destructive-foreground: #ffffff;
     --border: var(--border-default);
-    --input: var(--border-default);
+    --input: var(--bg-surface);
 
     --foreground-secondary: var(--fg-secondary);
     --foreground-tertiary: var(--fg-tertiary);
@@ -88,12 +86,12 @@
     --background-overlay: var(--bg-overlay);
     --surface: var(--bg-surface);
 
-    --premium-radial: radial-gradient(ellipse 120% 90% at 50% -10%, rgba(255, 79, 0, 0.12), transparent 56%);
-    --premium-radial-side: radial-gradient(ellipse 68% 54% at 100% 0%, rgba(20, 20, 19, 0.03), transparent 48%);
-    --premium-border-glow: 0 0 0 1px rgba(232, 230, 220, 0.95), 0 24px 60px -36px rgba(54, 42, 32, 0.22);
-    --premium-grid: linear-gradient(rgba(77, 76, 72, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(77, 76, 72, 0.04) 1px, transparent 1px);
-    --premium-orb-top: radial-gradient(circle at 18% 8%, rgba(255, 79, 0, 0.1), transparent 24%);
-    --premium-orb-bottom: radial-gradient(circle at 82% 82%, rgba(48, 48, 46, 0.08), transparent 24%);
+    --premium-radial: radial-gradient(ellipse 120% 90% at 50% -10%, rgba(232, 68, 10, 0.14), transparent 58%);
+    --premium-radial-side: radial-gradient(ellipse 68% 54% at 100% 0%, rgba(255, 255, 255, 0.03), transparent 48%);
+    --premium-border-glow: 0 0 0 1px rgba(42, 42, 42, 0.95), 0 24px 60px -36px rgba(0, 0, 0, 0.5);
+    --premium-grid: linear-gradient(rgba(42, 42, 42, 0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(42, 42, 42, 0.22) 1px, transparent 1px);
+    --premium-orb-top: radial-gradient(circle at 18% 8%, rgba(232, 68, 10, 0.12), transparent 24%);
+    --premium-orb-bottom: radial-gradient(circle at 82% 82%, rgba(255, 255, 255, 0.04), transparent 24%);
   }
 
   html.light {
@@ -103,71 +101,35 @@
     --card-foreground: var(--fg-primary);
     --popover: var(--bg-elevated);
     --popover-foreground: var(--fg-primary);
-    /* Primary CTA = brand orange; label stays light for contrast. */
     --primary: var(--accent);
     --primary-foreground: #ffffff;
     --secondary: var(--bg-overlay);
-    --secondary-foreground: var(--fg-secondary);
-    --muted: var(--bg-overlay);
+    --secondary-foreground: var(--fg-primary);
+    --muted: var(--bg-surface);
     --muted-foreground: var(--fg-tertiary);
     --accent-foreground: #ffffff;
-    --destructive-foreground: #faf9f5;
+    --destructive-foreground: #ffffff;
     --border: var(--border-default);
-    --input: var(--border-default);
+    --input: var(--bg-surface);
   }
 
   html.dark {
-    --bg-base: #141413;
-    --bg-app: #181816;
-    --bg-surface: #20201d;
-    --bg-elevated: #252522;
-    --bg-overlay: #30302e;
-
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.88);
-
-    --fg-primary: #ffffff;
-    --fg-secondary: rgba(255, 255, 255, 0.82);
-    --fg-tertiary: rgba(255, 255, 255, 0.68);
-    --fg-muted: rgba(255, 255, 255, 0.5);
-
-    --border-subtle: rgba(240, 238, 230, 0.08);
-    --border-default: rgba(232, 230, 220, 0.16);
-    --border-strong: rgba(232, 230, 220, 0.26);
-
-    /* Brand accent — same orange in dark mode. */
-    --accent: #ff4f00;
-    --accent-hover: #e54300;
-    --accent-bright: #ff8f66;
-    --accent-soft: rgba(255, 79, 0, 0.16);
-    --accent-muted: rgba(255, 79, 0, 0.12);
-    --accent-glow: rgba(255, 79, 0, 0.38);
-    --accent-subtle: rgba(255, 79, 0, 0.22);
-
-    --success: #b89b62;
-    --success-soft: rgba(184, 155, 98, 0.16);
-    --destructive: #d56b6b;
-    --destructive-soft: rgba(213, 107, 107, 0.14);
-    --warning: #d7a455;
-    --warning-soft: rgba(215, 164, 85, 0.16);
-
     --background: var(--bg-app);
     --foreground: var(--fg-primary);
     --card: var(--bg-surface);
     --card-foreground: var(--fg-primary);
     --popover: var(--bg-elevated);
     --popover-foreground: var(--fg-primary);
-    /* Primary CTA = brand orange; light label on top. */
     --primary: var(--accent);
     --primary-foreground: #ffffff;
     --secondary: var(--bg-overlay);
     --secondary-foreground: var(--fg-primary);
-    --muted: var(--bg-overlay);
+    --muted: var(--bg-surface);
     --muted-foreground: var(--fg-tertiary);
     --accent-foreground: #ffffff;
-    --destructive-foreground: #faf9f5;
+    --destructive-foreground: #ffffff;
     --border: var(--border-default);
-    --input: var(--border-default);
+    --input: var(--bg-surface);
 
     --foreground-secondary: var(--fg-secondary);
     --foreground-tertiary: var(--fg-tertiary);
@@ -175,12 +137,12 @@
     --background-overlay: var(--bg-overlay);
     --surface: var(--bg-surface);
 
-    --premium-radial: radial-gradient(ellipse 120% 90% at 50% -10%, rgba(255, 79, 0, 0.14), transparent 56%);
-    --premium-radial-side: radial-gradient(ellipse 68% 54% at 100% 0%, rgba(250, 249, 245, 0.05), transparent 48%);
-    --premium-border-glow: 0 0 0 1px rgba(232, 230, 220, 0.14), 0 28px 64px -36px rgba(0, 0, 0, 0.58);
-    --premium-grid: linear-gradient(rgba(250, 249, 245, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(250, 249, 245, 0.035) 1px, transparent 1px);
-    --premium-orb-top: radial-gradient(circle at 18% 8%, rgba(255, 79, 0, 0.14), transparent 24%);
-    --premium-orb-bottom: radial-gradient(circle at 82% 82%, rgba(250, 249, 245, 0.05), transparent 24%);
+    --premium-radial: radial-gradient(ellipse 120% 90% at 50% -10%, rgba(232, 68, 10, 0.14), transparent 58%);
+    --premium-radial-side: radial-gradient(ellipse 68% 54% at 100% 0%, rgba(255, 255, 255, 0.03), transparent 48%);
+    --premium-border-glow: 0 0 0 1px rgba(42, 42, 42, 0.95), 0 28px 64px -36px rgba(0, 0, 0, 0.58);
+    --premium-grid: linear-gradient(rgba(42, 42, 42, 0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(42, 42, 42, 0.22) 1px, transparent 1px);
+    --premium-orb-top: radial-gradient(circle at 18% 8%, rgba(232, 68, 10, 0.14), transparent 24%);
+    --premium-orb-bottom: radial-gradient(circle at 82% 82%, rgba(255, 255, 255, 0.04), transparent 24%);
   }
 
   html,
@@ -221,7 +183,7 @@
   h1,
   h2 {
     font-family: var(--font-header);
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: -0.03em;
   }
 }
@@ -266,16 +228,11 @@
   /* Sidebar-only glass surface (the only place we keep glass). */
   .sidebar-surface {
     position: relative;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.72)),
-      rgba(250, 249, 245, 0.88);
+    background: var(--bg-sidebar);
     border: 1px solid var(--border-default);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.72),
-      0 18px 48px rgba(78, 66, 51, 0.1),
-      0 0 0 1px rgba(232, 230, 220, 0.82);
-    backdrop-filter: blur(18px) saturate(1.05);
-    -webkit-backdrop-filter: blur(18px) saturate(1.05);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.32);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .sidebar-surface::after {
@@ -283,16 +240,11 @@
   }
 
   html.dark .sidebar-surface {
-    background:
-      linear-gradient(180deg, rgba(250,249,245,0.05), rgba(250,249,245,0.02)),
-      rgba(24, 24, 22, 0.82);
+    background: var(--bg-sidebar);
     border: 1px solid var(--border-default);
-    box-shadow:
-      inset 0 1px 0 rgba(250,249,245,0.06),
-      0 18px 48px rgba(0, 0, 0, 0.42),
-      0 0 0 1px rgba(232, 230, 220, 0.14);
-    backdrop-filter: blur(18px) saturate(1.05);
-    -webkit-backdrop-filter: blur(18px) saturate(1.05);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.32);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   html.dark .sidebar-surface::after {
@@ -322,7 +274,7 @@
     border-radius: 28px;
     border: 1px solid var(--border-default);
     background: var(--bg-surface);
-    box-shadow: none;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -330,7 +282,7 @@
   html.dark .page-hero {
     border: 1px solid var(--border-default);
     background: var(--bg-surface);
-    box-shadow: none;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -347,13 +299,13 @@
     border-radius: 24px;
     border: 1px solid var(--border-default);
     background: var(--bg-surface);
-    box-shadow: none;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
   }
 
   html.dark .page-kpi {
     border: 1px solid var(--border-default);
     background: var(--bg-surface);
-    box-shadow: none;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
   }
 
   .aurora-divider {
@@ -368,50 +320,49 @@
   .glass {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    background: rgba(255, 255, 255, 0.74);
-    border: 1px solid rgba(232, 230, 220, 0.92);
-    box-shadow: 0 24px 70px rgba(78, 66, 51, 0.12);
+    background: rgba(26, 26, 26, 0.78);
+    border: 1px solid var(--border-default);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
   }
 
   html.light .glass {
-    background: rgba(255, 255, 255, 0.78);
-    border: 1px solid rgba(232, 230, 220, 0.92);
+    background: rgba(26, 26, 26, 0.78);
+    border: 1px solid var(--border-default);
   }
 
   html.dark .glass {
-    background: rgba(37, 37, 34, 0.74);
-    border: 1px solid rgba(232, 230, 220, 0.14);
+    background: rgba(26, 26, 26, 0.78);
+    border: 1px solid var(--border-default);
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
   }
 
   .glass-hover:hover {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(34, 34, 34, 0.92);
     border-color: var(--border-strong);
   }
 
   /* ── Premium Glassmorphism Panels ── */
   .glass-panel {
-    background: rgba(250, 249, 245, 0.78);
+    background: rgba(26, 26, 26, 0.82);
     backdrop-filter: blur(20px) saturate(1.1);
     -webkit-backdrop-filter: blur(20px) saturate(1.1);
     border: 1px solid var(--border-default);
-    box-shadow: 0 16px 42px rgba(78, 66, 51, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
   }
 
   .glass-card {
-    background: rgba(250, 249, 245, 0.7);
+    background: rgba(26, 26, 26, 0.78);
     backdrop-filter: blur(16px) saturate(1.06);
     -webkit-backdrop-filter: blur(16px) saturate(1.06);
     border: 1px solid var(--border-default);
-    box-shadow: 0 10px 28px rgba(78, 66, 51, 0.08);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
     border-radius: 24px;
     transition: all 0.4s ease;
   }
   .glass-card.cursor-pointer:hover,
   .glass-card.surface-card-hover:hover {
     border-color: var(--border-strong);
-    box-shadow: 0 18px 46px rgba(78, 66, 51, 0.12);
-    transform: translateY(-4px);
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.24);
   }
 
   /* ── Surface Cards ── */
@@ -419,26 +370,25 @@
     background: var(--bg-surface);
     border: 1px solid var(--border-default);
     border-radius: 24px;
-    box-shadow: 0 10px 28px rgba(78, 66, 51, 0.08);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
     transition: all 0.4s ease;
   }
 
   .surface-card-hover:hover {
     border-color: var(--border-strong);
-    transform: translateY(-4px);
-    box-shadow: 0 18px 46px rgba(78, 66, 51, 0.12);
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.24);
   }
 
   /* ── Elevated Card (Trillion-Dollar Spec) — premium lift on hover ── */
   .card-elevated {
     border-radius: 24px !important;
     border: 1px solid var(--border-default) !important;
-    box-shadow: 0 10px 28px rgba(78, 66, 51, 0.08);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
     transition: all 0.4s ease;
   }
   .card-elevated:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 18px 46px rgba(78, 66, 51, 0.12);
+    border-color: var(--border-strong) !important;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.26);
   }
 
   .noise {
@@ -536,8 +486,7 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   .hover-lift:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
   }
 
   /* ── Subtle Glow Effects ── */
@@ -570,7 +519,7 @@
   }
   .btn-premium:hover {
     transform: translateY(-0.5px);
-    box-shadow: 0 8px 22px rgba(78, 66, 51, 0.14);
+    box-shadow: 0 10px 26px rgba(232, 68, 10, 0.26);
   }
   .btn-premium:active {
     transform: translateY(0.5px) scale(0.99);

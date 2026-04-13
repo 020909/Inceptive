@@ -55,28 +55,28 @@ function BaseNode({
       )}
     >
       {!isTrigger ? (
-        <Handle
-          type="target"
-          position={Position.Left}
-          className="!h-3 !w-3 !border !border-white/20 !bg-[#5b5b5b] opacity-0 transition-opacity group-hover:opacity-100"
-        />
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!h-3 !w-3 !border !border-[var(--border-default)] !bg-[var(--bg-overlay)] opacity-0 transition-opacity group-hover:opacity-100"
+      />
       ) : null}
 
       <div className="flex items-center gap-3">
-        <div className="flex size-8 items-center justify-center rounded-lg bg-[#1a1a1a] text-white">
+        <div className="flex size-8 items-center justify-center rounded-lg bg-[var(--bg-surface)] text-[var(--fg-primary)]">
           <WorkflowNodeIcon iconName={config.icon} />
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <p className="truncate text-[13px] font-bold text-white">{config.label}</p>
-            {isTrigger ? <span className="text-xs text-white/70">⚡</span> : null}
+            <p className="truncate text-[13px] font-bold text-[var(--fg-primary)]">{config.label}</p>
+            {isTrigger ? <span className="text-xs text-[var(--fg-secondary)]">⚡</span> : null}
           </div>
         </div>
       </div>
 
-      <div className="my-3 h-px bg-white/8" />
+      <div className="my-3 h-px bg-[var(--border-default)]" />
 
-      <div className="min-h-[34px] text-[11px] leading-5 text-white/60">
+      <div className="min-h-[34px] text-[11px] leading-5 text-[var(--fg-secondary)]">
         {configValues.length > 0 ? (
           configValues.map((value) => (
             <p key={value} className="truncate">
@@ -84,11 +84,11 @@ function BaseNode({
             </p>
           ))
         ) : (
-          <p className="italic text-white/35">Click to configure</p>
+          <p className="italic text-[var(--fg-muted)]">Click to configure</p>
         )}
       </div>
 
-      <div className="mt-4 flex items-center gap-2 text-[11px] text-white/50">
+      <div className="mt-4 flex items-center gap-2 text-[11px] text-[var(--fg-muted)]">
         <span className={cn("inline-block size-2 rounded-full", data.configured ? "bg-emerald-400" : "bg-zinc-500")} />
         <span>{data.configured ? "configured" : "not configured"}</span>
       </div>
@@ -96,7 +96,7 @@ function BaseNode({
       <Handle
         type="source"
         position={Position.Right}
-        className="!h-3 !w-3 !border !border-white/20 !bg-white"
+        className="!h-3 !w-3 !border !border-[var(--border-default)] !bg-[var(--fg-primary)]"
       />
     </div>
   );

@@ -14,7 +14,7 @@ import { Toaster } from "@/components/ui/sonner";
 
 function LayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const showStickySearch = pathname !== "/dashboard";
+  const showStickySearch = pathname !== "/dashboard" && pathname !== "/agent";
 
   return (
     <div className="dashboard-shell relative flex h-screen overflow-hidden bg-[var(--bg-base)]">

@@ -100,7 +100,7 @@ type Section = "ai" | "account" | "mail" | "appearance" | "memory" | "agent";
 
 const SECTIONS: { id: Section; label: string; icon: typeof Cpu }[] = [
   { id: "ai", label: "AI Configuration", icon: Cpu },
-  { id: "agent", label: "Agents", icon: Activity },
+  { id: "agent", label: "Chat", icon: Activity },
   { id: "account", label: "My Account", icon: User },
   { id: "mail", label: "Email connectors", icon: Mail },
   { id: "appearance", label: "Appearance", icon: Sun },

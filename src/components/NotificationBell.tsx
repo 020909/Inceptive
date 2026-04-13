@@ -167,7 +167,9 @@ export function NotificationBell() {
                   key={notification.id}
                   className={cn(
                     "mb-1 flex items-start gap-3 rounded-2xl px-3 py-3",
-                    notification.read ? "bg-[var(--bg-base)] text-[var(--fg-secondary)]" : "bg-white text-[var(--fg-primary)]"
+                    notification.read
+                      ? "bg-[var(--bg-base)] text-[var(--fg-secondary)]"
+                      : "bg-[var(--bg-elevated)] text-[var(--fg-primary)]"
                   )}
                   onClick={() => markRead(notification.id, notification.link)}
                 >

@@ -51,7 +51,7 @@ export function OmniscientInputBar() {
     setValue('');
     await startNewChat();
     setMessages([{ id: Date.now().toString(), role: "user", content: text, toolCalls: [], toolResults: [] }]);
-    router.push("/dashboard");
+    router.push("/agent");
   }, [value, startNewChat, setMessages, router]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

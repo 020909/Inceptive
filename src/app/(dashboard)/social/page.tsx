@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import type { Session } from "@supabase/supabase-js";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,10 +14,9 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Share2, Plus, Loader2, Calendar, Check, Unlink, ExternalLink, Send, Bot, Plug, RefreshCw, Settings, AlertCircle, Github } from "lucide-react";
+import { Share2, Plus, Loader2, Check, Unlink, ExternalLink, Plug, RefreshCw, Settings, AlertCircle, Github } from "lucide-react";
 import { toast } from "sonner";
-import { formatTimeAgo } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 interface SocialPost {
   id: string; platform: string; content: string;
@@ -31,28 +29,53 @@ interface ConnectedAccount {
   decrypted?: boolean;
 }
 
-const SOCIAL_CONNECTORS = [
+type ConnectorCategory =
+  | "communication"
+  | "productivity"
+  | "crm"
+  | "automation"
+  | "email"
+  | "dev"
+  | "design"
+  | "ai";
+
+type ConnectorDefinition = {
+  id: string;
+  provider: string;
+  name: string;
+  description: string;
+  category: ConnectorCategory;
+  logo?: string;
+  mark?: string;
+  linkTo?: string;
+  telegramInput?: boolean;
+  comingSoon?: boolean;
+};
+
+const SOCIAL_CONNECTORS: ConnectorDefinition[] = [
   {
     id: "github",
     provider: "github",
     name: "GitHub",
-    logo: "",
-    users: "—",
-    telegramInput: false,
-    type: "dev",
+    category: "dev",
     description: "Link repositories with a Personal Access Token for code-aware workflows.",
     linkTo: "/github",
+    mark: "GH",
   },
-  { id: "gmail",     provider: "gmail",     name: "Gmail",       logo: "/logos/email/gmail.png",   users: "1.8B+",  telegramInput: false, type: "email", description: "Send and receive emails" },
-  { id: "outlook",   provider: "outlook",   name: "Outlook",     logo: "/logos/email/outlook.png", users: "400M+",  telegramInput: false, type: "email", description: "Microsoft 365 email" },
-  { id: "x",         provider: "twitter",    name: "X (Twitter)", logo: "/logos/social/x.png",         users: "600M+",  telegramInput: false, type: "social", description: "Post tweets and read basic profile" },
-  { id: "linkedin",  provider: "linkedin",  name: "LinkedIn",    logo: "/logos/social/linkedin.png",  users: "950M+",  telegramInput: false, type: "social", description: "Professional networking" },
-  { id: "facebook", provider: "facebook",  name: "Facebook",    logo: "/logos/social/facebook.png",  users: "3B+",    telegramInput: false, type: "social", description: "Meta Graph API (limited without app review)" },
-  { id: "instagram", provider: "instagram", name: "Instagram",   logo: "/logos/social/instagram.png", users: "2B+",    telegramInput: false, type: "social", description: "Meta Graph API (publishing requires Business + permissions)" },
-  { id: "whatsapp",  provider: "whatsapp",  name: "WhatsApp",    logo: "/logos/social/whatsapp.png",  users: "2B+",    telegramInput: false, type: "social", description: "WhatsApp Cloud API (requires Business setup)" },
-  { id: "telegram",  provider: "telegram",  name: "Telegram",    logo: "/logos/social/telegram.png",  users: "900M+",  telegramInput: true,  type: "social", description: "Messaging and channels" },
-  { id: "tiktok",    provider: "tiktok",    name: "TikTok",      logo: "/logos/social/tiktok.png",    users: "1.5B+",  telegramInput: false, type: "social", description: "Short-form video" },
-  { id: "youtube",   provider: "youtube",   name: "YouTube",     logo: "/logos/social/youtube.png",   users: "2.5B+",  telegramInput: false, type: "social", description: "Video hosting and streaming" },
+  { id: "gmail", provider: "gmail", name: "Gmail", logo: "/logos/email/gmail.png", category: "email", description: "Send and receive emails" },
+  { id: "outlook", provider: "outlook", name: "Outlook", logo: "/logos/email/outlook.png", category: "email", description: "Microsoft 365 email" },
+  { id: "telegram", provider: "telegram", name: "Telegram", logo: "/logos/social/telegram.png", telegramInput: true, category: "communication", description: "Messaging and channels" },
+  { id: "linkedin", provider: "linkedin", name: "LinkedIn", logo: "/logos/social/linkedin.png", category: "crm", description: "Professional networking" },
+  { id: "slack", provider: "slack", name: "Slack", category: "communication", description: "Team messaging", mark: "SL", comingSoon: true },
+  { id: "notion", provider: "notion", name: "Notion", category: "productivity", description: "Docs and wikis", mark: "N", comingSoon: true },
+  { id: "google-drive", provider: "google-drive", name: "Google Drive", category: "productivity", description: "File storage and docs", mark: "GD", comingSoon: true },
+  { id: "zoom", provider: "zoom", name: "Zoom", category: "communication", description: "Video meetings", mark: "Z", comingSoon: true },
+  { id: "hubspot", provider: "hubspot", name: "HubSpot", category: "crm", description: "CRM and sales", mark: "HS", comingSoon: true },
+  { id: "jira", provider: "jira", name: "Jira", category: "productivity", description: "Project management", mark: "J", comingSoon: true },
+  { id: "salesforce", provider: "salesforce", name: "Salesforce", category: "crm", description: "Enterprise CRM", mark: "SF", comingSoon: true },
+  { id: "zapier", provider: "zapier", name: "Zapier", category: "automation", description: "Workflow automation", mark: "ZA", comingSoon: true },
+  { id: "canva", provider: "canva", name: "Canva", category: "design", description: "Design and content", mark: "C", comingSoon: true },
+  { id: "elevenlabs", provider: "elevenlabs", name: "ElevenLabs", category: "ai", description: "AI voice generation", mark: "11", comingSoon: true },
 ];
 
 function StatusBadge({ status }: { status: 'connected' | 'disconnected' | 'error' }) {
@@ -73,7 +96,7 @@ function StatusBadge({ status }: { status: 'connected' | 'disconnected' | 'error
 }
 
 function ConnectorCard({ connector, index, connected, connectedAccount, onConnect, onDisconnect }: {
-  connector: typeof SOCIAL_CONNECTORS[0];
+  connector: ConnectorDefinition;
   index: number;
   connected: boolean;
   connectedAccount?: ConnectedAccount;
@@ -92,11 +115,13 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="flex items-start justify-between mb-4">
-        <div className="h-12 w-12 flex items-center justify-center">
+        <div className="h-12 w-12 flex items-center justify-center rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)]">
           {connector.logo ? (
             <img src={connector.logo} alt={connector.name} width={34} height={34} className="h-[34px] w-[34px] object-contain" />
-          ) : (
+          ) : connector.provider === "github" ? (
             <Github size={34} strokeWidth={1.5} className="text-[var(--fg-primary)]" aria-hidden />
+          ) : (
+            <span className="text-sm font-semibold tracking-[0.08em] text-[var(--fg-primary)]">{connector.mark}</span>
           )}
         </div>
         <StatusBadge status={connected ? 'connected' : 'disconnected'} />
@@ -114,7 +139,7 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-xs text-[var(--fg-muted)]">
           <RefreshCw size={12} />
-          <span>{connected ? 'Synced recently' : 'Not connected'}</span>
+          <span>{connected ? 'Synced recently' : connector.comingSoon ? 'Coming soon' : 'Not connected'}</span>
         </div>
 
         <motion.div className="flex items-center gap-1" initial={{ opacity: 0 }} animate={{ opacity: isHovered ? 1 : 0 }} transition={{ duration: 0.2 }}>
@@ -133,7 +158,7 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
           ) : (
             <button onClick={onConnect} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] text-[var(--fg-primary)] text-xs font-medium hover:bg-[var(--bg-overlay)] transition-colors">
               <Plug size={12} />
-              Connect
+              {connector.comingSoon ? "Soon" : "Connect"}
             </button>
           )}
         </motion.div>
@@ -151,7 +176,7 @@ export default function SocialPage() {
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState<string | null>(null);
-  const [platform, setPlatform] = useState("X");
+  const [platform, setPlatform] = useState("LinkedIn");
   const [content, setContent] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
   const [generateWithAi, setGenerateWithAi] = useState(false);
@@ -159,7 +184,7 @@ export default function SocialPage() {
   const [botToken, setBotToken] = useState("");
   const [chatId, setChatId] = useState("");
   const [connectingTelegram, setConnectingTelegram] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'email' | 'social' | 'dev'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<"all" | ConnectorCategory>("all");
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -220,15 +245,22 @@ export default function SocialPage() {
 
   const PROVIDER_AUTH_PATH: Record<string, string> = { gmail: "google", outlook: "microsoft" };
 
-  const handleConnect = (connector: typeof SOCIAL_CONNECTORS[0]) => {
+  const handleConnect = (connector: ConnectorDefinition) => {
     if (!session?.access_token) { toast.error("Please sign in first"); return; }
+    if (connector.comingSoon) {
+      toast.info(`${connector.name} is coming soon.`);
+      return;
+    }
     if ("linkTo" in connector && connector.linkTo) {
       window.location.href = connector.linkTo;
       return;
     }
     if (connector.telegramInput) { setIsTelegramModalOpen(true); return; }
     const authSlug = PROVIDER_AUTH_PATH[connector.provider] || connector.provider;
-    const base = connector.type === "email" ? `/api/auth/${authSlug}/connect` : `/api/connectors/${connector.provider}?mode=connect`;
+    const base =
+      connector.category === "email"
+        ? `/api/auth/${authSlug}/connect`
+        : `/api/connectors/${connector.provider}?mode=connect`;
     const url = `${base}?token=${encodeURIComponent(session.access_token)}&redirect_to=/social`;
     window.location.href = url;
   };
@@ -327,8 +359,8 @@ export default function SocialPage() {
   };
 
   const platformProvider: Record<string, string> = {
-    x: "twitter", twitter: "twitter", linkedin: "linkedin", facebook: "facebook",
-    instagram: "instagram", telegram: "telegram", tiktok: "tiktok", youtube: "youtube",
+    linkedin: "linkedin",
+    telegram: "telegram",
   };
 
   const isPlatformConnected = (p: string) => {
@@ -336,7 +368,21 @@ export default function SocialPage() {
     return prov ? connectedAccounts.some(a => a.provider === prov) : false;
   };
 
-  const filteredConnectors = selectedCategory === 'all' ? SOCIAL_CONNECTORS : SOCIAL_CONNECTORS.filter(c => c.type === selectedCategory);
+  const filteredConnectors =
+    selectedCategory === "all"
+      ? SOCIAL_CONNECTORS
+      : SOCIAL_CONNECTORS.filter((connector) => connector.category === selectedCategory);
+  const categoryOptions: Array<{ id: "all" | ConnectorCategory; label: string }> = [
+    { id: "all", label: "All" },
+    { id: "communication", label: "Communication" },
+    { id: "productivity", label: "Productivity" },
+    { id: "crm", label: "CRM" },
+    { id: "automation", label: "Automation" },
+    { id: "email", label: "Email" },
+    { id: "dev", label: "Dev" },
+    { id: "design", label: "Design" },
+    { id: "ai", label: "AI" },
+  ];
   const connectedCount = connectedAccounts.length;
 
   if (loading) return (
@@ -362,7 +408,7 @@ export default function SocialPage() {
             <p className="text-[var(--fg-muted)] text-sm mt-2">Manage integrations, publishing surfaces, and external channels.</p>
           </div>
           <motion.button className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] font-medium text-sm" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-            onClick={() => { setPlatform("X"); setContent(""); setTopic(""); setScheduleTime(""); setGenerateWithAi(false); setIsModalOpen(true); }}>
+            onClick={() => { setPlatform("LinkedIn"); setContent(""); setTopic(""); setScheduleTime(""); setGenerateWithAi(false); setIsModalOpen(true); }}>
             <Plus size={16} />
             Create Post
           </motion.button>
@@ -384,12 +430,12 @@ export default function SocialPage() {
             </motion.div>
           </div>
 
-          <div className="flex items-center gap-2 mb-6">
-            {(['all', 'email', 'social', 'dev'] as const).map((category) => (
-              <button key={category} onClick={() => setSelectedCategory(category)}
+          <div className="mb-6 flex flex-wrap items-center gap-2">
+            {categoryOptions.map((category) => (
+              <button key={category.id} onClick={() => setSelectedCategory(category.id)}
                 className={`px-4 py-2 rounded-lg text-sm capitalize transition-all duration-200
-                  ${selectedCategory === category ? 'bg-[var(--bg-elevated)] text-[var(--fg-primary)]' : 'text-[var(--fg-tertiary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--fg-primary)]'}`}>
-                {category}
+                  ${selectedCategory === category.id ? 'bg-[var(--bg-elevated)] text-[var(--fg-primary)]' : 'text-[var(--fg-tertiary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--fg-primary)]'}`}>
+                {category.label}
               </button>
             ))}
           </div>
@@ -466,7 +512,7 @@ export default function SocialPage() {
                 <Select value={platform} onValueChange={(v) => v && setPlatform(v)}>
                   <SelectTrigger className="bg-[var(--bg-app)] border border-[var(--border-subtle)] text-[var(--fg-primary)]"><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--fg-primary)]">
-                    {["X", "LinkedIn", "Instagram", "Facebook", "Telegram", "TikTok", "YouTube"].map(p => (
+                    {["LinkedIn", "Telegram"].map(p => (
                       <SelectItem key={p} value={p}>{p}</SelectItem>
                     ))}
                   </SelectContent>

@@ -23,7 +23,7 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
 }
 
 function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
-  return <tr className={cn("transition-colors hover:bg-[var(--accent-soft)]/50", className)} {...props} />;
+  return <tr className={cn("transition-colors hover:bg-[var(--bg-overlay)]", className)} {...props} />;
 }
 
 function TableHead({ className, ...props }: React.ComponentProps<"th">) {

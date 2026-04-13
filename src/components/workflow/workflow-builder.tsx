@@ -681,8 +681,8 @@ function NodeConfigurationPanel({
                       className={cn(
                         "rounded-full border px-3 py-1.5 text-xs",
                         selected
-                          ? "border-white/30 bg-white text-black"
-                          : "border-white/10 bg-zinc-900 text-zinc-300"
+                          ? "border-[var(--border-strong)] bg-[var(--bg-elevated)] text-[var(--fg-primary)]"
+                          : "border-[var(--border-default)] bg-[var(--bg-base)] text-[var(--fg-tertiary)]"
                       )}
                     >
                       {platform}

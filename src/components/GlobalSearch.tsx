@@ -11,6 +11,7 @@ import {
   Globe,
   LayoutGrid,
   ListChecks,
+  MessageSquare,
   Search,
   Users,
 } from "lucide-react";
@@ -39,6 +40,7 @@ const iconMap = {
   Globe,
   Bot,
   GitBranch,
+  MessageSquare,
 } as const;
 
 const categoryOrder: Array<SearchItem["category"]> = ["Workflows", "Activity", "Pages"];
