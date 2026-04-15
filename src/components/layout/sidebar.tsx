@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Mail,
   Search,
+  BookOpen,
   Plug,
   FileText,
   Settings,
@@ -20,7 +21,6 @@ import {
   ChevronsUpDown,
   ListChecks,
   GitBranch,
-  Globe,
   BarChart2,
 } from "lucide-react";
 import { useChat } from "@/lib/chat-context";
@@ -70,9 +70,11 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 const navItems = [
   { label: "Command Center", href: "/dashboard", icon: LayoutGrid },
   { label: "AI Agent", href: "/agent", icon: MessageSquare },
+  { label: "Workflows", href: "/workflows", icon: GitBranch },
+  { label: "Search", href: "/search", icon: Search },
+  { label: "Knowledge Base", href: "/knowledge", icon: BookOpen },
   { label: "Email", href: "/email", icon: Mail },
   { label: "Research", href: "/research", icon: Search },
-  { label: "Browser Agent", href: "/browser-agent", icon: Globe },
   { label: "Projects", href: "/projects", icon: FolderKanban },
   { label: "Skills", href: "/skills", icon: Sparkles },
   { label: "Connectors", href: "/social", icon: Plug },
@@ -137,7 +139,12 @@ function OrganizationSwitcher({ collapsed }: { collapsed: boolean }) {
   const pathname = usePathname();
   const { orgs, currentOrg, loading } = useOrg();
 
-  const label = currentOrg?.name ?? (loading ? "Loading workspace" : "No workspace");
+  const workspaceName = currentOrg?.name?.trim();
+  const label = loading
+    ? "Loading workspace"
+    : workspaceName && workspaceName !== "No workspace"
+      ? workspaceName
+      : "Personal Workspace";
   const href = currentOrg ? `/org/${currentOrg.slug}/dashboard` : "/org/create";
 
   return (

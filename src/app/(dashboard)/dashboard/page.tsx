@@ -320,6 +320,7 @@ export default function DashboardPage() {
       const visibleJobs = jobs.filter((job) => !job.kind.endsWith(".stub"));
 
       const agentRuns: AgentRun[] = visibleJobs
+        .filter((job) => job.status !== "failed")
         .slice(0, 8)
         .map((job) => {
           const startedAt = job.last_run_at ? new Date(job.last_run_at).getTime() : new Date(job.created_at).getTime();
