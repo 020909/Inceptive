@@ -350,7 +350,6 @@ export function Sidebar() {
           style={{ fontFamily: "var(--font-header)" }}
         >
           <span className="font-semibold tracking-tight text-[var(--fg-primary)]">Inceptive</span>
-          <span className="ml-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] rounded-full px-2 py-0.5 bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/20">Enterprise</span>
         </span>
 
         <button

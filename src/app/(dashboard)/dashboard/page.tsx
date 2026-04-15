@@ -82,8 +82,8 @@ function getDayKey(value: Date) {
 }
 
 function buildActivity(values?: Array<{ completed_at?: string | null }>) {
-  const start = startOfDay(addDays(new Date(), -13));
-  const points = Array.from({ length: 14 }, (_, index) => {
+  const start = startOfDay(addDays(new Date(), -6));
+  const points = Array.from({ length: 7 }, (_, index) => {
     const date = addDays(start, index);
     return {
       label: date.toLocaleDateString("en-US", { weekday: "short" }),
@@ -189,7 +189,14 @@ function StatCard({
   chart?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
+    <div
+      className={cn(
+        "rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6",
+        "shadow-[0_18px_36px_rgba(0,0,0,0.18)]",
+        "transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5",
+        "hover:border-[rgba(255,255,255,0.22)] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_24px_60px_rgba(0,0,0,0.22)]"
+      )}
+    >
       <p className="text-sm text-[var(--fg-muted)]">{title}</p>
       <div className="mt-4 flex items-end justify-between gap-3">
         <div>
@@ -225,7 +232,7 @@ export default function DashboardPage() {
 
     const load = async () => {
       const supabase = createClient();
-      const activityStart = startOfDay(addDays(new Date(), -13)).toISOString();
+      const activityStart = startOfDay(addDays(new Date(), -6)).toISOString();
 
       const [
         taskCountRes,
@@ -451,10 +458,10 @@ export default function DashboardPage() {
         </div>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
-          <section className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
+          <section className="rounded-[26px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(255,255,255,0.22)] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_24px_60px_rgba(0,0,0,0.22)]">
             <div className="mb-6">
               <p className="text-sm text-[var(--fg-muted)]">Task Volume</p>
-              <h2 className="mt-1 text-xl font-semibold text-[var(--fg-primary)]">Completed tasks — last 14 days</h2>
+              <h2 className="mt-1 text-xl font-semibold text-[var(--fg-primary)]">Completed tasks — last 7 days</h2>
             </div>
             <div className="h-[320px]">
               {chartsReady ? (
@@ -492,12 +499,12 @@ export default function DashboardPage() {
             </div>
             {!hasActivity ? (
               <p className="mt-4 text-sm text-[var(--fg-muted)]">
-                No completed tasks have been recorded in the last 14 days.
+                No completed tasks have been recorded in the last 7 days.
               </p>
             ) : null}
           </section>
 
-          <section className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
+          <section className="rounded-[26px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(255,255,255,0.22)] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_24px_60px_rgba(0,0,0,0.22)]">
             <div className="mb-6">
               <p className="text-sm text-[var(--fg-muted)]">Current Priority</p>
               <h2 className="mt-1 text-xl font-semibold text-[var(--fg-primary)]">
@@ -566,7 +573,7 @@ export default function DashboardPage() {
           </section>
         </div>
 
-        <section className="mt-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
+        <section className="mt-6 rounded-[26px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(255,255,255,0.22)] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_24px_60px_rgba(0,0,0,0.22)]">
           <div className="mb-5">
             <p className="text-sm text-[var(--fg-muted)]">Agent Activity Log</p>
             <h2 className="mt-1 text-xl font-semibold text-[var(--fg-primary)]">Live Agent Activity</h2>

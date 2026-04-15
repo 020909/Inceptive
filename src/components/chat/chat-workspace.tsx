@@ -9,7 +9,6 @@ import { Image as ImageIcon, Plus, X, FileSpreadsheet, Presentation, FileText, D
 import { useChat, type Message, type ToolResult, type TaskLog } from "@/lib/chat-context";
 import { useAuth } from "@/lib/auth-context";
 import { useSidebar } from "@/components/layout/sidebar";
-import { GlobalSearch } from "@/components/GlobalSearch";
 import { DashboardAiPrompt } from "@/components/ui/ai-prompt-box";
 import { DashboardCodePanel } from "@/components/dashboard/dashboard-code-panel";
 import { HtmlPreview } from "@/components/ui/html-preview";
@@ -1582,7 +1581,6 @@ function DashboardExperience() {
           )}
         </div>
         <div className="flex items-start gap-2">
-          <GlobalSearch variant="compact" />
           <button
             type="button"
             onClick={() => {

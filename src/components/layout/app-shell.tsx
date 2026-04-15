@@ -1,30 +1,20 @@
 "use client";
 
 import React from "react";
-import { usePathname } from "next/navigation";
 import { AuthProvider } from "@/lib/auth-context";
 import { ChatProvider } from "@/lib/chat-context";
 import { AgentProvider } from "@/lib/agent-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { OrgProvider } from "@/lib/org-context";
-import { GlobalSearch } from "@/components/GlobalSearch";
 import { Sidebar, SidebarProvider } from "@/components/layout/sidebar";
 import { PageTransition } from "@/components/ui/page-transition";
 import { Toaster } from "@/components/ui/sonner";
 
 function LayoutInner({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const showStickySearch = pathname !== "/dashboard" && pathname !== "/agent";
-
   return (
     <div className="dashboard-shell relative flex h-screen overflow-hidden bg-[var(--bg-base)]">
       <Sidebar />
       <main className="relative min-w-0 flex-1 overflow-y-auto">
-        {showStickySearch ? (
-          <div className="sticky top-0 z-20 flex justify-end gap-3 px-4 py-4 sm:px-6">
-            <GlobalSearch />
-          </div>
-        ) : null}
         <div className="relative z-10 min-h-0 pb-6">
           <PageTransition>{children}</PageTransition>
         </div>
