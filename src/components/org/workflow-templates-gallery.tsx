@@ -6,14 +6,8 @@ import { toast } from "sonner";
 import { Search } from "lucide-react";
 import { trackClientEvent } from "@/lib/analytics";
 import { useFuseSearch } from "@/hooks/useFuseSearch";
-import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import {
-  activateWorkflow,
-  type WorkflowCategory,
-  type WorkflowTemplate,
-  type OrgWorkflowWithTemplate,
-} from "@/lib/supabase/workflows-browser";
+import type { WorkflowCategory, WorkflowTemplate, OrgWorkflowWithTemplate } from "@/lib/supabase/workflows-browser";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,15 +61,28 @@ export function WorkflowTemplatesGallery({
 
     setActivatingTemplateId(template.id);
     try {
-      const activated = await activateWorkflow(
-        {
-          organizationId: orgId,
-          templateId: template.id,
-          activatedBy: user.id,
-          settings: {},
+      const response = await fetch("/api/org/workflows", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        createClient()
-      );
+        body: JSON.stringify({
+          orgId,
+          templateId: template.id,
+        }),
+      });
+      const json = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(json.error || "Failed to activate workflow.");
+      }
+
+      if (response.status === 202 || json.queued) {
+        toast.success("Workflow activation submitted for admin approval.");
+        return;
+      }
+
+      const activated = json.workflow as OrgWorkflowWithTemplate;
 
       setActiveWorkflows((current) => [
         {
@@ -91,7 +98,7 @@ export function WorkflowTemplatesGallery({
         workflow_category: template.category,
       });
 
-      toast.success("Workflow activated! Your AI agent will begin tonight.");
+      toast.success("Workflow activated. Your AI agent will begin tonight.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to activate workflow.";
       toast.error(message);

@@ -352,7 +352,7 @@ export default function ReportsPage() {
                 <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8">
                   <h3 className="text-[var(--fg-primary)] font-medium tracking-[-0.02em] mb-8">Tasks Completed (Past 8 Weeks)</h3>
                   <div className="h-[250px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={250}>
                       <BarChart data={latestReport.chart_data}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
                         <XAxis

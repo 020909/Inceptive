@@ -5,12 +5,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { PauseCircle, PlayCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase";
-import {
-  updateWorkflowStatus,
-  type OrgWorkflowStatus,
-  type OrgWorkflowWithTemplate,
-} from "@/lib/supabase/workflows-browser";
+import type { OrgWorkflowStatus, OrgWorkflowWithTemplate } from "@/lib/supabase/workflows-browser";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +26,27 @@ export function ActiveWorkflowsDashboard({
   const handleStatusChange = async (workflowId: string, nextStatus: OrgWorkflowStatus) => {
     setUpdatingId(workflowId);
     try {
-      const updated = await updateWorkflowStatus(workflowId, nextStatus, createClient());
+      const response = await fetch(`/api/org/workflows/${workflowId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: nextStatus,
+        }),
+      });
+      const json = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(json.error || "Failed to update workflow.");
+      }
+
+      if (response.status === 202 || json.queued) {
+        toast.success(nextStatus === "paused" ? "Pause request submitted for approval." : "Resume request submitted for approval.");
+        return;
+      }
+
+      const updated = json.workflow as { status: OrgWorkflowStatus };
       setWorkflows((current) =>
         current.map((workflow) =>
           workflow.id === workflowId ? { ...workflow, status: updated.status } : workflow

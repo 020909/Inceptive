@@ -4,9 +4,9 @@ import { cn } from '@/lib/utils';
 import { MotionConfig } from 'framer-motion';
 import { getSiteUrl } from '@/lib/site-url';
 
-const defaultTitle = 'Inceptive — Enterprise AI for fast-moving teams';
+const defaultTitle = 'Inceptive — Autonomous AI for Enterprise Teams';
 const defaultDescription =
-  'B2B SaaS that helps enterprises delegate work to AI: research, execution, and integrations with guardrails your org can trust.';
+  'Inceptive automates email, research, reporting, and enterprise workflows using autonomous AI agents. Built for growth companies.';
 
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),

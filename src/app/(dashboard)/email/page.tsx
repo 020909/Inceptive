@@ -19,8 +19,10 @@ interface ConnectedAccount { provider: string; account_email?: string; }
 const CONNECTORS = [
   { id: "gmail", name: "Gmail", description: "Google Mail", oauthPath: "/api/auth/google/connect" },
   { id: "outlook", name: "Outlook", description: "Microsoft 365", oauthPath: "/api/auth/microsoft/connect" },
-  { id: "icloud", name: "iCloud", description: "Coming soon", oauthPath: null },
 ];
+
+const SUPPORTED_CONNECTOR_IDS = new Set(CONNECTORS.map((connector) => connector.id));
+const TONES = ["Professional", "Friendly", "Assertive", "Empathetic"];
 
 function EmailRow({ email, index, onClick }: { email: InboxEmail | DraftEmail; index: number; onClick: () => void }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -97,6 +99,9 @@ export default function EmailPage() {
   const [sending, setSending] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [composeInput, setComposeInput] = useState("");
+  const [selectedTone, setSelectedTone] = useState("Professional");
+  const [aiComposing, setAiComposing] = useState(false);
   const [topic, setTopic] = useState("");
   const [recipient, setRecipient] = useState("");
   const [tone, setTone] = useState("Professional");
@@ -110,7 +115,7 @@ export default function EmailPage() {
     try {
       const r = await fetch("/api/connectors", { headers: { Authorization: "Bearer " + token } });
       const d = await r.json();
-      setAccounts((d.accounts || []).filter((a: any) => ["gmail","outlook","icloud"].includes(a.provider)));
+      setAccounts((d.accounts || []).filter((a: any) => SUPPORTED_CONNECTOR_IDS.has(a.provider)));
     } catch {}
   }, [token]);
 
@@ -221,22 +226,76 @@ export default function EmailPage() {
     finally { setSending(false); }
   };
 
-  const generate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!topic || !recipient || !token || !user) return;
-    setGenerating(true); setPreview(null);
+  const generateDraftEmail = async ({
+    draftTopic,
+    draftRecipient,
+    draftTone,
+    source,
+  }: {
+    draftTopic: string;
+    draftRecipient: string;
+    draftTone: string;
+    source: "modal" | "hero";
+  }) => {
+    if (!draftTopic || !draftRecipient || !token || !user) return;
+
+    if (source === "hero") {
+      setAiComposing(true);
+    } else {
+      setGenerating(true);
+    }
+    setPreview(null);
+
     try {
       const r = await fetch("/api/agent/email", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-        body: JSON.stringify({ topic, recipient, tone, user_id: user.id }),
+        body: JSON.stringify({ topic: draftTopic, recipient: draftRecipient, tone: draftTone, user_id: user.id }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
-      setPreview(d.email); setDrafts(prev => [d.email, ...prev]);
+
+      setTopic(draftTopic);
+      setRecipient(d.email?.recipient || draftRecipient);
+      setTone(draftTone);
+      setPreview(d.email);
+      setDrafts(prev => [d.email, ...prev]);
+
+      if (source === "hero") {
+        setComposeOpen(true);
+      }
+
       toast.success("Draft ready");
-    } catch (e: any) { toast.error(e.message); }
-    finally { setGenerating(false); }
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      if (source === "hero") {
+        setAiComposing(false);
+      } else {
+        setGenerating(false);
+      }
+    }
+  };
+
+  const generate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await generateDraftEmail({
+      draftTopic: topic,
+      draftRecipient: recipient,
+      draftTone: tone,
+      source: "modal",
+    });
+  };
+
+  const handleAiCompose = async () => {
+    if (!composeInput.trim()) return;
+
+    await generateDraftEmail({
+      draftTopic: composeInput.trim(),
+      draftRecipient: recipient.trim() || "there",
+      draftTone: selectedTone,
+      source: "hero",
+    });
   };
 
   const sendDraft = async (id: string) => {
@@ -425,6 +484,55 @@ export default function EmailPage() {
                 </div>
               </div>
             )}
+
+            <div className="px-4 pt-4">
+              <AnimatePresence>
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 mb-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]"
+                >
+                  <h2 className="text-lg font-semibold text-[var(--fg-primary)]">Compose with AI</h2>
+                  <p className="text-sm text-[var(--fg-muted)] mt-1 mb-4">Type what you want to say. AI writes it for you.</p>
+                  <textarea
+                    rows={3}
+                    placeholder="e.g. 'Happy birthday to Sarah' or 'Follow up on our proposal from last week'"
+                    value={composeInput}
+                    onChange={(e) => setComposeInput(e.target.value)}
+                    className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] p-3 text-sm text-[var(--fg-primary)] resize-none outline-none focus:border-[var(--accent)] transition-colors"
+                  />
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {TONES.map((toneOption) => {
+                      const isSelected = selectedTone === toneOption;
+                      return (
+                        <button
+                          key={toneOption}
+                          type="button"
+                          onClick={() => setSelectedTone(toneOption)}
+                          className={
+                            isSelected
+                              ? "rounded-full px-4 py-1.5 text-sm border transition-all border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--fg-primary)]"
+                              : "rounded-full px-4 py-1.5 text-sm border transition-all border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--fg-muted)] hover:border-[var(--border-strong)] hover:text-[var(--fg-primary)]"
+                          }
+                        >
+                          {toneOption}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAiCompose}
+                    disabled={aiComposing || !composeInput.trim()}
+                    className="w-full mt-4 bg-[var(--accent)] text-white rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    {aiComposing ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+                    {aiComposing ? "Generating..." : "Generate & Preview"}
+                  </button>
+                </motion.div>
+              </AnimatePresence>
+            </div>
 
             {/* Search Bar */}
             <div className="flex items-center gap-4 px-4 py-3 border-b border-[var(--border-subtle)]">

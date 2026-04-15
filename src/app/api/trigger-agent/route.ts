@@ -4,6 +4,10 @@ import { trackEvent } from "@/lib/analytics";
 import { inngest } from "@/lib/inngest/client";
 import { checkRateLimit, getClientIP, rateLimitResponse } from "@/lib/rate-limit";
 import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import {
+  createReviewRequestWithNotifications,
+  queryGetOrganizationGovernanceSettings,
+} from "@/lib/supabase/org-governance";
 
 const requestSchemaMessage = "Missing orgId.";
 
@@ -88,6 +92,35 @@ export async function POST(request: Request) {
     const workflowSlugs = (workflows ?? [])
       .map((row: any) => (Array.isArray(row.template) ? row.template[0] : row.template)?.slug)
       .filter((value: unknown): value is string => typeof value === "string");
+
+    const settings = await queryGetOrganizationGovernanceSettings(admin, orgId);
+
+    if (settings.manual_runs_require_approval) {
+      const reviewItem = await createReviewRequestWithNotifications(admin, {
+        organizationId: orgId,
+        requestedBy: authenticatedUserId,
+        requestType: "manual_run",
+        title: "Manual workspace run requested",
+        description: `${userName} requested an immediate agent run for this workspace.`,
+        payload: {
+          orgSlug: organization.slug,
+          userId: authenticatedUserId,
+          userEmail,
+          userName,
+          workflows: workflowSlugs,
+        },
+      });
+
+      return NextResponse.json(
+        {
+          queued: true,
+          requiresApproval: true,
+          reviewItem,
+          message: "Manual run submitted for admin approval.",
+        },
+        { status: 202 }
+      );
+    }
 
     await inngest.send({
       name: "agent/overnight.triggered",

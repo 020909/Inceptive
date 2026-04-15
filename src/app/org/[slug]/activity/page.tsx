@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
+import { ReviewQueuePanel } from "@/components/org/review-queue-panel";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { queryGetReviewQueue } from "@/lib/supabase/org-governance";
 import { getOrgBySlug, getOrgMembershipForUser } from "@/lib/supabase/org";
 import { getOrgActivity } from "@/lib/supabase/activity";
 import { OrgActivityDashboard } from "@/components/org/org-activity-dashboard";
@@ -36,6 +38,10 @@ export default async function OrgActivityPage({ params, searchParams }: OrgActiv
     workflow ? { workflowSlug: workflow } : {},
     supabase
   );
+  const reviewQueueItems = await queryGetReviewQueue(supabase, {
+    organizationId: organization.id,
+    limit: 8,
+  });
 
   return (
     <section className="mx-auto flex min-h-full w-full max-w-7xl px-6 py-10">
@@ -59,6 +65,14 @@ export default async function OrgActivityPage({ params, searchParams }: OrgActiv
             ) : null}
           </div>
         </div>
+
+        <ReviewQueuePanel
+          orgId={organization.id}
+          canReview={membership.role === "admin"}
+          initialItems={reviewQueueItems}
+          title="Approval Queue"
+          description="Review requests and execution decisions for this workspace."
+        />
 
         <OrgActivityDashboard logs={logs} orgName={organization.name} orgId={organization.id} userId={user.id} />
       </div>

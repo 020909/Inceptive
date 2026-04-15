@@ -10,10 +10,15 @@ export type AgentActivityActionType =
   | "content_created"
   | "task_completed"
   | "browser_task"
-  | "overnight_run_complete";
+  | "overnight_run_complete"
+  | "approval_requested"
+  | "approval_approved"
+  | "approval_rejected"
+  | "workflow_updated"
+  | "settings_updated";
 
 export type AgentActivityStatus = "completed" | "failed" | "in_progress";
-export type ActivityFilterGroup = "all" | "emails" | "research" | "content" | "tasks";
+export type ActivityFilterGroup = "all" | "emails" | "research" | "content" | "tasks" | "governance";
 export type ActivityDateRange = "today" | "this_week" | "this_month";
 
 export interface AgentActivityLog {
@@ -47,6 +52,7 @@ const ACTION_GROUP_MAP: Record<Exclude<ActivityFilterGroup, "all">, AgentActivit
   research: ["research_completed", "lead_generated", "report_generated"],
   content: ["content_created"],
   tasks: ["task_completed"],
+  governance: ["approval_requested", "approval_approved", "approval_rejected", "workflow_updated", "settings_updated"],
 };
 
 async function getSupabaseClient(client?: ActivitySupabaseClient) {

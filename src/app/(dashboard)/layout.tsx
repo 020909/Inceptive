@@ -5,5 +5,5 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AppShell>{children}</AppShell>;
+  return <AppShell><div className="animate-fade-in-up">{children}</div></AppShell>;
 }

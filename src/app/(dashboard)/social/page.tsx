@@ -14,7 +14,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Share2, Plus, Loader2, Check, Unlink, ExternalLink, Plug, RefreshCw, Settings, AlertCircle, Github } from "lucide-react";
+import { Share2, Plus, Loader2, Check, Unlink, Plug, RefreshCw, Settings, AlertCircle, Github } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -77,6 +77,7 @@ const SOCIAL_CONNECTORS: ConnectorDefinition[] = [
   { id: "canva", provider: "canva", name: "Canva", category: "design", description: "Design and content", mark: "C", comingSoon: true },
   { id: "elevenlabs", provider: "elevenlabs", name: "ElevenLabs", category: "ai", description: "AI voice generation", mark: "11", comingSoon: true },
 ];
+const SUPPORTED_CONNECTORS = SOCIAL_CONNECTORS.filter((connector) => !connector.comingSoon);
 
 function StatusBadge({ status }: { status: 'connected' | 'disconnected' | 'error' }) {
   const configs = {
@@ -139,7 +140,7 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-xs text-[var(--fg-muted)]">
           <RefreshCw size={12} />
-          <span>{connected ? 'Synced recently' : connector.comingSoon ? 'Coming soon' : 'Not connected'}</span>
+          <span>{connected ? 'Synced recently' : 'Not connected'}</span>
         </div>
 
         <motion.div className="flex items-center gap-1" initial={{ opacity: 0 }} animate={{ opacity: isHovered ? 1 : 0 }} transition={{ duration: 0.2 }}>
@@ -158,7 +159,7 @@ function ConnectorCard({ connector, index, connected, connectedAccount, onConnec
           ) : (
             <button onClick={onConnect} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] text-[var(--fg-primary)] text-xs font-medium hover:bg-[var(--bg-overlay)] transition-colors">
               <Plug size={12} />
-              {connector.comingSoon ? "Soon" : "Connect"}
+              Connect
             </button>
           )}
         </motion.div>
@@ -247,10 +248,6 @@ export default function SocialPage() {
 
   const handleConnect = (connector: ConnectorDefinition) => {
     if (!session?.access_token) { toast.error("Please sign in first"); return; }
-    if (connector.comingSoon) {
-      toast.info(`${connector.name} is coming soon.`);
-      return;
-    }
     if ("linkTo" in connector && connector.linkTo) {
       window.location.href = connector.linkTo;
       return;
@@ -370,9 +367,9 @@ export default function SocialPage() {
 
   const filteredConnectors =
     selectedCategory === "all"
-      ? SOCIAL_CONNECTORS
-      : SOCIAL_CONNECTORS.filter((connector) => connector.category === selectedCategory);
-  const categoryOptions: Array<{ id: "all" | ConnectorCategory; label: string }> = [
+      ? SUPPORTED_CONNECTORS
+      : SUPPORTED_CONNECTORS.filter((connector) => connector.category === selectedCategory);
+  const categoryOptionsBase: Array<{ id: "all" | ConnectorCategory; label: string }> = [
     { id: "all", label: "All" },
     { id: "communication", label: "Communication" },
     { id: "productivity", label: "Productivity" },
@@ -383,7 +380,12 @@ export default function SocialPage() {
     { id: "design", label: "Design" },
     { id: "ai", label: "AI" },
   ];
+  const categoryOptions: Array<{ id: "all" | ConnectorCategory; label: string }> = categoryOptionsBase.filter(
+    (option): option is { id: "all" | ConnectorCategory; label: string } =>
+      option.id === "all" || SUPPORTED_CONNECTORS.some((connector) => connector.category === option.id)
+  );
   const connectedCount = connectedAccounts.length;
+  const publishReadyCount = ["linkedin", "telegram"].filter((provider) => connectedAccounts.some((account) => account.provider === provider)).length;
 
   if (loading) return (
     <>
@@ -405,7 +407,7 @@ export default function SocialPage() {
           <div>
             <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Integrations</p>
             <h1 className="mt-2 text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Connectors</h1>
-            <p className="text-[var(--fg-muted)] text-sm mt-2">Manage integrations, publishing surfaces, and external channels.</p>
+            <p className="text-[var(--fg-muted)] text-sm mt-2">Manage the live connectors that are currently supported by Inceptive.</p>
           </div>
           <motion.button className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] font-medium text-sm" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
             onClick={() => { setPlatform("LinkedIn"); setContent(""); setTopic(""); setScheduleTime(""); setGenerateWithAi(false); setIsModalOpen(true); }}>
@@ -421,12 +423,12 @@ export default function SocialPage() {
               <p className="text-3xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{connectedCount}</p>
             </motion.div>
             <motion.div className="page-kpi p-5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, type: 'spring', stiffness: 100, damping: 20 }}>
-              <p className="text-[var(--fg-muted)] text-sm mb-1">Available</p>
-              <p className="text-3xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{SOCIAL_CONNECTORS.length}</p>
+              <p className="text-[var(--fg-muted)] text-sm mb-1">Supported Now</p>
+              <p className="text-3xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{SUPPORTED_CONNECTORS.length}</p>
             </motion.div>
             <motion.div className="page-kpi p-5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}>
-              <p className="text-[var(--fg-muted)] text-sm mb-1">Sync Errors</p>
-              <p className="text-3xl font-semibold text-[var(--fg-secondary)] tracking-[-0.03em]">0</p>
+              <p className="text-[var(--fg-muted)] text-sm mb-1">Publishing Ready</p>
+              <p className="text-3xl font-semibold text-[var(--fg-primary)] tracking-[-0.03em]">{publishReadyCount}</p>
             </motion.div>
           </div>
 
@@ -488,15 +490,14 @@ export default function SocialPage() {
 
           <motion.div className="mt-8 p-6 rounded-2xl bg-[var(--bg-surface)] card-elevated"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, type: 'spring', stiffness: 100, damping: 20 }}>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <h3 className="text-[var(--fg-primary)] font-medium tracking-[-0.02em] mb-1">Developer API</h3>
-                <p className="text-[var(--fg-muted)] text-sm">Build custom integrations with our API</p>
+                <h3 className="text-[var(--fg-primary)] font-medium tracking-[-0.02em] mb-1">Supported connectors only</h3>
+                <p className="text-[var(--fg-muted)] text-sm">This page now shows only the integrations that can be connected and used today. Unsupported roadmap connectors stay out of the production UI until they are ready.</p>
               </div>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--bg-elevated)] text-[var(--fg-primary)] text-sm hover:bg-[var(--bg-elevated)] transition-colors">
-                <ExternalLink size={14} />
-                View Documentation
-              </button>
+              <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--fg-muted)]">
+                Trust-first
+              </div>
             </div>
           </motion.div>
         </div>

@@ -5,11 +5,17 @@ import { useChat } from "@/lib/chat-context";
 import { useAuth } from "@/lib/auth-context";
 import { redirectToSignIn } from "@/lib/auth-gate";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Search, Mail, Share2, Target, TrendingUp, Users, FileText, Rocket, ChevronRight, Play, Plus, X, Loader2 } from "lucide-react";
+import { Zap, Search, Mail, Share2, Target, TrendingUp, Users, FileText, Rocket, Plus, X, Loader2, Sparkles, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const SKILLS = [
+  { id: "inbox-intelligence", category: "Email", title: "Inbox Intelligence", description: "Reads your inbox, surfaces the top 5 priorities, and drafts replies to routine emails.", icon: Mail, time: "~2 min", tags: ["Email","Inbox"], prompt: "Read my inbox, identify the top 5 priorities, and draft replies for routine emails. Present the priorities clearly and prepare polished drafts where appropriate." },
+  { id: "market-pulse", category: "Research", title: "Market Pulse", description: "Daily scan of competitor news, pricing changes, and industry headlines. Delivered as a structured brief.", icon: Search, time: "~3 min", tags: ["Research","News"], prompt: "Run a daily market pulse scan covering competitor news, pricing changes, and key industry headlines. Return the output as a structured brief with the most important developments first." },
+  { id: "weekly-ops-report", category: "Productivity", title: "Weekly Ops Report", description: "Pulls data from your connected tools and generates a full executive summary every Monday.", icon: FileText, time: "~4 min", tags: ["Reports","Operations"], prompt: "Pull data from my connected tools and generate a weekly operations report with an executive summary, key metrics, notable changes, risks, and next actions." },
+  { id: "lead-research", category: "Sales", title: "Lead Research", description: "Researches any person or company and returns a contact brief with LinkedIn, funding, recent news.", icon: Globe, time: "~3 min", tags: ["Sales","Research"], prompt: "Research a person or company and return a contact brief including LinkedIn presence, funding background, recent news, company context, and useful outreach insights." },
+  { id: "meeting-prep", category: "Productivity", title: "Meeting Prep", description: "Given a meeting in your calendar, auto-researches all attendees and returns a pre-call brief.", icon: Sparkles, time: "~2 min", tags: ["Meetings","Research"], prompt: "Given an upcoming meeting in my calendar, research every attendee and return a pre-call brief with who they are, company background, recent news, and suggested talking points." },
+  { id: "content-summarizer", category: "Research", title: "Content Summarizer", description: "Paste a URL, PDF, or YouTube link. Returns a structured 5-point summary with key takeaways.", icon: Search, time: "~2 min", tags: ["Research","Summaries"], prompt: "Summarize the provided URL, PDF, or YouTube link into a structured 5-point summary with key takeaways, important facts, and recommended next actions." },
   { id: "investor-outreach", category: "Sales", title: "Investor Outreach", description: "Research 10 active AI investors, draft personalized cold emails, save as drafts ready to send.", icon: TrendingUp, time: "~3 min", tags: ["Research","Email"], prompt: "Research 10 active investors who fund enterprise AI and B2B SaaS. For each: name, fund, portfolio, contact info. Draft a personalized cold email pitching Inceptive as secure enterprise AI that helps teams ship work faster with governance. Save each as email draft." },
   { id: "competitor-research", category: "Research", title: "Competitor Deep Dive", description: "Analyze 5 top AI agent competitors: features, pricing, weaknesses, and market gaps.", icon: Search, time: "~4 min", tags: ["Research","Strategy"], prompt: "Deep competitive analysis of top 5 enterprise AI assistants and agent platforms (e.g. Microsoft Copilot, comparable B2B agents). For each: key features, pricing, security posture, weaknesses, target customer. Identify 3 biggest market gaps for Inceptive in the enterprise. Save a comprehensive report." },
   { id: "content-calendar", category: "Marketing", title: "30-Day Content Calendar", description: "Full 30-day social media plan with written posts for Twitter, LinkedIn, and Instagram.", icon: Share2, time: "~2 min", tags: ["Social","Marketing"], prompt: "Create a 30-day LinkedIn-first content calendar for Inceptive as an enterprise B2B SaaS brand. Write posts for LinkedIn (3x/week), Twitter/X (2x/week), short video scripts where relevant. Tone: credible, procurement-friendly, outcomes over hype. Schedule the first 5 posts." },
@@ -126,37 +132,36 @@ export default function SkillsPage() {
   return (
     <>
       <div className="page-frame max-w-6xl">
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="page-hero mb-8 flex items-start justify-between gap-3 px-6 py-6"
-        >
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Playbooks</p>
-            <h1 className="mt-2 text-3xl font-bold text-[var(--fg-primary)] mb-1">Skills</h1>
-            <p className="text-sm text-[var(--fg-secondary)] mt-2">
-              Pick a skill and we will prefill your dashboard prompt for review.
-            </p>
+        <div className="mb-8 animate-fade-in-up">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[var(--fg-muted)] mb-3">
+                <Sparkles size={12} />
+                Agent Library
+              </div>
+              <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--fg-primary)]">Skills & Playbooks</h1>
+              <p className="mt-2 text-sm text-[var(--fg-muted)]">One-click agents that run autonomously. Configure once, delegate forever.</p>
+            </div>
+            <button
+              onClick={() => {
+                if (!user) {
+                  redirectToSignIn();
+                  return;
+                }
+                setAddOpen(true);
+                setSkillTitle("");
+                setSkillDescription("");
+                setSkillCategory("Research");
+                setSkillTagsText("");
+                setSkillPrompt("");
+              }}
+              className="btn-premium flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--accent)] text-[var(--primary-foreground)] border border-[var(--accent)] hover:opacity-90 transition-colors text-xs font-semibold"
+            >
+              <Plus size={14} />
+              Add Skill
+            </button>
           </div>
-          <button
-            onClick={() => {
-              if (!user) {
-                redirectToSignIn();
-                return;
-              }
-              setAddOpen(true);
-              setSkillTitle("");
-              setSkillDescription("");
-              setSkillCategory("Research");
-              setSkillTagsText("");
-              setSkillPrompt("");
-            }}
-            className="btn-premium flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--accent)] text-[var(--primary-foreground)] border border-[var(--accent)] hover:opacity-90 transition-colors text-xs font-semibold"
-          >
-            <Plus size={14} />
-            Add Skill
-          </button>
-        </motion.div>
+        </div>
 
         <div className="flex gap-2 mb-8 flex-wrap">
           {CATS.map(c => (
@@ -175,48 +180,43 @@ export default function SkillsPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((skill, i) => {
             const Icon = skill.icon;
             const isRun = running === skill.id;
             return (
-              <motion.div key={skill.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="flex flex-col rounded-2xl border border-[var(--border-subtle)] overflow-hidden transition-all duration-200 bg-[var(--bg-elevated)] hover:border-[var(--border-strong)]">
-                <div className="p-5 flex-1">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
-                      <Icon className="w-4 h-4 text-[var(--fg-primary)]" />
-                    </div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--bg-surface)] text-[var(--fg-secondary)] border border-[var(--border-subtle)]">
-                      {skill.time}
+              <motion.div
+                key={skill.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className="card-elevated p-6 bg-[var(--bg-surface)] cursor-pointer group animate-fade-in-up"
+              >
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
+                  <Icon size={20} />
+                </div>
+                <h3 className="font-semibold text-[var(--fg-primary)] mb-1">{skill.title}</h3>
+                <p className="text-sm text-[var(--fg-muted)] mb-4 leading-relaxed">{skill.description}</p>
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {skill.tags.map(t => (
+                    <span
+                      key={t}
+                      className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--bg-elevated)] text-[var(--fg-tertiary)] border border-[var(--border-subtle)]"
+                    >
+                      {t}
                     </span>
-                  </div>
-                  <h3 className="text-sm font-bold text-[var(--fg-primary)] mb-1.5">{skill.title}</h3>
-                  <p className="text-xs leading-relaxed text-[var(--fg-secondary)]">{skill.description}</p>
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {skill.tags.map(t => (
-                      <span
-                        key={t}
-                        className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--bg-surface)] text-[var(--fg-tertiary)] border border-[var(--border-subtle)]"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
+                  ))}
                 </div>
-                <div className="px-5 pb-5">
-                  <button onClick={() => runSkill(skill)} disabled={!!running}
-                    className={cn(
-                      "w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold transition-all",
-                      isRun ? "bg-[var(--bg-overlay)] text-[var(--fg-secondary)]" : "bg-[var(--fg-primary)] text-[var(--bg-base)]"
-                    )}>
-                    <div className="flex items-center gap-2">
-                      {isRun ? <motion.div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} /> : <Play className="w-3.5 h-3.5" />}
-                      {isRun ? "Starting..." : "Run Skill"}
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => runSkill(skill)}
+                  disabled={!!running}
+                  className={cn(
+                    "w-full rounded-xl bg-[var(--accent)] py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity",
+                    isRun && "opacity-80"
+                  )}
+                >
+                  {isRun ? "Starting..." : "Run Now"}
+                </button>
               </motion.div>
             );
           })}

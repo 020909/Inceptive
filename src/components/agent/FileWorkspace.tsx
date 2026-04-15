@@ -373,9 +373,14 @@ export function FileWorkspace() {
             <div className="h-[calc(100%-41px)] overflow-auto p-3">
               {selectedFile.fileType === "image" ? (
                 <div className="flex items-center justify-center h-full">
-                  <p className="text-xs text-[var(--foreground-muted)]">
-                    Image preview coming soon
-                  </p>
+                  <div className="max-w-xs text-center">
+                    <p className="text-xs text-[var(--foreground-muted)]">
+                      Image preview is not available in this panel yet.
+                    </p>
+                    <p className="mt-2 text-[11px] text-[var(--foreground-tertiary)]">
+                      Open the file externally if you need to inspect the asset itself.
+                    </p>
+                  </div>
                 </div>
               ) : selectedFile.fileType === "code" ? (
                 fileContent ? (

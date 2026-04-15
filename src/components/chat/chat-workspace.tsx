@@ -1635,7 +1635,7 @@ function DashboardExperience() {
           <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 py-8 sm:px-6">
             <div className="mx-auto w-full max-w-4xl">
               <h1 className="mb-4 text-center text-2xl font-bold tracking-tight text-[var(--fg-primary)] sm:text-3xl">
-                How can I help you today?
+                What should Inceptive handle for you today?
               </h1>
               <div className="space-y-3">
                 <DashboardCodePanel

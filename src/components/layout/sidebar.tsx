@@ -10,7 +10,6 @@ import {
   Mail,
   Search,
   Plug,
-  Target,
   FileText,
   Settings,
   LogIn,
@@ -69,16 +68,16 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 }
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
-  { label: "Browser Agent", href: "/browser-agent", icon: Globe },
-  { label: "Chat", href: "/agent", icon: MessageSquare },
-  { label: "Projects", href: "/projects", icon: FolderKanban },
-  { label: "Skills", href: "/skills", icon: Sparkles },
+  { label: "Command Center", href: "/dashboard", icon: LayoutGrid },
+  { label: "AI Agent", href: "/agent", icon: MessageSquare },
   { label: "Email", href: "/email", icon: Mail },
   { label: "Research", href: "/research", icon: Search },
+  { label: "Browser Agent", href: "/browser-agent", icon: Globe },
+  { label: "Projects", href: "/projects", icon: FolderKanban },
+  { label: "Skills", href: "/skills", icon: Sparkles },
   { label: "Connectors", href: "/social", icon: Plug },
-  { label: "Goals", href: "/goals", icon: Target },
   { label: "Reports", href: "/reports", icon: FileText },
+  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 function NavItem({
@@ -96,7 +95,7 @@ function NavItem({
     <Link
       href={item.href}
       className={cn(
-        "group/item relative flex h-11 w-full items-center overflow-hidden rounded-xl transition-all duration-300",
+        "group/item relative flex h-11 w-full items-center overflow-hidden rounded-xl transition-all duration-200",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--ring)]",
         collapsed
           ? "justify-center gap-0 px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3"
@@ -350,7 +349,8 @@ export function Sidebar() {
           )}
           style={{ fontFamily: "var(--font-header)" }}
         >
-          Inceptive
+          <span className="font-semibold tracking-tight text-[var(--fg-primary)]">Inceptive</span>
+          <span className="ml-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] rounded-full px-2 py-0.5 bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/20">Enterprise</span>
         </span>
 
         <button
@@ -406,7 +406,7 @@ export function Sidebar() {
             />
             <WorkspaceNavItem
               href={`/org/${currentOrg.slug}/settings`}
-              label="Security"
+              label="Governance"
               icon={Settings}
               collapsed={collapsed}
               isActive={pathname === `/org/${currentOrg.slug}/settings`}
@@ -418,13 +418,21 @@ export function Sidebar() {
       {/* ── Nav ── */}
       <nav className="flex flex-1 flex-col gap-1 px-2.5 pt-3 overflow-hidden">
         {navItems.map((item) => (
-            <NavItem
+          <NavItem
             key={item.href}
-              item={item}
-              collapsed={collapsed}
+            item={item}
+            collapsed={collapsed}
             isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
-            />
+          />
         ))}
+        <div className="mt-auto">
+          <div className="mx-3 mb-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2.5">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-[var(--success)] animate-pulse" />
+              <span className="text-xs text-[var(--fg-muted)]">Agents online</span>
+            </div>
+          </div>
+        </div>
       </nav>
 
       {/* ── Recent Chats — visible when pinned open; on narrow rail, reveal on sidebar hover ── */}
@@ -465,7 +473,7 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* ── Bottom: Sign in (guests) + Settings ── */}
+      {/* ── Bottom: Sign in (guests) ── */}
       <div className="aurora-divider shrink-0 border-t border-[var(--border-default)] px-2.5 pb-4 pt-2.5 space-y-1">
         {!authLoading && !user ? (
           <Link
@@ -494,45 +502,6 @@ export function Sidebar() {
             </span>
           </Link>
         ) : null}
-        <Link
-          href="/settings"
-          className={cn(
-            "group/item relative flex h-11 w-full items-center overflow-hidden rounded-xl transition-all duration-300",
-            collapsed
-              ? "justify-center gap-0 px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3"
-              : "justify-start gap-3",
-            pathname === "/settings"
-              ? cn(
-                  "border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[0_16px_36px_rgba(0,0,0,0.28)]",
-                  collapsed
-                    ? "pl-0 group-hover/sidebar:pl-[12px]"
-                    : "pl-[12px]",
-                )
-              : cn(
-                  "border border-transparent hover:bg-[var(--bg-overlay)]",
-                  collapsed ? "pl-0 group-hover/sidebar:pl-3.5" : "pl-3.5",
-                ),
-          )}
-        >
-          <span className="flex shrink-0 items-center justify-center size-5 min-w-[20px]">
-            <Settings
-              size={18}
-              strokeWidth={pathname === "/settings" ? 2 : 1.6}
-              className={pathname === "/settings" ? "text-[var(--fg-primary)]" : "text-[var(--fg-tertiary)]"}
-            />
-          </span>
-          <span
-            className={cn(
-              "max-w-[140px] overflow-hidden whitespace-nowrap text-[13px] font-medium tracking-[0.01em] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
-              pathname === "/settings" ? "text-[var(--fg-primary)]" : "text-[var(--fg-secondary)]",
-              collapsed
-                ? "max-w-0 opacity-0 group-hover/sidebar:max-w-[140px] group-hover/sidebar:opacity-100"
-                : "opacity-100",
-            )}
-          >
-            Settings
-          </span>
-        </Link>
       </div>
     </aside>
     </div>

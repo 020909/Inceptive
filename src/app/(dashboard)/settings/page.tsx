@@ -4,13 +4,13 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import type { Session } from "@supabase/supabase-js";
 import { useTheme } from "@/lib/theme-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Eye, EyeOff, Loader2, Check, ChevronRight,
+  Loader2, Check, ChevronRight,
   Sun, Moon, User, Shield, Bell, Cpu, Brain, Mail,
   Activity, PauseCircle, Clock,
 } from "lucide-react";
@@ -19,83 +19,6 @@ import { useAgent } from "@/lib/agent-context";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
-const PROVIDERS = [
-  {
-    id: "anthropic",
-    name: "Anthropic",
-    description: "Claude models — best for reasoning & writing",
-    logo: "/logos/ai/anthropic.png",
-    keyPrefix: "sk-ant-",
-    keyHint: "Starts with sk-ant-",
-    keyUrl: "https://console.anthropic.com/keys",
-    models: [
-      { id: "claude-opus-4-6", name: "Claude Opus 4.6", description: "Most powerful · Best quality" },
-      { id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", description: "Balanced · Recommended" },
-      { id: "claude-haiku-4-5-20251001", name: "Claude Haiku 4.5", description: "Fastest · Lowest cost" },
-    ],
-  },
-  {
-    id: "openai",
-    name: "OpenAI",
-    description: "GPT models — versatile and widely used",
-    logo: "/logos/ai/openai.png",
-    keyPrefix: "sk-",
-    keyHint: "Starts with sk-",
-    keyUrl: "https://platform.openai.com/api-keys",
-    models: [
-      { id: "gpt-4o", name: "GPT-4o", description: "Most capable · Multimodal" },
-      { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "Fast · Cost-effective" },
-      { id: "o3-mini", name: "o3-mini", description: "Advanced reasoning" },
-    ],
-  },
-  {
-    id: "google",
-    name: "Google",
-    description: "Gemini models — great speed and context",
-    logo: "/logos/ai/google.png",
-    keyPrefix: "AIza",
-    keyHint: "Starts with AIza",
-    keyUrl: "https://aistudio.google.com/app/apikey",
-    models: [
-      { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", description: "Fast · Recommended" },
-      { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", description: "Long context · Powerful" },
-      { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", description: "Fastest Gemini" },
-    ],
-  },
-  {
-    id: "openrouter",
-    name: "OpenRouter",
-    description: "Access 100+ models with one API key",
-    logo: "/logos/ai/openrouter.png",
-    keyPrefix: "sk-or-",
-    keyHint: "Starts with sk-or-",
-    keyUrl: "https://openrouter.ai/keys",
-    models: [
-      { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet", description: "Via OpenRouter · Recommended" },
-      { id: "openai/gpt-4o", name: "GPT-4o", description: "Via OpenRouter" },
-      { id: "google/gemini-2.0-flash-001", name: "Gemini 2.0 Flash", description: "Via OpenRouter" },
-      { id: "qwen/qwen-2.5-coder-32b-instruct", name: "Qwen 2.5 Coder 32B", description: "Free · Best for coding" },
-      { id: "meta-llama/llama-3.1-405b-instruct", name: "Llama 3.1 405B", description: "Open source · Free tier" },
-      { id: "mistralai/mistral-large", name: "Mistral Large", description: "Via OpenRouter" },
-    ],
-  },
-  {
-    id: "groq",
-    name: "Groq",
-    description: "Ultra-fast inference — free tier available",
-    logo: "/logos/ai/openrouter.png",
-    keyPrefix: "gsk_",
-    keyHint: "Starts with gsk_",
-    keyUrl: "https://console.groq.com/keys",
-    models: [
-      { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B", description: "Fast · Free tier · Recommended" },
-      { id: "llama-3.1-8b-instant", name: "Llama 3.1 8B", description: "Fastest · Free tier" },
-      { id: "gemma2-9b-it", name: "Gemma 2 9B", description: "Google · Free tier" },
-    ],
-  },
-];
-
-type Step = "provider" | "model" | "key";
 type Section = "ai" | "account" | "mail" | "appearance" | "memory" | "agent";
 
 const SECTIONS: { id: Section; label: string; icon: typeof Cpu }[] = [
@@ -145,28 +68,25 @@ function CardHeader({ title, description }: { title: string; description?: strin
 }
 
 export default function SettingsPage() {
-  const { user, session, refresh: refreshAuth } = useAuth();
+  const { user, session } = useAuth();
   const { theme, setTheme } = useTheme();
   const { memoryEnabled, setMemoryEnabled } = useChat();
   const { 
     is24_7Mode, toggle24_7Mode, 
     requiresApproval, setRequiresApproval, 
     sleepAfterMinutes, setSleepAfterMinutes,
-    aiName, setAiName,
-    aiPersonality, setAiPersonality,
-    aiTone, setAiTone
+    aiName: agentAiName, setAiName: setAgentAiName,
+    aiPersonality: agentAiPersonality, setAiPersonality: setAgentAiPersonality,
+    aiTone: agentAiTone, setAiTone: setAgentAiTone
   } = useAgent();
   const [savingMemory, setSavingMemory] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [savedProvider, setSavedProvider] = useState<string>("");
-  const [savedModel, setSavedModel] = useState<string>("");
-  const [hasApiKey, setHasApiKey] = useState(false);
-  const [step, setStep] = useState<Step>("provider");
-  const [selectedProvider, setSelectedProvider] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<string>("");
-  const [apiKeyInput, setApiKeyInput] = useState("");
   const [activeSection, setActiveSection] = useState<Section>("ai");
+  const [aiName, setAiName] = useState("Inceptive");
+  const [aiPersonality, setAiPersonality] = useState("Professional");  
+  const [selectedResponseTone, setSelectedResponseTone] = useState("Direct");
+  const [customInstructions, setCustomInstructions] = useState("");
 
   const [yahooEmail, setYahooEmail] = useState("");
   const [yahooPassword, setYahooPassword] = useState("");
@@ -197,16 +117,26 @@ export default function SettingsPage() {
         if (user?.user_metadata?.display_name) {
           setDisplayName(user.user_metadata.display_name);
         }
-        const res = await fetch("/api/settings", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setSavedProvider(data.api_provider || "");
-          setSavedModel(data.api_model || "");
-          setHasApiKey(data.has_api_key);
-          setSelectedProvider(data.api_provider || "");
-          setSelectedModel(data.api_model || "");
+        const supabase = createClient();
+        if (user?.id) {
+          const { data: personaSettings } = await supabase
+            .from("user_settings")
+            .select("ai_name, ai_personality, ai_tone, custom_instructions")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          const nextAiName = personaSettings?.ai_name || agentAiName || "Inceptive";
+          const nextAiPersonality = personaSettings?.ai_personality || agentAiPersonality || "Professional";
+          const nextAiTone = personaSettings?.ai_tone || agentAiTone || "Direct";
+          const nextCustomInstructions = personaSettings?.custom_instructions || "";
+
+          setAiName(nextAiName);
+          setAiPersonality(nextAiPersonality);
+          setSelectedResponseTone(nextAiTone);
+          setCustomInstructions(nextCustomInstructions);
+          setAgentAiName(nextAiName);
+          setAgentAiPersonality(nextAiPersonality);
+          setAgentAiTone(nextAiTone);
         }
         const creditsRes = await fetch("/api/credits");
         if (creditsRes.ok) {
@@ -225,7 +155,7 @@ export default function SettingsPage() {
       }
     };
     init();
-  }, [session, user]);
+  }, [session, user, agentAiName, agentAiPersonality, agentAiTone, setAgentAiName, setAgentAiPersonality, setAgentAiTone]);
 
   const fetchScheduledTasks = async () => {
     if (!session?.access_token) return;
@@ -237,38 +167,6 @@ export default function SettingsPage() {
     } catch {
     } finally {
       setScheduledLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!session?.access_token || !selectedProvider || !selectedModel || !apiKeyInput.trim()) {
-      toast.error("Please complete all steps before saving");
-      return;
-    }
-    const providerMeta = PROVIDERS.find(p => p.id === selectedProvider);
-    if (providerMeta?.keyPrefix && !apiKeyInput.trim().startsWith(providerMeta.keyPrefix)) {
-      toast.error(`This doesn't look like a ${providerMeta.name} key. ${providerMeta.name} keys ${providerMeta.keyHint}. Check you selected the right provider.`, { duration: 6000 });
-      return;
-    }
-    setSaving(true);
-    try {
-      const res = await fetch("/api/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ api_provider: selectedProvider, api_model: selectedModel, api_key_encrypted: apiKeyInput.trim() }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || "Failed to save");
-      toast.success("Settings saved — you're all set!");
-      setSavedProvider(selectedProvider);
-      setSavedModel(selectedModel);
-      setHasApiKey(true);
-      setApiKeyInput("");
-      setStep("provider");
-    } catch (err: any) {
-      toast.error(err.message, { duration: 8000 });
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -307,6 +205,30 @@ export default function SettingsPage() {
       toast.error(err.message);
     } finally {
       setSavingName(false);
+    }
+  };
+
+  const handleSavePersonaPreferences = async () => {
+    if (!user?.id) return;
+    setSaving(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('user_settings').upsert({
+        user_id: user.id,
+        ai_name: aiName,
+        ai_personality: aiPersonality,
+        ai_tone: selectedResponseTone,
+        custom_instructions: customInstructions
+      }, { onConflict: 'user_id' });
+      if (error) throw error;
+      setAgentAiName(aiName);
+      setAgentAiPersonality(aiPersonality);
+      setAgentAiTone(selectedResponseTone);
+      toast.success("Preferences saved.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save preferences");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -370,7 +292,18 @@ export default function SettingsPage() {
         <p className="mt-2 text-sm text-[var(--fg-muted)]">Control AI behavior, account details, memory, connectors, and agent defaults.</p>
       </motion.div>
 
-        <div className="flex gap-6 items-start">
+      <div className="rounded-2xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] p-5 mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--accent)] font-semibold mb-1">Current Plan</p>
+            <p className="text-xl font-semibold text-[var(--fg-primary)]">Inceptive Pro</p>
+            <p className="text-sm text-[var(--fg-muted)] mt-1">Autonomous agents, unlimited research, all integrations</p>
+          </div>
+          <div className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white">Active</div>
+        </div>
+      </div>
+
+      <div className="flex gap-6 items-start">
 
         {/* Left nav */}
         <motion.div
@@ -435,43 +368,63 @@ export default function SettingsPage() {
             {/* Agent Settings */}
             {activeSection === "agent" && (
               <motion.div key="agent" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-4">
-                <Card>
-                  <CardHeader title="AI Personality" description="Define how your agent identifies and speaks" />
-                  <div className="p-5 space-y-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                      <div className="space-y-1.5 flex flex-col">
-                        <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Name</Label>
-                        <select value={aiName} onChange={(e) => setAiName(e.target.value)} className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--fg-primary)] outline-none focus:border-[var(--fg-tertiary)] transition-colors h-10">
-                          <option value="Inceptive">Inceptive (Default)</option>
-                          <option value="Jarvis">Jarvis</option>
-                          <option value="Aria">Aria</option>
-                          <option value="Nexus">Nexus</option>
-                          <option value="Assistant">Assistant</option>
-                        </select>
+                <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Customize</p>
+                  <h2 className="mt-2 text-lg font-semibold text-[var(--fg-primary)]">AI Persona & Behavior</h2>
+                  <div className="mt-5 space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div className="space-y-1.5">
+                        <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">AI Name</Label>
+                        <Input
+                          value={aiName}
+                          onChange={(e) => setAiName(e.target.value)}
+                          placeholder="Inceptive"
+                          className="h-11 rounded-xl bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--fg-primary)]"
+                        />
                       </div>
-                      <div className="space-y-1.5 flex flex-col">
-                        <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Personality</Label>
-                        <select value={aiPersonality} onChange={(e) => setAiPersonality(e.target.value)} className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--fg-primary)] outline-none focus:border-[var(--fg-tertiary)] transition-colors h-10">
-                          <option value="Professional">Professional (Default)</option>
-                          <option value="Friendly">Friendly & Approachable</option>
-                          <option value="Witty">Witty & Sarcastic</option>
-                          <option value="Direct">Direct & Concise</option>
-                          <option value="Academic">Academic & Analytical</option>
-                        </select>
-                      </div>
-                      <div className="space-y-1.5 flex flex-col">
-                        <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Tone</Label>
-                        <select value={aiTone} onChange={(e) => setAiTone(e.target.value)} className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--fg-primary)] outline-none focus:border-[var(--fg-tertiary)] transition-colors h-10">
-                          <option value="Helpful">Helpful (Default)</option>
-                          <option value="Formal">Formal</option>
-                          <option value="Casual">Casual</option>
-                          <option value="Enthusiastic">Enthusiastic</option>
-                          <option value="Dry">Dry</option>
-                        </select>
+                      <div className="space-y-1.5">
+                        <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">AI Personality</Label>
+                        <Input
+                          value={aiPersonality}
+                          onChange={(e) => setAiPersonality(e.target.value)}
+                          placeholder="Professional"
+                          className="h-11 rounded-xl bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--fg-primary)]"
+                        />
                       </div>
                     </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Response Tone</Label>
+                      <Select value={selectedResponseTone} onValueChange={(value) => setSelectedResponseTone(value ?? "Direct")}>
+                        <SelectTrigger className="h-11 rounded-xl bg-[var(--bg-app)] border-[var(--border-subtle)] text-[var(--fg-primary)]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--fg-primary)]">
+                          {["Formal", "Direct", "Friendly", "Concise", "Detailed"].map((toneOption) => (
+                            <SelectItem key={toneOption} value={toneOption}>{toneOption}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Custom Instructions</Label>
+                      <textarea
+                        value={customInstructions}
+                        onChange={(e) => setCustomInstructions(e.target.value)}
+                        rows={4}
+                        placeholder='We are a Series B fintech company. Always format responses for non-technical executives.'
+                        className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-app)] px-3 py-2.5 text-sm text-[var(--fg-primary)] outline-none focus:border-[var(--border-strong)]"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSavePersonaPreferences}
+                      disabled={saving}
+                      className="bg-[var(--accent)] text-white rounded-xl px-6 py-2.5 hover:opacity-90 transition-opacity disabled:opacity-60"
+                    >
+                      {saving ? "Saving..." : "Save Preferences"}
+                    </button>
                   </div>
-                </Card>
+                </div>
 
                 <Card>
                   <CardHeader title="24/7 Autonomous Mode" description="Keep your agent working around the clock" />
@@ -783,9 +736,15 @@ export default function SettingsPage() {
 
                 <Card>
                   <CardHeader title="Notifications" />
-                    <div className="p-5 flex items-center gap-3 opacity-50">
-                    <Bell className="w-4 h-4 text-[var(--fg-tertiary)]" />
-                    <span className="text-sm text-[var(--fg-tertiary)]">Notification preferences coming soon</span>
+                    <div className="p-5 flex items-start gap-3">
+                    <Bell className="mt-0.5 w-4 h-4 text-[var(--fg-tertiary)]" />
+                    <div>
+                      <p className="text-sm text-[var(--fg-primary)]">In-app notifications are live</p>
+                      <p className="mt-1 text-xs leading-5 text-[var(--fg-tertiary)]">
+                        Workflow approvals, run completions, and key workspace events appear in the notification bell.
+                        Fine-grained personal notification controls are not configurable yet.
+                      </p>
+                    </div>
                   </div>
                 </Card>
                 </motion.div>

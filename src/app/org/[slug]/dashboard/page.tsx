@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { createAdminSupabaseClient } from "@/lib/supabase-admin";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import {
   getOrgBySlug,
@@ -52,7 +53,24 @@ export default async function OrgDashboardPage({ params }: OrgDashboardPageProps
     redirect("/dashboard?error=org-access-denied");
   }
 
-  const members = await getOrgMembers(organization.id, supabase);
+  const admin = createAdminSupabaseClient();
+  const [members, activeWorkflowsResult, pendingReviewsResult, recentActivityResult] = await Promise.all([
+    getOrgMembers(organization.id, supabase),
+    admin
+      .from("org_workflows")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organization.id)
+      .eq("status", "active"),
+    admin
+      .from("agent_review_queue")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organization.id)
+      .eq("status", "pending"),
+    admin
+      .from("agent_activity_log")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organization.id),
+  ]);
   const canInvite = membership.role === "admin";
 
   return (
@@ -93,6 +111,14 @@ export default async function OrgDashboardPage({ params }: OrgDashboardPageProps
               >
                 Browse Workflows
               </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-11 rounded-xl px-5"
+                render={<Link href={`/org/${organization.slug}/settings`} />}
+              >
+                Open Governance
+              </Button>
               <InviteMemberDialog orgId={organization.id} orgSlug={organization.slug} disabled={!canInvite} />
               <Button
                 variant="outline"
@@ -103,6 +129,24 @@ export default async function OrgDashboardPage({ params }: OrgDashboardPageProps
                 Open Invite Page
               </Button>
             </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="command-surface rounded-[28px] border border-[var(--border-default)] p-5">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--fg-muted)]">Active workflows</p>
+            <p className="mt-2 text-3xl font-medium text-[var(--fg-primary)]">{activeWorkflowsResult.count ?? 0}</p>
+            <p className="mt-2 text-sm text-[var(--fg-muted)]">Shared automations currently running in this workspace.</p>
+          </div>
+          <div className="command-surface rounded-[28px] border border-[var(--border-default)] p-5">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--fg-muted)]">Pending approvals</p>
+            <p className="mt-2 text-3xl font-medium text-[var(--fg-primary)]">{pendingReviewsResult.count ?? 0}</p>
+            <p className="mt-2 text-sm text-[var(--fg-muted)]">Actions waiting in the review queue before execution.</p>
+          </div>
+          <div className="command-surface rounded-[28px] border border-[var(--border-default)] p-5">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--fg-muted)]">Logged actions</p>
+            <p className="mt-2 text-3xl font-medium text-[var(--fg-primary)]">{recentActivityResult.count ?? 0}</p>
+            <p className="mt-2 text-sm text-[var(--fg-muted)]">Workspace actions captured in the audit trail so far.</p>
           </div>
         </div>
 

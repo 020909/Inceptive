@@ -39,7 +39,12 @@ export function RunAgentButton({ orgId, orgSlug, userId, userEmail, userName }: 
         throw new Error(json.error || "Failed to trigger agent run.");
       }
 
-      toast.success("Your AI agent is running! Check back in a few minutes for results.");
+      if (response.status === 202 || json.requiresApproval || json.queued) {
+        toast.success("Run submitted for approval. A workspace admin needs to review it first.");
+        return;
+      }
+
+      toast.success("Your AI agent is running. Check back in a few minutes for results.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to trigger agent run.");
     } finally {

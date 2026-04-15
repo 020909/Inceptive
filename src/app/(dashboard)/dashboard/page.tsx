@@ -52,31 +52,18 @@ type AgentRun = {
 };
 
 type DashboardState = {
+  totalJobs: number;
+  activeJobs: number;
+  failedJobs: number;
   tasksCompleted: number;
   hoursSaved: number;
   reportCount: number;
   activeGoalsCount: number;
   activity: ActivityPoint[];
-  topGoal: GoalSummary;
+  topGoal: GoalSummary | null;
   recentTasks: RecentTask[];
   agentRuns: AgentRun[];
 };
-
-const PLACEHOLDER_TASK_COUNTS = [8, 10, 7, 13, 11, 9, 12, 15, 10, 14, 13, 16, 12, 17];
-const PLACEHOLDER_RECENT_TASKS: RecentTask[] = [
-  { id: "task-1", title: "Drafted investor update for Monday review", completed_at: new Date(Date.now() - 24 * 60 * 1000).toISOString() },
-  { id: "task-2", title: "Closed research brief on competitive pricing", completed_at: new Date(Date.now() - 81 * 60 * 1000).toISOString() },
-  { id: "task-3", title: "Queued CRM enrichment workflow", completed_at: new Date(Date.now() - 3.2 * 60 * 60 * 1000).toISOString() },
-  { id: "task-4", title: "Summarized support escalations for ops", completed_at: new Date(Date.now() - 5.4 * 60 * 60 * 1000).toISOString() },
-];
-const PLACEHOLDER_AGENT_RUNS: AgentRun[] = [
-  { id: "run-1", task: "Research / Competitor Scan", status: "completed", durationMs: 11 * 60 * 1000, timestamp: new Date(Date.now() - 18 * 60 * 1000).toISOString() },
-  { id: "run-2", task: "Connector / Health Check", status: "running", durationMs: 4 * 60 * 1000, timestamp: new Date(Date.now() - 27 * 60 * 1000).toISOString() },
-  { id: "run-3", task: "Slack / Ping", status: "completed", durationMs: 95 * 1000, timestamp: new Date(Date.now() - 54 * 60 * 1000).toISOString() },
-  { id: "run-4", task: "Browser / Probe", status: "completed", durationMs: 7 * 60 * 1000, timestamp: new Date(Date.now() - 88 * 60 * 1000).toISOString() },
-  { id: "run-5", task: "Inbox / Monitor", status: "completed", durationMs: 9 * 60 * 1000, timestamp: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString() },
-  { id: "run-6", task: "Computer Use / Stub", status: "completed", durationMs: 14 * 60 * 1000, timestamp: new Date(Date.now() - 4.1 * 60 * 60 * 1000).toISOString() },
-];
 
 function startOfDay(value: Date) {
   const next = new Date(value);
@@ -105,9 +92,7 @@ function buildActivity(values?: Array<{ completed_at?: string | null }>) {
     };
   });
 
-  if (!values?.length) {
-    return points.map((point, index) => ({ ...point, count: PLACEHOLDER_TASK_COUNTS[index] ?? 0 }));
-  }
+  if (!values?.length) return points;
 
   const counts = new Map<string, number>();
   values.forEach((task) => {
@@ -121,9 +106,7 @@ function buildActivity(values?: Array<{ completed_at?: string | null }>) {
     count: counts.get(point.date) ?? 0,
   }));
 
-  return withCounts.some((point) => point.count > 0)
-    ? withCounts
-    : points.map((point, index) => ({ ...point, count: PLACEHOLDER_TASK_COUNTS[index] ?? 0 }));
+  return withCounts;
 }
 
 function formatDuration(durationMs: number) {
@@ -160,22 +143,19 @@ function humanizeJobKind(kind: string) {
     .join(" / ");
 }
 
-function createFallbackState(): DashboardState {
-  const activity = buildActivity();
-
+function createEmptyState(): DashboardState {
   return {
-    tasksCompleted: 147,
-    hoursSaved: 33,
-    reportCount: 13,
-    activeGoalsCount: 2,
-    activity,
-    topGoal: {
-      id: "goal-1",
-      title: "Launch workspace automation pilot",
-      progress_percent: 68,
-    },
-    recentTasks: PLACEHOLDER_RECENT_TASKS,
-    agentRuns: PLACEHOLDER_AGENT_RUNS,
+    totalJobs: 0,
+    activeJobs: 0,
+    failedJobs: 0,
+    tasksCompleted: 0,
+    hoursSaved: 0,
+    reportCount: 0,
+    activeGoalsCount: 0,
+    activity: buildActivity(),
+    topGoal: null,
+    recentTasks: [],
+    agentRuns: [],
   };
 }
 
@@ -225,13 +205,18 @@ function StatCard({
 
 export default function DashboardPage() {
   const { user, session, loading: authLoading } = useAuth();
-  const [dashboard, setDashboard] = useState<DashboardState>(createFallbackState);
+  const [dashboard, setDashboard] = useState<DashboardState>(createEmptyState);
   const [loading, setLoading] = useState(true);
+  const [chartsReady, setChartsReady] = useState(false);
+
+  useEffect(() => {
+    setChartsReady(true);
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user || !session?.access_token) {
-      setDashboard(createFallbackState());
+      setDashboard(createEmptyState());
       setLoading(false);
       return;
     }
@@ -239,7 +224,6 @@ export default function DashboardPage() {
     let cancelled = false;
 
     const load = async () => {
-      const fallback = createFallbackState();
       const supabase = createClient();
       const activityStart = startOfDay(addDays(new Date(), -13)).toISOString();
 
@@ -326,7 +310,9 @@ export default function DashboardPage() {
       const jobs =
         jobsRes.status === "fulfilled" ? jobsRes.value.jobs ?? [] : [];
 
-      const agentRuns: AgentRun[] = jobs
+      const visibleJobs = jobs.filter((job) => !job.kind.endsWith(".stub"));
+
+      const agentRuns: AgentRun[] = visibleJobs
         .slice(0, 8)
         .map((job) => {
           const startedAt = job.last_run_at ? new Date(job.last_run_at).getTime() : new Date(job.created_at).getTime();
@@ -346,18 +332,24 @@ export default function DashboardPage() {
           };
         });
 
+      const activeJobs = visibleJobs.filter((job) => job.status === "running" || job.status === "pending").length;
+      const failedJobs = visibleJobs.filter((job) => job.status === "failed").length;
+
       setDashboard({
-        tasksCompleted: completedTaskCount > 0 ? completedTaskCount : fallback.tasksCompleted,
+        totalJobs: visibleJobs.length,
+        activeJobs,
+        failedJobs,
+        tasksCompleted: completedTaskCount,
         hoursSaved:
           latestReport && typeof latestReport.hours_worked === "number" && latestReport.hours_worked > 0
             ? latestReport.hours_worked
-            : fallback.hoursSaved,
-        reportCount: reportsCount > 0 ? reportsCount : fallback.reportCount,
-        activeGoalsCount: goals.length > 0 ? goals.length : fallback.activeGoalsCount,
+            : 0,
+        reportCount: reportsCount,
+        activeGoalsCount: goals.length,
         activity: buildActivity(activityTasks),
-        topGoal: goals[0] ?? fallback.topGoal,
-        recentTasks: recentTasks.length > 0 ? recentTasks : fallback.recentTasks,
-        agentRuns: agentRuns.length > 0 ? agentRuns : fallback.agentRuns,
+        topGoal: goals[0] ?? null,
+        recentTasks,
+        agentRuns,
       });
       setLoading(false);
     };
@@ -370,195 +362,248 @@ export default function DashboardPage() {
   }, [authLoading, session?.access_token, user]);
 
   const sparklineData = dashboard.activity.slice(-7);
-  const goalStatusLabel = dashboard.topGoal.progress_percent >= 65 ? "On track" : "Needs attention";
+  const goalStatusLabel = dashboard.topGoal
+    ? dashboard.topGoal.progress_percent >= 65
+      ? "On track"
+      : "Needs attention"
+    : "No active goal";
+  const hasActivity = dashboard.activity.some((point) => point.count > 0);
 
   return (
-    <div className="page-frame max-w-[96rem]">
-      <div className="mb-8 flex flex-col gap-3">
-        <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">
-          <Sparkles size={12} />
-          Analytics Overview
-        </div>
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--fg-primary)] md:text-4xl">
-              Command performance at a glance
-            </h1>
-            <p className="mt-2 text-sm text-[var(--fg-muted)] md:text-base">
-              Live metrics from your workspace, plus placeholder telemetry where data has not landed yet.
-            </p>
+    <div className="animate-fade-in-up page-enter">
+      <div className="page-frame max-w-[96rem]">
+        <div className="mb-8 flex flex-col gap-3">
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">
+            <Sparkles size={12} />
+            Analytics Overview
           </div>
-          {loading ? <Loader2 className="h-5 w-5 animate-spin text-[var(--fg-muted)]" /> : null}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <StatCard
-          title="Tasks Completed"
-          value={String(dashboard.tasksCompleted)}
-          chart={
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={64}>
-              <LineChart data={sparklineData}>
-                <Line
-                  type="monotone"
-                  dataKey="count"
-                  stroke="#ffffff"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          }
-        />
-
-        <StatCard
-          title="Hours Saved by AI"
-          value={`${dashboard.hoursSaved}h`}
-          subtitle="this week"
-          footer={<CheckCheck className="h-5 w-5 text-[var(--accent)]" />}
-        />
-
-        <StatCard
-          title="Research Reports"
-          value={String(dashboard.reportCount)}
-          footer={<FileText className="h-5 w-5 text-[var(--fg-secondary)]" />}
-        />
-
-        <StatCard
-          title="Active Goals"
-          value={String(dashboard.activeGoalsCount)}
-          footer={
-            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--bg-elevated)] px-2.5 py-1 text-xs text-[var(--fg-muted)]">
-              <span className="h-2 w-2 rounded-full bg-[var(--success)]" />
-              {goalStatusLabel}
-            </span>
-          }
-        />
-      </div>
-
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
-        <section className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
-          <div className="mb-6">
-            <p className="text-sm text-[var(--fg-muted)]">Task Activity</p>
-            <h2 className="mt-1 text-xl font-semibold text-[var(--fg-primary)]">Completed tasks over the past 14 days</h2>
-          </div>
-          <div className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={320}>
-              <BarChart data={dashboard.activity} barCategoryGap={10}>
-                <CartesianGrid vertical={false} stroke="#2A2A2A" />
-                <XAxis
-                  dataKey="label"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#888888", fontSize: 12 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#888888", fontSize: 12 }}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                  contentStyle={{
-                    background: "#111111",
-                    border: "1px solid #2A2A2A",
-                    borderRadius: "12px",
-                    color: "#FFFFFF",
-                  }}
-                  labelStyle={{ color: "#FFFFFF" }}
-                />
-                <Bar dataKey="count" radius={[8, 8, 0, 0]} fill="#f5f5f5" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
-          <div className="mb-6">
-            <p className="text-sm text-[var(--fg-muted)]">Current Priority</p>
-            <h2 className="mt-1 text-xl font-semibold text-[var(--fg-primary)]">{dashboard.topGoal.title}</h2>
-          </div>
-
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] p-5">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <span className="inline-flex items-center gap-2 text-sm text-[var(--fg-secondary)]">
-                <Flag size={16} className="text-[var(--accent)]" />
-                Goal progress
-              </span>
-              <span className="text-sm font-medium text-[var(--fg-primary)]">
-                {dashboard.topGoal.progress_percent}%
-              </span>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--fg-primary)] md:text-4xl">
+                Your AI operations, at a glance.
+              </h1>
+              <p className="mt-2 text-sm text-[var(--fg-muted)] md:text-base">
+                Real metrics from your Inceptive workspace, without placeholder telemetry.
+              </p>
             </div>
-            <div className="h-2.5 overflow-hidden rounded-full bg-[#121212]">
-              <div
-                className="h-full rounded-full bg-[var(--accent)] transition-all"
-                style={{ width: `${dashboard.topGoal.progress_percent}%` }}
-              />
-            </div>
+            {loading ? <Loader2 className="h-5 w-5 animate-spin text-[var(--fg-muted)]" /> : null}
           </div>
+        </div>
 
-          <div className="mt-6">
-            <p className="mb-4 text-xs font-medium uppercase tracking-[0.18em] text-[var(--fg-muted)]">
-              Recent tasks completed
-            </p>
-            <div className="space-y-3">
-              {dashboard.recentTasks.slice(0, 4).map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-start justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] px-4 py-3"
-                >
-                  <div className="flex min-w-0 items-start gap-3">
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(52,199,89,0.14)] text-[var(--success)]">
-                      <CheckCircle2 size={15} />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-[var(--fg-primary)]">{task.title}</p>
-                      <p className="mt-1 text-xs text-[var(--fg-muted)]">
-                        {formatTimeAgo(new Date(task.completed_at))}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="whitespace-nowrap text-xs text-[var(--fg-muted)]">
-                    {formatTimestamp(task.completed_at)}
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <StatCard
+            title="Agent Jobs"
+            value={String(dashboard.totalJobs)}
+            subtitle={
+              dashboard.totalJobs > 0
+                ? `${dashboard.activeJobs} running • ${dashboard.failedJobs} failed`
+                : "No agent runs yet"
+            }
+            footer={<Sparkles className="h-5 w-5 text-[var(--accent)]" />}
+          />
+
+          <StatCard
+            title="Tasks Completed"
+            value={String(dashboard.tasksCompleted)}
+            chart={
+              chartsReady ? (
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={64}>
+                  <LineChart data={sparklineData}>
+                    <Line
+                      type="monotone"
+                      dataKey="count"
+                      stroke="#ffffff"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full w-full rounded-lg bg-[var(--bg-elevated)]" />
+              )
+            }
+          />
+
+          <StatCard
+            title="Hours Saved by AI"
+            value={`${dashboard.hoursSaved}h`}
+            subtitle={dashboard.hoursSaved > 0 ? "from latest weekly report" : "No weekly report yet"}
+            footer={<CheckCheck className="h-5 w-5 text-[var(--accent)]" />}
+          />
+
+          <StatCard
+            title="Research Reports"
+            value={String(dashboard.reportCount)}
+            footer={<FileText className="h-5 w-5 text-[var(--fg-secondary)]" />}
+          />
+
+          <StatCard
+            title="Active Goals"
+            value={String(dashboard.activeGoalsCount)}
+            footer={
+              <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--bg-elevated)] px-2.5 py-1 text-xs text-[var(--fg-muted)]">
+                <span className="h-2 w-2 rounded-full bg-[var(--success)]" />
+                {goalStatusLabel}
+              </span>
+            }
+          />
+        </div>
+
+        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
+          <section className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
+            <div className="mb-6">
+              <p className="text-sm text-[var(--fg-muted)]">Task Volume</p>
+              <h2 className="mt-1 text-xl font-semibold text-[var(--fg-primary)]">Completed tasks — last 14 days</h2>
+            </div>
+            <div className="h-[320px]">
+              {chartsReady ? (
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={320}>
+                  <BarChart data={dashboard.activity} barCategoryGap={10}>
+                    <CartesianGrid vertical={false} stroke="#2A2A2A" />
+                    <XAxis
+                      dataKey="label"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: "#888888", fontSize: 12 }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: "#888888", fontSize: 12 }}
+                      allowDecimals={false}
+                    />
+                    <Tooltip
+                      cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                      contentStyle={{
+                        background: "#111111",
+                        border: "1px solid #2A2A2A",
+                        borderRadius: "12px",
+                        color: "#FFFFFF",
+                      }}
+                      labelStyle={{ color: "#FFFFFF" }}
+                    />
+                    <Bar dataKey="count" radius={[8, 8, 0, 0]} fill="#f5f5f5" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full w-full rounded-2xl bg-[var(--bg-elevated)]" />
+              )}
+            </div>
+            {!hasActivity ? (
+              <p className="mt-4 text-sm text-[var(--fg-muted)]">
+                No completed tasks have been recorded in the last 14 days.
+              </p>
+            ) : null}
+          </section>
+
+          <section className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
+            <div className="mb-6">
+              <p className="text-sm text-[var(--fg-muted)]">Current Priority</p>
+              <h2 className="mt-1 text-xl font-semibold text-[var(--fg-primary)]">
+                {dashboard.topGoal?.title ?? "No active goal selected"}
+              </h2>
+            </div>
+
+            {dashboard.topGoal ? (
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] p-5">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <span className="inline-flex items-center gap-2 text-sm text-[var(--fg-secondary)]">
+                    <Flag size={16} className="text-[var(--accent)]" />
+                    Goal progress
+                  </span>
+                  <span className="text-sm font-medium text-[var(--fg-primary)]">
+                    {dashboard.topGoal.progress_percent}%
                   </span>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      </div>
+                <div className="h-2.5 overflow-hidden rounded-full bg-[#121212]">
+                  <div
+                    className="h-full rounded-full bg-[var(--accent)] transition-all"
+                    style={{ width: `${dashboard.topGoal.progress_percent}%` }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--bg-elevated)] p-5 text-sm text-[var(--fg-muted)]">
+                Create or activate a goal to track progress here.
+              </div>
+            )}
 
-      <section className="mt-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
-        <div className="mb-5">
-          <p className="text-sm text-[var(--fg-muted)]">Agent Activity Log</p>
-          <h2 className="mt-1 text-xl font-semibold text-[var(--fg-primary)]">Recent autonomous runs</h2>
+            <div className="mt-6">
+              <p className="mb-4 text-xs font-medium uppercase tracking-[0.18em] text-[var(--fg-muted)]">
+                Recently completed by Inceptive
+              </p>
+              {dashboard.recentTasks.length > 0 ? (
+                <div className="space-y-3">
+                  {dashboard.recentTasks.slice(0, 4).map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-start justify-between gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] px-4 py-3"
+                    >
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(52,199,89,0.14)] text-[var(--success)]">
+                          <CheckCircle2 size={15} />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-[var(--fg-primary)]">{task.title}</p>
+                          <p className="mt-1 text-xs text-[var(--fg-muted)]">
+                            {formatTimeAgo(new Date(task.completed_at))}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="whitespace-nowrap text-xs text-[var(--fg-muted)]">
+                        {formatTimestamp(task.completed_at)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--bg-elevated)] px-4 py-6 text-sm text-[var(--fg-muted)]">
+                  Completed tasks will appear here after Inceptive finishes work for you.
+                </div>
+              )}
+            </div>
+          </section>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead>Task</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead>Timestamp</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {dashboard.agentRuns.slice(0, 8).map((run) => (
-              <TableRow key={run.id}>
-                <TableCell className="font-medium text-[var(--fg-primary)]">{run.task}</TableCell>
-                <TableCell>
-                  <StatusBadge status={run.status} />
-                </TableCell>
-                <TableCell>{formatDuration(run.durationMs)}</TableCell>
-                <TableCell>{formatTimestamp(run.timestamp)}</TableCell>
+        <section className="mt-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
+          <div className="mb-5">
+            <p className="text-sm text-[var(--fg-muted)]">Agent Activity Log</p>
+            <h2 className="mt-1 text-xl font-semibold text-[var(--fg-primary)]">Live Agent Activity</h2>
+          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Task</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Timestamp</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </section>
+            </TableHeader>
+            <TableBody>
+              {dashboard.agentRuns.length > 0 ? (
+                dashboard.agentRuns.slice(0, 8).map((run) => (
+                  <TableRow key={run.id}>
+                    <TableCell className="font-medium text-[var(--fg-primary)]">{run.task}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={run.status} />
+                    </TableCell>
+                    <TableCell>{formatDuration(run.durationMs)}</TableCell>
+                    <TableCell>{formatTimestamp(run.timestamp)}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-8 text-center text-sm text-[var(--fg-muted)]">
+                    No agent activity has been recorded yet.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </section>
+      </div>
     </div>
   );
 }

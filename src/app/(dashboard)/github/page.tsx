@@ -7,14 +7,8 @@ import { Github, Link2, ExternalLink, GitBranch, Check, AlertCircle, RefreshCw }
 /**
  * GitHub Connection Page
  *
- * Supports two connection methods:
- * 1. Personal Access Token (PAT) — simpler, works immediately
- * 2. OAuth App — requires GitHub App setup (coming soon)
- *
- * Once connected, users can:
- * - List repos
- * - Pull latest code for AI analysis
- * - Push generated code back (with branch selection)
+ * Current supported connection method:
+ * 1. Personal Access Token (PAT) for browser-session repo inspection
  */
 
 type ConnectionState = "disconnected" | "connecting" | "connected" | "error";
@@ -87,7 +81,7 @@ export default function GitHubPage() {
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="page-hero mb-8 px-6 py-6">
           <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Codebase</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">GitHub</h1>
-          <p className="text-sm text-[var(--fg-muted)] mt-2">Connect repositories to inspect code, analyze projects, and prepare generated changes for push.</p>
+          <p className="text-sm text-[var(--fg-muted)] mt-2">Connect a repository with a Personal Access Token to inspect recent code and give Inceptive repo context during this browser session.</p>
         </motion.div>
 
         <AnimatePresence mode="wait">
@@ -107,7 +101,7 @@ export default function GitHubPage() {
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-[var(--fg-primary)]">Connect GitHub</h2>
-                    <p className="text-xs text-[var(--fg-muted)]">Use a Personal Access Token for instant access</p>
+                    <p className="text-xs text-[var(--fg-muted)]">Use a Personal Access Token for read-only repository access in this session</p>
                   </div>
                 </div>
 
@@ -162,10 +156,10 @@ export default function GitHubPage() {
               <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
                 <h3 className="text-xs font-semibold text-[var(--fg-secondary)] mb-2">What you can do</h3>
                 <ul className="space-y-2 text-xs text-[var(--fg-muted)]">
-                  <li className="flex items-start gap-2"><Check size={12} className="text-[var(--success)] mt-0.5 shrink-0" /> Pull code from any repo for the 10-Agent Council to analyze</li>
-                  <li className="flex items-start gap-2"><Check size={12} className="text-[var(--success)] mt-0.5 shrink-0" /> Push generated code to a new branch</li>
-                  <li className="flex items-start gap-2"><Check size={12} className="text-[var(--success)] mt-0.5 shrink-0" /> Browse files and commits directly in Inceptive</li>
-                  <li className="flex items-start gap-2"><Check size={12} className="text-[var(--success)] mt-0.5 shrink-0" /> Your token is stored securely and never shared</li>
+                  <li className="flex items-start gap-2"><Check size={12} className="text-[var(--success)] mt-0.5 shrink-0" /> Review repositories and default branches from your current GitHub account</li>
+                  <li className="flex items-start gap-2"><Check size={12} className="text-[var(--success)] mt-0.5 shrink-0" /> Use repo context while deciding what to open or analyze locally</li>
+                  <li className="flex items-start gap-2"><Check size={12} className="text-[var(--success)] mt-0.5 shrink-0" /> Open any listed repository directly on GitHub in a new tab</li>
+                  <li className="flex items-start gap-2"><Check size={12} className="text-[var(--success)] mt-0.5 shrink-0" /> Your token stays in this browser session and is not written into Inceptive storage</li>
                 </ul>
               </div>
             </motion.div>

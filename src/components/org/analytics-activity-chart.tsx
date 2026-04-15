@@ -17,7 +17,7 @@ interface AnalyticsActivityChartProps {
 export function AnalyticsActivityChart({ data }: AnalyticsActivityChartProps) {
   return (
     <div className="h-[280px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={280}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
           <XAxis

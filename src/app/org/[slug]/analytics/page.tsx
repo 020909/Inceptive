@@ -51,6 +51,10 @@ export default async function OrgAnalyticsPage({ params }: OrgAnalyticsPageProps
     workflowsResult,
     membersResult,
     activityLogResult,
+    monthlyReportRunsResult,
+    failedActionsResult,
+    pendingReviewsResult,
+    approvalRequestsResult,
   ] = await Promise.all([
     admin
       .from("analytics_events")
@@ -74,10 +78,32 @@ export default async function OrgAnalyticsPage({ params }: OrgAnalyticsPageProps
       .eq("organization_id", organization.id),
     admin
       .from("agent_activity_log")
-      .select("created_at")
+      .select("created_at, action_type, metadata")
       .eq("organization_id", organization.id)
       .gte("created_at", chartStart.toISOString())
       .order("created_at", { ascending: true }),
+    admin
+      .from("agent_activity_log")
+      .select("metadata")
+      .eq("organization_id", organization.id)
+      .eq("action_type", "overnight_run_complete")
+      .gte("created_at", monthStart.toISOString()),
+    admin
+      .from("agent_activity_log")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organization.id)
+      .eq("status", "failed")
+      .gte("created_at", monthStart.toISOString()),
+    admin
+      .from("agent_review_queue")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organization.id)
+      .eq("status", "pending"),
+    admin
+      .from("agent_review_queue")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organization.id)
+      .gte("created_at", monthStart.toISOString()),
   ]);
 
   const countByDay = new Map<string, number>();
@@ -91,6 +117,12 @@ export default async function OrgAnalyticsPage({ params }: OrgAnalyticsPageProps
     const key = new Date(row.created_at as string).toISOString().slice(0, 10);
     countByDay.set(key, (countByDay.get(key) ?? 0) + 1);
   }
+
+  const hoursSavedThisMonth = (monthlyReportRunsResult.data ?? []).reduce((total, row) => {
+    const metadata = (row.metadata ?? {}) as Record<string, unknown>;
+    const hoursSaved = typeof metadata.hoursSaved === "number" ? metadata.hoursSaved : Number(metadata.hoursSaved ?? 0);
+    return total + (Number.isFinite(hoursSaved) ? hoursSaved : 0);
+  }, 0);
 
   const chartData = [...countByDay.entries()].map(([date, count]) => ({
     date: formatChartDate(date),
@@ -156,6 +188,54 @@ export default async function OrgAnalyticsPage({ params }: OrgAnalyticsPageProps
             </CardHeader>
           </Card>
         </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardDescription>Hours Saved This Month</CardDescription>
+              <CardTitle className="text-3xl">{hoursSavedThisMonth.toFixed(hoursSavedThisMonth % 1 === 0 ? 0 : 1)}h</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Pending Approvals</CardDescription>
+              <CardTitle className="text-3xl">{pendingReviewsResult.count ?? 0}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Failed Actions This Month</CardDescription>
+              <CardTitle className="text-3xl">{failedActionsResult.count ?? 0}</CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+
+        <Card className="rounded-[32px]">
+          <CardHeader className="border-b border-[var(--border-subtle)]">
+            <CardTitle>Governance Snapshot</CardTitle>
+            <CardDescription>Approval pressure and operational reliability across the workspace.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 p-6 md:grid-cols-2">
+            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] p-5">
+              <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--fg-muted)]">Approval requests this month</p>
+              <p className="mt-2 text-3xl font-medium text-[var(--fg-primary)]">{approvalRequestsResult.count ?? 0}</p>
+              <p className="mt-2 text-sm text-[var(--fg-muted)]">
+                A higher number means more actions are being routed through human review instead of auto-executing.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] p-5">
+              <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--fg-muted)]">Run reliability</p>
+              <p className="mt-2 text-3xl font-medium text-[var(--fg-primary)]">
+                {(agentRunsResult.count ?? 0) > 0
+                  ? `${Math.max(0, 100 - Math.round(((failedActionsResult.count ?? 0) / Math.max(agentRunsResult.count ?? 1, 1)) * 100))}%`
+                  : "100%"}
+              </p>
+              <p className="mt-2 text-sm text-[var(--fg-muted)]">
+                Derived from failed actions relative to tracked monthly runs. This is directional and updates from live activity.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="rounded-[32px]">
           <CardHeader className="border-b border-[var(--border-subtle)]">

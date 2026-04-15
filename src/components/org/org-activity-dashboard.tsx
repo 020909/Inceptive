@@ -4,12 +4,15 @@ import React, { useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import {
   Activity,
+  CheckCircle2,
   Search,
   FileSearch,
   FileText,
   ListChecks,
   Mail,
+  Shield,
   X,
+  XCircle,
   PenSquare,
   UserRoundSearch,
 } from "lucide-react";
@@ -40,6 +43,7 @@ const ACTION_GROUP_LABELS: Array<{ value: ActivityFilterGroup; label: string }> 
   { value: "research", label: "Research" },
   { value: "content", label: "Content" },
   { value: "tasks", label: "Tasks" },
+  { value: "governance", label: "Governance" },
 ];
 
 const DATE_RANGE_LABELS: Array<{ value: ActivityDateRange; label: string }> = [
@@ -63,6 +67,15 @@ function getActionIcon(actionType: AgentActivityActionType) {
       return PenSquare;
     case "task_completed":
       return ListChecks;
+    case "approval_requested":
+    case "settings_updated":
+      return Shield;
+    case "approval_approved":
+      return CheckCircle2;
+    case "approval_rejected":
+      return XCircle;
+    case "workflow_updated":
+      return Activity;
     default:
       return Activity;
   }
@@ -99,6 +112,15 @@ function matchesActionGroup(log: AgentActivityLogWithUser, actionGroup: Activity
     );
   }
   if (actionGroup === "content") return log.action_type === "content_created";
+  if (actionGroup === "governance") {
+    return (
+      log.action_type === "approval_requested" ||
+      log.action_type === "approval_approved" ||
+      log.action_type === "approval_rejected" ||
+      log.action_type === "workflow_updated" ||
+      log.action_type === "settings_updated"
+    );
+  }
   return log.action_type === "task_completed";
 }
 
