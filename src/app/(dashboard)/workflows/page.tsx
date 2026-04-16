@@ -353,21 +353,6 @@ export default function WorkflowsPage() {
       transition={{ duration: 0.24, ease: "easeOut" }}
       className="flex flex-col h-screen overflow-hidden"
     >
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)] shrink-0">
-        <div>
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[var(--fg-muted)] mb-1">
-            <GitBranch size={11} />
-            Workflow Builder
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[var(--fg-primary)]">Automate Anything</h1>
-          <p className="text-sm text-[var(--fg-muted)] mt-0.5">Drag agents onto the canvas. Connect them. Run.</p>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-[var(--fg-muted)]">
-          <span className="h-2 w-2 rounded-full bg-[var(--success)] animate-pulse" />
-          5 workflow templates available
-        </div>
-      </div>
-
       <div ref={setCanvasWrapper} className="min-h-0 flex-1 bg-[var(--bg-base)]">
         <ReactFlow
           nodes={nodes}
@@ -379,6 +364,7 @@ export default function WorkflowsPage() {
           onInit={setReactFlow}
           fitView
           style={rfStyle}
+          proOptions={{ hideAttribution: true }}
           defaultEdgeOptions={{
             animated: true,
             style: { stroke: "var(--accent)", strokeWidth: 2 },
@@ -389,13 +375,10 @@ export default function WorkflowsPage() {
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.08, duration: 0.2 }}
-              className="pointer-events-auto w-[300px] max-h-[calc(100vh-12rem)] overflow-y-auto rounded-2xl border border-[var(--border-default)] bg-[var(--bg-base)]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.28)] backdrop-blur"
+              className="pointer-events-auto w-[300px] max-h-[calc(100vh-4rem)] overflow-y-auto no-scrollbar rounded-2xl border border-[var(--border-default)] bg-[var(--bg-base)]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.28)] backdrop-blur"
             >
               <div className="mb-5">
                 <p className="text-sm font-semibold text-[var(--fg-primary)]">Node Library</p>
-                <p className="mt-1 text-xs text-[var(--fg-muted)]">
-                  Build multi-agent workflows from triggers, AI steps, and delivery actions.
-                </p>
               </div>
 
               <div className="space-y-5">
@@ -450,8 +433,9 @@ export default function WorkflowsPage() {
             }}
           />
           <Controls
-            position="bottom-left"
+            position="bottom-right"
             style={{
+              marginBottom: "165px",
               border: "1px solid var(--border-default)",
               borderRadius: "12px",
               overflow: "hidden",
@@ -478,6 +462,18 @@ export default function WorkflowsPage() {
         .react-flow__controls-button svg {
           fill: var(--fg-primary);
           stroke: var(--fg-primary);
+        }
+
+        .react-flow__attribution {
+          display: none !important;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
     </motion.div>

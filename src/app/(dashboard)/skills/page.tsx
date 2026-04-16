@@ -5,7 +5,7 @@ import { useChat } from "@/lib/chat-context";
 import { useAuth } from "@/lib/auth-context";
 import { redirectToSignIn } from "@/lib/auth-gate";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Search, Mail, Share2, Target, TrendingUp, Users, FileText, Rocket, Plus, X, Loader2, Sparkles, Globe } from "lucide-react";
+import { Zap, Search, Mail, Share2, Target, TrendingUp, Users, FileText, Rocket, Plus, X, Loader2, Sparkles, Globe, GitBranch, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -25,9 +25,59 @@ const SKILLS = [
   { id: "email-inbox", category: "Email", title: "Smart Inbox Management", description: "Read Gmail inbox, identify what needs replies, draft smart responses for each.", icon: Mail, time: "~2 min", tags: ["Email","Gmail"], prompt: "Read my Gmail inbox. For each unread email: summarize it, decide if it needs a reply, draft a professional reply if yes. Prioritize customer escalations, security or procurement threads, partnerships, and urgent items. Show me everything you found and all drafted replies ready to send." },
   { id: "goals-sprint", category: "Productivity", title: "Weekly Goals Sprint", description: "Break your top goal into a 7-day sprint with daily tasks and success metrics.", icon: Target, time: "~1 min", tags: ["Goals","Planning"], prompt: "Check my active goals. For the top goal: create a 7-day sprint plan with one concrete daily task, success metrics for each day, identify 3 biggest blockers and solutions, create 2 accountability checkpoints. Create the goal and all tasks in my account." },
   { id: "funding-research", category: "Research", title: "Funding Landscape Report", description: "Research 20 active seed investors, their thesis, portfolio, and check sizes.", icon: FileText, time: "~4 min", tags: ["Research","Funding"], prompt: "Research the B2B SaaS and enterprise AI funding landscape. Find 20 active investors who backed AI workflow, security, or productivity companies in the past 12 months. For each: fund name, partner, check size, portfolio fit for Inceptive-style products, thesis, how to reach them. Save as investor database report." },
+  {
+    id: "code-reviewer",
+    category: "Engineering",
+    title: "AI Code Reviewer",
+    description: "Paste a PR diff or code block. Get a senior engineer's review with bugs, security risks, and improvements.",
+    icon: GitBranch,
+    time: "~1 min",
+    tags: ["Engineering", "Code"],
+    prompt: "Review the following code as a senior software engineer. Identify: 1) Bugs or logic errors, 2) Security vulnerabilities, 3) Performance issues, 4) Code style and best practice violations, 5) Suggested improvements with example rewrites. Be specific and actionable."
+  },
+  {
+    id: "support-ticket-resolver",
+    category: "Operations",
+    title: "Support Ticket Resolver",
+    description: "Paste internal support tickets. AI drafts responses and suggests resolution paths.",
+    icon: MessageSquare,
+    time: "~2 min",
+    tags: ["Support", "Operations"],
+    prompt: "You are an expert internal support agent. I will give you a support ticket. Draft a professional, empathetic response that: resolves the issue if possible, explains any steps needed, escalates if necessary, and suggests how to prevent this issue in future. Be concise and direct."
+  },
+  {
+    id: "legal-contract-review",
+    category: "Legal",
+    title: "Contract Risk Scanner",
+    description: "Paste contract text. AI flags risky clauses, missing protections, and negotiation points.",
+    icon: FileText,
+    time: "~2 min",
+    tags: ["Legal", "Risk"],
+    prompt: "Review this contract as an expert legal analyst. Flag: 1) High-risk clauses (liability, IP, termination), 2) Missing standard protections, 3) Unusual or one-sided terms, 4) Recommended changes and negotiation points. Present findings clearly with clause references."
+  },
+  {
+    id: "internal-knowledge-search",
+    category: "Operations",
+    title: "Policy Q&A",
+    description: "Ask any question about company policies, procedures, or internal documents.",
+    icon: Search,
+    time: "~30 sec",
+    tags: ["Search", "HR", "Compliance"],
+    prompt: "Answer the following question about company policy or procedure. Be accurate, cite relevant policy sections if possible, and if uncertain say so clearly rather than guessing."
+  },
+  {
+    id: "incident-postmortem",
+    category: "Engineering",
+    title: "Incident Post-Mortem",
+    description: "Paste an incident timeline. AI generates a structured post-mortem with root cause and action items.",
+    icon: Zap,
+    time: "~2 min",
+    tags: ["Engineering", "Operations"],
+    prompt: "Generate a structured engineering post-mortem from this incident description. Include: Executive Summary, Timeline of Events, Root Cause Analysis, Contributing Factors, Impact Assessment, Immediate Actions Taken, Long-term Preventive Measures, Owners and Deadlines for each action item."
+  },
 ];
 
-const CATS = ["All","Research","Sales","Marketing","Email","Productivity"];
+const CATS = ["All", "Research", "Sales", "Marketing", "Email", "Productivity", "Engineering", "Legal", "Operations"];
 
 type UserSkill = {
   id: string;
