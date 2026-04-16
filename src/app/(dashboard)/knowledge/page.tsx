@@ -137,11 +137,7 @@ function StatusBadge({ status }: { status: KnowledgeDoc["status"] }) {
     );
   }
 
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-[rgba(52,199,89,0.14)] px-3 py-1 text-xs font-medium text-[var(--success)]">
-      Ready
-    </span>
-  );
+  return null;
 }
 
 export default function KnowledgePage() {
