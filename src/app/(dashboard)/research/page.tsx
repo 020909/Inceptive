@@ -261,31 +261,7 @@ export default function ResearchPage() {
 
   return (
     <div className="page-enter">
-      <div className="page-frame max-w-6xl">
-        <div className="mb-8 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-8 shadow-[0_18px_36px_rgba(0,0,0,0.18)] animate-fade-in-up">
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[var(--fg-muted)] mb-3">
-            <Search size={12} />
-            Deep Research Engine
-          </div>
-          <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--fg-primary)] mb-2">
-            Intelligence on demand.
-          </h1>
-          <p className="text-[var(--fg-muted)] text-sm max-w-xl">
-            Inceptive researches any topic end-to-end — competitor moves, market sizing, industry trends — and returns a structured report you can share, save, or act on.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {["Market sizing analysis", "Competitor deep dive", "Industry trend report", "Technology landscape", "Investment thesis research"].map((suggestion) => (
-              <button
-                key={suggestion}
-                type="button"
-                onClick={() => setQuery(suggestion)}
-                className="rounded-full border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-1.5 text-xs text-[var(--fg-secondary)] transition-all hover:border-[var(--accent)]/40 hover:bg-[var(--accent-soft)] hover:text-[var(--fg-primary)]"
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="page-frame max-w-6xl mt-4">
 
       {/* Search */}
         <motion.div className="max-w-2xl mx-auto mb-12" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
@@ -352,7 +328,7 @@ export default function ResearchPage() {
             { label: 'Reports', value: String(reports.length), icon: FileText },
             { label: 'Total Sources', value: String(reports.reduce((sum, r) => sum + (r.sources_count || 0), 0)), icon: Globe },
             { label: 'Runs', value: String(sessions.length), icon: History },
-            { label: 'Last Engine', value: sessions[0]?.provider_used || '—', icon: Search },
+            { label: 'Last Engine', value: sessions[0] ? 'Inceptive' : '—', icon: Search },
             { label: 'Latest', value: reports.length > 0 ? timeAgo(reports[0].created_at) : '—', icon: Clock },
           ].map((s) => (
             <div key={s.label} className="page-kpi flex items-center gap-3 p-4">

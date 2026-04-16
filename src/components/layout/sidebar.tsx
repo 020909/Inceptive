@@ -356,7 +356,7 @@ export function Sidebar() {
           )}
           style={{ fontFamily: "var(--font-header)" }}
         >
-          <span className="font-semibold tracking-tight text-[var(--fg-primary)]">Inceptive</span>
+          <span className="font-semibold tracking-tight text-[var(--fg-primary)] uppercase">INCEPTIVE</span>
         </span>
 
         <button

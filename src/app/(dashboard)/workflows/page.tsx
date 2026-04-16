@@ -434,8 +434,9 @@ export default function WorkflowsPage() {
           />
           <Controls
             position="bottom-right"
+            orientation="horizontal"
             style={{
-              marginBottom: "165px",
+              marginBottom: "175px",
               border: "1px solid var(--border-default)",
               borderRadius: "12px",
               overflow: "hidden",

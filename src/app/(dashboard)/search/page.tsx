@@ -360,20 +360,7 @@ export default function SearchPage() {
 
   return (
     <div className="page-frame max-w-[72rem] animate-fade-in-up">
-      <div className="mb-8 animate-fade-in-up">
-        <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">
-          <Search size={12} />
-          Enterprise Search
-        </div>
-        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--fg-primary)] md:text-4xl">
-          Search everything.
-        </h1>
-        <p className="mt-2 text-sm text-[var(--fg-muted)] md:text-base">
-          Emails, research, projects, documents — all in one place.
-        </p>
-      </div>
-
-      <div className="xl:flex xl:items-start xl:gap-8">
+      <div className="xl:flex xl:items-start xl:gap-8 mt-2">
         <div className="min-w-0 flex-1">
           <div className={cn("transition-all duration-300", hasSearchContext ? "mx-0 max-w-3xl" : "mx-auto max-w-3xl")}>
             <div role="search" className="rounded-[28px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-3 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">

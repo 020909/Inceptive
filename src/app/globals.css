@@ -24,7 +24,7 @@
 
 @layer base {
   :root {
-    --font-header: 'Inter', system-ui, sans-serif;
+    --font-header: 'Times New Roman', Times, serif;
     --font-body: 'Inter', system-ui, sans-serif;
 
     --bg-base: #0a0a0a;
@@ -211,11 +211,10 @@
     color: var(--fg-primary);
   }
 
-  h1,
-  h2 {
+  h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-header);
     font-weight: 600;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.01em;
   }
 }
 

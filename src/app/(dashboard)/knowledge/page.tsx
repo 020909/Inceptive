@@ -279,9 +279,6 @@ export default function KnowledgePage() {
           Knowledge Base
         </div>
         <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--fg-primary)]">Company Intelligence</h1>
-        <p className="mt-1 text-sm text-[var(--fg-muted)]">
-          Upload documents. Ask questions. Get answers grounded in your data.
-        </p>
       </div>
 
       <div className="mb-6 inline-flex gap-1 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-1">
@@ -380,7 +377,7 @@ export default function KnowledgePage() {
                   key={doc.id}
                   className="mb-2 flex items-center gap-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-4"
                 >
-                  <div className="rounded-xl bg-[var(--accent-soft)] p-2.5 text-[var(--accent)]">
+                  <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] p-2.5 text-[var(--fg-primary)]">
                     <FileText size={18} />
                   </div>
                   <div className="min-w-0 flex-1">

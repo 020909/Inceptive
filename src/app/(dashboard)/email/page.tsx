@@ -343,34 +343,8 @@ export default function EmailPage() {
   return (
     <>
       <div className="min-h-screen flex flex-col">
-        {/* Header */}
-        <header className="page-hero mx-8 mt-8 flex items-center justify-between px-8 py-6">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Communication</p>
-            <h1 className="mt-2 text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Email Autopilot</h1>
-            <p className="text-[var(--fg-muted)] text-sm mt-2">
-              {gmail ? "Connected as " + gmail.account_email : "Connect Gmail to read, reply and send emails with AI"}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-default)]">
-              <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
-              <span className="text-[var(--fg-primary)] text-xs">AI Active</span>
-            </div>
-            <motion.button
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--fg-primary)] text-[var(--bg-base)] font-medium text-sm"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setComposeOpen(true)}
-            >
-              <Plus size={16} />
-              Compose
-            </motion.button>
-          </div>
-        </header>
-
         {/* Content */}
-        <div className="flex-1 flex">
+        <div className="flex-1 flex pt-2">
           {/* Sidebar Filters */}
           <div className="w-56 border-r border-[var(--border-subtle)] p-4">
             <div className="space-y-1">
@@ -493,8 +467,7 @@ export default function EmailPage() {
                   transition={{ duration: 0.3 }}
                   className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 mb-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]"
                 >
-                  <h2 className="text-lg font-semibold text-[var(--fg-primary)]">Compose with AI</h2>
-                  <p className="text-sm text-[var(--fg-muted)] mt-1 mb-4">Type what you want to say. AI writes it for you.</p>
+                  <h2 className="text-lg font-semibold text-[var(--fg-primary)] mb-4">Compose with AI</h2>
                   <textarea
                     rows={3}
                     placeholder="e.g. 'Happy birthday to Sarah' or 'Follow up on our proposal from last week'"
@@ -512,7 +485,7 @@ export default function EmailPage() {
                           onClick={() => setSelectedTone(toneOption)}
                           className={
                             isSelected
-                              ? "rounded-full px-4 py-1.5 text-sm border transition-all border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--fg-primary)]"
+                              ? "rounded-full px-4 py-1.5 text-sm border transition-all border-[var(--fg-primary)] bg-[var(--bg-elevated)] text-[var(--fg-primary)]"
                               : "rounded-full px-4 py-1.5 text-sm border transition-all border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--fg-muted)] hover:border-[var(--border-strong)] hover:text-[var(--fg-primary)]"
                           }
                         >
