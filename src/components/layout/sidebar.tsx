@@ -71,7 +71,6 @@ const navItems = [
   { label: "Command Center", href: "/dashboard", icon: LayoutGrid },
   { label: "AI Agent", href: "/agent", icon: MessageSquare },
   { label: "Workflows", href: "/workflows", icon: GitBranch },
-  { label: "Search", href: "/search", icon: Search },
   { label: "Knowledge Base", href: "/knowledge", icon: BookOpen },
   { label: "Email", href: "/email", icon: Mail },
   { label: "Research", href: "/research", icon: Search },
@@ -349,7 +348,7 @@ export function Sidebar() {
 
         <span
           className={cn(
-            "min-w-0 truncate text-[1.05rem] leading-none text-[var(--fg-primary)] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+            "min-w-0 truncate text-[0.95rem] leading-none text-[var(--fg-primary)] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
             collapsed
               ? "hidden max-w-0 overflow-hidden opacity-0 group-hover/sidebar:block group-hover/sidebar:max-w-[120px] group-hover/sidebar:flex-1 group-hover/sidebar:opacity-100"
               : "flex-1 opacity-100",
