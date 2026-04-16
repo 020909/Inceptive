@@ -27,10 +27,6 @@ export default function LandingPage() {
     }
   }, [user, loading, router]);
 
-  if (loading) {
-    return <div className="min-h-screen bg-[#0a0a0a]" />;
-  }
-
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden font-inter">
       {/* NAVBAR */}

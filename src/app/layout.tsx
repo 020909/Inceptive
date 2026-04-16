@@ -3,6 +3,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { MotionConfig } from 'framer-motion';
 import { getSiteUrl } from '@/lib/site-url';
+import { AuthProvider } from '@/lib/auth-context';
 
 const defaultTitle = 'Inceptive — Autonomous AI for Enterprise Teams';
 const defaultDescription =
@@ -47,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           will then snap for those users).
         */}
         <MotionConfig reducedMotion="never">
-          {children}
+          <AuthProvider>{children}</AuthProvider>
         </MotionConfig>
       </body>
     </html>

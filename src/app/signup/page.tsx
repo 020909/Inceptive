@@ -94,7 +94,7 @@ export default function SignUpPage() {
         <div className="relative z-10 text-center">
           <div className="flex items-center justify-center gap-3 mb-8">
             <div className="relative h-12 w-12 rounded-xl overflow-hidden border border-[var(--border-subtle)]">
-              <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
+              <Image src="/logo.png" alt="Inceptive" fill sizes="48px" className="object-cover" />
             </div>
             <span className="text-3xl font-bold text-[var(--fg-primary)] tracking-[-0.04em]">Inceptive</span>
           </div>
@@ -116,7 +116,7 @@ export default function SignUpPage() {
           {/* Mobile logo */}
           <div className="flex items-center gap-2.5 mb-10 lg:hidden">
             <div className="relative h-8 w-8 rounded-lg overflow-hidden border border-[var(--border-subtle)]">
-              <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
+              <Image src="/logo.png" alt="Inceptive" fill sizes="32px" className="object-cover" />
             </div>
             <span className="text-[var(--fg-primary)] font-semibold text-base">Inceptive</span>
           </div>

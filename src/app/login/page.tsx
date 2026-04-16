@@ -108,7 +108,7 @@ export default function LoginPage() {
 
         <div className="relative z-10 flex items-center gap-3">
           <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[0_0_0_1px_rgba(232,230,220,0.8)]">
-            <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
+            <Image src="/logo.png" alt="Inceptive" fill sizes="40px" className="object-cover" />
           </div>
           <span className="text-lg text-[var(--fg-primary)]" style={{ fontFamily: "var(--font-header)" }}>Inceptive</span>
         </div>
@@ -153,7 +153,7 @@ export default function LoginPage() {
         <div className="glass w-full max-w-[520px] rounded-[32px] p-8 shadow-[0_30px_80px_rgba(78,66,51,0.12)] lg:p-14">
           <div className="mb-10 flex items-center gap-3 lg:hidden">
             <div className="relative h-9 w-9 overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)]">
-              <Image src="/logo.png" alt="Inceptive" fill className="object-cover" />
+              <Image src="/logo.png" alt="Inceptive" fill sizes="36px" className="object-cover" />
             </div>
             <span className="text-lg text-[var(--fg-primary)]" style={{ fontFamily: "var(--font-header)" }}>Inceptive</span>
           </div>

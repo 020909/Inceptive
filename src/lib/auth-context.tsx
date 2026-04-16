@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import type { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
@@ -26,18 +26,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  const refresh = async () => {
-    const { data } = await supabase.auth.getSession();
-    setSession(data.session);
-    setUser(data.session?.user ?? null);
-  };
+  const refresh = useCallback(async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
 
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(session?.user ?? null);
+      } catch (error) {
+        console.error("Failed to initialize auth session", error);
+        setSession(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     init();

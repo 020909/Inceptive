@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { AuthProvider } from "@/lib/auth-context";
 import { ChatProvider } from "@/lib/chat-context";
 import { AgentProvider } from "@/lib/agent-context";
 import { ThemeProvider } from "@/lib/theme-context";
@@ -25,19 +24,17 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <AgentProvider>
-          <ChatProvider>
-            <OrgProvider>
-              <SidebarProvider>
-                <LayoutInner>{children}</LayoutInner>
-              </SidebarProvider>
-              <Toaster />
-            </OrgProvider>
-          </ChatProvider>
-        </AgentProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AgentProvider>
+        <ChatProvider>
+          <OrgProvider>
+            <SidebarProvider>
+              <LayoutInner>{children}</LayoutInner>
+            </SidebarProvider>
+            <Toaster />
+          </OrgProvider>
+        </ChatProvider>
+      </AgentProvider>
+    </ThemeProvider>
   );
 }
