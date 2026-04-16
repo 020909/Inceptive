@@ -332,10 +332,10 @@ export default function KnowledgePage() {
               }}
               onClick={() => fileInputRef.current?.click()}
               className={cn(
-                "mb-6 cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-all",
+                "mb-6 cursor-pointer rounded-2xl border border-transparent p-8 text-center transition-all",
                 isDragging
                   ? "border-[var(--accent)] bg-[var(--accent-soft)]"
-                  : "border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-[var(--border-strong)]",
+                  : "bg-[var(--bg-surface)] hover:border-[var(--border-strong)]",
               )}
             >
               <Upload size={28} className="mx-auto mb-3 text-[var(--fg-muted)]" />

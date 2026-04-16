@@ -354,7 +354,7 @@ export function Sidebar() {
               ? "hidden max-w-0 overflow-hidden opacity-0 group-hover/sidebar:block group-hover/sidebar:max-w-[120px] group-hover/sidebar:flex-1 group-hover/sidebar:opacity-100"
               : "flex-1 opacity-100",
           )}
-          style={{ fontFamily: "var(--font-header)" }}
+          style={{ fontFamily: '"Times New Roman", Times, serif' }}
         >
           <span className="font-semibold tracking-tight text-[var(--fg-primary)] uppercase">INCEPTIVE</span>
         </span>

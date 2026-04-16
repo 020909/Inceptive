@@ -80,7 +80,7 @@ function readRecentSearches(): string[] {
     const raw = window.localStorage.getItem(RECENT_SEARCHES_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string").slice(0, 8) : [];
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string").slice(0, 7) : [];
   } catch {
     return [];
   }
@@ -90,7 +90,7 @@ function writeRecentSearches(searches: string[]) {
   if (typeof window === "undefined") return;
 
   try {
-    window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches.slice(0, 8)));
+    window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches.slice(0, 7)));
   } catch {
     // Ignore local storage failures and keep the page usable.
   }
@@ -264,7 +264,7 @@ export default function SearchPage() {
   const updateRecentSearches = useCallback((searchText: string) => {
     setRecentSearches((current) => {
       const trimmed = searchText.trim();
-      const next = [trimmed, ...current.filter((item) => item !== trimmed)].slice(0, 8);
+      const next = [trimmed, ...current.filter((item) => item !== trimmed)].slice(0, 7);
       writeRecentSearches(next);
       return next;
     });
@@ -394,6 +394,25 @@ export default function SearchPage() {
               </div>
             </div>
 
+            {query.length === 0 && recentSearches.length > 0 ? (
+              <div className="mt-4 mb-2">
+                <p className="mb-3 text-xs uppercase tracking-[0.18em] text-[var(--fg-muted)]">Recent searches</p>
+                <div className="flex flex-wrap gap-2">
+                  {recentSearches.map((recentQuery) => (
+                    <button
+                      key={recentQuery}
+                      type="button"
+                      onClick={() => void handleRecentSearchClick(recentQuery)}
+                      className="inline-flex items-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--fg-secondary)] transition-colors hover:text-[var(--fg-primary)]"
+                    >
+                      <Clock size={13} />
+                      {recentQuery}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {showFilterPills ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 {[
@@ -420,25 +439,6 @@ export default function SearchPage() {
               </div>
             ) : null}
           </div>
-
-          {query.length === 0 && recentSearches.length > 0 ? (
-            <div className="mt-8">
-              <p className="mb-3 text-xs uppercase tracking-[0.18em] text-[var(--fg-muted)]">Recent searches</p>
-              <div className="flex flex-wrap gap-2">
-                {recentSearches.map((recentQuery) => (
-                  <button
-                    key={recentQuery}
-                    type="button"
-                    onClick={() => void handleRecentSearchClick(recentQuery)}
-                    className="inline-flex items-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--fg-secondary)] transition-colors hover:text-[var(--fg-primary)]"
-                  >
-                    <Clock size={13} />
-                    {recentQuery}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
 
           <div className="mt-8">
             {(isSearching || results.length > 0) && (

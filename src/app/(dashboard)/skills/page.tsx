@@ -240,7 +240,7 @@ export default function SkillsPage() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className="card-elevated p-6 bg-[var(--bg-surface)] cursor-pointer group animate-fade-in-up"
+                className="card-elevated p-6 bg-[var(--bg-surface)] cursor-pointer group animate-fade-in-up flex flex-col h-full"
               >
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--fg-primary)]">
                   <Icon size={20} />
@@ -261,7 +261,7 @@ export default function SkillsPage() {
                   onClick={() => runSkill(skill)}
                   disabled={!!running}
                   className={cn(
-                    "w-full rounded-xl bg-[var(--fg-primary)] py-2 text-sm font-medium text-[var(--bg-base)] hover:opacity-90 transition-opacity",
+                    "mt-auto w-full rounded-xl bg-[var(--fg-primary)] py-2 text-sm font-medium text-[var(--bg-base)] hover:opacity-90 transition-opacity",
                     isRun && "opacity-80"
                   )}
                 >
