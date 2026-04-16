@@ -467,7 +467,28 @@ export default function EmailPage() {
                   transition={{ duration: 0.3 }}
                   className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 mb-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)]"
                 >
-                  <h2 className="text-lg font-semibold text-[var(--fg-primary)] mb-4">Compose with AI</h2>
+                  <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                    <h2 className="text-lg font-semibold text-[var(--fg-primary)]">Compose with AI</h2>
+                    <div className="flex flex-wrap gap-2">
+                      {TONES.map((toneOption) => {
+                        const isSelected = selectedTone === toneOption;
+                        return (
+                          <button
+                            key={toneOption}
+                            type="button"
+                            onClick={() => setSelectedTone(toneOption)}
+                            className={
+                              isSelected
+                                ? "rounded-full px-3 py-1 text-xs border transition-all border-[var(--fg-primary)] bg-[var(--bg-elevated)] text-[var(--fg-primary)]"
+                                : "rounded-full px-3 py-1 text-xs border transition-all border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--fg-muted)] hover:border-[var(--border-strong)] hover:text-[var(--fg-primary)]"
+                            }
+                          >
+                            {toneOption}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                   <textarea
                     rows={3}
                     placeholder="e.g. 'Happy birthday to Sarah' or 'Follow up on our proposal from last week'"
@@ -475,25 +496,6 @@ export default function EmailPage() {
                     onChange={(e) => setComposeInput(e.target.value)}
                     className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] p-3 text-sm text-[var(--fg-primary)] resize-none outline-none focus:border-[var(--accent)] transition-colors"
                   />
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {TONES.map((toneOption) => {
-                      const isSelected = selectedTone === toneOption;
-                      return (
-                        <button
-                          key={toneOption}
-                          type="button"
-                          onClick={() => setSelectedTone(toneOption)}
-                          className={
-                            isSelected
-                              ? "rounded-full px-4 py-1.5 text-sm border transition-all border-[var(--fg-primary)] bg-[var(--bg-elevated)] text-[var(--fg-primary)]"
-                              : "rounded-full px-4 py-1.5 text-sm border transition-all border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--fg-muted)] hover:border-[var(--border-strong)] hover:text-[var(--fg-primary)]"
-                          }
-                        >
-                          {toneOption}
-                        </button>
-                      );
-                    })}
-                  </div>
                   <button
                     type="button"
                     onClick={handleAiCompose}

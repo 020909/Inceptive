@@ -207,8 +207,7 @@
   }
 
   ::selection {
-    background: rgba(255, 79, 0, 0.22);
-    color: var(--fg-primary);
+    background: rgba(135, 135, 140, 0.35);
   }
 
   h1, h2, h3, h4, h5, h6 {
