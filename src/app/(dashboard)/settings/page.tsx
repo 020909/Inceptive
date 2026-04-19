@@ -292,16 +292,7 @@ export default function SettingsPage() {
         <p className="mt-2 text-sm text-[var(--fg-muted)]">Control AI behavior, account details, memory, connectors, and agent defaults.</p>
       </motion.div>
 
-      <div className="rounded-2xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] p-5 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--accent)] font-semibold mb-1">Current Plan</p>
-            <p className="text-xl font-semibold text-[var(--fg-primary)]">Inceptive Pro</p>
-            <p className="text-sm text-[var(--fg-muted)] mt-1">Autonomous agents, unlimited research, all integrations</p>
-          </div>
-          <div className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white">Active</div>
-        </div>
-      </div>
+
 
       <div className="flex gap-6 items-start">
 

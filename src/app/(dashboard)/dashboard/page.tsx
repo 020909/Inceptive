@@ -462,7 +462,7 @@ export default function DashboardPage() {
               {chartsReady ? (
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={320}>
                   <BarChart data={dashboard.activity} barCategoryGap={10}>
-                    <CartesianGrid vertical={false} stroke="#c8c6be" strokeDasharray="0" />
+                    <CartesianGrid vertical={false} stroke="var(--border-default)" strokeDasharray="0" />
                     <XAxis
                       dataKey="label"
                       axisLine={false}

@@ -31,8 +31,9 @@ import {
   Clock,
   CheckCircle2,
   Sparkles,
+  ChevronDown,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
 type WorkflowNodeData = {
@@ -277,6 +278,7 @@ export default function WorkflowsPage() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlow, setReactFlow] = useState<FlowViewportApi | null>(null);
   const [canvasWrapper, setCanvasWrapper] = useState<HTMLDivElement | null>(null);
+  const [isNodeLibraryOpen, setIsNodeLibraryOpen] = useState(true);
 
   const onConnect = useCallback(
     (params: Connection) =>
@@ -377,15 +379,34 @@ export default function WorkflowsPage() {
               transition={{ delay: 0.08, duration: 0.2 }}
               className="pointer-events-auto w-[300px] max-h-[calc(100vh-4rem)] overflow-y-auto no-scrollbar rounded-2xl border border-[var(--border-default)] bg-[var(--bg-base)]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.28)] backdrop-blur"
             >
-              <div className="mb-5">
+              <div className="mb-2 flex items-center justify-between">
                 <p className="text-sm font-semibold text-[var(--fg-primary)]">Node Library</p>
+                <button
+                  type="button"
+                  onClick={() => setIsNodeLibraryOpen(!isNodeLibraryOpen)}
+                  className="flex h-6 w-6 items-center justify-center rounded-md hover:bg-[var(--bg-elevated)] transition-colors text-[var(--fg-muted)] hover:text-[var(--fg-primary)]"
+                >
+                  <motion.div animate={{ rotate: isNodeLibraryOpen ? 0 : -90 }}>
+                    <ChevronDown size={14} />
+                  </motion.div>
+                </button>
               </div>
 
-              <div className="space-y-5">
-                <LibrarySection title="Triggers" items={triggerLibrary} onAdd={addNode} />
-                <LibrarySection title="Agents" items={agentLibrary} onAdd={addNode} />
-                <LibrarySection title="Actions" items={actionLibrary} onAdd={addNode} />
-              </div>
+              <AnimatePresence>
+                {isNodeLibraryOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                    className="space-y-4 overflow-hidden pt-3"
+                  >
+                    <LibrarySection title="Triggers" items={triggerLibrary} onAdd={addNode} />
+                    <LibrarySection title="Agents" items={agentLibrary} onAdd={addNode} />
+                    <LibrarySection title="Actions" items={actionLibrary} onAdd={addNode} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </Panel>
 
