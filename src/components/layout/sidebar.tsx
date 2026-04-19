@@ -95,20 +95,12 @@ function NavItem({
           ? "justify-center gap-0 px-0 group-hover/sidebar:justify-start group-hover/sidebar:gap-3"
           : "justify-start gap-3",
         isActive
-          ? cn(
-              collapsed
-                ? "pl-0 group-hover/sidebar:pl-[11px]"
-                : "pl-[11px]",
-            )
-          : cn(
-              collapsed ? "pl-0 group-hover/sidebar:pl-3" : "pl-3",
-            ),
+          ? cn(collapsed ? "pl-0 group-hover/sidebar:pl-[11px]" : "pl-[11px]")
+          : cn(collapsed ? "pl-0 group-hover/sidebar:pl-3" : "pl-3"),
       )}
-      style={
-        isActive
-          ? { background: "var(--nav-active-bg)", border: "none" }
-          : undefined
-      }
+      style={isActive ? { background: "var(--nav-active-bg)" } : undefined}
+      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "var(--nav-hover-bg)"; }}
+      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
     >
       <span className="flex shrink-0 items-center justify-center size-5 min-w-[20px]">
         <Icon
@@ -119,25 +111,18 @@ function NavItem({
       </span>
       <span
         className={cn(
-          "max-w-[140px] overflow-hidden whitespace-nowrap text-[13px] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+          "max-w-[140px] overflow-hidden whitespace-nowrap text-[15px] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
           collapsed
             ? "max-w-0 opacity-0 group-hover/sidebar:max-w-[140px] group-hover/sidebar:opacity-100"
             : "opacity-100",
         )}
         style={{
           fontFamily: "var(--font-body)",
-          color: isActive ? "var(--nav-active-text)" : "var(--fg-secondary)",
+          color: isActive ? "var(--nav-active-text)" : "var(--fg-primary)",
         }}
       >
         {item.label}
       </span>
-      {/* hover overlay — so we don't need to hardcode hover bg */}
-      {!isActive && (
-        <span
-          className="pointer-events-none absolute inset-0 rounded-[8px] opacity-0 transition-opacity duration-150 group-hover/item:opacity-100"
-          style={{ background: "var(--nav-hover-bg)" }}
-        />
-      )}
     </Link>
   );
 }
@@ -297,6 +282,8 @@ function WorkspaceNavItem({
           : collapsed ? "pl-0 group-hover/sidebar:pl-3" : "",
       )}
       style={isActive ? { background: "var(--nav-active-bg)" } : undefined}
+      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "var(--nav-hover-bg)"; }}
+      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
     >
       <span className="flex shrink-0 items-center justify-center size-5 min-w-[20px]">
         <Icon
@@ -307,24 +294,18 @@ function WorkspaceNavItem({
       </span>
       <span
         className={cn(
-          "max-w-[140px] overflow-hidden whitespace-nowrap text-[13px] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
+          "max-w-[140px] overflow-hidden whitespace-nowrap text-[15px] transition-[opacity,max-width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]",
           collapsed
             ? "max-w-0 opacity-0 group-hover/sidebar:max-w-[140px] group-hover/sidebar:opacity-100"
             : "opacity-100"
         )}
         style={{
           fontFamily: "var(--font-body)",
-          color: isActive ? "var(--nav-active-text)" : "var(--fg-secondary)",
+          color: isActive ? "var(--nav-active-text)" : "var(--fg-primary)",
         }}
       >
         {label}
       </span>
-      {!isActive && (
-        <span
-          className="pointer-events-none absolute inset-0 rounded-[8px] opacity-0 transition-opacity duration-150 group-hover/item:opacity-100"
-          style={{ background: "var(--nav-hover-bg)" }}
-        />
-      )}
     </Link>
   );
 }
@@ -512,15 +493,13 @@ export function Sidebar() {
                   <button
                     key={chat.id}
                     onClick={() => handleLoadChat(chat)}
-                    className="group/chat w-full truncate whitespace-nowrap rounded-[6px] px-2.5 py-2 text-left text-[12px] transition-colors relative"
+                    className="w-full truncate whitespace-nowrap rounded-[6px] px-2.5 py-2 text-left text-[14px] transition-colors"
                     title={chat.title}
-                    style={{ fontFamily: "var(--font-body)", color: "var(--fg-secondary)" }}
+                    style={{ fontFamily: "var(--font-body)", color: "var(--fg-primary)" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--nav-hover-bg)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                   >
                     {chat.title}
-                    <span
-                      className="pointer-events-none absolute inset-0 rounded-[6px] opacity-0 transition-opacity duration-150 group-hover/chat:opacity-100"
-                      style={{ background: "var(--nav-hover-bg)" }}
-                    />
                   </button>
                 ))}
               </div>

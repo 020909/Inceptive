@@ -192,9 +192,8 @@ function StatCard({
     <div
       className={cn(
         "rounded-2xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6",
-        "shadow-[0_18px_36px_rgba(0,0,0,0.18)]",
-        "transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5",
-        "hover:border-[rgba(255,255,255,0.22)] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_24px_60px_rgba(0,0,0,0.22)]"
+        "shadow-none transition-[transform,box-shadow,border-color] duration-200 ease-out",
+        "hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]"
       )}
     >
       <p className="text-sm text-[var(--fg-muted)]">{title}</p>
@@ -386,14 +385,9 @@ export default function DashboardPage() {
             Analytics Overview
           </div>
           <div className="flex items-end justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--fg-primary)] md:text-4xl">
-                Your AI operations, at a glance.
-              </h1>
-              <p className="mt-2 text-sm text-[var(--fg-muted)] md:text-base">
-                Real metrics from your Inceptive workspace, without placeholder telemetry.
-              </p>
-            </div>
+            <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--fg-primary)] md:text-4xl">
+              Your AI operations, at a glance.
+            </h1>
             {loading ? <Loader2 className="h-5 w-5 animate-spin text-[var(--fg-muted)]" /> : null}
           </div>
         </div>
@@ -459,7 +453,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
-          <section className="rounded-[26px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(255,255,255,0.22)] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_24px_60px_rgba(0,0,0,0.22)]">
+          <section className="rounded-[26px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-none transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]">
             <div className="mb-6">
               <p className="text-sm text-[var(--fg-muted)]">Task Volume</p>
               <h2 className="mt-1 text-xl font-semibold text-[var(--fg-primary)]">Completed tasks — last 7 days</h2>
@@ -468,30 +462,30 @@ export default function DashboardPage() {
               {chartsReady ? (
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={320}>
                   <BarChart data={dashboard.activity} barCategoryGap={10}>
-                    <CartesianGrid vertical={false} stroke="#2A2A2A" />
+                    <CartesianGrid vertical={false} stroke="#c8c6be" strokeDasharray="0" />
                     <XAxis
                       dataKey="label"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: "#888888", fontSize: 12 }}
+                      tick={{ fill: "#87867f", fontSize: 12 }}
                     />
                     <YAxis
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: "#888888", fontSize: 12 }}
+                      tick={{ fill: "#87867f", fontSize: 12 }}
                       allowDecimals={false}
                     />
                     <Tooltip
-                      cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                      cursor={{ fill: "rgba(0,0,0,0.03)" }}
                       contentStyle={{
-                        background: "#111111",
-                        border: "1px solid #2A2A2A",
+                        background: "var(--bg-elevated)",
+                        border: "1px solid var(--border-default)",
                         borderRadius: "12px",
-                        color: "#FFFFFF",
+                        color: "var(--fg-primary)",
                       }}
-                      labelStyle={{ color: "#FFFFFF" }}
+                      labelStyle={{ color: "var(--fg-secondary)" }}
                     />
-                    <Bar dataKey="count" radius={[8, 8, 0, 0]} fill="#f5f5f5" />
+                    <Bar dataKey="count" radius={[8, 8, 0, 0]} fill="var(--fg-secondary)" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -505,7 +499,7 @@ export default function DashboardPage() {
             ) : null}
           </section>
 
-          <section className="rounded-[26px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(255,255,255,0.22)] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_24px_60px_rgba(0,0,0,0.22)]">
+          <section className="rounded-[26px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-none transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]">
             <div className="mb-6">
               <p className="text-sm text-[var(--fg-muted)]">Current Priority</p>
               <h2 className="mt-1 text-xl font-semibold text-[var(--fg-primary)]">
@@ -524,7 +518,7 @@ export default function DashboardPage() {
                     {dashboard.topGoal.progress_percent}%
                   </span>
                 </div>
-                <div className="h-2.5 overflow-hidden rounded-full bg-[#121212]">
+                <div className="h-2.5 overflow-hidden rounded-full bg-[var(--bg-overlay)]">
                   <div
                     className="h-full rounded-full bg-[var(--accent)] transition-all"
                     style={{ width: `${dashboard.topGoal.progress_percent}%` }}
@@ -574,7 +568,7 @@ export default function DashboardPage() {
           </section>
         </div>
 
-        <section className="mt-6 rounded-[26px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.18)] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[rgba(255,255,255,0.22)] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_24px_60px_rgba(0,0,0,0.22)]">
+        <section className="mt-6 rounded-[26px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-none transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]">
           <div className="mb-5">
             <p className="text-sm text-[var(--fg-muted)]">Agent Activity Log</p>
             <h2 className="mt-1 text-xl font-semibold text-[var(--fg-primary)]">Live Agent Activity</h2>
