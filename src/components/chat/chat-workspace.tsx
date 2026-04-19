@@ -1,24 +1,22 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState, Suspense } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { redirectToSignIn } from "@/lib/auth-gate";
 import { motion, AnimatePresence } from "framer-motion";
-import { Image as ImageIcon, Plus, X, FileSpreadsheet, Presentation, FileText, Download, Mic, MicOff, Globe, Sparkles } from "lucide-react";
+import { Image as ImageIcon, Plus, X, FileSpreadsheet, Presentation, FileText, Download, Mic, MicOff, Globe, Sparkles, Zap, Search, Eye, Play, Settings, ChevronRight, ChevronDown, PanelLeftClose, PanelLeft, Code2 } from "lucide-react";
 import { useChat, type Message, type ToolResult, type TaskLog } from "@/lib/chat-context";
 import { useAuth } from "@/lib/auth-context";
 import { useSidebar } from "@/components/layout/sidebar";
 import { DashboardAiPrompt } from "@/components/ui/ai-prompt-box";
-import { DashboardCodePanel } from "@/components/dashboard/dashboard-code-panel";
 import { HtmlPreview } from "@/components/ui/html-preview";
 import { ProgressIndicator } from "@/components/ui/progress-indicator";
 import { CouncilActivityTimeline, isCouncilTaskLog } from "@/components/dashboard/CouncilActivityTimeline";
 import {
   ClarificationOptionBar,
-  focusDashboardChatInput,
 } from "@/components/chat/ClarificationOptionBar";
-import { WebsitePreviewPanel } from "@/components/dashboard/website-preview-panel";
 import { TTSButton } from "@/components/ui/tts-button";
 import { ChartPreview } from "@/components/ui/chart-preview";
 import { CouncilProgress } from "@/components/council/CouncilProgress";
@@ -26,6 +24,12 @@ import { useCouncil } from "@/hooks/useCouncil";
 import { isWebsiteBuildTask } from "@/lib/agent/council-deliverable-refine";
 import { bundleSessionCouncilOutputForPreview } from "@/lib/council/bundle-session-preview-html";
 import type { Project, ProjectArtifact } from "@/types/database";
+
+/** Lazy-loaded Monaco editor — SSR disabled to avoid window-not-defined errors */
+const MonacoEditorPanel = dynamic(
+  () => import("@/components/ui/monaco-editor-panel").then((m) => ({ default: m.MonacoEditorPanel })),
+  { ssr: false }
+);
 
 type AttachedFile = { name: string; content: string };
 type WorkspaceProject = Project;
@@ -65,48 +69,44 @@ const PREVIEW_LOADING_HTML = `<!DOCTYPE html><html lang="en"><head><meta charset
 .p{animation:o 1.35s ease-in-out infinite}@keyframes o{0%,100%{opacity:.35}50%{opacity:1}}
 </style></head><body><div style="text-align:center;max-width:340px;padding:28px"><div class="p" style="font-size:2rem;line-height:1;margin-bottom:14px">◇</div><p style="font-size:14px;line-height:1.55;opacity:.95">Live status appears in the bar above. This view updates when generated HTML arrives.</p></div></body></html>`;
 
+/** Extract the latest non-HTML code block from assistant messages for Monaco display. */
+function extractLatestCode(messages: Message[]): { code: string; language: string } | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (msg.role !== "assistant") continue;
+    const match = msg.content.match(
+      /```(python|javascript|typescript|go|rust|java|c\+\+|ruby|php|swift|kotlin|bash|r|lua|perl|scala|dart)?\n([\s\S]*?)```/i
+    );
+    if (match && match[2] && match[2].trim().length > 10) {
+      return { code: match[2].trim(), language: (match[1] || "javascript").toLowerCase() };
+    }
+  }
+  return null;
+}
+
 /** Open the preview as soon as the user sends a build-style message (do not wait for the model to emit a tool-call). */
 function shouldOpenBuildPreviewLoading(text: string): boolean {
-  const t = text.toLowerCase();
-  const needles = [
-    "website",
-    "web app",
-    "webapp",
-    "landing",
-    "webpage",
-    "full-stack",
-    "fullstack",
-    "html",
-    "css",
-    "javascript",
-    "typescript",
-    "react",
-    "next.js",
-    "nextjs",
-    "build a",
-    "build an",
-    "build me",
-    "create a",
-    "make a",
-    "design a",
-    "app ",
-    "ui ",
-    "ux ",
-    "frontend",
-    "page",
-    "site ",
-    "productivity",
-    "dark mode",
-    "component",
-    "dashboard",
-    "deploy",
-    "svelte",
-    "vue",
-    "tailwind",
+  const t = text.toLowerCase().trim();
+
+  // Must be an explicit build intent — starts with or contains a clear action verb + artifact noun
+  const BUILD_VERBS = ["build", "create", "make", "generate", "design", "code", "write", "develop", "scaffold"];
+  const BUILD_ARTIFACTS = ["website", "web app", "webapp", "landing page", "homepage", "web page", "webpage", "frontend", "full-stack app", "fullstack app", "nextjs app", "react app", "html page", "html file", "ui component", "dashboard app", "saas app"];
+
+  // Must have BOTH a build verb AND a build artifact in the same message
+  const hasVerb = BUILD_VERBS.some(v => t.includes(v));
+  const hasArtifact = BUILD_ARTIFACTS.some(a => t.includes(a));
+
+  if (hasVerb && hasArtifact) return true;
+
+  // Also trigger on very explicit patterns regardless of verb
+  const EXPLICIT_PATTERNS = [
+    /\bbuild me (a |an )?(website|web app|landing page|homepage)\b/i,
+    /\bcreate (a |an )?(website|web app|landing page|homepage)\b/i,
+    /\bmake (a |an )?(website|web app|landing page|homepage)\b/i,
+    /\bcode (a |an )?(website|web app|landing page|homepage)\b/i,
   ];
-  if (needles.some((n) => t.includes(n))) return true;
-  /* whole word — avoids matching "overflow" etc. */
-  return /\bflow\b/i.test(t);
+
+  return EXPLICIT_PATTERNS.some(p => p.test(t));
 }
 
 function CollapsedCodeFence({ lang, body }: { lang: string; body: string }) {
@@ -400,11 +400,13 @@ function ChatMessage({
   isLastAssistant,
   streaming,
   onOpenPreview,
+  onContinue,
 }: {
   msg: Message;
   isLastAssistant: boolean;
   streaming: boolean;
   onOpenPreview?: (code: string) => void;
+  onContinue?: () => void;
 }) {
   const isUser = msg.role === "user";
   const showGenerating =
@@ -412,6 +414,12 @@ function ChatMessage({
     isLastAssistant &&
     streaming &&
     (!msg.content?.trim() || isLikelyRawToolArgsJson(msg.content));
+
+  const isTimedOut =
+    !isUser &&
+    isLastAssistant &&
+    !streaming &&
+    msg.content?.includes("still working — please ask me to continue");
 
   const councilTrace = (msg.taskLogs || []).some(
     (l) => l.details && typeof l.details === "object" && (l.details as { agentRole?: string }).agentRole
@@ -471,6 +479,24 @@ function ChatMessage({
             className="mt-1 flex items-center gap-1"
           >
             <TTSButton text={msg.content} />
+          </motion.div>
+        )}
+        {isTimedOut && onContinue && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-2 rounded-xl border border-[rgba(232,68,10,0.2)] bg-[var(--accent-soft)] px-4 py-3 flex items-center justify-between gap-3"
+          >
+            <span className="text-sm text-[var(--fg-primary)]">
+              Inceptive hit a time limit. Click to continue where it left off.
+            </span>
+            <button
+              onClick={onContinue}
+              className="shrink-0 rounded-lg bg-[var(--fg-primary)] px-3 py-1.5 text-xs font-medium text-[var(--bg-base)] hover:opacity-80 transition-opacity"
+            >
+              Continue →
+            </button>
           </motion.div>
         )}
           </div>
@@ -654,6 +680,7 @@ function DashboardExperience() {
   const hasChat = messages.length > 0;
 
   const [input, setInput] = useState("");
+  const [agentMode, setAgentMode] = useState<"build" | "plan">("build");
   const [streaming, setStreaming] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<AttachedFile[]>([]);
@@ -668,8 +695,9 @@ function DashboardExperience() {
   const sendLockRef = useRef(false);
   const lastSentRef = useRef<{ text: string; ts: number }>({ text: "", ts: 0 });
   const prefillConsumedRef = useRef(false);
-  const [codePanelOpen, setCodePanelOpen] = useState(false);
   const [previewCode, setPreviewCode] = useState<string | null>(null);
+  const [monacoCode, setMonacoCode] = useState<string | null>(null);
+  const [monacoLanguage, setMonacoLanguage] = useState<string>("javascript");
   /** When true, do not replace preview from streamed ```html (sandbox bundle is authoritative). */
   const preferSandboxPreviewRef = useRef(false);
   const [sandboxPaths, setSandboxPaths] = useState<string[] | null>(null);
@@ -677,8 +705,8 @@ function DashboardExperience() {
   const [previewBuildStatus, setPreviewBuildStatus] = useState<string | null>(null);
   const [isMicListening, setIsMicListening] = useState(false);
   const recognitionRef = useRef<any>(null);
-  const [splitRatio, setSplitRatio] = useState(50); // percentage for left panel
   const containerRef = useRef<HTMLDivElement>(null);
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const councilResumeRef = useRef<CouncilResumeClient | null>(null);
   const councilContinueRef = useRef(false);
   /** Prevents double-firing the automatic second request after `8:council_resume`. */
@@ -692,6 +720,15 @@ function DashboardExperience() {
     choices: string[];
   } | null>(null);
   const orgAccessError = searchParams.get("error");
+
+  // Auto-populate Monaco when code appears in messages
+  useEffect(() => {
+    const result = extractLatestCode(messages);
+    if (result) {
+      setMonacoCode(result.code);
+      setMonacoLanguage(result.language);
+    }
+  }, [messages]);
 
   const getAccessToken = useCallback(() => session?.access_token ?? null, [session?.access_token]);
   const council = useCouncil(getAccessToken);
@@ -820,13 +857,6 @@ function DashboardExperience() {
     }
     void fetchArtifacts(activeProjectId);
   }, [activeProjectId, fetchArtifacts]);
-
-  const handleResizeDrag = useCallback((deltaX: number) => {
-    if (!containerRef.current) return;
-    const containerWidth = containerRef.current.offsetWidth;
-    const deltaPercent = (deltaX / containerWidth) * 100;
-    setSplitRatio((prev) => Math.min(75, Math.max(25, prev + deltaPercent)));
-  }, []);
 
   const startMic = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -1080,8 +1110,18 @@ function DashboardExperience() {
       resetSafetyTimer();
 
       try {
+        const modePrefix = agentMode === "plan"
+          ? "[PLAN MODE — Read-only analysis only. Do NOT execute code, send emails, make API calls, or take any action. Only analyze, explain, and propose what you WOULD do. Always end with a summary of proposed steps.]\n\n"
+          : "[BUILD MODE — Full execution enabled. Complete the task end-to-end.]\n\n";
+
+        const messagesWithMode = allMessages.map((m, i) =>
+          i === allMessages.length - 1 && m.role === "user"
+            ? { ...m, content: modePrefix + m.content }
+            : m
+        );
+
         const bodyPayload: Record<string, unknown> = {
-          messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
+          messages: messagesWithMode.map((m) => ({ role: m.role, content: m.content })),
           attachedFiles: attach.map((f) => ({ name: f.name, content: f.content })),
           projectContext: buildProjectContext(),
         };
@@ -1556,324 +1596,240 @@ function DashboardExperience() {
   }, [messages, previewCode, streaming, persistArtifact]);
 
   return (
-    <div ref={containerRef} className="flex h-screen bg-[var(--bg-base)] text-[var(--fg-primary)] overflow-hidden">
-    {orgAccessError === "org-access-denied" ? (
-      <div className="absolute left-0 right-0 top-0 z-20 mx-auto w-full max-w-6xl px-4 pt-4">
-        <div className="rounded-2xl border border-[rgba(181,51,51,0.18)] bg-[var(--destructive-soft)] px-4 py-3 text-sm text-[var(--destructive)]">
-          You do not have access to that organization workspace.
+    <div ref={containerRef} className="flex flex-col h-full bg-[#1e1e1e] text-[#cccccc] overflow-hidden !dark dark:bg-[#1e1e1e]" style={{ colorScheme: 'dark' }}>
+      
+      {/* ── TOP BAR (40px) ── */}
+      <div className="flex items-center justify-between px-3 h-[40px] shrink-0 border-b border-[#2d2d2d] bg-[#1e1e1e]">
+        <div className="flex flex-1 items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Sparkles size={14} className="text-[#1863dc]" />
+            <span className="text-[13px] font-medium text-[#cccccc] tracking-tight">Inceptive</span>
+          </div>
+          <button 
+            onClick={() => setLeftPanelOpen(!leftPanelOpen)}
+            className="flex h-6 w-6 items-center justify-center rounded text-[#888888] hover:bg-[#2d2d2d] hover:text-[#cccccc] transition-colors"
+          >
+            {leftPanelOpen ? <PanelLeftClose size={14} /> : <PanelLeft size={14} />}
+          </button>
+        </div>
+        
+        <div className="flex flex-1 justify-center items-center">
+          <span className="text-xs text-[#888888] font-mono">
+            {activeProjectId ? "workspace/" + (activeProject?.name || "Code Studio") : "Code Studio"}
+          </span>
+        </div>
+        
+        <div className="flex flex-1 items-center justify-end gap-2">
+          <button className="flex h-[26px] items-center gap-1.5 rounded-md bg-[#1863dc] px-3 text-[11px] font-medium text-white hover:bg-[#1556c0] transition-colors shadow-sm">
+            <Play size={10} className="fill-white" /> Run
+          </button>
+          <button className="flex h-7 w-7 items-center justify-center rounded-md text-[#888888] hover:bg-[#2d2d2d] hover:text-[#cccccc] transition-colors">
+            <Settings size={14} />
+          </button>
         </div>
       </div>
-    ) : null}
-    {/* ── LEFT PANEL (Chat) ── */}
-        <motion.div
-      className="flex flex-col h-screen overflow-hidden"
-      style={{ width: previewCode ? `${splitRatio}%` : "100%" }}
-      layout
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-    >
-      <header className="flex shrink-0 items-start justify-between px-4 py-3 sm:px-6">
-        <div className="flex min-w-[120px] items-center gap-2 pt-0.5">
-          {streaming && <GeneratingEllipsis className="text-xs text-[var(--fg-muted)]" />}
-          {incognito && (
-            <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--fg-tertiary)]">
-              Incognito
-            </span>
-          )}
-        </div>
-        <div className="flex items-start gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              preferSandboxPreviewRef.current = false;
-              setSandboxPaths(null);
-              void startNewChat();
-            }}
-            className="flex h-8 shrink-0 items-center gap-1.5 rounded-xl bg-[var(--accent)] px-3 text-xs font-medium text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
-          >
-            <Plus size={14} className="text-[var(--primary-foreground)]" />
-            New chat
-          </button>
-          <button
-            type="button"
-            onClick={() => setIncognito(!incognito)}
-            className={[
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-opacity hover:opacity-95",
-              incognito
-                ? "border-[var(--accent)]/45 bg-[var(--bg-elevated)] ring-1 ring-[var(--accent)]/25"
-                : "border-[var(--border-default)] bg-[var(--bg-elevated)]",
-            ].join(" ")}
-            title="Incognito: chats are not saved to history or session"
-          >
-            <Image
-              src="/incognito-spy.jpg"
-              alt=""
-              width={22}
-              height={22}
-              className="h-[22px] w-[22px] rounded-lg object-cover"
-            />
-            <span className="sr-only">Incognito mode</span>
-          </button>
-        </div>
-      </header>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        className="hidden"
-        onChange={async (e) => {
-          const files = Array.from(e.target.files || []);
-          if (files.length > 0) await uploadFiles(files);
-          e.currentTarget.value = "";
-        }}
-      />
+      <div className="flex min-h-0 flex-1">
+        {/* ── PANEL 1: LEFT FILE TREE ── */}
+        {leftPanelOpen && (
+          <div className="w-[200px] shrink-0 flex flex-col bg-[#1e1e1e] border-r border-[#2d2d2d]">
+            <div className="px-3 py-2 flex items-center justify-between border-b border-[#2d2d2d]/50">
+              <span className="text-[10px] uppercase font-mono tracking-widest text-[#888888]">Files</span>
+            </div>
+            <div className="flex-1 overflow-y-auto py-2">
+               <div className="flex items-center gap-2 px-3 py-1.5 text-[11px] text-[#cccccc] hover:bg-[#2A2D2E] cursor-pointer transition-colors group">
+                 <ChevronDown size={12} className="text-[#888888]" />
+                 <span className="font-medium">PROJECT</span>
+               </div>
+               <div className="mt-1 flex items-center gap-2 px-3 py-1.5 text-[12px] bg-[#37373d] text-[#ffffff] cursor-pointer pl-6 border-l-2 border-[#1863dc]">
+                 <Code2 size={13} className="text-[#519aba]" />
+                 <span className="font-mono">{monacoLanguage === 'javascript' ? 'index.js' : 'App.tsx'}</span>
+               </div>
+               <div className="flex items-center justify-center pt-8 px-4 text-center">
+                 <p className="text-[10px] text-[#666666] leading-relaxed">
+                   Ask Inceptive to generate code or attach files to add them to context.
+                 </p>
+               </div>
+            </div>
+          </div>
+        )}
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {!hasChat ? (
-          <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-4 py-8 sm:px-6">
-            <div className="mx-auto w-full max-w-4xl">
-              <h1 className="mb-4 text-center text-2xl font-bold tracking-tight text-[var(--fg-primary)] sm:text-3xl">
-                What should Inceptive handle for you today?
-              </h1>
-              <div className="space-y-3">
-                <DashboardCodePanel
-                  open={codePanelOpen}
-                  onClose={() => setCodePanelOpen(false)}
-                  sessionToken={session?.access_token}
-                  setMessages={setMessages}
+        {/* ── PANEL 2: CENTER EDITOR ── */}
+        <div className="flex-1 flex flex-col min-w-0 bg-[#1e1e1e]">
+          <div className="flex h-9 shrink-0 items-end px-2 bg-[#1e1e1e]">
+            {/* Fake tab */}
+            <div className="flex items-center gap-2 px-3 py-2 text-[12px] bg-[#1e1e1e] text-[#cccccc] border-t-2 border-[#1863dc] rounded-t-sm max-w-[200px]">
+              <Code2 size={13} className="text-[#519aba]" />
+              <span className="truncate font-mono">{monacoLanguage === 'javascript' ? 'index.js' : 'App.tsx'}</span>
+              <button className="ml-auto opacity-0 group-hover:opacity-100 hover:bg-[#333] rounded">
+                <X size={12} className="text-[#888]" />
+              </button>
+            </div>
+            <div className="flex-1 border-b border-[#2d2d2d] mb-[-1px]"></div>
+          </div>
+          
+          <div className="flex-1 relative bg-[#1e1e1e]">
+            {monacoCode ? (
+              <Suspense fallback={<div className="absolute inset-0 bg-[#1e1e1e] flex items-center justify-center"><GeneratingEllipsis className="text-[#888]" /></div>}>
+                <MonacoEditorPanel 
+                  code={monacoCode} 
+                  language={monacoLanguage} 
                 />
-                {pendingFiles.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {pendingFiles.map((f, idx) => (
-                      <AttachmentChip
-                        key={`${f.name}-${idx}`}
-                        name={f.name}
-                        onRemove={() =>
-                          setPendingFiles((prev) => {
-                            const next = prev.filter((_, i) => i !== idx);
-                            pendingFilesRef.current = next;
-                            return next;
-                          })
-                        }
-                      />
-                  ))}
-                </div>
-                )}
-                {clarificationPrompt && (
-                  <ClarificationOptionBar
-                    headline={clarificationPrompt.headline}
-                    choices={clarificationPrompt.choices}
-                    disabled={streaming}
-                    onPickChoice={onClarificationPick}
-                    onPickSomethingElse={onClarificationSomethingElse}
-                    onDismiss={onDismissClarification}
-                  />
-                )}
-                <CouncilProgress
-                  agents={council.agents}
-                  currentAgent={council.currentAgent}
-                  status={council.status}
-                  finalOutput={council.finalOutput}
-                  error={council.error}
-                  onCancel={council.cancel}
-                />
-                <DashboardAiPrompt
-                  value={input}
-                  onChange={setInput}
-                  onSend={handlePromptSend}
-                  isLoading={streaming}
-                  placeholder="Ask Inceptive anything…"
-                  onAttachClick={() => fileInputRef.current?.click()}
-                  dragOver={dragOver}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOver(true);
-                  }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={async (e) => {
-                    e.preventDefault();
-                    setDragOver(false);
-                    const files = Array.from(e.dataTransfer.files || []);
-                    if (files.length > 0) await uploadFiles(files);
-                  }}
-                />
-                {/* Mic button for voice dictation */}
-                <div className="flex justify-end -mt-1">
-                  <button
-                    type="button"
-                    onClick={startMic}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200 ${
-                      isMicListening
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse'
-                        : 'text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--border-subtle)]'
-                    }`}
-                    title={isMicListening ? 'Stop voice input' : 'Start voice input'}
-                  >
-                    {isMicListening ? <MicOff size={13} /> : <Mic size={13} />}
-                    <span>{isMicListening ? 'Stop' : 'Voice'}</span>
-                  </button>
-                    </div>
-                    </div>
-                      </div>
-                      </div>
-        ) : (
-          <>
-            <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6">
-              <div className="mx-auto max-w-4xl pb-4 pt-4 sm:pt-6">
-                <div className="space-y-4 pb-28 sm:pb-32">
-                  {messages.map((msg, i) => {
-                    const isLast = i === messages.length - 1;
-                    const isLastAssistant = isLast && msg.role === "assistant";
-                          return (
-                      <ChatMessage
-                        key={msg.id}
-                        msg={msg}
-                        isLastAssistant={isLastAssistant}
-                        streaming={streaming}
-                        onOpenPreview={(code) => setPreviewCode(code)}
-                      />
-                          );
-                        })}
-                      </div>
-                  </div>
-                </div>
-
-            <div className="sticky bottom-0 z-20 shrink-0 border-t border-[var(--border-subtle)] bg-[var(--bg-base)] px-4 pt-3 pb-6 sm:px-6">
-              <div className="mx-auto w-full max-w-4xl space-y-3">
-                <DashboardCodePanel
-                  open={codePanelOpen}
-                  onClose={() => setCodePanelOpen(false)}
-                  sessionToken={session?.access_token}
-                  setMessages={setMessages}
-                />
-                {pendingFiles.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {pendingFiles.map((f, idx) => (
-                      <AttachmentChip
-                        key={`${f.name}-${idx}`}
-                        name={f.name}
-                        onRemove={() =>
-                          setPendingFiles((prev) => {
-                            const next = prev.filter((_, i) => i !== idx);
-                            pendingFilesRef.current = next;
-                            return next;
-                          })
-                        }
-                      />
-                    ))}
+              </Suspense>
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-[#555555]">
+                <Sparkles size={32} className="mb-4 opacity-50" />
+                <p className="text-sm font-medium">Welcome to Code Studio</p>
+                <p className="text-xs mt-2 max-w-sm text-center opacity-80 leading-relaxed">
+                   The agent writes to this scratchpad automatically. Use the chat on the right to start building.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-                )}
-                {clarificationPrompt && (
-                  <ClarificationOptionBar
-                    headline={clarificationPrompt.headline}
-                    choices={clarificationPrompt.choices}
-                    disabled={streaming}
-                    onPickChoice={onClarificationPick}
-                    onPickSomethingElse={onClarificationSomethingElse}
-                    onDismiss={onDismissClarification}
-                  />
-                )}
-                <CouncilProgress
-                  agents={council.agents}
-                  currentAgent={council.currentAgent}
-                  status={council.status}
-                  finalOutput={council.finalOutput}
-                  error={council.error}
-                  onCancel={council.cancel}
-                />
-                {previewCode && (
-                  <BuildRecipeStrip
-                    title="Refine This Build"
-                    recipes={REFINE_RECIPES.map((prompt, index) => ({
-                      label: `Refine ${index + 1}`,
-                      prompt,
-                    }))}
-                    onPick={(prompt) => setInput(prompt)}
-                  />
-                )}
-                <DashboardAiPrompt
-                  value={input}
-                  onChange={setInput}
-                  onSend={handlePromptSend}
-                  isLoading={streaming}
-                  placeholder="Ask Inceptive anything…"
-                  onAttachClick={() => fileInputRef.current?.click()}
-                  dragOver={dragOver}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOver(true);
-                  }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={async (e) => {
-                    e.preventDefault();
-                    setDragOver(false);
-                    const files = Array.from(e.dataTransfer.files || []);
-                    if (files.length > 0) await uploadFiles(files);
-                  }}
-                />
-                {/* Voice mic button */}
-                <div className="flex justify-end -mt-1">
+
+        {/* ── PANEL 3: RIGHT CHAT (380px) ── */}
+        <div className="w-[380px] shrink-0 flex flex-col bg-[#252526] border-l border-[#2d2d2d]">
+          <header className="flex h-[48px] shrink-0 items-center justify-between px-4 border-b border-[#2d2d2d]">
+            <span className="text-[13px] font-semibold text-[#cccccc]">Inceptive AI</span>
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                    onClick={startMic}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200 ${
-                      isMicListening
-                        ? 'bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse'
-                        : 'text-[var(--fg-muted)] hover:text-[var(--fg-primary)] hover:bg-[var(--border-subtle)]'
-                    }`}
-                    title={isMicListening ? 'Stop voice input' : 'Start voice input'}
-                  >
-                    {isMicListening ? <MicOff size={13} /> : <Mic size={13} />}
-                    <span>{isMicListening ? 'Stop' : 'Voice'}</span>
+                onClick={() => void startNewChat()}
+                className="flex h-7 items-center gap-1.5 rounded bg-[#333333] px-2.5 text-[11px] font-medium text-[#cccccc] hover:bg-[#444444] transition-colors"
+              >
+                <Plus size={12} /> New Chat
               </button>
-              </div>
             </div>
+          </header>
+
+          <div className="flex min-h-0 flex-1 flex-col relative">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+              {!hasChat && (
+                <div className="text-center py-6">
+                  <h2 className="text-sm font-medium text-[#cccccc]">How can I help?</h2>
+                  <p className="text-[11px] text-[#888888] mt-2 px-4 leading-relaxed">
+                    I can generate code, analyze context, and build web apps end-to-end. I'll write directly to your editor.
+                  </p>
+                </div>
+              )}
+              {messages.map((msg, i) => {
+                  const isLastAssistant = i === messages.length - 1 && msg.role === "assistant";
+                  return (
+                    <ChatMessage
+                      key={msg.id}
+                      msg={msg}
+                      isLastAssistant={isLastAssistant}
+                      streaming={streaming}
+                      onOpenPreview={(code) => setPreviewCode(code)}
+                      onContinue={isLastAssistant ? () => {
+                        void sendMessageRef.current("Continue from where you left off. Resume the task and complete it.");
+                      } : undefined}
+                    />
+                  );
+              })}
+            </div>
+          </div>
+
+          <div className="shrink-0 p-4 border-t border-[#333333] bg-[#252526]">
+            {pendingFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {pendingFiles.map((f, idx) => (
+                  <AttachmentChip
+                    key={`${f.name}-${idx}`}
+                    name={f.name}
+                    onRemove={() =>
+                      setPendingFiles((prev) => {
+                        const next = prev.filter((_, i) => i !== idx);
+                        pendingFilesRef.current = next;
+                        return next;
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            )}
+            
+            <CouncilProgress
+              agents={council.agents}
+              currentAgent={council.currentAgent}
+              status={council.status}
+              finalOutput={council.finalOutput}
+              error={council.error}
+              onCancel={council.cancel}
+            />
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={async (e) => {
+                const files = Array.from(e.target.files || []);
+                if (files.length > 0) await uploadFiles(files);
+                e.currentTarget.value = "";
+              }}
+            />
+
+            <div className="rounded-xl border border-[#3c3c3c] bg-[#1e1e1e] p-2 focus-within:border-[#555] transition-colors relative shadow-sm">
+              <DashboardAiPrompt
+                value={input}
+                onChange={setInput}
+                onSend={handlePromptSend}
+                isLoading={streaming}
+                placeholder="Ask Inceptive anything…"
+                onAttachClick={() => fileInputRef.current?.click()}
+                dragOver={dragOver}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  const files = Array.from(e.dataTransfer.files || []);
+                  if (files.length > 0) await uploadFiles(files);
+                }}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between mt-2 px-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-[#666666] font-mono uppercase tracking-wider">Mode</span>
+                <select 
+                  value={agentMode} 
+                  onChange={(e) => setAgentMode(e.target.value as any)}
+                  className="bg-transparent text-[#cccccc] text-[10px] outline-none cursor-pointer font-medium"
+                >
+                  <option value="build" className="bg-[#1e1e1e]">Build</option>
+                  <option value="plan" className="bg-[#1e1e1e]">Plan Only</option>
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={startMic}
+                className={`flex h-6 w-6 items-center justify-center rounded-md transition-colors ${
+                  isMicListening
+                    ? 'bg-red-500/20 text-red-400'
+                    : 'text-[#888888] hover:text-[#cccccc] hover:bg-[#333333]'
+                }`}
+                title="Voice input"
+              >
+                {isMicListening ? <MicOff size={12} /> : <Mic size={12} />}
+              </button>
+            </div>
+          </div>
         </div>
-          </>
-          )}
-        </div>
-    </motion.div>
-    {/* ── RESIZE HANDLE ── */}
-    <AnimatePresence>
-      {previewCode && <ResizeHandle onDrag={handleResizeDrag} />}
-    </AnimatePresence>
-    {/* ── RIGHT PANEL (Live Preview) ── */}
-    <AnimatePresence>
-      {previewCode && (
-        <motion.div
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 40 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="h-screen overflow-hidden"
-          style={{ width: `${100 - splitRatio}%` }}
-        >
-          <WebsitePreviewPanel
-            code={previewCode}
-            buildStatusLine={
-              sandboxPaths && sandboxPaths.length > 0
-                ? `${previewBuildStatus ? `${previewBuildStatus} · ` : ""}Sandbox files: ${sandboxPaths.slice(0, 6).join(", ")}${
-                    sandboxPaths.length > 6 ? "…" : ""
-                  }`
-                : previewBuildStatus
-            }
-            onClose={() => {
-              setPreviewCode(null);
-              setPreviewBuildStatus(null);
-              setSplitRatio(50);
-            }}
-            onCodeChange={(newCode) => setPreviewCode(newCode)}
-          />
-                </motion.div>
-          )}
-    </AnimatePresence>
+
+      </div>
     </div>
   );
 }
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div className="h-screen w-full bg-[#1e1e1e]" />}>
       <DashboardExperience />
     </Suspense>
   );

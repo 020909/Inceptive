@@ -11,6 +11,61 @@ export type PistonRunResult = {
 export const PISTON_LANGUAGE_IDS: Record<string, string> = {
   python: "python",
   javascript: "javascript",
+  typescript: "typescript",
+  go: "go",
+  rust: "rust",
+  java: "java",
+  "c++": "c++",
+  c: "c",
+  "c#": "csharp",
+  ruby: "ruby",
+  php: "php",
+  swift: "swift",
+  kotlin: "kotlin",
+  bash: "bash",
+  shell: "bash",
+  r: "r",
+  lua: "lua",
+  perl: "perl",
+  scala: "scala",
+  haskell: "haskell",
+  elixir: "elixir",
+  erlang: "erlang",
+  dart: "dart",
+  julia: "julia",
+  nim: "nim",
+  zig: "zig",
+};
+
+export const SUPPORTED_LANGUAGES = Object.keys(PISTON_LANGUAGE_IDS);
+
+export const LANGUAGE_DISPLAY_NAMES: Record<string, string> = {
+  python: "Python",
+  javascript: "JavaScript",
+  typescript: "TypeScript",
+  go: "Go",
+  rust: "Rust",
+  java: "Java",
+  "c++": "C++",
+  c: "C",
+  "c#": "C#",
+  ruby: "Ruby",
+  php: "PHP",
+  swift: "Swift",
+  kotlin: "Kotlin",
+  bash: "Bash",
+  shell: "Shell",
+  r: "R",
+  lua: "Lua",
+  perl: "Perl",
+  scala: "Scala",
+  haskell: "Haskell",
+  elixir: "Elixir",
+  erlang: "Erlang",
+  dart: "Dart",
+  julia: "Julia",
+  nim: "Nim",
+  zig: "Zig",
 };
 
 export function isPistonConfigured(): boolean {
@@ -19,7 +74,7 @@ export function isPistonConfigured(): boolean {
 
 export async function runPistonSubmission(opts: {
   source_code: string;
-  language_id: string; // 'python' or 'javascript'
+  language_id: string; // any key from PISTON_LANGUAGE_IDS
   stdin?: string;
 }): Promise<PistonRunResult> {
   try {

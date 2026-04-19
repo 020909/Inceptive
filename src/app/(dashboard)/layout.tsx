@@ -1,9 +1,12 @@
+"use client";
 import { AppShell } from "@/components/layout/app-shell";
+import { usePathname } from "next/navigation";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <AppShell><div className="animate-fade-in-up">{children}</div></AppShell>;
+  const pathname = usePathname();
+  return <AppShell><div className={`animate-fade-in-up ${pathname === "/agent" ? "h-full" : ""}`}>{children}</div></AppShell>;
 }

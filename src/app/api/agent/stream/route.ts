@@ -59,8 +59,8 @@ const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
 const readFile = promisify(fs.readFile);
 
-/** Vercel Hobby: 1–300s max. Pro can raise in project settings; keep this ≤300 so Hobby deploys succeed. */
-export const maxDuration = 300;
+/** Set to 60 — Vercel Hobby hard cap. Pro plans can raise this in project settings. */
+export const maxDuration = 60;
 export const runtime = "nodejs";
 
 function ensureMinimumMultifileSiteFromHtml(html: string): { relativePath: string; content: string }[] {
@@ -1783,13 +1783,13 @@ export async function POST(req: Request) {
         /* ── RUN CODE (Piston) ── */
         runCode: {
           description:
-            "Execute Python or JavaScript in a sandboxed runner (Piston). Use when the user asks to run code, verify output, or compute something programmatically.",
+            "Execute code in 25+ languages in a sandboxed runner (Piston). Use when the user asks to run code, verify output, or compute something programmatically.",
           parameters: z.object({
-            language: z.enum(["python", "javascript"]).describe("Programming language"),
+            language: z.string().describe("Programming language (python, javascript, typescript, go, rust, java, c++, c, c#, ruby, php, swift, kotlin, bash, r, lua, perl, scala, haskell, elixir, erlang, dart, julia, nim, zig)"),
             code: z.string().describe("Full source to execute"),
             stdin: z.string().optional().describe("Standard input for the program, if any"),
           }),
-          execute: async (args: { language: "python" | "javascript"; code: string; stdin?: string }) => {
+          execute: async (args: { language: string; code: string; stdin?: string }) => {
             await deductCredits(user_id, "tool_small").catch(() => {});
             if (!isPistonConfigured()) {
               return {
@@ -1799,7 +1799,8 @@ export async function POST(req: Request) {
                   "Code execution is not configured.",
               };
             }
-            const language_id = PISTON_LANGUAGE_IDS[args.language];
+            const normalizedLang = args.language.toLowerCase().trim();
+            const language_id = PISTON_LANGUAGE_IDS[normalizedLang] || normalizedLang;
             const r = await runPistonSubmission({
               source_code: args.code,
               language_id,
@@ -1809,14 +1810,14 @@ export async function POST(req: Request) {
               return {
                 status: "error" as const,
                 run_code: true as const,
-                language: args.language,
+                language: normalizedLang,
                 message: r.error || "Code run failed",
               };
             }
             return {
               status: "success" as const,
               run_code: true as const,
-              language: args.language,
+              language: normalizedLang,
               stdout: r.stdout ?? "",
               stderr: r.stderr ?? "",
               compile_output: r.compile_output ?? "",
@@ -2019,6 +2020,25 @@ export async function POST(req: Request) {
         };
         // Wire shared enqueue so tools can stream events
         streamEnqueue = enqueue;
+
+        // Graceful 55-second timeout — fires 5s before Vercel's 60s hard kill.
+        // Sends a user-facing message and closes the stream cleanly instead of dying silently.
+        const SAFE_TIMEOUT_MS = 55_000;
+        let timeoutFired = false;
+        const timeoutId = setTimeout(() => {
+          if (timeoutFired) return;
+          timeoutFired = true;
+          try {
+            enqueue(
+              `3:${JSON.stringify(
+                "\u23F1\uFE0F This task is taking longer than expected. Inceptive is still working \u2014 please ask me to continue where I left off."
+              )}\n`
+            );
+          } catch {}
+          try { controller.close(); } catch {}
+        }, SAFE_TIMEOUT_MS);
+
+        try {
         const getTextDelta = (v: any): string => {
           if (!v || typeof v !== "object") return "";
           if (typeof v.textDelta === "string") return v.textDelta;
@@ -2485,11 +2505,16 @@ export async function POST(req: Request) {
           const { streamLine: completeLine } = await logTaskEvent({ admin, userId: user_id, action: "Task completed - replied to user", status: "done", icon: "", agentMode });
           enqueue(completeLine);
         } catch (err: any) {
-          enqueue(`3:${JSON.stringify(err?.message || "Stream error")}\n`);
-          const { streamLine: errLine } = await logTaskEvent({ admin, userId: user_id, action: "Task failed", status: "error", icon: "", agentMode });
-          enqueue(errLine);
+          if (!timeoutFired) {
+            enqueue(`3:${JSON.stringify(err?.message || "Stream error")}\n`);
+            const { streamLine: errLine } = await logTaskEvent({ admin, userId: user_id, action: "Task failed", status: "error", icon: "", agentMode });
+            enqueue(errLine);
+          }
         } finally {
-          controller.close();
+          clearTimeout(timeoutId);
+          if (!timeoutFired) {
+            try { controller.close(); } catch {}
+          }
         }
       },
     });

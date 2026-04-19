@@ -24,5 +24,13 @@
       "path": "/api/cron/weekly-report",
       "schedule": "0 9 * * 0"
     }
-  ]
+  ],
+  "functions": {
+    "src/app/api/agent/stream/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/agent/research/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }
