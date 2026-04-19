@@ -29,50 +29,58 @@
     --font-body: 'DM Sans', Inter, Arial, ui-sans-serif, system-ui;
     --font-mono: ui-monospace, 'Courier New', monospace;
 
-    /* ── Surfaces ── */
-    --bg-base: #ffffff;
-    --bg-app: #ffffff;
-    --bg-surface: #ffffff;
-    --bg-elevated: #fafafa;
-    --bg-overlay: #f2f2f2;
-    --bg-sidebar: #fafafa;
+    /* ── Warm Light Palette — Surfaces ── */
+    --bg-base: #f5f4ed;        /* Parchment */
+    --bg-app: #f5f4ed;
+    --bg-surface: #faf9f5;     /* Ivory */
+    --bg-elevated: #ffffff;    /* Pure White */
+    --bg-overlay: #e8e6dc;     /* Warm Sand — interactive surfaces */
+    --bg-sidebar: #faf9f5;     /* Ivory */
 
     /* ── Text ── */
-    --text-primary: #000000;
-    --text-secondary: #212121;
-    --fg-primary: #000000;
-    --fg-secondary: #212121;
-    --fg-tertiary: #93939f;
-    --fg-muted: #93939f;
+    --fg-primary: #3d3d3a;     /* Dark Warm */
+    --fg-secondary: #5e5d59;   /* Olive Gray */
+    --fg-tertiary: #87867f;    /* Stone Gray */
+    --fg-muted: #87867f;       /* Stone Gray */
+    --fg-charcoal: #4d4c48;    /* Charcoal Warm — button text */
+    --fg-on-dark: #b0aea5;     /* Warm Silver — text on dark surfaces */
+    /* Legacy aliases */
+    --text-primary: var(--fg-primary);
+    --text-secondary: var(--fg-secondary);
 
     /* ── Borders ── */
-    --border-subtle: #f2f2f2;
-    --border-default: #d9d9dd;
-    --border-light: #e5e7eb;
-    --border-strong: #d9d9dd;
+    --border-subtle: #f0eee6;  /* Border Cream */
+    --border-default: #e8e6dc; /* Border Warm */
+    --border-light: #f0eee6;   /* Border Cream */
+    --border-strong: #d1cfc5;  /* Ring Warm */
 
-    /* ── Accent / Interactive ── */
-    /* Interaction Blue — hover/focus states ONLY */
+    /* ── Focus Rings ── */
+    --ring: #d1cfc5;           /* Ring Warm */
+    --ring-active: #c2c0b6;    /* Ring Deep — pressed state */
+
+    /* ── Nav active state ── */
+    --nav-active-bg: #e8e6dc;  /* Warm Sand */
+    --nav-active-text: #4d4c48; /* Charcoal Warm */
+    --nav-hover-bg: #f0eee6;   /* Border Cream */
+
+    /* ── Accent / Interactive — Interaction Blue only ── */
     --accent: #1863dc;
     --accent-hover: #1255c0;
     --accent-bright: #2275f0;
     --accent-soft: rgba(24, 99, 220, 0.08);
     --accent-muted: rgba(24, 99, 220, 0.06);
-    --accent-glow: rgba(24, 99, 220, 0.18);
-    --accent-subtle: rgba(24, 99, 220, 0.10);
+    --accent-glow: rgba(24, 99, 220, 0.14);
+    --accent-subtle: rgba(24, 99, 220, 0.07);
 
     /* ── Status ── */
     --success: #1c8f3a;
-    --success-soft: rgba(28, 143, 58, 0.12);
+    --success-soft: rgba(28, 143, 58, 0.10);
     --destructive: #c0392b;
-    --destructive-soft: rgba(192, 57, 43, 0.10);
+    --destructive-soft: rgba(192, 57, 43, 0.08);
     --warning: #b45309;
-    --warning-soft: rgba(180, 83, 9, 0.12);
+    --warning-soft: rgba(180, 83, 9, 0.10);
 
-    /* ── Focus Ring ── */
-    --ring: #1863dc;
-
-    /* ── Purple Hero ── */
+    /* ── Purple Hero (landing page only — untouched) ── */
     --purple-hero-start: #2d1b69;
     --purple-hero-mid: #1e1245;
     --purple-hero-end: #0f0828;
@@ -94,8 +102,8 @@
     --card-foreground: var(--fg-primary);
     --popover: var(--bg-elevated);
     --popover-foreground: var(--fg-primary);
-    --primary: #000000;
-    --primary-foreground: #ffffff;
+    --primary: var(--fg-primary);
+    --primary-foreground: var(--bg-elevated);
     --secondary: var(--bg-overlay);
     --secondary-foreground: var(--fg-primary);
     --muted: var(--bg-surface);
@@ -103,9 +111,9 @@
     --accent-foreground: #ffffff;
     --destructive-foreground: #ffffff;
     --border: var(--border-default);
-    --input: var(--bg-surface);
+    --input: var(--bg-elevated);
 
-    /* ── Legacy bridge (keep existing component references working) ── */
+    /* ── Legacy bridge ── */
     --foreground-secondary: var(--fg-secondary);
     --foreground-tertiary: var(--fg-tertiary);
     --background-elevated: var(--bg-elevated);
@@ -113,22 +121,29 @@
     --surface: var(--bg-surface);
   }
 
-  /* ── Light mode (explicit) ── */
+  /* ── Light mode (explicit override) ── */
   html.light {
-    --bg-base: #ffffff;
-    --bg-app: #ffffff;
-    --bg-surface: #ffffff;
-    --bg-elevated: #fafafa;
-    --bg-overlay: #f2f2f2;
-    --bg-sidebar: #fafafa;
-    --fg-primary: #000000;
-    --fg-secondary: #212121;
-    --fg-tertiary: #93939f;
-    --fg-muted: #93939f;
-    --border-default: #d9d9dd;
-    --border-subtle: #f2f2f2;
-    --border-light: #e5e7eb;
-    --border-strong: #d9d9dd;
+    --bg-base: #f5f4ed;
+    --bg-app: #f5f4ed;
+    --bg-surface: #faf9f5;
+    --bg-elevated: #ffffff;
+    --bg-overlay: #e8e6dc;
+    --bg-sidebar: #faf9f5;
+    --fg-primary: #3d3d3a;
+    --fg-secondary: #5e5d59;
+    --fg-tertiary: #87867f;
+    --fg-muted: #87867f;
+    --fg-charcoal: #4d4c48;
+    --fg-on-dark: #b0aea5;
+    --border-subtle: #f0eee6;
+    --border-default: #e8e6dc;
+    --border-light: #f0eee6;
+    --border-strong: #d1cfc5;
+    --ring: #d1cfc5;
+    --ring-active: #c2c0b6;
+    --nav-active-bg: #e8e6dc;
+    --nav-active-text: #4d4c48;
+    --nav-hover-bg: #f0eee6;
     --accent: #1863dc;
     --accent-hover: #1255c0;
     --accent-soft: rgba(24, 99, 220, 0.08);
@@ -138,15 +153,14 @@
     --card-foreground: var(--fg-primary);
     --popover: var(--bg-elevated);
     --popover-foreground: var(--fg-primary);
-    --primary: #000000;
-    --primary-foreground: #ffffff;
+    --primary: var(--fg-primary);
+    --primary-foreground: var(--bg-elevated);
     --secondary: var(--bg-overlay);
     --secondary-foreground: var(--fg-primary);
     --muted: var(--bg-surface);
     --muted-foreground: var(--fg-tertiary);
     --border: var(--border-default);
-    --input: var(--bg-surface);
-    --ring: #1863dc;
+    --input: var(--bg-elevated);
     --foreground-secondary: var(--fg-secondary);
     --foreground-tertiary: var(--fg-tertiary);
     --background-elevated: var(--bg-elevated);
@@ -154,36 +168,47 @@
     --surface: var(--bg-surface);
   }
 
-  /* ── Dark mode — deep charcoal canvas, same radius/blue accent ── */
+  /* ── Dark mode — warm charcoal, Warm Silver text ── */
   html.dark {
-    /* Surfaces: deep blue-tinted darks, not pure black */
-    --bg-base: #0e0f14;
-    --bg-app: #0e0f14;
-    --bg-surface: #161720;
-    --bg-elevated: #1e2030;
-    --bg-overlay: #252840;
-    --bg-sidebar: #13141c;
+    /* Surfaces: warm-tinted darks */
+    --bg-base: #1a1917;
+    --bg-app: #1a1917;
+    --bg-surface: #222120;
+    --bg-elevated: #2a2927;
+    --bg-overlay: #30302e;     /* Dark Surface */
+    --bg-sidebar: #1e1d1b;
 
     /* Text */
-    --fg-primary: #f2f2f5;
-    --fg-secondary: #c8c9d4;
-    --fg-tertiary: #7b7c8e;
-    --fg-muted: #7b7c8e;
+    --fg-primary: #f5f4ed;     /* Parchment as primary text on dark */
+    --fg-secondary: #b0aea5;   /* Warm Silver */
+    --fg-tertiary: #87867f;    /* Stone Gray */
+    --fg-muted: #87867f;       /* Stone Gray */
+    --fg-charcoal: #f5f4ed;    /* use primary on dark */
+    --fg-on-dark: #b0aea5;
 
-    /* Borders — cool toned, visible but subtle */
-    --border-subtle: rgba(255, 255, 255, 0.06);
-    --border-default: rgba(255, 255, 255, 0.10);
-    --border-light: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.16);
+    /* Borders — warm toned, subtle */
+    --border-subtle: rgba(240, 238, 230, 0.06);
+    --border-default: rgba(240, 238, 230, 0.12);
+    --border-light: rgba(240, 238, 230, 0.07);
+    --border-strong: rgba(240, 238, 230, 0.20);
 
-    /* Accent — same Interaction Blue, slightly brighter on dark */
+    /* Rings */
+    --ring: #c2c0b6;
+    --ring-active: #b0aea5;
+
+    /* Nav active — Dark Surface and Warm Silver */
+    --nav-active-bg: #30302e;
+    --nav-active-text: #b0aea5;
+    --nav-hover-bg: rgba(240, 238, 230, 0.06);
+
+    /* Accent — Interaction Blue stays, slightly brighter on dark */
     --accent: #3b82f6;
     --accent-hover: #2563eb;
     --accent-bright: #60a5fa;
     --accent-soft: rgba(59, 130, 246, 0.12);
     --accent-muted: rgba(59, 130, 246, 0.08);
-    --accent-glow: rgba(59, 130, 246, 0.22);
-    --accent-subtle: rgba(59, 130, 246, 0.10);
+    --accent-glow: rgba(59, 130, 246, 0.20);
+    --accent-subtle: rgba(59, 130, 246, 0.08);
 
     /* Status */
     --success: #34c759;
@@ -193,9 +218,6 @@
     --warning: #f5a524;
     --warning-soft: rgba(245, 165, 36, 0.14);
 
-    --ring: #3b82f6;
-
-    /* Purple hero — slightly adjusted for dark */
     --purple-hero-gradient: linear-gradient(135deg, #3d2a8a 0%, #2a1a60 50%, #160e35 100%);
 
     /* Shadcn bridge */
@@ -205,8 +227,8 @@
     --card-foreground: var(--fg-primary);
     --popover: var(--bg-elevated);
     --popover-foreground: var(--fg-primary);
-    --primary: #f2f2f5;
-    --primary-foreground: #0e0f14;
+    --primary: var(--fg-primary);
+    --primary-foreground: var(--bg-base);
     --secondary: var(--bg-overlay);
     --secondary-foreground: var(--fg-primary);
     --muted: var(--bg-surface);
@@ -258,7 +280,7 @@
   }
 
   ::selection {
-    background: rgba(24, 99, 220, 0.12);
+    background: rgba(24, 99, 220, 0.10);
   }
 }
 
@@ -272,24 +294,26 @@
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-card);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .surface-card-hover:hover {
     border-color: var(--border-default);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
   }
 
   /* Command surface — for panels inside the dashboard */
   .command-surface {
     position: relative;
     background: var(--bg-surface);
-    border: 1px solid var(--border-default);
-    box-shadow: none;
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
 
-  /* Sidebar — snow white, cool gray border */
+  /* Sidebar */
   .sidebar-surface {
     position: relative;
     background: var(--bg-sidebar);
@@ -299,56 +323,64 @@
     -webkit-backdrop-filter: none;
   }
 
-  /* Page hero — white container with signature radius */
+  /* Page hero */
   .page-hero {
     position: relative;
     overflow: hidden;
     border-radius: var(--radius-card);
-    border: 1px solid var(--border-default);
+    border: 1px solid var(--border-subtle);
     background: var(--bg-surface);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   }
 
   .page-kpi {
     border-radius: var(--radius-card);
-    border: 1px solid var(--border-default);
+    border: 1px solid var(--border-subtle);
     background: var(--bg-surface);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   }
 
-  /* ── Elevated card (soft lift on hover) ── */
+  /* ── Elevated card ── */
   .card-elevated {
     border-radius: var(--radius-card) !important;
     border: 1px solid var(--border-subtle) !important;
     background: var(--bg-surface);
-    transition: border-color 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   .card-elevated:hover {
     border-color: var(--border-default) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.07) !important;
   }
 
-  /* ── Glass — simplified for light mode ── */
+  /* ── Glass — theme-aware ── */
   .glass {
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--bg-elevated);
     border: 1px solid var(--border-default);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
   }
 
   .glass-panel {
-    background: rgba(255, 255, 255, 0.96);
-    border: 1px solid var(--border-default);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   }
 
   .glass-card {
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-card);
-    transition: border-color 0.2s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   .glass-card.cursor-pointer:hover,
   .glass-card.surface-card-hover:hover {
     border-color: var(--border-default);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.06);
   }
 
   /* ═══════════════════════════════════════
