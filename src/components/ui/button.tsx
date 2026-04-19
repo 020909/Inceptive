@@ -6,34 +6,38 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-[14px] border bg-clip-padding text-sm font-medium whitespace-nowrap transition-all duration-200 ease-out outline-none select-none focus-visible:border-[var(--ring)] focus-visible:ring-3 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  // Base: DM Sans 14–16px weight 400–500, no decoration by default; focus = 2px solid Interaction Blue
+  "group/button inline-flex shrink-0 items-center justify-center border bg-clip-padding text-sm whitespace-nowrap transition-all duration-200 ease-out outline-none select-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1863dc] focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
+        // Dark solid — dark background, white text, pill shape
         default:
-          "border-[var(--accent)] bg-[var(--accent)] text-[var(--primary-foreground)] shadow-[0_0_0_1px_var(--accent)] hover:-translate-y-px hover:bg-[var(--accent-hover)] hover:border-[var(--accent-hover)] active:translate-y-0 active:scale-[0.98]",
-        outline:
-          "border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--fg-primary)] shadow-[0_0_0_1px_rgba(232,230,220,0.68)] hover:-translate-y-px hover:bg-[var(--bg-surface)] hover:text-[var(--fg-primary)] aria-expanded:bg-[var(--bg-overlay)] aria-expanded:text-[var(--fg-primary)]",
-        secondary:
-          "border-[var(--border-default)] bg-[var(--bg-overlay)] text-[var(--fg-secondary)] shadow-[0_0_0_1px_var(--border-default)] hover:-translate-y-px hover:bg-[var(--bg-surface)] hover:text-[var(--fg-primary)] aria-expanded:bg-[var(--bg-overlay)] aria-expanded:text-[var(--fg-primary)]",
+          "rounded-full border-transparent bg-black text-white hover:opacity-85 active:opacity-75",
+        // Ghost / transparent — invisible until hover, text → Interaction Blue
         ghost:
-          "border-transparent bg-transparent text-[var(--fg-secondary)] hover:-translate-y-px hover:bg-[var(--accent-soft)] hover:text-[var(--fg-primary)] aria-expanded:bg-[var(--accent-soft)] aria-expanded:text-[var(--fg-primary)]",
+          "rounded-full border-transparent bg-transparent text-black hover:text-[#1863dc] hover:opacity-80 active:opacity-65",
+        // Outlined — bordered, text shifts to blue on hover
+        outline:
+          "rounded-full border-[#d9d9dd] bg-white text-black hover:border-[#1863dc] hover:text-[#1863dc] active:opacity-80",
+        // Secondary — softest surface
+        secondary:
+          "rounded-full border-[#d9d9dd] bg-[#f2f2f2] text-black hover:bg-[#e5e7eb] hover:text-black active:opacity-80",
+        // Destructive
         destructive:
-          "border-[color:rgba(181,51,51,0.18)] bg-[var(--destructive-soft)] text-[var(--destructive)] hover:-translate-y-px hover:bg-[color:rgba(181,51,51,0.16)] focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
-        link: "border-transparent px-0 text-[var(--accent)] underline-offset-4 hover:underline",
+          "rounded-full border-[rgba(192,57,43,0.18)] bg-[rgba(192,57,43,0.08)] text-[#c0392b] hover:bg-[rgba(192,57,43,0.14)] active:opacity-80",
+        // Link — pure text
+        link: "rounded-none border-transparent px-0 text-[#1863dc] underline-offset-4 hover:underline",
       },
       size: {
-        default:
-          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
-        icon: "size-8",
-        "icon-xs":
-          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm":
-          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
-        "icon-lg": "size-9",
+        default: "h-9 gap-1.5 px-5 font-[500] text-[14px]",
+        xs: "h-6 gap-1 rounded-full px-3 text-xs",
+        sm: "h-7 gap-1 rounded-full px-4 text-[0.8rem]",
+        lg: "h-11 gap-1.5 px-6 text-[15px]",
+        icon: "size-9 rounded-full",
+        "icon-xs": "size-6 rounded-full [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm": "size-7 rounded-full [&_svg:not([class*='size-'])]:size-3.5",
+        "icon-lg": "size-11 rounded-full",
       },
     },
     defaultVariants: {

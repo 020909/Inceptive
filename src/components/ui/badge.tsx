@@ -3,15 +3,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-[0.12em]",
+  // Base: pill shape, monospace uppercase per design system label spec
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-normal uppercase tracking-[0.12em]",
   {
     variants: {
       variant: {
-        default: "border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--fg-secondary)]",
-        outline: "border-[var(--border-default)] bg-transparent text-[var(--fg-secondary)]",
-        blue: "border-blue-200 bg-blue-50 text-blue-700",
+        // Default — bordered snow surface, muted slate text
+        default: "border-[#d9d9dd] bg-[#fafafa] text-[#93939f]",
+        // Outlined — transparent, just border
+        outline: "border-[#d9d9dd] bg-transparent text-[#93939f]",
+        // Interaction Blue accent
+        blue: "border-[#1863dc]/20 bg-[#1863dc]/8 text-[#1863dc]",
+        // Status: success green
         green: "border-emerald-200 bg-emerald-50 text-emerald-700",
-        gray: "border-zinc-200 bg-zinc-100 text-zinc-700",
+        // Neutral gray
+        gray: "border-[#e5e7eb] bg-[#f2f2f2] text-[#212121]",
+        // Dark — inverted for light sections
+        dark: "border-black bg-black text-white",
       },
     },
     defaultVariants: {

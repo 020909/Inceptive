@@ -28,263 +28,315 @@ export default function LandingPage() {
   }, [user, loading, router]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden font-inter">
-      {/* NAVBAR */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(10,10,10,0.8)] backdrop-blur-xl">
+    <div
+      className="min-h-screen bg-white text-black overflow-x-hidden"
+      style={{ fontFamily: "var(--font-body)" }}
+    >
+      {/* ── NAVBAR ── */}
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4 bg-white border-b border-[#d9d9dd]"
+        style={{ fontFamily: "var(--font-body)" }}
+      >
         <div className="flex items-center gap-2">
-          <span className="text-xl font-bold tracking-tight">Inceptive</span>
-          <span className="text-[9px] font-semibold uppercase tracking-[0.2em] rounded-full px-2 py-0.5 bg-[rgba(232,68,10,0.15)] text-[#e8440a] border border-[rgba(232,68,10,0.2)] ml-1">
+          <span
+            className="text-xl font-normal tracking-tight text-black"
+            style={{ fontFamily: "var(--font-header)" }}
+          >
+            Inceptive
+          </span>
+          <span
+            className="text-[9px] uppercase tracking-[0.2em] rounded-full px-2 py-0.5 border border-[#d9d9dd] text-[#93939f] ml-1"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
             Enterprise
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Link
             href="/login"
-            className="text-sm text-[rgba(255,255,255,0.6)] hover:text-white transition-colors px-3 py-2"
+            className="text-sm text-black hover:text-[#1863dc] transition-colors px-3 py-2"
           >
             Sign in
           </Link>
           <Link
             href="/signup"
-            className="rounded-xl bg-[#e8440a] text-white px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+            className="rounded-full bg-black text-white px-5 py-2 text-sm hover:opacity-85 transition-opacity"
           >
-            Start free →
+            Start free
           </Link>
         </div>
       </nav>
 
-      {/* HERO SECTION */}
-      <div className="pt-32 pb-20 text-center px-6">
+      {/* ── HERO SECTION ── */}
+      <div className="pt-36 pb-24 text-center px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(232,68,10,0.2)] bg-[rgba(232,68,10,0.08)] px-4 py-1.5 text-sm text-[#e8440a] mb-8">
-            <Sparkles size={13} />
+          {/* Section label */}
+          <div
+            className="inline-flex items-center gap-2 rounded-full border border-[#d9d9dd] px-4 py-1.5 text-[13px] text-[#93939f] mb-10"
+            style={{ fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.28px" }}
+          >
+            <Sparkles size={12} />
             Backed by enterprise-grade security
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-[-0.04em] leading-none mb-6 max-w-4xl mx-auto">
-            Your AI operations team.<br />
-            <span
-              style={{
-                background: "linear-gradient(135deg, #e8440a, #ff6b37)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              Working 24/7.
-            </span>
+
+          {/* Hero headline — Libre Baskerville at 72px */}
+          <h1
+            className="mb-6 max-w-4xl mx-auto text-black"
+            style={{
+              fontFamily: "var(--font-header)",
+              fontSize: "clamp(42px, 6vw, 72px)",
+              fontWeight: 400,
+              lineHeight: 1.0,
+              letterSpacing: "-1.44px",
+            }}
+          >
+            Your AI operations team.
+            <br />
+            Working 24/7.
           </h1>
-          <p className="text-xl text-[rgba(255,255,255,0.55)] max-w-2xl mx-auto mb-10 leading-relaxed">
+
+          {/* Subtitle — DM Sans 18px */}
+          <p
+            className="text-[#93939f] max-w-2xl mx-auto mb-12"
+            style={{ fontSize: "18px", lineHeight: 1.4, fontFamily: "var(--font-body)" }}
+          >
             Inceptive deploys autonomous AI agents that handle email, research, workflows, and reporting — so your team ships more with less.
           </p>
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href="/signup"
-              className="rounded-2xl bg-[#e8440a] text-white px-8 py-3.5 text-base font-semibold hover:opacity-90 transition-all flex items-center gap-2 hover:gap-3"
+              className="inline-flex items-center gap-2 rounded-full bg-black text-white px-8 py-3.5 text-[15px] hover:opacity-85 transition-all hover:gap-3"
             >
-              Start for free <ArrowRight size={18} />
+              Start for free <ArrowRight size={16} />
             </Link>
             <Link
               href="/login"
-              className="rounded-2xl border border-[rgba(255,255,255,0.12)] text-white px-8 py-3.5 text-base hover:border-[rgba(255,255,255,0.24)] transition-all"
+              className="inline-flex items-center gap-2 rounded-full border border-[#d9d9dd] text-black px-8 py-3.5 text-[15px] hover:border-[#1863dc] hover:text-[#1863dc] transition-all"
             >
               Sign in →
             </Link>
           </div>
-          <p className="mt-5 text-sm text-[rgba(255,255,255,0.3)]">
+          <p className="mt-5 text-[13px] text-[#93939f]">
             No credit card required · 14-day free trial
           </p>
         </motion.div>
       </div>
 
-      {/* STATS BAR */}
-      <div className="mt-16 py-8 border-y border-[rgba(255,255,255,0.06)] grid grid-cols-3 max-w-2xl mx-auto text-center gap-8">
+      {/* ── STATS BAR ── */}
+      <div className="py-10 border-y border-[#d9d9dd] grid grid-cols-3 max-w-2xl mx-auto text-center gap-8">
         <div>
-          <div className="text-3xl font-bold mb-1">23h</div>
-          <div className="text-sm text-[rgba(255,255,255,0.4)]">saved per employee / week</div>
+          <div
+            className="text-3xl mb-1 text-black"
+            style={{ fontFamily: "var(--font-header)", fontWeight: 400 }}
+          >
+            23h
+          </div>
+          <div className="text-sm text-[#93939f]">saved per employee / week</div>
         </div>
         <div>
-          <div className="text-3xl font-bold mb-1">3 sec</div>
-          <div className="text-sm text-[rgba(255,255,255,0.4)]">average agent response time</div>
+          <div
+            className="text-3xl mb-1 text-black"
+            style={{ fontFamily: "var(--font-header)", fontWeight: 400 }}
+          >
+            3 sec
+          </div>
+          <div className="text-sm text-[#93939f]">average agent response time</div>
         </div>
         <div>
-          <div className="text-3xl font-bold mb-1">SOC 2</div>
-          <div className="text-sm text-[rgba(255,255,255,0.4)]">Type II certified</div>
+          <div
+            className="text-3xl mb-1 text-black"
+            style={{ fontFamily: "var(--font-header)", fontWeight: 400 }}
+          >
+            SOC 2
+          </div>
+          <div className="text-sm text-[#93939f]">Type II certified</div>
         </div>
       </div>
 
-      {/* FEATURE GRID */}
+      {/* ── FEATURE GRID ── */}
       <div className="mt-24 px-6 max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-12">
+        {/* Section label */}
+        <p
+          className="text-center text-[#93939f] mb-4"
+          style={{ fontFamily: "var(--font-mono)", fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.28px" }}
+        >
+          Platform capabilities
+        </p>
+        <h2
+          className="text-center mb-14 text-black"
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "clamp(28px, 3.5vw, 48px)",
+            fontWeight: 400,
+            lineHeight: 1.2,
+            letterSpacing: "-0.48px",
+          }}
+        >
           Everything your team needs to move faster
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-6 hover:border-[rgba(255,255,255,0.14)] transition-all">
-            <div className="rounded-xl bg-[rgba(232,68,10,0.1)] text-[#e8440a] p-2.5 w-10 h-10 flex items-center justify-center mb-4">
-              <Mail size={20} />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[
+            { icon: Mail, title: "AI Email Agent", desc: "Draft, triage, and send emails in your voice. Type one sentence, get a polished email." },
+            { icon: Search, title: "Enterprise Search", desc: "Search emails, documents, and reports in one place. Built-in knowledge base." },
+            { icon: GitBranch, title: "Visual Workflows", desc: "Drag-and-drop automation canvas. Chain AI agents into multi-step pipelines." },
+            { icon: BarChart2, title: "Research Reports", desc: "Deep market research on any topic. Sources included, delivered in minutes." },
+            { icon: Shield, title: "Human-in-the-Loop", desc: "Every agent action is reviewable. Approve, reject, or modify before execution." },
+            { icon: Zap, title: "Skills Library", desc: "15+ pre-built agent playbooks. Inbox triage, lead research, weekly ops reports." },
+          ].map(({ icon: Icon, title, desc }) => (
+            <div
+              key={title}
+              className="rounded-[22px] border border-[#f2f2f2] bg-white p-7 hover:border-[#d9d9dd] transition-colors"
+            >
+              <div className="rounded-[8px] bg-[#f2f2f2] text-black p-2.5 w-10 h-10 flex items-center justify-center mb-5">
+                <Icon size={19} />
+              </div>
+              <h3
+                className="mb-2 text-black"
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "18px",
+                  fontWeight: 400,
+                  lineHeight: 1.3,
+                  letterSpacing: "-0.18px",
+                }}
+              >
+                {title}
+              </h3>
+              <p className="text-[14px] text-[#93939f] leading-relaxed">{desc}</p>
             </div>
-            <h3 className="text-lg font-semibold mb-2">AI Email Agent</h3>
-            <p className="text-sm text-[rgba(255,255,255,0.6)]">
-              Draft, triage, and send emails in your voice. Type one sentence, get a polished email.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-6 hover:border-[rgba(255,255,255,0.14)] transition-all">
-            <div className="rounded-xl bg-[rgba(232,68,10,0.1)] text-[#e8440a] p-2.5 w-10 h-10 flex items-center justify-center mb-4">
-              <Search size={20} />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Enterprise Search</h3>
-            <p className="text-sm text-[rgba(255,255,255,0.6)]">
-              Search emails, documents, and reports in one place. Built-in knowledge base.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-6 hover:border-[rgba(255,255,255,0.14)] transition-all">
-            <div className="rounded-xl bg-[rgba(232,68,10,0.1)] text-[#e8440a] p-2.5 w-10 h-10 flex items-center justify-center mb-4">
-              <GitBranch size={20} />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Visual Workflows</h3>
-            <p className="text-sm text-[rgba(255,255,255,0.6)]">
-              Drag-and-drop automation canvas. Chain AI agents into multi-step pipelines.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-6 hover:border-[rgba(255,255,255,0.14)] transition-all">
-            <div className="rounded-xl bg-[rgba(232,68,10,0.1)] text-[#e8440a] p-2.5 w-10 h-10 flex items-center justify-center mb-4">
-              <BarChart2 size={20} />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Research Reports</h3>
-            <p className="text-sm text-[rgba(255,255,255,0.6)]">
-              Deep market research on any topic. Sources included, delivered in minutes.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-6 hover:border-[rgba(255,255,255,0.14)] transition-all">
-            <div className="rounded-xl bg-[rgba(232,68,10,0.1)] text-[#e8440a] p-2.5 w-10 h-10 flex items-center justify-center mb-4">
-              <Shield size={20} />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Human-in-the-Loop</h3>
-            <p className="text-sm text-[rgba(255,255,255,0.6)]">
-              Every agent action is reviewable. Approve, reject, or modify before execution.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-6 hover:border-[rgba(255,255,255,0.14)] transition-all">
-            <div className="rounded-xl bg-[rgba(232,68,10,0.1)] text-[#e8440a] p-2.5 w-10 h-10 flex items-center justify-center mb-4">
-              <Zap size={20} />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Skills Library</h3>
-            <p className="text-sm text-[rgba(255,255,255,0.6)]">
-              15+ pre-built agent playbooks. Inbox triage, lead research, weekly ops reports.
-            </p>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* SOCIAL PROOF SECTION */}
+      {/* ── TRUST BAR ── */}
       <div className="mt-24 text-center px-6">
-        <p className="text-xs uppercase tracking-[0.22em] text-[rgba(255,255,255,0.3)] mb-8">
+        <p
+          className="text-[#93939f] mb-8"
+          style={{ fontFamily: "var(--font-mono)", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.28px" }}
+        >
           Built for teams at companies like
         </p>
         <div className="flex flex-wrap justify-center items-center gap-10">
-          <span className="text-[rgba(255,255,255,0.2)] text-sm font-semibold tracking-wide">Acme Corp</span>
-          <span className="text-[rgba(255,255,255,0.2)] text-sm font-semibold tracking-wide">TechCo</span>
-          <span className="text-[rgba(255,255,255,0.2)] text-sm font-semibold tracking-wide">Meridian</span>
-          <span className="text-[rgba(255,255,255,0.2)] text-sm font-semibold tracking-wide">Apex Systems</span>
-          <span className="text-[rgba(255,255,255,0.2)] text-sm font-semibold tracking-wide">Lightwave</span>
-          <span className="text-[rgba(255,255,255,0.2)] text-sm font-semibold tracking-wide">Orbis</span>
+          {["Acme Corp", "TechCo", "Meridian", "Apex Systems", "Lightwave", "Orbis"].map((name) => (
+            <span
+              key={name}
+              className="text-[#93939f] text-sm tracking-wide opacity-60"
+              style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+            >
+              {name}
+            </span>
+          ))}
         </div>
       </div>
 
-      {/* A16Z QUOTE CALLOUT */}
-      <div className="mt-16 max-w-3xl mx-auto rounded-3xl border border-[rgba(232,68,10,0.15)] bg-[rgba(232,68,10,0.05)] p-8 text-center">
-        <p className="text-lg text-[rgba(255,255,255,0.7)] leading-relaxed italic">
-          "29% of the Fortune 500 are now live, paying customers of a leading AI startup. The window for first-mover advantage is closing."
-        </p>
-        <p className="text-sm text-[rgba(255,255,255,0.3)] mt-4">
-          — a16z Enterprise AI Report, April 2026
-        </p>
+      {/* ── QUOTE CALLOUT — deep purple band ── */}
+      <div className="mt-24 purple-hero-band py-20 px-6">
+        <div className="max-w-3xl mx-auto text-center">
+          <p
+            className="text-white/80 leading-relaxed mb-6"
+            style={{ fontFamily: "var(--font-header)", fontSize: "clamp(20px, 2.5vw, 28px)", fontStyle: "italic" }}
+          >
+            "29% of the Fortune 500 are now live, paying customers of a leading AI startup. The window for first-mover advantage is closing."
+          </p>
+          <p
+            className="text-white/40 text-[13px]"
+            style={{ fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.28px" }}
+          >
+            — a16z Enterprise AI Report, April 2026
+          </p>
+        </div>
       </div>
 
-      {/* PRICING SECTION */}
+      {/* ── PRICING SECTION ── */}
       <div className="mt-24 px-6 max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-12">
+        <p
+          className="text-center text-[#93939f] mb-4"
+          style={{ fontFamily: "var(--font-mono)", fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.28px" }}
+        >
+          Pricing
+        </p>
+        <h2
+          className="text-center mb-14 text-black"
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "clamp(28px, 3.5vw, 48px)",
+            fontWeight: 400,
+            lineHeight: 1.2,
+            letterSpacing: "-0.48px",
+          }}
+        >
           Simple, transparent pricing
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Card 1 — Pro */}
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-8 flex flex-col">
-            <div className="text-xl font-medium mb-4 text-[#e8440a]">Pro</div>
-            <div className="text-4xl font-bold mb-2">$2,000<span className="text-lg text-[rgba(255,255,255,0.5)] font-normal">/month</span></div>
-            <div className="text-sm text-[rgba(255,255,255,0.5)] mb-8">Per workspace · billed monthly</div>
-            <div className="space-y-4 mb-8 flex-1">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-[#e8440a] mt-0.5" />
-                <span className="text-sm text-[rgba(255,255,255,0.8)]">Unlimited AI agents</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-[#e8440a] mt-0.5" />
-                <span className="text-sm text-[rgba(255,255,255,0.8)]">Email + Research + Workflows</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-[#e8440a] mt-0.5" />
-                <span className="text-sm text-[rgba(255,255,255,0.8)]">15+ Skills playbooks</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-[#e8440a] mt-0.5" />
-                <span className="text-sm text-[rgba(255,255,255,0.8)]">Gmail & Slack integrations</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-[#e8440a] mt-0.5" />
-                <span className="text-sm text-[rgba(255,255,255,0.8)]">Priority support</span>
-              </div>
+          <div className="rounded-[22px] border border-[#d9d9dd] bg-white p-10 flex flex-col">
+            <div
+              className="text-[13px] text-[#93939f] mb-5 uppercase tracking-[0.28px]"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              Pro
+            </div>
+            <div
+              className="text-black mb-1"
+              style={{ fontFamily: "var(--font-header)", fontSize: "44px", fontWeight: 400, lineHeight: 1 }}
+            >
+              $2,000
+              <span className="text-[18px] text-[#93939f]" style={{ fontFamily: "var(--font-body)" }}>/month</span>
+            </div>
+            <div className="text-[13px] text-[#93939f] mb-8">Per workspace · billed monthly</div>
+            <div className="space-y-3.5 mb-10 flex-1">
+              {["Unlimited AI agents", "Email + Research + Workflows", "15+ Skills playbooks", "Gmail & Slack integrations", "Priority support"].map((f) => (
+                <div key={f} className="flex items-start gap-3">
+                  <CheckCircle2 size={17} className="text-black mt-0.5 shrink-0" />
+                  <span className="text-[14px] text-[#212121]">{f}</span>
+                </div>
+              ))}
             </div>
             <Link
               href="/signup"
-              className="block w-full py-3 text-center rounded-xl bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] transition-colors border border-[rgba(255,255,255,0.1)] text-sm font-medium"
+              className="block w-full py-3 text-center rounded-full border border-[#d9d9dd] text-[14px] text-black hover:border-[#1863dc] hover:text-[#1863dc] transition-colors"
             >
               Start free trial →
             </Link>
           </div>
 
           {/* Card 2 — Enterprise */}
-          <div className="rounded-2xl border border-[rgba(232,68,10,0.3)] bg-[rgba(232,68,10,0.05)] p-8 relative flex flex-col">
-            <div className="absolute -top-3 right-4 text-xs bg-[#e8440a] text-white rounded-full px-3 py-1 font-medium tracking-wide">
+          <div className="rounded-[22px] border border-[#000000] bg-black text-white p-10 relative flex flex-col">
+            <div className="absolute -top-3.5 right-5 text-[11px] bg-white text-black rounded-full px-3 py-1 font-medium tracking-wide uppercase">
               Most Popular
             </div>
-            <div className="text-xl font-medium mb-4 text-[#e8440a]">Enterprise</div>
-            <div className="text-4xl font-bold mb-2">$5,000+<span className="text-lg text-[rgba(255,255,255,0.5)] font-normal">/month</span></div>
-            <div className="text-sm text-[rgba(255,255,255,0.5)] mb-8">Custom pricing for large teams</div>
-            <div className="space-y-4 mb-8 flex-1">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-[#e8440a] mt-0.5" />
-                <span className="text-sm text-[rgba(255,255,255,0.8)]">Everything in Pro</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-[#e8440a] mt-0.5" />
-                <span className="text-sm text-[rgba(255,255,255,0.8)]">Custom AI personas</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-[#e8440a] mt-0.5" />
-                <span className="text-sm text-[rgba(255,255,255,0.8)]">Human-in-the-loop approvals</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-[#e8440a] mt-0.5" />
-                <span className="text-sm text-[rgba(255,255,255,0.8)]">Knowledge Base (unlimited docs)</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-[#e8440a] mt-0.5" />
-                <span className="text-sm text-[rgba(255,255,255,0.8)]">SSO + SAML</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-[#e8440a] mt-0.5" />
-                <span className="text-sm text-[rgba(255,255,255,0.8)]">Dedicated success manager</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={18} className="text-[#e8440a] mt-0.5" />
-                <span className="text-sm text-[rgba(255,255,255,0.8)]">SLA + uptime guarantee</span>
-              </div>
+            <div
+              className="text-[13px] text-white/50 mb-5 uppercase tracking-[0.28px]"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              Enterprise
+            </div>
+            <div
+              className="text-white mb-1"
+              style={{ fontFamily: "var(--font-header)", fontSize: "44px", fontWeight: 400, lineHeight: 1 }}
+            >
+              $5,000+
+              <span className="text-[18px] text-white/50" style={{ fontFamily: "var(--font-body)" }}>/month</span>
+            </div>
+            <div className="text-[13px] text-white/50 mb-8">Custom pricing for large teams</div>
+            <div className="space-y-3.5 mb-10 flex-1">
+              {["Everything in Pro", "Custom AI personas", "Human-in-the-loop approvals", "Knowledge Base (unlimited docs)", "SSO + SAML", "Dedicated success manager", "SLA + uptime guarantee"].map((f) => (
+                <div key={f} className="flex items-start gap-3">
+                  <CheckCircle2 size={17} className="text-white mt-0.5 shrink-0" />
+                  <span className="text-[14px] text-white/80">{f}</span>
+                </div>
+              ))}
             </div>
             <Link
               href="/login"
-              className="block w-full py-3 text-center rounded-xl bg-[#e8440a] hover:opacity-90 transition-opacity text-sm font-medium"
+              className="block w-full py-3 text-center rounded-full bg-white text-black text-[14px] hover:opacity-90 transition-opacity"
             >
               Talk to us →
             </Link>
@@ -292,28 +344,47 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* CTA SECTION */}
-      <div className="mt-24 mb-16 text-center px-6">
-        <div
-          className="rounded-3xl p-16 max-w-4xl mx-auto"
-          style={{ background: "radial-gradient(ellipse at center, rgba(232,68,10,0.12), transparent 70%)" }}
+      {/* ── CTA SECTION — purple hero band ── */}
+      <div className="mt-24 purple-hero-band py-24 px-6 text-center">
+        <h2
+          className="text-white mb-4"
+          style={{
+            fontFamily: "var(--font-header)",
+            fontSize: "clamp(32px, 4.5vw, 60px)",
+            fontWeight: 400,
+            lineHeight: 1.0,
+            letterSpacing: "-1.2px",
+          }}
         >
-          <h2 className="text-4xl font-bold mb-4">Ready to give your team an AI workforce?</h2>
-          <p className="text-lg text-[rgba(255,255,255,0.6)] mb-8 max-w-xl mx-auto">
-            Set up in 5 minutes. Your first agents are running today.
-          </p>
-          <Link
-            href="/signup"
-            className="inline-flex items-center gap-2 rounded-2xl bg-[#e8440a] text-white px-8 py-4 text-lg font-semibold hover:opacity-90 transition-all hover:gap-3"
-          >
-            Get started free <ArrowRight size={20} />
-          </Link>
-        </div>
+          Ready to give your team an AI workforce?
+        </h2>
+        <p
+          className="text-white/60 mb-10 max-w-xl mx-auto"
+          style={{ fontSize: "18px", lineHeight: 1.4 }}
+        >
+          Set up in 5 minutes. Your first agents are running today.
+        </p>
+        <Link
+          href="/signup"
+          className="inline-flex items-center gap-2 rounded-full bg-white text-black px-10 py-4 text-[15px] hover:opacity-90 transition-all hover:gap-3"
+        >
+          Get started free <ArrowRight size={16} />
+        </Link>
       </div>
 
-      {/* FOOTER */}
-      <footer className="border-t border-[rgba(255,255,255,0.06)] py-8 px-6 text-center text-sm text-[rgba(255,255,255,0.3)]">
-        © 2026 Inceptive AI · Enterprise AI Operations Platform
+      {/* ── FOOTER ── */}
+      <footer className="footer-gradient py-10 px-8 text-center">
+        <p
+          className="text-[12px]"
+          style={{
+            fontFamily: "var(--font-mono)",
+            textTransform: "uppercase",
+            letterSpacing: "0.28px",
+            color: "#93939f",
+          }}
+        >
+          © 2026 Inceptive AI · Enterprise AI Operations Platform
+        </p>
       </footer>
     </div>
   );

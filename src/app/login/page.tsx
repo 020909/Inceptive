@@ -85,91 +85,148 @@ export default function LoginPage() {
   };
 
   return (
-    <div 
-      className="min-h-screen flex bg-[var(--bg-base)]"
-      style={{
-        background:
-          "radial-gradient(ellipse at top, rgba(255,79,0,0.1) 0%, transparent 52%), linear-gradient(180deg, rgba(255,255,255,0.45), transparent 28%), var(--bg-base)",
-      }}
-    >
+    <div className="min-h-screen flex bg-white" style={{ fontFamily: "var(--font-body)" }}>
+      {/* ── Left branding panel ── */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-        className="relative hidden overflow-hidden border-r border-[var(--border-default)] lg:flex lg:w-[52%] lg:flex-col lg:justify-between p-12"
+        transition={{ duration: 0.7 }}
+        className="relative hidden overflow-hidden border-r border-[#d9d9dd] bg-white lg:flex lg:w-[52%] lg:flex-col lg:justify-between p-14"
       >
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(circle at 20% 18%, rgba(255,79,0,0.12), transparent 28%), radial-gradient(circle at 82% 80%, rgba(20,20,19,0.08), transparent 32%)",
-          }}
-        />
-
+        {/* Logo */}
         <div className="relative z-10 flex items-center gap-3">
-          <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[0_0_0_1px_rgba(232,230,220,0.8)]">
+          <div className="relative h-10 w-10 overflow-hidden rounded-[8px] border border-[#d9d9dd] bg-[#fafafa]">
             <Image src="/logo.png" alt="Inceptive" fill sizes="40px" className="object-cover" />
           </div>
-          <span className="text-lg text-[var(--fg-primary)]" style={{ fontFamily: "var(--font-header)" }}>Inceptive</span>
+          <span
+            className="text-lg text-black"
+            style={{ fontFamily: "var(--font-header)" }}
+          >
+            Inceptive
+          </span>
         </div>
 
-        <div className="relative z-10 max-w-xl space-y-8">
-          <div className="inline-flex rounded-full border border-[var(--border-default)] bg-[rgba(255,255,255,0.62)] px-4 py-1.5 text-[11px] uppercase tracking-[0.18em] text-[var(--fg-tertiary)] shadow-[0_0_0_1px_rgba(232,230,220,0.65)]">
+        {/* Hero content */}
+        <div className="relative z-10 max-w-xl space-y-10">
+          <div
+            className="inline-flex rounded-full border border-[#d9d9dd] px-4 py-1.5 text-[11px] text-[#93939f]"
+            style={{ fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.28px" }}
+          >
             Autonomous Operating System
           </div>
-          <h1 className="text-balance text-[4.3rem] leading-[0.96] text-[var(--fg-primary)]">
+
+          <h1
+            className="text-black"
+            style={{
+              fontFamily: "var(--font-header)",
+              fontSize: "clamp(38px, 4.5vw, 60px)",
+              fontWeight: 400,
+              lineHeight: 1.0,
+              letterSpacing: "-1.2px",
+            }}
+          >
             Quiet power for
             <br />
             ambitious teams.
           </h1>
-          <p className="max-w-md text-[1.05rem] leading-7 text-[var(--fg-tertiary)]">
+
+          <p className="max-w-md text-[16px] leading-7 text-[#93939f]">
             Built for enterprises that want AI to execute real work: research, operations, and delivery in one secure, editorial workspace.
           </p>
+
+          {/* Stat cards */}
           <div className="grid max-w-lg grid-cols-2 gap-4">
-            <div className="rounded-[24px] border border-[var(--border-default)] bg-[rgba(255,255,255,0.72)] p-5 shadow-[0_18px_50px_rgba(78,66,51,0.08)]">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--fg-muted)]">Response</p>
-              <p className="mt-3 text-3xl text-[var(--fg-primary)]" style={{ fontFamily: "var(--font-header)" }}>24/7</p>
-              <p className="mt-2 text-sm leading-6 text-[var(--fg-tertiary)]">A calmer command layer for work that keeps moving.</p>
+            <div className="rounded-[22px] border border-[#d9d9dd] bg-white p-6">
+              <p
+                className="text-[#93939f]"
+                style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.28px" }}
+              >
+                Response
+              </p>
+              <p
+                className="mt-3 text-black"
+                style={{ fontFamily: "var(--font-header)", fontSize: "32px", fontWeight: 400 }}
+              >
+                24/7
+              </p>
+              <p className="mt-2 text-[13px] leading-6 text-[#93939f]">A calmer command layer for work that keeps moving.</p>
             </div>
-            <div className="rounded-[24px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-5 shadow-[0_18px_50px_rgba(78,66,51,0.06)]">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--fg-muted)]">Signal</p>
-              <p className="mt-3 text-3xl text-[var(--fg-primary)]" style={{ fontFamily: "var(--font-header)" }}>Focused</p>
-              <p className="mt-2 text-sm leading-6 text-[var(--fg-tertiary)]">Warm surfaces, clear hierarchy, no stray color noise.</p>
+            <div className="rounded-[22px] border border-[#d9d9dd] bg-[#fafafa] p-6">
+              <p
+                className="text-[#93939f]"
+                style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.28px" }}
+              >
+                Signal
+              </p>
+              <p
+                className="mt-3 text-black"
+                style={{ fontFamily: "var(--font-header)", fontSize: "32px", fontWeight: 400 }}
+              >
+                Focused
+              </p>
+              <p className="mt-2 text-[13px] leading-6 text-[#93939f]">Warm surfaces, clear hierarchy, no stray color noise.</p>
             </div>
           </div>
         </div>
 
-        <p className="relative z-10 text-[11px] uppercase tracking-[0.16em] text-[var(--fg-muted)]">
+        <p
+          className="relative z-10 text-[#93939f]"
+          style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.16px" }}
+        >
           © {new Date().getFullYear()} Inceptive AI
         </p>
       </motion.div>
 
+      {/* ── Right auth form ── */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.08 }}
-        className="flex flex-1 items-center justify-center p-6 lg:p-16"
+        className="flex flex-1 items-center justify-center p-6 lg:p-16 bg-[#fafafa]"
       >
-        <div className="glass w-full max-w-[520px] rounded-[32px] p-8 shadow-[0_30px_80px_rgba(78,66,51,0.12)] lg:p-14">
+        <div className="w-full max-w-[500px] bg-white rounded-[22px] border border-[#d9d9dd] p-10 lg:p-14">
+          {/* Mobile logo */}
           <div className="mb-10 flex items-center gap-3 lg:hidden">
-            <div className="relative h-9 w-9 overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)]">
+            <div className="relative h-9 w-9 overflow-hidden rounded-[8px] border border-[#d9d9dd]">
               <Image src="/logo.png" alt="Inceptive" fill sizes="36px" className="object-cover" />
             </div>
-            <span className="text-lg text-[var(--fg-primary)]" style={{ fontFamily: "var(--font-header)" }}>Inceptive</span>
+            <span className="text-lg text-black" style={{ fontFamily: "var(--font-header)" }}>
+              Inceptive
+            </span>
           </div>
 
+          {/* Heading */}
           <div className="mb-8 space-y-2">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--fg-muted)]">Welcome back</p>
-            <h2 className="text-[2.6rem] leading-[0.95] text-[var(--fg-primary)]">Sign in to Inceptive</h2>
-            <p className="text-sm leading-6 text-[var(--fg-tertiary)]">Access the redesigned workspace and continue where your team left off.</p>
+            <p
+              className="text-[#93939f]"
+              style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.28px" }}
+            >
+              Welcome back
+            </p>
+            <h2
+              className="text-black"
+              style={{
+                fontFamily: "var(--font-header)",
+                fontSize: "clamp(28px, 3vw, 38px)",
+                fontWeight: 400,
+                lineHeight: 1.0,
+                letterSpacing: "-0.76px",
+              }}
+            >
+              Sign in to Inceptive
+            </h2>
+            <p className="text-[14px] leading-6 text-[#93939f]">
+              Access the redesigned workspace and continue where your team left off.
+            </p>
           </div>
 
+          {/* Google OAuth */}
           <motion.div whileTap={{ scale: 0.98 }} className="mb-6">
-            <Button
+            <button
               type="button"
               disabled={!!oauthLoading}
               onClick={() => handleOAuth("google")}
-              className="h-12 w-full rounded-2xl border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--fg-primary)] shadow-[0_0_0_1px_rgba(232,230,220,0.78)] hover:bg-[var(--bg-surface)]"
+              className="h-12 w-full rounded-full border border-[#d9d9dd] bg-white text-black text-[14px] hover:border-[#1863dc] transition-colors flex items-center justify-center disabled:opacity-50"
             >
               {oauthLoading === "google" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -184,71 +241,79 @@ export default function LoginPage() {
                   Continue with Google
                 </span>
               )}
-            </Button>
+            </button>
           </motion.div>
 
+          {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[var(--border-default)]" />
+              <div className="w-full border-t border-[#d9d9dd]" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-[var(--bg-base)] px-3 text-[11px] uppercase tracking-[0.16em] text-[var(--fg-muted)]">or continue with email</span>
+              <span
+                className="bg-white px-3 text-[#93939f]"
+                style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.16px" }}
+              >
+                or continue with email
+              </span>
             </div>
           </div>
 
+          {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--fg-tertiary)]">Email</Label>
+              <Label htmlFor="email" className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#93939f]">Email</Label>
               <Input
                 id="email" type="email" placeholder="you@example.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setErrors(p => ({ ...p, email: undefined })); }}
-                className="h-12 rounded-2xl border-[var(--border-default)] bg-[var(--bg-surface)] px-4 text-sm text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus:border-[var(--ring)] focus:ring-0"
+                className="h-12 rounded-[8px] border-[#d9d9dd] bg-white px-4 text-sm text-black placeholder:text-[#93939f] focus:border-[#1863dc] focus:ring-0"
               />
               {errors.email && <p className="text-[11px] text-[var(--destructive)]">{errors.email}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--fg-tertiary)]">Password</Label>
+              <Label htmlFor="password" className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#93939f]">Password</Label>
               <Input
                 id="password" type="password" placeholder="••••••••"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setErrors(p => ({ ...p, password: undefined })); }}
-                className="h-12 rounded-2xl border-[var(--border-default)] bg-[var(--bg-surface)] px-4 text-sm text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus:border-[var(--ring)] focus:ring-0"
+                className="h-12 rounded-[8px] border-[#d9d9dd] bg-white px-4 text-sm text-black placeholder:text-[#93939f] focus:border-[#1863dc] focus:ring-0"
               />
               {errors.password && <p className="text-[11px] text-[var(--destructive)]">{errors.password}</p>}
             </div>
 
             <motion.div whileTap={{ scale: 0.98 }} className="pt-1">
-              <Button type="submit" disabled={loading}
-                className="h-12 w-full rounded-2xl text-sm font-medium">
+              <button
+                type="submit"
+                disabled={loading}
+                className="h-12 w-full rounded-full bg-black text-white text-[14px] hover:opacity-85 transition-opacity disabled:opacity-50 flex items-center justify-center"
+              >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
-              </Button>
+              </button>
             </motion.div>
 
             {authFeedback && (
-              <p
-                className={
-                  authFeedback.type === "error"
-                    ? "text-[11px] text-[var(--destructive)] leading-relaxed pt-1"
-                    : "text-[11px] text-[var(--success)] leading-relaxed pt-1"
-                }
-              >
+              <p className={authFeedback.type === "error" ? "text-[11px] text-[var(--destructive)] leading-relaxed pt-1" : "text-[11px] text-[var(--success)] leading-relaxed pt-1"}>
                 {authFeedback.message}
               </p>
             )}
           </form>
 
+          {/* Magic Link */}
           <motion.div whileTap={{ scale: 0.98 }} className="mt-3">
-            <Button onClick={handleMagicLink} disabled={magicLinkLoading} variant="outline"
-              className="h-12 w-full rounded-2xl text-[13px] font-medium">
+            <button
+              onClick={handleMagicLink}
+              disabled={magicLinkLoading}
+              className="h-12 w-full rounded-full border border-[#d9d9dd] text-black text-[13px] hover:border-[#1863dc] hover:text-[#1863dc] transition-colors disabled:opacity-50 flex items-center justify-center"
+            >
               {magicLinkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send magic link"}
-            </Button>
+            </button>
           </motion.div>
 
-          <p className="mt-8 text-center text-[13px] text-[var(--fg-muted)]">
+          <p className="mt-8 text-center text-[13px] text-[#93939f]">
             No account?{" "}
-            <Link href={signupHref} className="font-medium text-[var(--accent)] transition-colors hover:text-[var(--accent-bright)]">
+            <Link href={signupHref} className="text-black hover:text-[#1863dc] transition-colors">
               Sign up free
             </Link>
           </p>

@@ -76,32 +76,67 @@ export default function SignUpPage() {
   };
 
   return (
-    <div 
-      className="min-h-screen flex bg-[var(--bg-base)]"
-      style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(245,245,247,0.08) 0%, transparent 80%), var(--bg-base)" }}
+    <div
+      className="min-h-screen flex bg-white"
+      style={{ fontFamily: "var(--font-body)" }}
     >
       {/* ── Left branding panel ── */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="hidden lg:flex lg:w-[45%] flex-col items-center justify-center p-10 relative overflow-hidden"
+        className="hidden lg:flex lg:w-[45%] flex-col items-center justify-center p-12 border-r border-[#d9d9dd] bg-[#fafafa] relative overflow-hidden"
       >
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(245,245,247,0.06) 0%, transparent 65%)" }}
+        {/* Subtle purple tint orb behind content */}
+        <div
+          className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(24,99,220,0.04) 0%, transparent 70%)" }}
         />
-
-        <div className="relative z-10 text-center">
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="relative h-12 w-12 rounded-xl overflow-hidden border border-[var(--border-subtle)]">
+        <div className="relative z-10 text-center max-w-sm">
+          <div className="flex items-center justify-center gap-3 mb-10">
+            <div className="relative h-12 w-12 rounded-[10px] overflow-hidden border border-[#d9d9dd] bg-white">
               <Image src="/logo.png" alt="Inceptive" fill sizes="48px" className="object-cover" />
             </div>
-            <span className="text-3xl font-bold text-[var(--fg-primary)] tracking-[-0.04em]">Inceptive</span>
+            <span
+              className="text-black"
+              style={{ fontFamily: "var(--font-header)", fontSize: "26px", fontWeight: 400 }}
+            >
+              Inceptive
+            </span>
           </div>
-          <p className="text-lg text-[var(--fg-tertiary)] leading-relaxed max-w-sm">
+
+          <h2
+            className="text-black mb-4"
+            style={{
+              fontFamily: "var(--font-header)",
+              fontSize: "clamp(32px, 3.5vw, 48px)",
+              fontWeight: 400,
+              lineHeight: 1.05,
+              letterSpacing: "-0.96px",
+            }}
+          >
             The first AI that works while you sleep.
-            <br />Not when you ask.
+          </h2>
+          <p className="text-[16px] text-[#93939f] leading-relaxed">
+            Not when you ask.
           </p>
+
+          {/* Mini stat */}
+          <div className="mt-10 rounded-[22px] border border-[#d9d9dd] bg-white p-6 text-left">
+            <p
+              className="text-[#93939f]"
+              style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.28px" }}
+            >
+              Avg. time saved
+            </p>
+            <p
+              className="mt-2 text-black"
+              style={{ fontFamily: "var(--font-header)", fontSize: "36px", fontWeight: 400 }}
+            >
+              23h / week
+            </p>
+            <p className="mt-1 text-[13px] text-[#93939f]">per employee, replacing manual workflows.</p>
+          </div>
         </div>
       </motion.div>
 
@@ -110,29 +145,49 @@ export default function SignUpPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="flex flex-1 items-center justify-center p-6 lg:p-16 border-l border-[var(--border-subtle)]"
+        className="flex flex-1 items-center justify-center p-6 lg:p-16 bg-white"
       >
-        <div className="w-full max-w-[480px] glass rounded-[32px] p-16">
+        <div className="w-full max-w-[480px]">
           {/* Mobile logo */}
           <div className="flex items-center gap-2.5 mb-10 lg:hidden">
-            <div className="relative h-8 w-8 rounded-lg overflow-hidden border border-[var(--border-subtle)]">
+            <div className="relative h-8 w-8 rounded-[8px] overflow-hidden border border-[#d9d9dd]">
               <Image src="/logo.png" alt="Inceptive" fill sizes="32px" className="object-cover" />
             </div>
-            <span className="text-[var(--fg-primary)] font-semibold text-base">Inceptive</span>
+            <span className="text-black" style={{ fontFamily: "var(--font-header)", fontSize: "18px" }}>
+              Inceptive
+            </span>
           </div>
 
+          {/* Heading */}
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-[var(--fg-primary)] tracking-[-0.03em] mb-1">Create your account</h2>
-            <p className="text-sm text-[var(--fg-tertiary)]">Get started with your 24/7 AI employee</p>
+            <p
+              className="text-[#93939f] mb-2"
+              style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.28px" }}
+            >
+              New account
+            </p>
+            <h2
+              className="text-black mb-1"
+              style={{
+                fontFamily: "var(--font-header)",
+                fontSize: "clamp(26px, 3vw, 36px)",
+                fontWeight: 400,
+                lineHeight: 1.0,
+                letterSpacing: "-0.72px",
+              }}
+            >
+              Create your account
+            </h2>
+            <p className="text-[14px] text-[#93939f]">Get started with your 24/7 AI employee</p>
           </div>
 
           {/* Google OAuth */}
           <motion.div whileTap={{ scale: 0.98 }} className="mb-6">
-            <Button
+            <button
               type="button"
               disabled={!!oauthLoading}
               onClick={() => handleOAuth("google")}
-              className="w-full h-11 rounded-xl font-medium text-sm bg-[var(--bg-elevated)] text-[var(--fg-primary)] border border-[var(--border-default)] hover:bg-[var(--bg-surface)] transition-colors"
+              className="w-full h-12 rounded-full border border-[#d9d9dd] bg-white text-black text-[14px] hover:border-[#1863dc] transition-colors flex items-center justify-center disabled:opacity-50"
             >
               {oauthLoading === "google" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -147,76 +202,79 @@ export default function SignUpPage() {
                   Continue with Google
                 </span>
               )}
-            </Button>
+            </button>
           </motion.div>
 
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[var(--border-subtle)]" />
+              <div className="w-full border-t border-[#d9d9dd]" />
             </div>
             <div className="relative flex justify-center">
-              <span className="px-3 text-[11px] text-[var(--fg-muted)] bg-[var(--bg-base)]">or continue with email</span>
+              <span
+                className="px-3 text-[#93939f] bg-white"
+                style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.16px" }}
+              >
+                or continue with email
+              </span>
             </div>
           </div>
 
+          {/* Form */}
           <form onSubmit={handleSignUp} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Email</Label>
+              <Label htmlFor="email" className="text-[11px] font-medium text-[#93939f] uppercase tracking-widest">Email</Label>
               <Input
                 id="email" type="email" placeholder="you@example.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setErrors(p => ({ ...p, email: undefined })); }}
-                className="h-10 rounded-lg text-sm bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus:border-[var(--border-strong)] focus:ring-0 transition-colors"
+                className="h-11 rounded-[8px] text-sm bg-white border-[#d9d9dd] text-black placeholder:text-[#93939f] focus:border-[#1863dc] focus:ring-0 transition-colors"
               />
               {errors.email && <p className="text-[11px] text-[var(--destructive)]">{errors.email}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Password</Label>
+              <Label htmlFor="password" className="text-[11px] font-medium text-[#93939f] uppercase tracking-widest">Password</Label>
               <Input
                 id="password" type="password" placeholder="Create a password"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setErrors(p => ({ ...p, password: undefined })); }}
-                className="h-10 rounded-lg text-sm bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus:border-[var(--border-strong)] focus:ring-0 transition-colors"
+                className="h-11 rounded-[8px] text-sm bg-white border-[#d9d9dd] text-black placeholder:text-[#93939f] focus:border-[#1863dc] focus:ring-0 transition-colors"
               />
               {errors.password && <p className="text-[11px] text-[var(--destructive)]">{errors.password}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-[11px] font-medium text-[var(--fg-tertiary)] uppercase tracking-widest">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-[11px] font-medium text-[#93939f] uppercase tracking-widest">Confirm Password</Label>
               <Input
                 id="confirmPassword" type="password" placeholder="Confirm your password"
                 value={confirmPassword}
                 onChange={(e) => { setConfirmPassword(e.target.value); setErrors(p => ({ ...p, confirmPassword: undefined })); }}
-                className="h-10 rounded-lg text-sm bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--fg-primary)] placeholder:text-[var(--fg-muted)] focus:border-[var(--border-strong)] focus:ring-0 transition-colors"
+                className="h-11 rounded-[8px] text-sm bg-white border-[#d9d9dd] text-black placeholder:text-[#93939f] focus:border-[#1863dc] focus:ring-0 transition-colors"
               />
               {errors.confirmPassword && <p className="text-[11px] text-[var(--destructive)]">{errors.confirmPassword}</p>}
             </div>
 
             <motion.div whileTap={{ scale: 0.98 }} className="pt-1">
-              <Button type="submit" disabled={loading}
-                className="w-full h-10 rounded-lg font-medium text-sm bg-[var(--accent)] text-[var(--primary-foreground)] border border-[var(--accent)] hover:opacity-90 transition-colors btn-premium">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-11 rounded-full bg-black text-white text-[14px] hover:opacity-85 transition-opacity disabled:opacity-50 flex items-center justify-center"
+              >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
-              </Button>
+              </button>
             </motion.div>
 
             {authFeedback && (
-              <p
-                className={
-                  authFeedback.type === "error"
-                    ? "text-[11px] text-[var(--destructive)] leading-relaxed pt-1"
-                    : "text-[11px] text-[var(--success)] leading-relaxed pt-1"
-                }
-              >
+              <p className={authFeedback.type === "error" ? "text-[11px] text-[var(--destructive)] leading-relaxed pt-1" : "text-[11px] text-[var(--success)] leading-relaxed pt-1"}>
                 {authFeedback.message}
               </p>
             )}
           </form>
 
-          <p className="mt-8 text-center text-[13px] text-[var(--fg-muted)]">
+          <p className="mt-8 text-center text-[13px] text-[#93939f]">
             Already have an account?{" "}
-            <Link href={loginHref} className="text-[var(--fg-primary)] hover:text-[var(--accent)] font-medium transition-colors">
+            <Link href={loginHref} className="text-black hover:text-[#1863dc] transition-colors">
               Sign in
             </Link>
           </p>
