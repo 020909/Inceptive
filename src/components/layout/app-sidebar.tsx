@@ -85,7 +85,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-[var(--border-default)] bg-[var(--bg-sidebar)]">
       <SidebarHeader className="h-16 border-b border-[var(--border-subtle)]">
-        <div className="flex h-full items-center gap-3 px-4 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
+        <div className="flex h-full items-center gap-3 px-3 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
           <Link href="/dashboard" className="shrink-0 group-data-[collapsible=icon]:hidden">
             <Image src="/logo.png" alt="Inceptive" width={32} height={32} className="h-8 w-8 object-contain" />
           </Link>
@@ -108,9 +108,9 @@ export function AppSidebar() {
             ) : currentOrg ? (
               <DropdownMenu>
                 <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className="bg-[var(--bg-elevated)] border border-[var(--border-default)]" />}>
-                  <div className="flex items-center gap-3 w-full">
+                  <div className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-base)] border border-[var(--border-default)]">
-                      <Building2 size={14} className="text-[var(--fg-primary)]" />
+                      <Building2 size={16} className="text-[var(--fg-primary)]" />
                     </div>
                     <div className="flex flex-col items-start truncate group-data-[collapsible=icon]:hidden">
                       <span className="text-[10px] uppercase tracking-widest text-[var(--fg-muted)]">Workspace</span>
@@ -138,8 +138,8 @@ export function AppSidebar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <SidebarMenuButton size="lg" onClick={() => router.push("/org/create")} className="bg-[var(--bg-elevated)] border border-[var(--border-default)]">
-                <Plus size={16} className="mr-2" />
+              <SidebarMenuButton size="lg" onClick={() => router.push("/org/create")} className="bg-[var(--bg-elevated)] border border-[var(--border-default)] justify-start group-data-[collapsible=icon]:justify-center">
+                <Plus size={16} className="group-data-[state=expanded]:mr-2" />
                 <span className="group-data-[collapsible=icon]:hidden">Create Workspace</span>
               </SidebarMenuButton>
             )}

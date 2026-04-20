@@ -524,7 +524,7 @@
 
   .page-frame {
     width: 100%;
-    max-width: 80rem;
+    max-width: 94rem;
     margin-inline: auto;
     padding: 2rem;
   }
@@ -924,6 +924,6 @@
 }
 
 @keyframes sidebarActiveBar {
-  from { height: 0; opacity: 0; }
-  to { height: 60%; opacity: 1; }
+  from { transform: translateY(-50%) scaleY(0); opacity: 0; }
+  to { transform: translateY(-50%) scaleY(1); opacity: 1; }
 }

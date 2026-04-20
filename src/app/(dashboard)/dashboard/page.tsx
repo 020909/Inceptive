@@ -378,7 +378,7 @@ export default function DashboardPage() {
 
   return (
     <div className="animate-fade-in-up page-enter">
-      <div className="page-frame max-w-[96rem]">
+      <div className="page-frame max-w-[94rem]">
         <div className="mb-8 flex flex-col gap-3">
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">
             <Sparkles size={12} />
