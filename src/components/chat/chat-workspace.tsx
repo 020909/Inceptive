@@ -1552,18 +1552,18 @@ function DashboardExperience() {
       <div className="flex min-h-0 flex-1">
         {/* ── PANEL 1: LEFT FILE TREE ── */}
         {leftPanelOpen && (
-          <div className="w-[200px] shrink-0 flex flex-col bg-[#1e1e1e] border-r border-[#2d2d2d]">
-            <div className="px-3 py-2 flex items-center justify-between border-b border-[#2d2d2d]/50">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-[#888888]">Files</span>
+          <div className="w-[200px] shrink-0 flex flex-col bg-[#1a1a1a] border-r border-[#2d2d2d]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase font-sans tracking-[0.2em] text-[#93939f] px-[16px] py-[12px]">Files</span>
             </div>
-            <div className="flex-1 overflow-y-auto py-2">
-               <div className="flex items-center gap-2 px-3 py-1.5 text-[11px] text-[#cccccc] hover:bg-[#2A2D2E] cursor-pointer transition-colors group">
-                 <ChevronDown size={12} className="text-[#888888]" />
+            <div className="flex-1 overflow-y-auto">
+               <div className="flex items-center gap-2 px-[16px] py-1.5 text-[11px] text-[#c5c5c5] hover:bg-[#2a2a2a] cursor-pointer transition-colors group">
+                 <ChevronDown size={12} className="text-[#93939f]" />
                  <span className="font-medium">PROJECT</span>
                </div>
-               <div className="mt-1 flex items-center gap-2 px-3 py-1.5 text-[12px] bg-[#37373d] text-[#ffffff] cursor-pointer pl-6 border-l-2 border-[#1863dc]">
+               <div className="mt-0 flex items-center gap-2 px-[16px] py-1.5 text-[13px] bg-[#37373d] text-[#ffffff] cursor-pointer pl-[36px]">
                  <Code2 size={13} className="text-[#519aba]" />
-                 <span className="font-mono">{monacoLanguage === 'javascript' ? 'index.js' : 'App.tsx'}</span>
+                 <span className="font-sans">{monacoLanguage === 'javascript' ? 'index.js' : 'App.tsx'}</span>
                </div>
                <div className="flex items-center justify-center pt-8 px-4 text-center">
                  <p className="text-[10px] text-[#666666] leading-relaxed">
@@ -1597,11 +1597,11 @@ function DashboardExperience() {
                 />
               </Suspense>
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-[#555555]">
-                <Sparkles size={32} className="mb-4 opacity-50" />
-                <p className="text-sm font-medium">Welcome to Code Studio</p>
-                <p className="text-xs mt-2 max-w-sm text-center opacity-80 leading-relaxed">
-                   The agent writes to this scratchpad automatically. Use the chat on the right to start building.
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <Code2 size={24} className="mb-4 text-[#3a3a3a]" />
+                <p className="text-[16px] font-sans text-white font-medium">Ask Inceptive to write something</p>
+                <p className="text-[13px] text-[#93939f] mt-2 max-w-sm text-center">
+                   The agent writes directly to this editor. Start a conversation on the right.
                 </p>
               </div>
             )}
@@ -1610,17 +1610,28 @@ function DashboardExperience() {
 
         {/* ── PANEL 3: RIGHT CHAT (380px) ── */}
         <div className="w-[380px] shrink-0 flex flex-col bg-[#252526] border-l border-[#2d2d2d]">
-          <header className="flex h-[48px] shrink-0 items-center justify-between px-4 border-b border-[#2d2d2d]">
-            <span className="text-[13px] font-semibold text-[#cccccc]">Inceptive AI</span>
+          <header className="relative flex h-[48px] shrink-0 items-center justify-between px-4 border-b border-[#2d2d2d] bg-[#1e1e1e]">
+            <span className="text-[13px] font-medium font-sans text-[#ffffff]">Code Studio</span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => void startNewChat()}
-                className="flex h-7 items-center gap-1.5 rounded bg-[#333333] px-2.5 text-[11px] font-medium text-[#cccccc] hover:bg-[#444444] transition-colors"
+                className="flex h-7 items-center gap-1.5 bg-transparent px-2.5 text-[12px] text-[#93939f] hover:text-[#ffffff] transition-colors focus:outline-none"
               >
                 <Plus size={12} /> New Chat
               </button>
             </div>
+            {streaming && (
+              <div className="absolute bottom-[-1px] left-0 h-[2px] w-full overflow-hidden bg-transparent">
+                <div className="h-full bg-[#1863dc] w-1/3 animate-[pulse_1s_ease-in-out_infinite]" style={{ animation: 'slideCodeStudio 1.5s ease-in-out infinite' }} />
+                <style>{`
+                  @keyframes slideCodeStudio {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(300%); }
+                  }
+                `}</style>
+              </div>
+            )}
           </header>
 
           <div className="flex min-h-0 flex-1 flex-col relative">
@@ -1691,12 +1702,35 @@ function DashboardExperience() {
               }}
             />
 
-            <div className="rounded-xl border border-[#3c3c3c] bg-[#1e1e1e] p-2 focus-within:border-[#555] transition-colors relative shadow-sm">
+            <div className="mb-3 flex w-full">
+              <div
+                className="relative flex items-center bg-[#2a2a2a] rounded-full p-[3px] cursor-pointer"
+                onClick={() => setAgentMode(agentMode === 'build' ? 'plan' : 'build')}
+              >
+                <div
+                  className="absolute bg-white rounded-full transition-all duration-150 ease-in-out"
+                  style={{
+                    width: agentMode === 'build' ? '46px' : '46px',
+                    height: 'calc(100% - 6px)',
+                    left: agentMode === 'build' ? '3px' : '49px',
+                  }}
+                />
+                <div className={`relative z-10 px-3 py-1 text-[11px] font-sans font-medium transition-colors ${agentMode === 'build' ? 'text-black' : 'text-[#93939f]'}`}>
+                  Build
+                </div>
+                <div className={`relative z-10 px-3 py-1 text-[11px] font-sans font-medium transition-colors ${agentMode === 'plan' ? 'text-black' : 'text-[#93939f]'}`}>
+                  Plan
+                </div>
+              </div>
+            </div>
+
+            <div className="relative">
               <DashboardAiPrompt
                 value={input}
                 onChange={setInput}
                 onSend={handlePromptSend}
                 isLoading={streaming}
+                className="!rounded-[12px] !border !border-[#3a3a3a] !bg-[#2a2a2a] focus-within:!border-[#1863dc] !shadow-none !ring-0 !outline-none"
                 placeholder="Ask Inceptive anything…"
                 onAttachClick={() => fileInputRef.current?.click()}
                 dragOver={dragOver}
@@ -1714,18 +1748,7 @@ function DashboardExperience() {
               />
             </div>
             
-            <div className="flex items-center justify-between mt-2 px-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-[#666666] font-mono uppercase tracking-wider">Mode</span>
-                <select 
-                  value={agentMode} 
-                  onChange={(e) => setAgentMode(e.target.value as any)}
-                  className="bg-transparent text-[#cccccc] text-[10px] outline-none cursor-pointer font-medium"
-                >
-                  <option value="build" className="bg-[#1e1e1e]">Build</option>
-                  <option value="plan" className="bg-[#1e1e1e]">Plan Only</option>
-                </select>
-              </div>
+            <div className="flex items-center justify-end mt-2 px-1">
               <button
                 type="button"
                 onClick={startMic}
