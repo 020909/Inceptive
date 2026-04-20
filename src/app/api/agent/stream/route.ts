@@ -2038,7 +2038,6 @@ export async function POST(req: Request) {
           try { controller.close(); } catch {}
         }, SAFE_TIMEOUT_MS);
 
-        try {
         const getTextDelta = (v: any): string => {
           if (!v || typeof v !== "object") return "";
           if (typeof v.textDelta === "string") return v.textDelta;
