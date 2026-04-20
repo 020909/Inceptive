@@ -273,7 +273,7 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="page-frame max-w-5xl">
+      <div className="page-frame">
         <div className="h-7 w-32 rounded-lg bg-[var(--bg-surface)] animate-pulse mb-6" />
         <div className="h-[400px] rounded-xl bg-[var(--bg-surface)] animate-pulse" />
         </div>
@@ -281,7 +281,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="page-frame max-w-6xl">
+    <div className="page-frame">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}

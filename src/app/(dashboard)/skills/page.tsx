@@ -181,7 +181,7 @@ export default function SkillsPage() {
 
   return (
     <>
-      <div className="page-frame max-w-6xl">
+      <div className="page-frame">
         <div className="mb-8 animate-fade-in-up">
           <div className="flex items-center justify-between gap-3">
             <div>

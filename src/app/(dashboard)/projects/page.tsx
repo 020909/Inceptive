@@ -271,7 +271,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="flex-1 min-h-screen bg-[var(--bg-app)] text-[var(--fg-primary)]">
-      <div className="page-frame max-w-6xl">
+      <div className="page-frame">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}

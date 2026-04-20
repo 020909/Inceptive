@@ -140,10 +140,27 @@
     --background-elevated: var(--bg-elevated);
     --background-overlay: var(--bg-overlay);
     --surface: var(--bg-surface);
+
+    /* ── Sidebar Redesign Tokens (Untitled UI inspired) ── */
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #f2f2f2;
+    --sidebar-divider: #f2f2f2;
+    --sidebar-fg: #101828;
+    --sidebar-fg-muted: #667085;
+    --sidebar-icon: #667085;
+    --sidebar-icon-active: #101828;
+    --sidebar-item-hover: #f9fafb;
+    --sidebar-item-active: #f9fafb;
+    --sidebar-badge-bg: #f2f4f7;
+    --sidebar-badge-text: #344054;
   }
 
   /* ── Light mode (explicit override) ── */
   html.light {
+    --sidebar-bg: #ffffff;
+    --sidebar-fg: #101828;
+    --sidebar-icon: #667085; /* Logos/Icons will be dark in light mode */
+
     --bg-base: #f5f4ed;
     --bg-app: #f5f4ed;
     --bg-surface: #faf9f5;
@@ -284,6 +301,19 @@
     --background-elevated: var(--bg-elevated);
     --background-overlay: var(--bg-overlay);
     --surface: var(--bg-surface);
+
+    /* ── Sidebar Tokens (Dark) ── */
+    --sidebar-bg: #000000;
+    --sidebar-border: rgba(255,255,255,0.06);
+    --sidebar-divider: rgba(255,255,255,0.06);
+    --sidebar-fg: #f5f4ed;
+    --sidebar-fg-muted: #98a2b3;
+    --sidebar-icon: #ffffff; /* Logos/Icons will be white in dark mode */
+    --sidebar-icon-active: #ffffff;
+    --sidebar-item-hover: rgba(255,255,255,0.05);
+    --sidebar-item-active: rgba(255,255,255,0.08);
+    --sidebar-badge-bg: rgba(255,255,255,0.08);
+    --sidebar-badge-text: #f5f4ed;
   }
 
   html,
@@ -293,6 +323,7 @@
     background: var(--bg-base);
     font-family: var(--font-body);
   }
+
 
   /* Heading hierarchy — Libre Baskerville for authority */
   h1, h2, h3, h4, h5, h6 {
@@ -526,7 +557,7 @@
     width: 100%;
     max-width: 94rem;
     margin-inline: auto;
-    padding: 2rem;
+    padding: 1.5rem;
   }
 
   /* ═══════════════════════════════════════

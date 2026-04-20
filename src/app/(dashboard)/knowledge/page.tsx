@@ -268,7 +268,7 @@ export default function KnowledgePage() {
   };
 
   return (
-    <div className="page-frame max-w-[72rem] animate-fade-in-up">
+    <div className="page-frame animate-fade-in-up">
       <div className="mb-6 animate-fade-in-up">
         <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">
           <BookOpen size={11} />

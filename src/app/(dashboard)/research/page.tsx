@@ -261,7 +261,7 @@ export default function ResearchPage() {
 
   return (
     <div className="page-enter">
-      <div className="page-frame max-w-6xl mt-4">
+      <div className="page-frame mt-4">
 
       {/* Search */}
         <motion.div className="max-w-2xl mx-auto mb-12" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
