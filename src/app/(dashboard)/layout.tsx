@@ -8,5 +8,5 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  return <AppShell><div className={`animate-fade-in-up ${pathname === "/agent" ? "h-full" : ""}`}>{children}</div></AppShell>;
+  return <AppShell><div className={`animate-fade-in-up flex flex-col ${pathname === "/agent" ? "h-full" : ""}`}>{children}</div></AppShell>;
 }

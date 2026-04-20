@@ -17,7 +17,7 @@ type PageTransitionProps = {
 export function PageTransition({ children, className }: PageTransitionProps) {
   return (
     <motion.div
-      className={cn("min-h-0 w-full", className)}
+      className={cn("min-h-0 w-full flex flex-col", className)}
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{

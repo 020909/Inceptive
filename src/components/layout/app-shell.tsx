@@ -17,9 +17,9 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="dashboard-shell relative flex h-screen overflow-hidden bg-[var(--bg-base)]">
       <Sidebar />
-      <main className={`relative min-w-0 flex-1 overflow-y-auto ${isAgent ? "overflow-hidden" : ""}`}>
+      <main className={`relative min-w-0 flex-1 overflow-y-auto ${isAgent ? "overflow-hidden flex flex-col h-full" : ""}`}>
         <div className={`relative z-10 min-h-0 ${isAgent ? "h-full" : "pb-6"}`}>
-          <PageTransition>{children}</PageTransition>
+          <PageTransition className={isAgent ? "h-full" : undefined}>{children}</PageTransition>
         </div>
       </main>
     </div>
