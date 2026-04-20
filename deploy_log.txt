@@ -1,0 +1,102 @@
+WARNING! `--confirm` is deprecated, please use `--yes` instead
+Retrieving project…
+Deploying 020909s-projects-e296e845/inceptive
+Uploading [--------------------] (0.0B/131B)
+Uploading [====================] (131.0B/131B)
+Inspect: https://vercel.com/020909s-projects-e296e845/inceptive/DTcLaYGv4K3zuvrqNw54td2QL9Gb [2s]
+Production: https://inceptive-7foh8kvn5-020909s-projects-e296e845.vercel.app [2s]
+https://inceptive-7foh8kvn5-020909s-projects-e296e845.vercel.appBuilding...
+Building: Running build in Washington, D.C., USA (East) – iad1
+Building: Build machine configuration: 2 cores, 8 GB
+Building: Retrieving list of deployment files...
+Building: Downloading 429 deployment files...
+Building: Restored build cache from previous deployment (7Z6BF3NkUnR1P6o9htxP6Tu8r5AE)
+Building: Running "vercel build"
+Building: Vercel CLI 51.6.1
+Building: Installing dependencies...
+Building: Installing dependencies...
+Building: > inceptive-temp@0.1.0 postinstall
+Building: > npx playwright install chromium 2>/dev/null || true
+Building: BEWARE: your OS is not officially supported by Playwright; downloading fallback build for ubuntu24.04-x64.
+Building: Downloading Chrome for Testing 145.0.7632.6 (playwright chromium v1208) from https://cdn.playwright.dev/builds/cft/145.0.7632.6/linux64/chrome-linux64.zip
+Building: |                                                                                |   0% of 167.3 MiB
+Building: |■■■■■■■■                                                                        |  10% of 167.3 MiB
+Building: |■■■■■■■■■■■■■■■■                                                                |  20% of 167.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 167.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 167.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 167.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 167.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 167.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 167.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 167.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 167.3 MiB
+Building: Chrome for Testing 145.0.7632.6 (playwright chromium v1208) downloaded to /vercel/.cache/ms-playwright/chromium-1208
+Building: BEWARE: your OS is not officially supported by Playwright; downloading fallback build for ubuntu24.04-x64.
+Building: Downloading FFmpeg (playwright ffmpeg v1011) from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-linux.zip
+Building: |                                                                                |   0% of 2.3 MiB
+Building: |■■■■■■■■                                                                        |  10% of 2.3 MiB
+Building: |■■■■■■■■■■■■■■■■                                                                |  20% of 2.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 2.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 2.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 2.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 2.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 2.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 2.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■���■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 2.3 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 2.3 MiB
+Building: FFmpeg (playwright ffmpeg v1011) downloaded to /vercel/.cache/ms-playwright/ffmpeg-1011
+Building: BEWARE: your OS is not officially supported by Playwright; downloading fallback build for ubuntu24.04-x64.
+Building: Downloading Chrome Headless Shell 145.0.7632.6 (playwright chromium-headless-shell v1208) from https://cdn.playwright.dev/builds/cft/145.0.7632.6/linux64/chrome-headless-shell-linux64.zip
+Building: |                                                                                |   0% of 110.9 MiB
+Building: |■■■■■■■■                                                                        |  10% of 110.9 MiB
+Building: |■■■■■■■■■■■■■■■■                                                                |  20% of 110.9 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 110.9 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 110.9 MiB
+Building: |■■■■■■■■■■■■■■■■��■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 110.9 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 110.9 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 110.9 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 110.9 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 110.9 MiB
+Building: |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 110.9 MiB
+Building: Chrome Headless Shell 145.0.7632.6 (playwright chromium-headless-shell v1208) downloaded to /vercel/.cache/ms-playwright/chromium_headless_shell-1208
+Building: added 39 packages in 11s
+Building: 328 packages are looking for funding
+Building: run `npm fund` for details
+Building: Detected Next.js version: 16.2.3
+Building: Running "npm run build"
+Building: > inceptive-temp@0.1.0 build
+Building: > next build
+Building: Applying modifyConfig from Vercel
+Building: ▲ Next.js 16.2.3 (Turbopack)
+Building: Creating an optimized production build ...
+Building: Turbopack build encountered 1 warnings:
+Building: ./next.config.ts
+Building: Encountered unexpected file in NFT list
+Building: A file was traced that indicates that the whole project was traced unintentionally. Somewhere in the import trace below, there are:
+Building: - filesystem operations (like path.join, path.resolve or fs.readFile), or
+Building: - very dynamic requires (like require('./' + foo)).
+Building: To resolve this, you can
+Building: - remove them if possible, or
+Building: - only use them in development, or
+Building: - make sure they are statically scoped to some subfolder: path.join(process.cwd(), 'data', bar), or
+Building: - add ignore comments: path.join(/*turbopackIgnore: true*/ process.cwd(), bar)
+Building: Import trace:
+Building: App Route:
+Building: ./next.config.ts
+Building: ./src/app/api/agent/stream/route.ts
+Building: ✓ Compiled successfully in 75s
+Building: Running TypeScript ...
+Building: Failed to type check.
+Building: ./src/app/org/[slug]/dashboard/page.tsx:110:17
+Building: Type error: Type '{ children: string; size: "lg"; className: string; render: Element; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'.
+Building: Property 'render' does not exist on type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'.
+Building: 108 |                 size="lg"
+Building: 109 |                 className="h-11 rounded-xl px-5"
+Building: > 110 |                 render={<Link href={`/org/${organization.slug}/workflows`} />}
+Building: |                 ^
+Building: 111 |               >
+Building: 112 |                 Browse Workflows
+Building: 113 |               </Button>
+Building: Next.js build worker exited with code: 1 and signal: null
+Building: Error: Command "npm run build" exited with 1
+Error: Command "npm run build" exited with 1

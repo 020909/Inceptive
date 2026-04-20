@@ -24,6 +24,7 @@ const buttonVariants = cva(
         sm: "h-9 rounded-md px-3",
         lg: "h-11 rounded-md px-8",
         icon: "h-10 w-10",
+        "icon-sm": "h-8 w-8",
       },
     },
     defaultVariants: {
@@ -37,10 +38,18 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  render?: React.ReactElement
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, render, ...props }, ref) => {
+    if (render) {
+      return React.cloneElement(render, {
+        ...props,
+        className: cn(buttonVariants({ variant, size, className }), (render as any).props.className),
+        ref,
+      } as any)
+    }
     const Comp = asChild ? Slot : "button"
     return (
       <Comp
