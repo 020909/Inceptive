@@ -1371,7 +1371,7 @@ function DashboardExperience() {
   );
 
   const onClarificationSomethingElse = useCallback(() => {
-    focusDashboardChatInput();
+    document.getElementById("chat-input")?.focus();
   }, []);
 
   const onDismissClarification = useCallback(() => {
