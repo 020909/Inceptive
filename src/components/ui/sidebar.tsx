@@ -242,6 +242,14 @@ const Sidebar = React.forwardRef<
             {children}
           </div>
         </div>
+        <div
+          style={{
+            width: "var(--sidebar-width)",
+            flexShrink: 0,
+            transition: "width 200ms ease-linear",
+          }}
+          className="group-data-[collapsible=offcanvas]:!w-0 group-data-[collapsible=icon]:!w-[--sidebar-width-icon]"
+        />
       </div>
     )
   }
@@ -312,8 +320,6 @@ const SidebarInset = React.forwardRef<
       ref={ref}
       className={cn(
         "relative flex min-h-svh flex-1 flex-col bg-background",
-        // Desktop sidebar offset: avoid relying on the separate "gap" element (which can fail in some CSS edge cases).
-        "md:peer-data-[side=left]:peer-data-[variant=sidebar]:ml-[--sidebar-width] md:peer-data-[side=left]:peer-data-[collapsible=icon]:ml-[--sidebar-width-icon] md:peer-data-[side=left]:peer-data-[collapsible=offcanvas]:ml-0",
         "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className
       )}
