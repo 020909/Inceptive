@@ -328,7 +328,7 @@ export default function Plan() {
   return (
     <div className="h-full overflow-auto p-2 text-white/90">
       <motion.div
-        className="rounded-xl border border-white/[0.06] bg-[#171717] shadow-[0_18px_60px_rgba(0,0,0,0.55)] overflow-hidden"
+        className="rounded-xl border border-white/[0.06] bg-[#121212] shadow-[0_18px_60px_rgba(0,0,0,0.55)] overflow-hidden"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.2, 0.65, 0.3, 0.9] } }}
       >

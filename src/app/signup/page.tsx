@@ -117,7 +117,7 @@ export default function SignUpPage() {
           </p>
 
           {/* Mini stat */}
-          <div className="mt-10 rounded-[22px] border border-white/10 bg-[#171717] p-6 text-left">
+          <div className="mt-10 rounded-[22px] border border-white/10 bg-[#121212] p-6 text-left">
             <p
               className="text-[#93939f]"
               style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.28px" }}

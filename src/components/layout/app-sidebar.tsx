@@ -84,15 +84,18 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-[var(--border-default)] bg-[var(--bg-sidebar)]">
-      <SidebarHeader className="h-16 border-b border-[var(--border-subtle)] px-4">
-        <div className="flex h-full items-center gap-3">
-          <Link href="/dashboard" className="shrink-0">
+      <SidebarHeader className="h-16 border-b border-[var(--border-subtle)]">
+        <div className="flex h-full items-center gap-3 px-4 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
+          <Link href="/dashboard" className="shrink-0 group-data-[collapsible=icon]:hidden">
             <Image src="/logo.png" alt="Inceptive" width={32} height={32} className="h-8 w-8 object-contain" />
           </Link>
-          <span className="truncate text-lg font-medium text-[var(--fg-primary)] group-data-[collapsible=icon]:hidden">
-            Inceptive
+          <span
+            className="truncate text-lg font-normal tracking-[0.12em] text-[var(--fg-primary)] group-data-[collapsible=icon]:hidden"
+            style={{ fontFamily: "'Libre Baskerville', Georgia, ui-serif, serif", textTransform: 'uppercase' as const }}
+          >
+            INCEPTIVE
           </span>
-          <SidebarTrigger className="ml-auto group-data-[collapsible=icon]:hidden" />
+          <SidebarTrigger className="ml-auto shrink-0 group-data-[collapsible=icon]:ml-0" />
         </div>
       </SidebarHeader>
 
@@ -164,7 +167,7 @@ export function AppSidebar() {
                     tooltip={item.label}
                   >
                     <Link href={item.href}>
-                      <item.icon className="size-4" />
+                      <item.icon className="size-5" />
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -188,7 +191,7 @@ export function AppSidebar() {
                   tooltip={item.label}
                 >
                   <Link href={item.href}>
-                    <item.icon className="size-4" />
+                    <item.icon className="size-5" />
                     <span>{item.label}</span>
                   </Link>
                 </SidebarMenuButton>

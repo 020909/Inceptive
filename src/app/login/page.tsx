@@ -136,7 +136,7 @@ export default function LoginPage() {
 
           {/* Stat cards */}
           <div className="grid max-w-lg grid-cols-2 gap-4">
-            <div className="rounded-[22px] border border-white/10 bg-[#171717] p-6">
+            <div className="rounded-[22px] border border-white/10 bg-[#121212] p-6">
               <p
                 className="text-[#93939f]"
                 style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.28px" }}
@@ -151,7 +151,7 @@ export default function LoginPage() {
               </p>
               <p className="mt-2 text-[13px] leading-6 text-[#93939f]">A calmer command layer for work that keeps moving.</p>
             </div>
-            <div className="rounded-[22px] border border-white/10 bg-[#171717]/50 p-6">
+            <div className="rounded-[22px] border border-white/10 bg-[#121212]/50 p-6">
               <p
                 className="text-[#93939f]"
                 style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.28px" }}
@@ -184,7 +184,7 @@ export default function LoginPage() {
         transition={{ duration: 0.5, delay: 0.08 }}
         className="flex flex-1 items-center justify-center p-6 lg:p-16 bg-[#000000]"
       >
-        <div className="w-full max-w-[500px] bg-[#171717] rounded-[22px] border border-white/10 p-10 lg:p-14">
+        <div className="w-full max-w-[500px] bg-[#121212] rounded-[22px] border border-white/10 p-10 lg:p-14">
           {/* Mobile logo */}
           <div className="mb-10 flex items-center gap-3 lg:hidden">
             <div className="relative h-9 w-9 overflow-hidden rounded-[8px] border border-white/10">
@@ -251,7 +251,7 @@ export default function LoginPage() {
             </div>
             <div className="relative flex justify-center">
               <span
-                className="bg-[#171717] px-3 text-[#93939f]"
+                className="bg-[#121212] px-3 text-[#93939f]"
                 style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.16px" }}
               >
                 or continue with email

@@ -191,7 +191,7 @@ export default function LandingPage() {
           ].map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="rounded-[22px] border border-white/5 bg-[#171717] p-7 hover:border-white/20 transition-colors"
+              className="rounded-[22px] border border-white/5 bg-[#121212] p-7 hover:border-white/20 transition-colors"
             >
               <div className="rounded-[8px] bg-white/5 text-white p-2.5 w-10 h-10 flex items-center justify-center mb-5">
                 <Icon size={19} />
@@ -276,7 +276,7 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Card 1 — Pro */}
-          <div className="rounded-[22px] border border-white/10 bg-[#171717] p-10 flex flex-col">
+          <div className="rounded-[22px] border border-white/10 bg-[#121212] p-10 flex flex-col">
             <div
               className="text-[13px] text-[#93939f] mb-5 uppercase tracking-[0.28px]"
               style={{ fontFamily: "var(--font-mono)" }}
@@ -308,7 +308,7 @@ export default function LandingPage() {
           </div>
 
           {/* Card 2 — Enterprise */}
-          <div className="rounded-[22px] border border-white/20 bg-[#171717] text-white p-10 relative flex flex-col">
+          <div className="rounded-[22px] border border-white/20 bg-[#121212] text-white p-10 relative flex flex-col">
             <div className="absolute -top-3.5 right-5 text-[11px] bg-white text-black rounded-full px-3 py-1 font-medium tracking-wide uppercase">
               Most Popular
             </div>
