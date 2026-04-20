@@ -161,52 +161,6 @@ function renderAssistantBlocks(content: string, onOpenPreview?: (code: string) =
   return out.length > 0 ? <>{out}</> : content;
 }
 
-/**
- * Drag-to-resize handle for the split-screen layout.
- */
-function ResizeHandle({ onDrag }: { onDrag: (deltaX: number) => void }) {
-  const isDragging = useRef(false);
-  const lastX = useRef(0);
-
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      isDragging.current = true;
-      lastX.current = e.clientX;
-
-      const handleMouseMove = (ev: MouseEvent) => {
-        if (!isDragging.current) return;
-        const delta = ev.clientX - lastX.current;
-        lastX.current = ev.clientX;
-        onDrag(delta);
-      };
-
-      const handleMouseUp = () => {
-        isDragging.current = false;
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-      };
-
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    },
-    [onDrag]
-  );
-
-  return (
-    <div
-      onMouseDown={handleMouseDown}
-      className="group relative flex items-center justify-center w-[6px] cursor-col-resize z-10 hover:bg-[var(--accent-soft)] transition-colors shrink-0"
-      title="Drag to resize"
-    >
-      <div className="w-[2px] h-8 rounded-full bg-[var(--border-default)] group-hover:bg-[var(--accent)] transition-colors" />
-    </div>
-  );
-}
 
 function AsyncImage({ src, alt, onDownload }: { src: string; alt: string; onDownload: (e: React.MouseEvent) => void }) {
   const [loaded, setLoaded] = useState(false);
@@ -636,44 +590,10 @@ function WorkspaceBar({
   );
 }
 
-const REFINE_RECIPES = [
-  "Make the hero feel more premium and high-conviction.",
-  "Improve typography, spacing, and visual hierarchy.",
-  "Add better motion, hover states, and polish.",
-  "Make the mobile layout feel deliberate and strong.",
-];
-
-function BuildRecipeStrip({
-  title,
-  recipes,
-  onPick,
-}: {
-  title: string;
-  recipes: Array<{ label: string; prompt: string }>;
-  onPick: (prompt: string) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">{title}</p>
-      <div className="flex flex-wrap gap-2">
-        {recipes.map((recipe) => (
-          <button
-            key={recipe.label}
-            type="button"
-            onClick={() => onPick(recipe.prompt)}
-            className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs text-[var(--fg-secondary)] transition-colors hover:border-[var(--border-default)] hover:bg-[var(--bg-elevated)] hover:text-[var(--fg-primary)]"
-          >
-            {recipe.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function DashboardExperience() {
   const searchParams = useSearchParams();
-  const { messages, setMessages, startNewChat, incognito, setIncognito } = useChat();
+  const { messages, setMessages, startNewChat } = useChat();
   const { session } = useAuth();
   const { collapsed: sidebarCollapsed, setCollapsed: setSidebarCollapsed } = useSidebar();
   const sidebarWasCollapsedRef = useRef(sidebarCollapsed);
@@ -700,7 +620,7 @@ function DashboardExperience() {
   const [monacoLanguage, setMonacoLanguage] = useState<string>("javascript");
   /** When true, do not replace preview from streamed ```html (sandbox bundle is authoritative). */
   const preferSandboxPreviewRef = useRef(false);
-  const [sandboxPaths, setSandboxPaths] = useState<string[] | null>(null);
+
   /** Live line from Council / preview stream — shown above the iframe */
   const [previewBuildStatus, setPreviewBuildStatus] = useState<string | null>(null);
   const [isMicListening, setIsMicListening] = useState(false);
@@ -1008,7 +928,7 @@ function DashboardExperience() {
 
         if (shouldOpenBuildPreviewLoading(text.trim())) {
           preferSandboxPreviewRef.current = false;
-          setSandboxPaths(null);
+
           setPreviewCode(PREVIEW_LOADING_HTML);
           setPreviewBuildStatus("Council — running specialist chain…");
         }
@@ -1030,7 +950,7 @@ function DashboardExperience() {
             const bundled = bundleSessionCouncilOutputForPreview(result.finalOutput);
             if (bundled && bundled.length > 80) {
               preferSandboxPreviewRef.current = false;
-              setSandboxPaths(null);
+
               setPreviewCode(bundled);
               setPreviewBuildStatus(null);
             }
@@ -1079,7 +999,7 @@ function DashboardExperience() {
 
       if (shouldOpenBuildPreviewLoading(text.trim())) {
         preferSandboxPreviewRef.current = false;
-        setSandboxPaths(null);
+
         setPreviewCode(PREVIEW_LOADING_HTML);
         setPreviewBuildStatus("Connecting — starting your build…");
       }
@@ -1253,7 +1173,7 @@ function DashboardExperience() {
                 councilAutoContinueScheduledRef.current = false;
                 setClarificationPrompt(null);
                 preferSandboxPreviewRef.current = true;
-                if (Array.isArray(payload.paths)) setSandboxPaths(payload.paths);
+
                 setPreviewBuildStatus("Loading multi-file sandbox preview…");
                 if (typeof payload.bundleHtml === "string" && payload.bundleHtml.trim().length > 0) {
                   setPreviewCode(payload.bundleHtml);
