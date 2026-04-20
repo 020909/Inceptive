@@ -113,6 +113,16 @@
     --border: var(--border-default);
     --input: var(--bg-elevated);
 
+    /* ── Sidebar variables (light) ── */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
     /* ── Legacy bridge ── */
     --foreground-secondary: var(--fg-secondary);
     --foreground-tertiary: var(--fg-tertiary);
@@ -170,13 +180,13 @@
 
   /* ── Dark mode — warm charcoal, Warm Silver text ── */
   html.dark {
-    /* Surfaces: warm-tinted darks */
-    --bg-base: #1a1917;
-    --bg-app: #1a1917;
-    --bg-surface: #222120;
-    --bg-elevated: #2a2927;
-    --bg-overlay: #30302e;     /* Dark Surface */
-    --bg-sidebar: #1e1d1b;
+    /* Surfaces: darks */
+    --bg-base: #000000;
+    --bg-app: #000000;
+    --bg-surface: #171717;
+    --bg-elevated: #1a1a1a;
+    --bg-overlay: #222222;
+    --bg-sidebar: #000000;
 
     /* Text */
     --fg-primary: #f5f4ed;     /* Parchment as primary text on dark */
@@ -237,6 +247,17 @@
     --destructive-foreground: #ffffff;
     --border: var(--border-default);
     --input: var(--bg-surface);
+
+    /* ── Sidebar variables (dark) ── */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
     --foreground-secondary: var(--fg-secondary);
     --foreground-tertiary: var(--fg-tertiary);
     --background-elevated: var(--bg-elevated);

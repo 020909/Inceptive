@@ -77,7 +77,7 @@ export default function SignUpPage() {
 
   return (
     <div
-      className="min-h-screen flex bg-white"
+      className="min-h-screen flex bg-[#000000]"
       style={{ fontFamily: "var(--font-body)" }}
     >
       {/* ── Left branding panel ── */}
@@ -85,20 +85,15 @@ export default function SignUpPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="hidden lg:flex lg:w-[45%] flex-col items-center justify-center p-12 border-r border-[#d9d9dd] bg-[#fafafa] relative overflow-hidden"
+        className="hidden lg:flex lg:w-[45%] flex-col items-center justify-center p-12 border-r border-white/10 bg-[#000000] relative overflow-hidden"
       >
-        {/* Subtle purple tint orb behind content */}
-        <div
-          className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(24,99,220,0.04) 0%, transparent 70%)" }}
-        />
         <div className="relative z-10 text-center max-w-sm">
           <div className="flex items-center justify-center gap-3 mb-10">
-            <div className="relative h-12 w-12 rounded-[10px] overflow-hidden border border-[#d9d9dd] bg-white">
+            <div className="relative h-12 w-12 rounded-[10px] overflow-hidden border border-white/10 bg-white/5">
               <Image src="/logo.png" alt="Inceptive" fill sizes="48px" className="object-cover" />
             </div>
             <span
-              className="text-black"
+              className="text-white"
               style={{ fontFamily: "var(--font-header)", fontSize: "26px", fontWeight: 400 }}
             >
               Inceptive
@@ -106,7 +101,7 @@ export default function SignUpPage() {
           </div>
 
           <h2
-            className="text-black mb-4"
+            className="text-white mb-4"
             style={{
               fontFamily: "var(--font-header)",
               fontSize: "clamp(32px, 3.5vw, 48px)",
@@ -122,7 +117,7 @@ export default function SignUpPage() {
           </p>
 
           {/* Mini stat */}
-          <div className="mt-10 rounded-[22px] border border-[#d9d9dd] bg-white p-6 text-left">
+          <div className="mt-10 rounded-[22px] border border-white/10 bg-[#171717] p-6 text-left">
             <p
               className="text-[#93939f]"
               style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.28px" }}
@@ -130,7 +125,7 @@ export default function SignUpPage() {
               Avg. time saved
             </p>
             <p
-              className="mt-2 text-black"
+              className="mt-2 text-white"
               style={{ fontFamily: "var(--font-header)", fontSize: "36px", fontWeight: 400 }}
             >
               23h / week
@@ -145,15 +140,15 @@ export default function SignUpPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="flex flex-1 items-center justify-center p-6 lg:p-16 bg-white"
+        className="flex flex-1 items-center justify-center p-6 lg:p-16 bg-[#000000]"
       >
         <div className="w-full max-w-[480px]">
           {/* Mobile logo */}
           <div className="flex items-center gap-2.5 mb-10 lg:hidden">
-            <div className="relative h-8 w-8 rounded-[8px] overflow-hidden border border-[#d9d9dd]">
+            <div className="relative h-8 w-8 rounded-[8px] overflow-hidden border border-white/10">
               <Image src="/logo.png" alt="Inceptive" fill sizes="32px" className="object-cover" />
             </div>
-            <span className="text-black" style={{ fontFamily: "var(--font-header)", fontSize: "18px" }}>
+            <span className="text-white" style={{ fontFamily: "var(--font-header)", fontSize: "18px" }}>
               Inceptive
             </span>
           </div>
@@ -167,7 +162,7 @@ export default function SignUpPage() {
               New account
             </p>
             <h2
-              className="text-black mb-1"
+              className="text-white mb-1"
               style={{
                 fontFamily: "var(--font-header)",
                 fontSize: "clamp(26px, 3vw, 36px)",
@@ -187,7 +182,7 @@ export default function SignUpPage() {
               type="button"
               disabled={!!oauthLoading}
               onClick={() => handleOAuth("google")}
-              className="w-full h-12 rounded-full border border-[#d9d9dd] bg-white text-black text-[14px] hover:border-[#1863dc] transition-colors flex items-center justify-center disabled:opacity-50"
+              className="w-full h-12 rounded-full border border-white/10 bg-white/5 text-white text-[14px] hover:border-[#3b82f6] transition-colors flex items-center justify-center disabled:opacity-50"
             >
               {oauthLoading === "google" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -208,11 +203,11 @@ export default function SignUpPage() {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#d9d9dd]" />
+              <div className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center">
               <span
-                className="px-3 text-[#93939f] bg-white"
+                className="px-3 text-[#93939f] bg-[#000000]"
                 style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.16px" }}
               >
                 or continue with email
@@ -228,7 +223,7 @@ export default function SignUpPage() {
                 id="email" type="email" placeholder="you@example.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setErrors(p => ({ ...p, email: undefined })); }}
-                className="h-11 rounded-[8px] text-sm bg-white border-[#d9d9dd] text-black placeholder:text-[#93939f] focus:border-[#1863dc] focus:ring-0 transition-colors"
+                className="h-11 rounded-[8px] text-sm bg-white/5 border-white/10 text-white placeholder:text-[#93939f] focus:border-[#3b82f6] focus:ring-0 transition-colors"
               />
               {errors.email && <p className="text-[11px] text-[var(--destructive)]">{errors.email}</p>}
             </div>
@@ -239,7 +234,7 @@ export default function SignUpPage() {
                 id="password" type="password" placeholder="Create a password"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setErrors(p => ({ ...p, password: undefined })); }}
-                className="h-11 rounded-[8px] text-sm bg-white border-[#d9d9dd] text-black placeholder:text-[#93939f] focus:border-[#1863dc] focus:ring-0 transition-colors"
+                className="h-11 rounded-[8px] text-sm bg-white/5 border-white/10 text-white placeholder:text-[#93939f] focus:border-[#3b82f6] focus:ring-0 transition-colors"
               />
               {errors.password && <p className="text-[11px] text-[var(--destructive)]">{errors.password}</p>}
             </div>
@@ -250,7 +245,7 @@ export default function SignUpPage() {
                 id="confirmPassword" type="password" placeholder="Confirm your password"
                 value={confirmPassword}
                 onChange={(e) => { setConfirmPassword(e.target.value); setErrors(p => ({ ...p, confirmPassword: undefined })); }}
-                className="h-11 rounded-[8px] text-sm bg-white border-[#d9d9dd] text-black placeholder:text-[#93939f] focus:border-[#1863dc] focus:ring-0 transition-colors"
+                className="h-11 rounded-[8px] text-sm bg-white/5 border-white/10 text-white placeholder:text-[#93939f] focus:border-[#3b82f6] focus:ring-0 transition-colors"
               />
               {errors.confirmPassword && <p className="text-[11px] text-[var(--destructive)]">{errors.confirmPassword}</p>}
             </div>
@@ -259,7 +254,7 @@ export default function SignUpPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 rounded-full bg-black text-white text-[14px] hover:opacity-85 transition-opacity disabled:opacity-50 flex items-center justify-center"
+                className="w-full h-11 rounded-full bg-white text-black text-[14px] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
               </button>
@@ -274,7 +269,7 @@ export default function SignUpPage() {
 
           <p className="mt-8 text-center text-[13px] text-[#93939f]">
             Already have an account?{" "}
-            <Link href={loginHref} className="text-black hover:text-[#1863dc] transition-colors">
+            <Link href={loginHref} className="text-white hover:text-[#3b82f6] transition-colors">
               Sign in
             </Link>
           </p>

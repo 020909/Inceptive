@@ -29,23 +29,23 @@ export default function LandingPage() {
 
   return (
     <div
-      className="min-h-screen bg-white text-black overflow-x-hidden"
+      className="min-h-screen bg-[#000000] text-white overflow-x-hidden"
       style={{ fontFamily: "var(--font-body)" }}
     >
       {/* ── NAVBAR ── */}
       <nav
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4 bg-white border-b border-[#d9d9dd]"
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4 bg-[#000000]/80 backdrop-blur-md border-b border-white/10"
         style={{ fontFamily: "var(--font-body)" }}
       >
         <div className="flex items-center gap-2">
           <span
-            className="text-xl font-normal tracking-tight text-black"
+            className="text-xl font-normal tracking-tight text-white"
             style={{ fontFamily: "var(--font-header)" }}
           >
             Inceptive
           </span>
           <span
-            className="text-[9px] uppercase tracking-[0.2em] rounded-full px-2 py-0.5 border border-[#d9d9dd] text-[#93939f] ml-1"
+            className="text-[9px] uppercase tracking-[0.2em] rounded-full px-2 py-0.5 border border-white/20 text-[#93939f] ml-1"
             style={{ fontFamily: "var(--font-mono)" }}
           >
             Enterprise
@@ -54,13 +54,13 @@ export default function LandingPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/login"
-            className="text-sm text-black hover:text-[#1863dc] transition-colors px-3 py-2"
+            className="text-sm text-white hover:text-[#3b82f6] transition-colors px-3 py-2"
           >
             Sign in
           </Link>
           <Link
             href="/signup"
-            className="rounded-full bg-black text-white px-5 py-2 text-sm hover:opacity-85 transition-opacity"
+            className="rounded-full bg-white text-black px-5 py-2 text-sm hover:opacity-90 transition-opacity"
           >
             Start free
           </Link>
@@ -76,7 +76,7 @@ export default function LandingPage() {
         >
           {/* Section label */}
           <div
-            className="inline-flex items-center gap-2 rounded-full border border-[#d9d9dd] px-4 py-1.5 text-[13px] text-[#93939f] mb-10"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-[13px] text-[#93939f] mb-10"
             style={{ fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.28px" }}
           >
             <Sparkles size={12} />
@@ -85,7 +85,7 @@ export default function LandingPage() {
 
           {/* Hero headline — Libre Baskerville at 72px */}
           <h1
-            className="mb-6 max-w-4xl mx-auto text-black"
+            className="mb-6 max-w-4xl mx-auto text-white"
             style={{
               fontFamily: "var(--font-header)",
               fontSize: "clamp(42px, 6vw, 72px)",
@@ -110,13 +110,13 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href="/signup"
-              className="inline-flex items-center gap-2 rounded-full bg-black text-white px-8 py-3.5 text-[15px] hover:opacity-85 transition-all hover:gap-3"
+              className="inline-flex items-center gap-2 rounded-full bg-white text-black px-8 py-3.5 text-[15px] hover:opacity-90 transition-all hover:gap-3"
             >
               Start for free <ArrowRight size={16} />
             </Link>
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 rounded-full border border-[#d9d9dd] text-black px-8 py-3.5 text-[15px] hover:border-[#1863dc] hover:text-[#1863dc] transition-all"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 text-white px-8 py-3.5 text-[15px] hover:border-[#3b82f6] hover:text-[#3b82f6] transition-all"
             >
               Sign in →
             </Link>
@@ -128,10 +128,10 @@ export default function LandingPage() {
       </div>
 
       {/* ── STATS BAR ── */}
-      <div className="py-10 border-y border-[#d9d9dd] grid grid-cols-3 max-w-2xl mx-auto text-center gap-8">
+      <div className="py-10 border-y border-white/10 grid grid-cols-3 max-w-2xl mx-auto text-center gap-8">
         <div>
           <div
-            className="text-3xl mb-1 text-black"
+            className="text-3xl mb-1 text-white"
             style={{ fontFamily: "var(--font-header)", fontWeight: 400 }}
           >
             23h
@@ -140,7 +140,7 @@ export default function LandingPage() {
         </div>
         <div>
           <div
-            className="text-3xl mb-1 text-black"
+            className="text-3xl mb-1 text-white"
             style={{ fontFamily: "var(--font-header)", fontWeight: 400 }}
           >
             3 sec
@@ -149,7 +149,7 @@ export default function LandingPage() {
         </div>
         <div>
           <div
-            className="text-3xl mb-1 text-black"
+            className="text-3xl mb-1 text-white"
             style={{ fontFamily: "var(--font-header)", fontWeight: 400 }}
           >
             SOC 2
@@ -168,7 +168,7 @@ export default function LandingPage() {
           Platform capabilities
         </p>
         <h2
-          className="text-center mb-14 text-black"
+          className="text-center mb-14 text-white"
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "clamp(28px, 3.5vw, 48px)",
@@ -191,13 +191,13 @@ export default function LandingPage() {
           ].map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="rounded-[22px] border border-[#f2f2f2] bg-white p-7 hover:border-[#d9d9dd] transition-colors"
+              className="rounded-[22px] border border-white/5 bg-[#171717] p-7 hover:border-white/20 transition-colors"
             >
-              <div className="rounded-[8px] bg-[#f2f2f2] text-black p-2.5 w-10 h-10 flex items-center justify-center mb-5">
+              <div className="rounded-[8px] bg-white/5 text-white p-2.5 w-10 h-10 flex items-center justify-center mb-5">
                 <Icon size={19} />
               </div>
               <h3
-                className="mb-2 text-black"
+                className="mb-2 text-white"
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: "18px",
@@ -262,7 +262,7 @@ export default function LandingPage() {
           Pricing
         </p>
         <h2
-          className="text-center mb-14 text-black"
+          className="text-center mb-14 text-white"
           style={{
             fontFamily: "var(--font-body)",
             fontSize: "clamp(28px, 3.5vw, 48px)",
@@ -276,7 +276,7 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Card 1 — Pro */}
-          <div className="rounded-[22px] border border-[#d9d9dd] bg-white p-10 flex flex-col">
+          <div className="rounded-[22px] border border-white/10 bg-[#171717] p-10 flex flex-col">
             <div
               className="text-[13px] text-[#93939f] mb-5 uppercase tracking-[0.28px]"
               style={{ fontFamily: "var(--font-mono)" }}
@@ -284,7 +284,7 @@ export default function LandingPage() {
               Pro
             </div>
             <div
-              className="text-black mb-1"
+              className="text-white mb-1"
               style={{ fontFamily: "var(--font-header)", fontSize: "44px", fontWeight: 400, lineHeight: 1 }}
             >
               $2,000
@@ -294,21 +294,21 @@ export default function LandingPage() {
             <div className="space-y-3.5 mb-10 flex-1">
               {["Unlimited AI agents", "Email + Research + Workflows", "15+ Skills playbooks", "Gmail & Slack integrations", "Priority support"].map((f) => (
                 <div key={f} className="flex items-start gap-3">
-                  <CheckCircle2 size={17} className="text-black mt-0.5 shrink-0" />
-                  <span className="text-[14px] text-[#212121]">{f}</span>
+                  <CheckCircle2 size={17} className="text-[#3b82f6] mt-0.5 shrink-0" />
+                  <span className="text-[14px] text-white/80">{f}</span>
                 </div>
               ))}
             </div>
             <Link
               href="/signup"
-              className="block w-full py-3 text-center rounded-full border border-[#d9d9dd] text-[14px] text-black hover:border-[#1863dc] hover:text-[#1863dc] transition-colors"
+              className="block w-full py-3 text-center rounded-full border border-white/20 text-[14px] text-white hover:border-[#3b82f6] hover:text-[#3b82f6] transition-colors"
             >
               Start free trial →
             </Link>
           </div>
 
           {/* Card 2 — Enterprise */}
-          <div className="rounded-[22px] border border-[#000000] bg-black text-white p-10 relative flex flex-col">
+          <div className="rounded-[22px] border border-white/20 bg-[#171717] text-white p-10 relative flex flex-col">
             <div className="absolute -top-3.5 right-5 text-[11px] bg-white text-black rounded-full px-3 py-1 font-medium tracking-wide uppercase">
               Most Popular
             </div>
@@ -329,7 +329,7 @@ export default function LandingPage() {
             <div className="space-y-3.5 mb-10 flex-1">
               {["Everything in Pro", "Custom AI personas", "Human-in-the-loop approvals", "Knowledge Base (unlimited docs)", "SSO + SAML", "Dedicated success manager", "SLA + uptime guarantee"].map((f) => (
                 <div key={f} className="flex items-start gap-3">
-                  <CheckCircle2 size={17} className="text-white mt-0.5 shrink-0" />
+                  <CheckCircle2 size={17} className="text-[#3b82f6] mt-0.5 shrink-0" />
                   <span className="text-[14px] text-white/80">{f}</span>
                 </div>
               ))}

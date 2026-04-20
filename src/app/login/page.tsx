@@ -85,21 +85,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-white" style={{ fontFamily: "var(--font-body)" }}>
+    <div className="min-h-screen flex bg-[#000000]" style={{ fontFamily: "var(--font-body)" }}>
       {/* ── Left branding panel ── */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7 }}
-        className="relative hidden overflow-hidden border-r border-[#d9d9dd] bg-white lg:flex lg:w-[52%] lg:flex-col lg:justify-between p-14"
+        className="relative hidden overflow-hidden border-r border-white/10 bg-[#000000] lg:flex lg:w-[52%] lg:flex-col lg:justify-between p-14"
       >
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-3">
-          <div className="relative h-10 w-10 overflow-hidden rounded-[8px] border border-[#d9d9dd] bg-[#fafafa]">
+          <div className="relative h-10 w-10 overflow-hidden rounded-[8px] border border-white/10 bg-white/5">
             <Image src="/logo.png" alt="Inceptive" fill sizes="40px" className="object-cover" />
           </div>
           <span
-            className="text-lg text-black"
+            className="text-lg text-white"
             style={{ fontFamily: "var(--font-header)" }}
           >
             Inceptive
@@ -109,14 +109,14 @@ export default function LoginPage() {
         {/* Hero content */}
         <div className="relative z-10 max-w-xl space-y-10">
           <div
-            className="inline-flex rounded-full border border-[#d9d9dd] px-4 py-1.5 text-[11px] text-[#93939f]"
+            className="inline-flex rounded-full border border-white/10 px-4 py-1.5 text-[11px] text-[#93939f]"
             style={{ fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.28px" }}
           >
             Autonomous Operating System
           </div>
 
           <h1
-            className="text-black"
+            className="text-white"
             style={{
               fontFamily: "var(--font-header)",
               fontSize: "clamp(38px, 4.5vw, 60px)",
@@ -136,7 +136,7 @@ export default function LoginPage() {
 
           {/* Stat cards */}
           <div className="grid max-w-lg grid-cols-2 gap-4">
-            <div className="rounded-[22px] border border-[#d9d9dd] bg-white p-6">
+            <div className="rounded-[22px] border border-white/10 bg-[#171717] p-6">
               <p
                 className="text-[#93939f]"
                 style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.28px" }}
@@ -144,14 +144,14 @@ export default function LoginPage() {
                 Response
               </p>
               <p
-                className="mt-3 text-black"
+                className="mt-3 text-white"
                 style={{ fontFamily: "var(--font-header)", fontSize: "32px", fontWeight: 400 }}
               >
                 24/7
               </p>
               <p className="mt-2 text-[13px] leading-6 text-[#93939f]">A calmer command layer for work that keeps moving.</p>
             </div>
-            <div className="rounded-[22px] border border-[#d9d9dd] bg-[#fafafa] p-6">
+            <div className="rounded-[22px] border border-white/10 bg-[#171717]/50 p-6">
               <p
                 className="text-[#93939f]"
                 style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.28px" }}
@@ -159,7 +159,7 @@ export default function LoginPage() {
                 Signal
               </p>
               <p
-                className="mt-3 text-black"
+                className="mt-3 text-white"
                 style={{ fontFamily: "var(--font-header)", fontSize: "32px", fontWeight: 400 }}
               >
                 Focused
@@ -182,15 +182,15 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.08 }}
-        className="flex flex-1 items-center justify-center p-6 lg:p-16 bg-[#fafafa]"
+        className="flex flex-1 items-center justify-center p-6 lg:p-16 bg-[#000000]"
       >
-        <div className="w-full max-w-[500px] bg-white rounded-[22px] border border-[#d9d9dd] p-10 lg:p-14">
+        <div className="w-full max-w-[500px] bg-[#171717] rounded-[22px] border border-white/10 p-10 lg:p-14">
           {/* Mobile logo */}
           <div className="mb-10 flex items-center gap-3 lg:hidden">
-            <div className="relative h-9 w-9 overflow-hidden rounded-[8px] border border-[#d9d9dd]">
+            <div className="relative h-9 w-9 overflow-hidden rounded-[8px] border border-white/10">
               <Image src="/logo.png" alt="Inceptive" fill sizes="36px" className="object-cover" />
             </div>
-            <span className="text-lg text-black" style={{ fontFamily: "var(--font-header)" }}>
+            <span className="text-lg text-white" style={{ fontFamily: "var(--font-header)" }}>
               Inceptive
             </span>
           </div>
@@ -204,7 +204,7 @@ export default function LoginPage() {
               Welcome back
             </p>
             <h2
-              className="text-black"
+              className="text-white"
               style={{
                 fontFamily: "var(--font-header)",
                 fontSize: "clamp(28px, 3vw, 38px)",
@@ -226,7 +226,7 @@ export default function LoginPage() {
               type="button"
               disabled={!!oauthLoading}
               onClick={() => handleOAuth("google")}
-              className="h-12 w-full rounded-full border border-[#d9d9dd] bg-white text-black text-[14px] hover:border-[#1863dc] transition-colors flex items-center justify-center disabled:opacity-50"
+              className="h-12 w-full rounded-full border border-white/10 bg-white/5 text-white text-[14px] hover:border-[#3b82f6] transition-colors flex items-center justify-center disabled:opacity-50"
             >
               {oauthLoading === "google" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -247,11 +247,11 @@ export default function LoginPage() {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#d9d9dd]" />
+              <div className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center">
               <span
-                className="bg-white px-3 text-[#93939f]"
+                className="bg-[#171717] px-3 text-[#93939f]"
                 style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.16px" }}
               >
                 or continue with email
@@ -267,7 +267,7 @@ export default function LoginPage() {
                 id="email" type="email" placeholder="you@example.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setErrors(p => ({ ...p, email: undefined })); }}
-                className="h-12 rounded-[8px] border-[#d9d9dd] bg-white px-4 text-sm text-black placeholder:text-[#93939f] focus:border-[#1863dc] focus:ring-0"
+                className="h-12 rounded-[8px] border-white/10 bg-white/5 px-4 text-sm text-white placeholder:text-[#93939f] focus:border-[#3b82f6] focus:ring-0"
               />
               {errors.email && <p className="text-[11px] text-[var(--destructive)]">{errors.email}</p>}
             </div>
@@ -278,7 +278,7 @@ export default function LoginPage() {
                 id="password" type="password" placeholder="••••••••"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setErrors(p => ({ ...p, password: undefined })); }}
-                className="h-12 rounded-[8px] border-[#d9d9dd] bg-white px-4 text-sm text-black placeholder:text-[#93939f] focus:border-[#1863dc] focus:ring-0"
+                className="h-12 rounded-[8px] border-white/10 bg-white/5 px-4 text-sm text-white placeholder:text-[#93939f] focus:border-[#3b82f6] focus:ring-0"
               />
               {errors.password && <p className="text-[11px] text-[var(--destructive)]">{errors.password}</p>}
             </div>
@@ -287,7 +287,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="h-12 w-full rounded-full bg-black text-white text-[14px] hover:opacity-85 transition-opacity disabled:opacity-50 flex items-center justify-center"
+                className="h-12 w-full rounded-full bg-white text-black text-[14px] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
               </button>
@@ -305,7 +305,7 @@ export default function LoginPage() {
             <button
               onClick={handleMagicLink}
               disabled={magicLinkLoading}
-              className="h-12 w-full rounded-full border border-[#d9d9dd] text-black text-[13px] hover:border-[#1863dc] hover:text-[#1863dc] transition-colors disabled:opacity-50 flex items-center justify-center"
+              className="h-12 w-full rounded-full border border-white/10 text-white text-[13px] hover:border-[#3b82f6] hover:text-[#3b82f6] transition-colors disabled:opacity-50 flex items-center justify-center"
             >
               {magicLinkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send magic link"}
             </button>
@@ -313,7 +313,7 @@ export default function LoginPage() {
 
           <p className="mt-8 text-center text-[13px] text-[#93939f]">
             No account?{" "}
-            <Link href={signupHref} className="text-black hover:text-[#1863dc] transition-colors">
+            <Link href={signupHref} className="text-white hover:text-[#3b82f6] transition-colors">
               Sign up free
             </Link>
           </p>

@@ -429,7 +429,7 @@ export default function DashboardPage() {
 
           <StatCard
             title="Hours Saved by AI"
-            value={`${dashboard.hoursSaved}h`}
+            value={String(dashboard.hoursSaved)}
             subtitle={dashboard.hoursSaved > 0 ? "from latest weekly report" : "No weekly report yet"}
             footer={<CheckCheck className="h-5 w-5 text-[var(--accent)]" />}
           />
