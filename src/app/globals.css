@@ -123,6 +123,17 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
+    /* ── Code Studio (IDE) surfaces ── */
+    --ide-bg: #000000;
+    --ide-panel: #171717;
+    --ide-tabbar: #0d0d0d;
+    --ide-border: rgba(255, 255, 255, 0.06);
+    --ide-text: rgba(255, 255, 255, 0.9);
+    --ide-muted: rgba(255, 255, 255, 0.55);
+    --ide-muted2: rgba(255, 255, 255, 0.35);
+    --ide-accent: #3b82f6;
+    --ide-accent2: #a855f7;
+
     /* ── Legacy bridge ── */
     --foreground-secondary: var(--fg-secondary);
     --foreground-tertiary: var(--fg-tertiary);
@@ -257,6 +268,16 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --ide-bg: #000000;
+    --ide-panel: #171717;
+    --ide-tabbar: #0d0d0d;
+    --ide-border: rgba(255, 255, 255, 0.06);
+    --ide-text: rgba(255, 255, 255, 0.9);
+    --ide-muted: rgba(255, 255, 255, 0.55);
+    --ide-muted2: rgba(255, 255, 255, 0.35);
+    --ide-accent: #3b82f6;
+    --ide-accent2: #a855f7;
 
     --foreground-secondary: var(--fg-secondary);
     --foreground-tertiary: var(--fg-tertiary);
@@ -807,6 +828,17 @@
   }
   .glow-success {
     box-shadow: 0 0 16px rgba(28, 143, 58, 0.12);
+  }
+
+  /* ── File tree tokens (used by `components/ui/file-tree.tsx`) ── */
+  .bg-file-tree-bg {
+    background: var(--ide-panel);
+  }
+  .bg-file-tree-hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .text-folder-icon {
+    color: rgba(255, 255, 255, 0.55);
   }
 }
 

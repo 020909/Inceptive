@@ -4,34 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
-  ClipboardList,
-  Palette,
-  Layers,
-  Code2,
-  ShieldAlert,
-  TestTube,
-  FileText,
   Sparkles,
-  Rocket,
-  Brain,
-  Check,
-  Loader2,
-  CircleCheck,
 } from "lucide-react";
 import type { AgentResult, CouncilState } from "@/hooks/useCouncil";
-
-const AGENT_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
-  planner: ClipboardList,
-  ux_designer: Palette,
-  architect: Layers,
-  coder: Code2,
-  critic: ShieldAlert,
-  tester: TestTube,
-  document_specialist: FileText,
-  visual_polish: Sparkles,
-  deployer: Rocket,
-  orchestrator: Brain,
-};
 
 interface Props {
   agents: AgentResult[];
@@ -43,10 +18,10 @@ interface Props {
 }
 
 function statusLine(agent: AgentResult, isActive: boolean): string {
-  if (agent.status === "running" || (isActive && agent.status === "waiting")) return "Running…";
+  if (agent.status === "running" || (isActive && agent.status === "waiting")) return "Running";
   if (agent.status === "done") return "Completed";
-  if (agent.status === "error") return "Could not complete this step";
-  return "Waiting…";
+  if (agent.status === "error") return "Error";
+  return "Waiting";
 }
 
 export function CouncilProgress({
@@ -76,7 +51,6 @@ export function CouncilProgress({
     return "";
   }, [agents, status]);
 
-  const anyRunning = agents.some((a) => a.status === "running");
   const finished = status === "done" || status === "error";
 
   if (status === "idle") return null;
@@ -86,36 +60,46 @@ export function CouncilProgress({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 320, damping: 28 }}
-      className="mb-3 w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/72 shadow-[0_12px_40px_rgba(0,0,0,0.35)] overflow-hidden"
+      className="mb-3 w-full overflow-hidden rounded-2xl border"
+      style={{
+        borderColor: "var(--ide-border)",
+        background: "var(--ide-panel)",
+        boxShadow: "0_18px_60px_rgba(0,0,0,0.55)",
+      }}
     >
       <div className="flex w-full items-stretch gap-0">
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="flex min-w-0 flex-1 items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-[var(--bg-overlay)]/60"
+          className="flex min-w-0 flex-1 items-center gap-3 px-3.5 py-3 text-left transition-colors"
+          style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))" }}
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[rgba(245,245,247,0.12)] bg-[rgba(245,245,247,0.06)]">
-            {status === "running" && anyRunning ? (
-              <Loader2 size={18} strokeWidth={1.5} className="animate-spin text-[var(--fg-primary)]" />
-            ) : status === "done" ? (
-              <CircleCheck size={18} className="text-[var(--success)]" strokeWidth={1.5} />
-            ) : (
-              <Brain size={16} className="text-[var(--fg-muted)]" strokeWidth={1.5} />
-            )}
-          </span>
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--fg-muted)]">Council</div>
-            <div className="truncate text-sm font-medium text-[var(--fg-primary)]">{headerSummary}</div>
+            <div className="flex items-center gap-2">
+              <Sparkles size={14} className="text-[#3b82f6]" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/70">
+                Council
+              </span>
+              <span
+                className="h-px flex-1"
+                style={{
+                  background:
+                    "linear-gradient(90deg, rgba(59,130,246,0.8), rgba(168,85,247,0.5), rgba(0,0,0,0))",
+                }}
+              />
+            </div>
+            <div className="truncate text-[12px] font-medium text-white/80">{headerSummary}</div>
           </div>
           <motion.span animate={{ rotate: open ? 0 : -90 }} transition={{ duration: 0.2 }}>
-            <ChevronDown size={18} className="text-[var(--fg-secondary)] shrink-0" />
+            <ChevronDown size={18} className="shrink-0 text-white/60" />
           </motion.span>
         </button>
         {status === "running" && onCancel && (
           <button
             type="button"
             onClick={onCancel}
-            className="shrink-0 px-3.5 text-xs text-[var(--fg-muted)] hover:text-[var(--fg-primary)] transition-colors border-l border-[var(--border-subtle)] hover:bg-[var(--bg-overlay)]/40"
+            className="shrink-0 px-3.5 text-xs transition-colors border-l"
+            style={{ borderColor: "var(--ide-border)", color: "var(--ide-muted)" }}
           >
             Cancel
           </button>
@@ -129,20 +113,16 @@ export function CouncilProgress({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-            className="border-t border-[var(--border-subtle)]"
+            className="border-t"
+            style={{ borderColor: "var(--ide-border)" }}
           >
             <div className="relative px-3 py-3">
-              <div
-                className="pointer-events-none absolute left-[27px] top-3 bottom-12 w-px bg-[linear-gradient(180deg,rgba(245,245,247,0.14),rgba(245,245,247,0.04))]"
-                aria-hidden
-              />
               <ul className="space-y-0.5">
                 {agents.map((agent, idx) => {
-                  const Icon = AGENT_ICONS[agent.agent] || Brain;
                   const isActive = agent.agent === currentAgent;
-                  const thinking = agent.status === "running" || (isActive && agent.status === "waiting");
+                  const running = agent.status === "running" || (isActive && agent.status === "waiting");
                   const done = agent.status === "done";
-                  const err = agent.status === "error";
+                  const waiting = agent.status === "waiting" && !isActive;
 
                   return (
                     <motion.li
@@ -150,69 +130,70 @@ export function CouncilProgress({
                       initial={{ opacity: 0, x: -6 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.03, type: "spring", stiffness: 400, damping: 32 }}
-                      className="relative flex gap-3 pl-1"
+                      className="relative"
                     >
                       <div
-                        className={`relative z-[1] mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
-                          thinking
-                            ? "border-[rgba(245,245,247,0.35)] bg-[rgba(245,245,247,0.08)] shadow-[0_0_20px_rgba(245,245,247,0.08)]"
-                            : done
-                              ? "border-[var(--success)]/35 bg-[var(--success-soft)]"
-                              : err
-                                ? "border-[var(--destructive)]/40 bg-[var(--destructive-soft)]"
-                                : "border-[var(--border-subtle)] bg-[var(--bg-surface)]"
-                        }`}
+                        className="flex items-center justify-between gap-3 rounded-xl px-3 py-2"
+                        style={{
+                          border: "1px solid var(--ide-border)",
+                          background: running ? "rgba(59,130,246,0.05)" : "rgba(255,255,255,0.02)",
+                          boxShadow: isActive ? "inset 0 0 0 1px rgba(59,130,246,0.18)" : "none",
+                          borderLeft: running ? "2px solid #3b82f6" : "2px solid transparent",
+                        }}
                       >
-                        {thinking ? (
-                          <Loader2 size={14} className="animate-spin text-[var(--fg-primary)]" />
-                        ) : (
-                          <Icon
-                            size={14}
-                            className={
-                              done ? "text-[var(--success)]" : err ? "text-[var(--destructive)]" : "text-[var(--fg-muted)]"
-                            }
-                          />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1 pb-2 pt-0.5">
-                        <div className="text-[13px] font-medium text-[var(--fg-primary)]">{agent.label}</div>
-                        <div className="text-[11px] text-[var(--fg-muted)]">{statusLine(agent, isActive)}</div>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="relative h-6 w-6 shrink-0">
+                            {done ? (
+                              <span className="absolute left-2 top-2 h-2.5 w-2.5 rounded-full bg-[#22c55e]" />
+                            ) : running ? (
+                              <>
+                                <motion.span
+                                  className="absolute left-[7px] top-[7px] h-3.5 w-3.5 rounded-full border border-[#3b82f6]"
+                                  animate={{ opacity: [0.35, 0.9, 0.35], scale: [1, 1.3, 1] }}
+                                  transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                                />
+                                <span className="absolute left-2 top-2 h-2.5 w-2.5 rounded-full bg-[#3b82f6]" />
+                              </>
+                            ) : (
+                              <span className="absolute left-2 top-2 h-2.5 w-2.5 rounded-full border border-white/35 bg-transparent" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className={`text-[13px] font-medium truncate ${done ? "line-through text-white/45" : "text-white/80"}`}>
+                              {agent.label}
+                            </div>
+                            <div className="text-[11px]" style={{ color: running ? "#3b82f6" : "var(--ide-muted)" }}>
+                              {statusLine(agent, isActive)}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-[11px] font-medium" style={{ color: running ? "#3b82f6" : done ? "#22c55e" : "var(--ide-muted2)" }}>
+                          {done ? "Done" : running ? "Running" : waiting ? "Waiting" : agent.status}
+                        </div>
                       </div>
                     </motion.li>
                   );
                 })}
               </ul>
 
-              {finished && (
-                <div className="relative flex gap-3 pl-1 pt-1">
-                  <div className="relative z-[1] mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--success)]/35 bg-[var(--success-soft)]">
-                    <Check size={14} className="text-[var(--success)]" strokeWidth={2.5} />
-                  </div>
-                  <div className="min-w-0 flex-1 pb-1 pt-1">
-                    <div className="text-[13px] font-medium text-[var(--fg-primary)]">Done</div>
-                    <div className="text-[11px] text-[var(--fg-muted)]">
-                      {status === "error" ? "Stopped with errors" : "Council finished"}
-                    </div>
-                  </div>
-                </div>
-              )}
+              {finished ? null : null}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {error && (
-        <div className="border-t border-[var(--border-subtle)] px-3.5 py-3">
-          <div className="rounded-lg border border-[var(--destructive)]/35 bg-[var(--destructive-soft)] p-3">
-            <p className="text-xs text-[var(--destructive)]">{error}</p>
+        <div className="border-t px-3.5 py-3" style={{ borderColor: "var(--ide-border)" }}>
+          <div className="rounded-lg border p-3" style={{ borderColor: "rgba(255,93,93,0.25)", background: "rgba(255,93,93,0.08)" }}>
+            <p className="text-xs text-red-200/90">{error}</p>
           </div>
         </div>
       )}
 
       {finalOutput && (
-        <div className="border-t border-[var(--border-subtle)] px-3.5 py-3">
-          <p className="text-[11px] text-[var(--fg-muted)] mb-2 uppercase tracking-wide font-medium">Final output</p>
-          <pre className="text-xs text-[var(--fg-secondary)] whitespace-pre-wrap font-mono leading-relaxed max-h-64 overflow-y-auto rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3">
+        <div className="border-t px-3.5 py-3" style={{ borderColor: "var(--ide-border)" }}>
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/60">Final output</p>
+          <pre className="max-h-64 overflow-y-auto rounded-lg border p-3 text-xs font-mono leading-relaxed whitespace-pre-wrap" style={{ borderColor: "var(--ide-border)", background: "rgba(0,0,0,0.25)", color: "rgba(255,255,255,0.72)" }}>
             {finalOutput}
           </pre>
         </div>

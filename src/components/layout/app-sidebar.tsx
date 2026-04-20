@@ -137,7 +137,7 @@ export function AppSidebar() {
             ) : (
               <SidebarMenuButton size="lg" onClick={() => router.push("/org/create")} className="bg-[var(--bg-elevated)] border border-[var(--border-default)]">
                 <Plus size={16} className="mr-2" />
-                <span>Create Workspace</span>
+                <span className="group-data-[collapsible=icon]:hidden">Create Workspace</span>
               </SidebarMenuButton>
             )}
           </SidebarGroupContent>
@@ -230,7 +230,7 @@ export function AppSidebar() {
           <SidebarMenuButton asChild variant="outline" className="w-full">
             <Link href={`/login?next=${encodeURIComponent(pathname)}`}>
               <LogIn className="size-4 mr-2" />
-              <span>Sign in</span>
+              <span className="group-data-[collapsible=icon]:hidden">Sign in</span>
             </Link>
           </SidebarMenuButton>
         ) : (

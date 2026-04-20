@@ -20,6 +20,8 @@ import {
 import { TTSButton } from "@/components/ui/tts-button";
 import { ChartPreview } from "@/components/ui/chart-preview";
 import { CouncilProgress } from "@/components/council/CouncilProgress";
+import Plan from "@/components/ui/agent-plan";
+import { FileTree } from "@/components/ui/file-tree";
 import { useCouncil } from "@/hooks/useCouncil";
 import { isWebsiteBuildTask } from "@/lib/agent/council-deliverable-refine";
 import { bundleSessionCouncilOutputForPreview } from "@/lib/council/bundle-session-preview-html";
@@ -627,6 +629,8 @@ function DashboardExperience() {
   const recognitionRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
+  const [activePanel, setActivePanel] = useState<"files" | "editor" | "chat">("chat");
+  const [inputFocused, setInputFocused] = useState(false);
   const councilResumeRef = useRef<CouncilResumeClient | null>(null);
   const councilContinueRef = useRef(false);
   /** Prevents double-firing the automatic second request after `8:council_resume`. */
@@ -1516,34 +1520,41 @@ function DashboardExperience() {
   }, [messages, previewCode, streaming, persistArtifact]);
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full bg-[#1e1e1e] text-[#cccccc] overflow-hidden !dark dark:bg-[#1e1e1e]" style={{ colorScheme: 'dark' }}>
+    <div
+      ref={containerRef}
+      className="flex flex-col h-full overflow-hidden"
+      style={{ background: "var(--ide-bg)", color: "var(--ide-text)", colorScheme: "dark" as any }}
+    >
       
       {/* ── TOP BAR (40px) ── */}
-      <div className="flex items-center justify-between px-3 h-[40px] shrink-0 border-b border-[#2d2d2d] bg-[#1e1e1e]">
+      <div className="flex items-center justify-between px-3 h-[44px] shrink-0 border-b" style={{ borderColor: "var(--ide-border)", background: "var(--ide-bg)" }}>
         <div className="flex flex-1 items-center gap-4">
           <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-[#1863dc]" />
-            <span className="text-[13px] font-medium text-[#cccccc] tracking-tight">Inceptive</span>
+            <Sparkles size={14} className="text-[#3b82f6]" />
+            <span className="text-[13px] font-medium tracking-tight text-white/90">Inceptive</span>
           </div>
           <button 
             onClick={() => setLeftPanelOpen(!leftPanelOpen)}
-            className="flex h-6 w-6 items-center justify-center rounded text-[#888888] hover:bg-[#2d2d2d] hover:text-[#cccccc] transition-colors"
+            className="flex h-7 w-7 items-center justify-center rounded-md transition-colors"
+            style={{ color: "var(--ide-muted)" }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "transparent")}
           >
             {leftPanelOpen ? <PanelLeftClose size={14} /> : <PanelLeft size={14} />}
           </button>
         </div>
         
         <div className="flex flex-1 justify-center items-center">
-          <span className="text-xs text-[#888888] font-mono">
+          <span className="text-xs font-mono" style={{ color: "var(--ide-muted)" }}>
             {activeProjectId ? "workspace/" + (activeProject?.name || "Code Studio") : "Code Studio"}
           </span>
         </div>
         
         <div className="flex flex-1 items-center justify-end gap-2">
-          <button className="flex h-[26px] items-center gap-1.5 rounded-md bg-[#1863dc] px-3 text-[11px] font-medium text-white hover:bg-[#1556c0] transition-colors shadow-sm">
+          <button className="flex h-[28px] items-center gap-1.5 rounded-md px-3 text-[11px] font-medium text-white transition-colors shadow-sm" style={{ background: "var(--ide-accent)" }}>
             <Play size={10} className="fill-white" /> Run
           </button>
-          <button className="flex h-7 w-7 items-center justify-center rounded-md text-[#888888] hover:bg-[#2d2d2d] hover:text-[#cccccc] transition-colors">
+          <button className="flex h-7 w-7 items-center justify-center rounded-md transition-colors" style={{ color: "var(--ide-muted)" }}>
             <Settings size={14} />
           </button>
         </div>
@@ -1552,43 +1563,77 @@ function DashboardExperience() {
       <div className="flex min-h-0 flex-1">
         {/* ── PANEL 1: LEFT FILE TREE ── */}
         {leftPanelOpen && (
-          <div className="w-[200px] shrink-0 flex flex-col bg-[#1a1a1a] border-r border-[#2d2d2d]">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-sans tracking-[0.2em] text-[#93939f] px-[16px] py-[12px]">Files</span>
+          <div
+            className="w-[260px] shrink-0 flex flex-col"
+            style={{
+              background: "var(--ide-panel)",
+              borderRight: "1px solid var(--ide-border)",
+              boxShadow:
+                `0 18px 60px rgba(0,0,0,0.55)${
+                  activePanel === "files" ? ", inset 0 0 0 1px rgba(59,130,246,0.18)" : ""
+                }`,
+            }}
+            onMouseDown={() => setActivePanel("files")}
+          >
+            <div className="px-4 py-3 border-b" style={{ borderColor: "var(--ide-border)" }}>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase tracking-[0.22em]" style={{ color: "var(--ide-muted)" }}>
+                  Explorer
+                </span>
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto">
-               <div className="flex items-center gap-2 px-[16px] py-1.5 text-[11px] text-[#c5c5c5] hover:bg-[#2a2a2a] cursor-pointer transition-colors group">
-                 <ChevronDown size={12} className="text-[#93939f]" />
-                 <span className="font-medium">PROJECT</span>
-               </div>
-               <div className="mt-0 flex items-center gap-2 px-[16px] py-1.5 text-[13px] bg-[#37373d] text-[#ffffff] cursor-pointer pl-[36px]">
-                 <Code2 size={13} className="text-[#519aba]" />
-                 <span className="font-sans">{monacoLanguage === 'javascript' ? 'index.js' : 'App.tsx'}</span>
-               </div>
-               <div className="flex items-center justify-center pt-8 px-4 text-center">
-                 <p className="text-[10px] text-[#666666] leading-relaxed">
-                   Ask Inceptive to generate code or attach files to add them to context.
-                 </p>
-               </div>
+            <div className="flex-1 overflow-y-auto p-3">
+              <FileTree
+                data={[
+                  {
+                    name: "src",
+                    type: "folder" as const,
+                    children: [
+                      {
+                        name: "app",
+                        type: "folder" as const,
+                        children: [{ name: "agent", type: "folder" as const, children: [{ name: "page.tsx", type: "file" as const, extension: "tsx" }] }],
+                      },
+                      {
+                        name: "components",
+                        type: "folder" as const,
+                        children: [
+                          { name: "ui", type: "folder" as const, children: [{ name: "file-tree.tsx", type: "file" as const, extension: "tsx" }] },
+                        ],
+                      },
+                      { name: monacoLanguage === "javascript" ? "index.js" : "App.tsx", type: "file" as const, extension: monacoLanguage === "javascript" ? "js" : "tsx" },
+                    ],
+                  },
+                ]}
+              />
             </div>
           </div>
         )}
 
         {/* ── PANEL 2: CENTER EDITOR ── */}
-        <div className="flex-1 flex flex-col min-w-0 bg-[#1e1e1e]">
-          <div className="flex h-9 shrink-0 items-end px-2 bg-[#1e1e1e]">
-            {/* Fake tab */}
-            <div className="flex items-center gap-2 px-3 py-2 text-[12px] bg-[#1e1e1e] text-[#cccccc] border-t-2 border-[#1863dc] rounded-t-sm max-w-[200px]">
-              <Code2 size={13} className="text-[#519aba]" />
-              <span className="truncate font-mono">{monacoLanguage === 'javascript' ? 'index.js' : 'App.tsx'}</span>
-              <button className="ml-auto opacity-0 group-hover:opacity-100 hover:bg-[#333] rounded">
-                <X size={12} className="text-[#888]" />
-              </button>
+        <div
+          className="flex-1 flex flex-col min-w-0"
+          style={{
+            background: "var(--ide-panel)",
+            boxShadow:
+              `0 18px 60px rgba(0,0,0,0.55)${
+                activePanel === "editor" ? ", inset 0 0 0 1px rgba(59,130,246,0.18)" : ""
+              }`,
+          }}
+          onMouseDown={() => setActivePanel("editor")}
+        >
+          <div className="flex h-10 shrink-0 items-end px-2" style={{ background: "var(--ide-tabbar)", borderBottom: "1px solid var(--ide-border)" }}>
+            <div className="flex items-center gap-2 px-3 py-2 text-[12px] max-w-[240px] text-white/90 border-b-2" style={{ borderColor: "var(--ide-accent)" }}>
+              <Code2 size={13} className="text-[#60a5fa]" />
+              <span className="truncate font-mono">{monacoLanguage === "javascript" ? "index.js" : "App.tsx"}</span>
             </div>
-            <div className="flex-1 border-b border-[#2d2d2d] mb-[-1px]"></div>
+            <div className="flex items-center gap-2 px-3 py-2 text-[12px] max-w-[240px]" style={{ color: "var(--ide-muted)" }}>
+              <span className="truncate font-mono">README.md</span>
+            </div>
+            <div className="flex-1" />
           </div>
           
-          <div className="flex-1 relative bg-[#1e1e1e]">
+          <div className="flex-1 relative" style={{ background: "var(--ide-panel)" }}>
             {monacoCode ? (
               <Suspense fallback={<div className="absolute inset-0 bg-[#1e1e1e] flex items-center justify-center"><GeneratingEllipsis className="text-[#888]" /></div>}>
                 <MonacoEditorPanel 
@@ -1597,11 +1642,34 @@ function DashboardExperience() {
                 />
               </Suspense>
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <Code2 size={24} className="mb-4 text-[#3a3a3a]" />
-                <p className="text-[16px] font-sans text-white font-medium">Ask Inceptive to write something</p>
-                <p className="text-[13px] text-[#93939f] mt-2 max-w-sm text-center">
-                   The agent writes directly to this editor. Start a conversation on the right.
+              <div className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden">
+                <div
+                  className="absolute inset-0 opacity-[0.22]"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)",
+                    backgroundSize: "18px 18px",
+                    maskImage:
+                      "radial-gradient(closest-side, black 0%, black 35%, transparent 65%)",
+                  }}
+                />
+                <motion.div
+                  animate={{ opacity: [0.6, 1, 0.6], scale: [1, 1.05, 1] }}
+                  transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                  className="relative mb-4 flex h-12 w-12 items-center justify-center rounded-xl border"
+                  style={{
+                    borderColor: "var(--ide-border)",
+                    boxShadow: "0 0 28px rgba(59,130,246,0.14), inset 0 0 0 1px rgba(59,130,246,0.10)",
+                    background: "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  <span className="font-mono text-lg" style={{ color: "rgba(255,255,255,0.78)" }}>
+                    {"</>"}
+                  </span>
+                </motion.div>
+                <p className="text-[15px] font-medium text-white/85">Ask Inceptive to start coding</p>
+                <p className="mt-2 max-w-sm text-center text-[12px]" style={{ color: "var(--ide-muted)" }}>
+                  Describe what you want to build. The agent will populate the editor as it works.
                 </p>
               </div>
             )}
@@ -1609,21 +1677,33 @@ function DashboardExperience() {
         </div>
 
         {/* ── PANEL 3: RIGHT CHAT (380px) ── */}
-        <div className="w-[380px] shrink-0 flex flex-col bg-[#252526] border-l border-[#2d2d2d]">
-          <header className="relative flex h-[48px] shrink-0 items-center justify-between px-4 border-b border-[#2d2d2d] bg-[#1e1e1e]">
-            <span className="text-[13px] font-medium font-sans text-[#ffffff]">Code Studio</span>
+        <div
+          className="w-[420px] shrink-0 flex flex-col"
+          style={{
+            background: "var(--ide-panel)",
+            borderLeft: "1px solid var(--ide-border)",
+            boxShadow:
+              `0 18px 60px rgba(0,0,0,0.55)${
+                activePanel === "chat" ? ", inset 0 0 0 1px rgba(59,130,246,0.18)" : ""
+              }`,
+          }}
+          onMouseDown={() => setActivePanel("chat")}
+        >
+          <header className="relative flex h-[52px] shrink-0 items-center justify-between px-4 border-b" style={{ borderColor: "var(--ide-border)", background: "var(--ide-bg)" }}>
+            <span className="text-[13px] font-medium font-sans text-white/90">Code Studio</span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => void startNewChat()}
-                className="flex h-7 items-center gap-1.5 bg-transparent px-2.5 text-[12px] text-[#93939f] hover:text-[#ffffff] transition-colors focus:outline-none"
+                className="flex h-7 items-center gap-1.5 bg-transparent px-2.5 text-[12px] transition-colors focus:outline-none"
+                style={{ color: "var(--ide-muted)" }}
               >
                 <Plus size={12} /> New Chat
               </button>
             </div>
             {streaming && (
               <div className="absolute bottom-[-1px] left-0 h-[2px] w-full overflow-hidden bg-transparent">
-                <div className="h-full bg-[#1863dc] w-1/3 animate-[pulse_1s_ease-in-out_infinite]" style={{ animation: 'slideCodeStudio 1.5s ease-in-out infinite' }} />
+                <div className="h-full w-1/3" style={{ background: "var(--ide-accent)", animation: "slideCodeStudio 1.5s ease-in-out infinite" }} />
                 <style>{`
                   @keyframes slideCodeStudio {
                     0% { transform: translateX(-100%); }
@@ -1636,10 +1716,15 @@ function DashboardExperience() {
 
           <div className="flex min-h-0 flex-1 flex-col relative">
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+              {agentMode === "plan" && streaming && (
+                <div className="mb-4">
+                  <Plan />
+                </div>
+              )}
               {!hasChat && (
                 <div className="text-center py-6">
-                  <h2 className="text-sm font-medium text-[#cccccc]">How can I help?</h2>
-                  <p className="text-[11px] text-[#888888] mt-2 px-4 leading-relaxed">
+                  <h2 className="text-sm font-medium text-white/85">How can I help?</h2>
+                  <p className="text-[11px] mt-2 px-4 leading-relaxed" style={{ color: "var(--ide-muted)" }}>
                     I can generate code, analyze context, and build web apps end-to-end. I&apos;ll write directly to your editor.
                   </p>
                 </div>
@@ -1662,7 +1747,7 @@ function DashboardExperience() {
             </div>
           </div>
 
-          <div className="shrink-0 p-4 border-t border-[#333333] bg-[#252526]">
+          <div className="shrink-0 p-4 border-t" style={{ borderColor: "var(--ide-border)", background: "var(--ide-panel)" }}>
             {pendingFiles.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
                 {pendingFiles.map((f, idx) => (
@@ -1725,27 +1810,55 @@ function DashboardExperience() {
             </div>
 
             <div className="relative">
-              <DashboardAiPrompt
-                value={input}
-                onChange={setInput}
-                onSend={handlePromptSend}
-                isLoading={streaming}
-                className="!rounded-[12px] !border !border-[#3a3a3a] !bg-[#2a2a2a] focus-within:!border-[#1863dc] !shadow-none !ring-0 !outline-none"
-                placeholder="Ask Inceptive anything…"
-                onAttachClick={() => fileInputRef.current?.click()}
-                dragOver={dragOver}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
+              <motion.div
+                className="rounded-[16px] p-[1px]"
+                initial={false}
+                animate={{
+                  backgroundPositionX: inputFocused ? ["0%", "100%"] : "0%",
                 }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={async (e) => {
-                  e.preventDefault();
-                  setDragOver(false);
-                  const files = Array.from(e.dataTransfer.files || []);
-                  if (files.length > 0) await uploadFiles(files);
+                transition={{ duration: 2.2, repeat: inputFocused ? Infinity : 0, ease: "linear" }}
+                style={{
+                  backgroundImage: inputFocused
+                    ? "linear-gradient(90deg, rgba(168,85,247,0.0), rgba(168,85,247,0.8), rgba(59,130,246,0.85), rgba(168,85,247,0.0))"
+                    : "none",
+                  backgroundSize: inputFocused ? "200% 100%" : undefined,
+                  backgroundColor: inputFocused ? undefined : "var(--ide-border)",
                 }}
-              />
+              >
+                <div
+                  className="rounded-[15px]"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    boxShadow: inputFocused
+                      ? "0 0 0 1px rgba(59,130,246,0.18), 0 0 26px rgba(168,85,247,0.18)"
+                      : "0 0 0 1px var(--ide-border)",
+                  }}
+                  onFocusCapture={() => setInputFocused(true)}
+                  onBlurCapture={() => setInputFocused(false)}
+                >
+                  <DashboardAiPrompt
+                    value={input}
+                    onChange={setInput}
+                    onSend={handlePromptSend}
+                    isLoading={streaming}
+                    className="!rounded-[15px] !border-0 !bg-transparent !shadow-none !ring-0 !outline-none focus-within:!ring-0"
+                    placeholder="Ask Inceptive anything…"
+                    onAttachClick={() => fileInputRef.current?.click()}
+                    dragOver={dragOver}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOver(true);
+                    }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={async (e) => {
+                      e.preventDefault();
+                      setDragOver(false);
+                      const files = Array.from(e.dataTransfer.files || []);
+                      if (files.length > 0) await uploadFiles(files);
+                    }}
+                  />
+                </div>
+              </motion.div>
             </div>
             
             <div className="flex items-center justify-end mt-2 px-1">

@@ -47,7 +47,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       return React.cloneElement(render, {
         ...props,
         className: cn(buttonVariants({ variant, size, className }), (render as any).props.className),
-        ref,
       } as any)
     }
     const Comp = asChild ? Slot : "button"

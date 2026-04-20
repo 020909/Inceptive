@@ -16,16 +16,18 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
   const isAgent = pathname === "/agent";
 
   return (
-    <div className="dashboard-shell relative flex h-screen overflow-hidden bg-[var(--bg-base)]">
+    <SidebarProvider className="dashboard-shell h-screen overflow-hidden bg-[var(--bg-base)]">
       <AppSidebar />
       <SidebarInset className="bg-transparent">
-        <main className={`relative min-w-0 flex-1 overflow-y-auto ${isAgent ? "overflow-hidden flex flex-col h-full" : ""}`}>
+        <main
+          className={`relative min-w-0 flex-1 overflow-y-auto ${isAgent ? "overflow-hidden flex flex-col h-full" : ""}`}
+        >
           <div className={`relative z-10 min-h-0 ${isAgent ? "h-full" : "pb-6"}`}>
             <PageTransition className={isAgent ? "h-full" : undefined}>{children}</PageTransition>
           </div>
         </main>
       </SidebarInset>
-    </div>
+    </SidebarProvider>
   );
 }
 
@@ -35,9 +37,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <AgentProvider>
         <ChatProvider>
           <OrgProvider>
-            <SidebarProvider>
-              <LayoutInner>{children}</LayoutInner>
-            </SidebarProvider>
+            <LayoutInner>{children}</LayoutInner>
             <Toaster />
           </OrgProvider>
         </ChatProvider>
