@@ -19,18 +19,22 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
       <AppSidebar />
       <div className="flex flex-col flex-1 min-w-0 relative">
         {/* Top bar with trigger — placed to the left to align with sidebar */}
-        <div className="flex h-16 shrink-0 items-center justify-between px-4 bg-[var(--bg-base)] border-b border-[var(--border-subtle)]">
-          <div className="flex items-center gap-4">
+        <div className="flex h-14 shrink-0 items-center justify-between px-4 sm:px-6 lg:px-8 bg-[var(--bg-base)] border-b border-[var(--border-subtle)]">
+          <div className="flex items-center gap-3">
             <AppSidebarTrigger />
           </div>
           {/* You can add breadcrumbs or other top-bar items here */}
         </div>
         
-        {/* Page content — using h-full to fill space, but padding handles the 'gap' */}
+        {/* Main column gutter matches common product dashboards (16 / 24 / 32px) */}
         <main
           className={`flex-1 min-w-0 overflow-y-auto scrollbar-hide ${isAgent ? "overflow-hidden flex flex-col" : ""}`}
         >
-          <div className={`${isAgent ? "h-full" : "w-full max-w-full"}`}>
+          <div
+            className={
+              isAgent ? "h-full" : "w-full max-w-full min-h-0 px-4 sm:px-6 lg:px-8"
+            }
+          >
             <PageTransition className={isAgent ? "h-full" : undefined}>{children}</PageTransition>
           </div>
         </main>

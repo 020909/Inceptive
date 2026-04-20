@@ -334,8 +334,8 @@ export default function EmailPage() {
   if (loading) return (
     <>
       <div className="min-h-screen flex flex-col">
-        <div className="h-28 shimmer rounded-[28px] mx-8 mt-8" />
-        <div className="flex-1 shimmer rounded-2xl mx-8 mt-4" />
+        <div className="h-28 shimmer rounded-[28px] mt-4 sm:mt-5" />
+        <div className="flex-1 shimmer rounded-2xl mt-4 sm:mt-4" />
       </div>
     </>
   );

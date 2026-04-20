@@ -390,7 +390,7 @@ export default function SocialPage() {
   if (loading) return (
     <>
       <div className="min-h-screen flex flex-col">
-        <div className="h-28 shimmer rounded-[28px] mx-8 mt-8" />
+        <div className="h-28 shimmer rounded-[28px] mt-4 sm:mt-5" />
         <div className="flex-1 p-8">
           <div className="grid grid-cols-4 gap-4">
             {[1,2,3,4].map(i => <div key={i} className="h-48 shimmer rounded-xl" />)}
@@ -403,7 +403,7 @@ export default function SocialPage() {
   return (
     <>
       <div className="min-h-screen flex flex-col">
-        <header className="page-hero mx-8 mt-8 flex items-center justify-between px-8 py-6">
+        <header className="page-hero mt-4 sm:mt-5 flex items-center justify-between px-4 py-5 sm:px-6">
           <div>
             <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">Integrations</p>
             <h1 className="mt-2 text-2xl font-semibold text-[var(--fg-primary)] tracking-[-0.02em]">Connectors</h1>

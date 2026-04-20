@@ -147,7 +147,7 @@
     --sidebar-divider: #f2f2f2;
     --sidebar-fg: #101828;
     --sidebar-fg-muted: #667085;
-    --sidebar-icon: #667085;
+    --sidebar-icon: #101828;
     --sidebar-icon-active: #101828;
     --sidebar-item-hover: #f9fafb;
     --sidebar-item-active: #f9fafb;
@@ -159,7 +159,8 @@
   html.light {
     --sidebar-bg: #ffffff;
     --sidebar-fg: #101828;
-    --sidebar-icon: #667085; /* Logos/Icons will be dark in light mode */
+    --sidebar-icon: #101828;
+    --sidebar-icon-active: #101828;
 
     --bg-base: #f5f4ed;
     --bg-app: #f5f4ed;
@@ -553,11 +554,18 @@
      LAYOUT
   ═══════════════════════════════════════ */
 
+  /* Horizontal spacing comes from app-shell; keep vertical rhythm only */
   .page-frame {
     width: 100%;
-    max-width: 94rem;
-    margin-inline: auto;
-    padding: 1.5rem;
+    max-width: min(100%, 96rem);
+    margin-inline: 0;
+    padding: 0.875rem 0 1.25rem;
+  }
+
+  @media (min-width: 1024px) {
+    .page-frame {
+      padding: 1rem 0 1.5rem;
+    }
   }
 
   /* ═══════════════════════════════════════
