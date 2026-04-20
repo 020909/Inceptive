@@ -1640,7 +1640,7 @@ function DashboardExperience() {
                 <div className="text-center py-6">
                   <h2 className="text-sm font-medium text-[#cccccc]">How can I help?</h2>
                   <p className="text-[11px] text-[#888888] mt-2 px-4 leading-relaxed">
-                    I can generate code, analyze context, and build web apps end-to-end. I'll write directly to your editor.
+                    I can generate code, analyze context, and build web apps end-to-end. I&apos;ll write directly to your editor.
                   </p>
                 </div>
               )}

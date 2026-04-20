@@ -242,7 +242,7 @@ export default function LandingPage() {
             className="text-white/80 leading-relaxed mb-6"
             style={{ fontFamily: "var(--font-header)", fontSize: "clamp(20px, 2.5vw, 28px)", fontStyle: "italic" }}
           >
-            "29% of the Fortune 500 are now live, paying customers of a leading AI startup. The window for first-mover advantage is closing."
+            &quot;29% of the Fortune 500 are now live, paying customers of a leading AI startup. The window for first-mover advantage is closing.&quot;
           </p>
           <p
             className="text-white/40 text-[13px]"
