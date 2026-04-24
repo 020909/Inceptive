@@ -270,10 +270,6 @@ export default function KnowledgePage() {
   return (
     <div className="page-frame animate-fade-in-up">
       <div className="mb-6 animate-fade-in-up">
-        <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">
-          <BookOpen size={11} />
-          Knowledge Base
-        </div>
         <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--fg-primary)]">Company Intelligence</h1>
       </div>
 

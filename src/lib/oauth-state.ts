@@ -2,8 +2,10 @@ import crypto from "crypto";
 import { sanitizeOAuthRedirectPath } from "@/lib/safe-redirect";
 
 function getSecret(): string {
-  const raw = process.env.TOKEN_ENCRYPTION_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  return raw.slice(0, 32).padEnd(32, "0");
+  const raw = process.env.TOKEN_ENCRYPTION_KEY || "";
+  if (!raw) throw new Error("Missing TOKEN_ENCRYPTION_KEY");
+  // Use full secret entropy via SHA-256; never truncate/pad.
+  return crypto.createHash("sha256").update(raw, "utf8").digest("hex");
 }
 
 /**

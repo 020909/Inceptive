@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
-import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const userId = await getAuthenticatedUserIdFromRequest(req);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data, error } = await createAdminSupabaseClient()
+  const { data, error } = await createAdminClient()
     .from("notifications")
     .select("id,title,message,type,link,read,created_at")
     .eq("user_id", userId)
@@ -35,7 +35,7 @@ export async function PATCH(req: Request) {
   const body = (await req.json().catch(() => ({}))) as { id?: string; read?: boolean; all?: boolean };
 
   if (body.all) {
-    const { error } = await createAdminSupabaseClient()
+    const { error } = await createAdminClient()
       .from("notifications")
       .update({ read: body.read ?? true })
       .eq("user_id", userId)
@@ -46,7 +46,7 @@ export async function PATCH(req: Request) {
   }
 
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
-  const { data, error } = await createAdminSupabaseClient()
+  const { data, error } = await createAdminClient()
     .from("notifications")
     .update({ read: body.read ?? true })
     .eq("id", body.id)

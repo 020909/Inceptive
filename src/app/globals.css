@@ -162,12 +162,13 @@
     --sidebar-icon: #101828;
     --sidebar-icon-active: #101828;
 
-    --bg-base: #f5f4ed;
-    --bg-app: #f5f4ed;
-    --bg-surface: #faf9f5;
+    /* Light mode surfaces: pure white base + #fafafa cards */
+    --bg-base: #ffffff;
+    --bg-app: #ffffff;
+    --bg-surface: #fafafa;
     --bg-elevated: #ffffff;
-    --bg-overlay: #e8e6dc;
-    --bg-sidebar: #faf9f5;
+    --bg-overlay: #f3f4f6;
+    --bg-sidebar: #ffffff;
     --fg-primary: #3d3d3a;
     --fg-secondary: #5e5d59;
     --fg-tertiary: #87867f;
@@ -205,6 +206,25 @@
     --background-elevated: var(--bg-elevated);
     --background-overlay: var(--bg-overlay);
     --surface: var(--bg-surface);
+
+    /* Code Studio (IDE) surfaces — light mode */
+    --ide-bg: #ffffff;
+    --ide-panel: #fafafa;
+    --ide-tabbar: #ffffff;
+    --ide-border: rgba(16, 24, 40, 0.10);
+    --ide-text: rgba(16, 24, 40, 0.92);
+    --ide-muted: rgba(16, 24, 40, 0.60);
+    --ide-muted2: rgba(16, 24, 40, 0.42);
+    --ide-accent: #1863dc;
+    --ide-accent2: #7c3aed;
+    --ide-hover: rgba(16, 24, 40, 0.06);
+    --ide-soft: rgba(16, 24, 40, 0.04);
+    --ide-on-accent: #ffffff;
+    --ide-pill-bg: rgba(16, 24, 40, 0.08);
+    --ide-pill-thumb: #ffffff;
+    --ide-input-bg: rgba(16, 24, 40, 0.04);
+    --ide-grid-dot: rgba(16, 24, 40, 0.10);
+    --ide-empty-icon: rgba(16, 24, 40, 0.72);
   }
 
   /* ── Dark mode — warm charcoal, Warm Silver text ── */

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
-import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { logActivity } from "@/lib/supabase/activity";
 import { getOrgMembershipForUser } from "@/lib/supabase/org";
 import {
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing orgId or templateId." }, { status: 400 });
     }
 
-    const admin = createAdminSupabaseClient();
+    const admin = createAdminClient();
     const membership = await getOrgMembershipForUser(body.orgId, userId, admin);
 
     if (!membership) {

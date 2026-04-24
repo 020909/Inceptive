@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
             plan: "free",
             subscription_status: "inactive",
             memory_enabled: true,
+            last_login_at: new Date().toISOString(),
           });
 
           // Give 100 free credits
@@ -85,6 +86,14 @@ export async function GET(request: NextRequest) {
             description: "Welcome bonus — 500 free credits 🎉",
 
           });
+        } else {
+          await admin
+            .from("users")
+            .update({
+              email: user.email,
+              last_login_at: new Date().toISOString(),
+            })
+            .eq("id", user.id);
         }
       }
 

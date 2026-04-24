@@ -38,6 +38,7 @@ import {
   refineSynthesisToMultiFileDeliverables,
 } from "@/lib/agent/council-deliverable-refine";
 import { readUserSandboxFile, writeUserSandboxFilesBatch } from "@/lib/sandbox/user-artifacts";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { generateNextjsScaffoldFiles } from "@/lib/sandbox/nextjs-scaffold";
 import { EDITORIAL_BASE_CSS, mergeCssWithEditorialBase } from "@/lib/sandbox/editorial-base-css";
 import { runVerifyRepairLoop } from "@/lib/sandbox/site-verify-repair";
@@ -263,9 +264,7 @@ function buildMarkdownMultiFileDeliverables(deliverables: { relativePath: string
 }
 
 const getAdmin = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://localhost:3000";
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy";
-  return createClient(url, key);
+  return createAdminClient();
 };
 
 const admin = getAdmin();

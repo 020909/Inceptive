@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import {
   LayoutGrid,
@@ -15,22 +15,20 @@ import {
   Sparkles,
   Plug,
   FileText,
+  HeartPulse,
   Settings,
   ChevronDown,
   ChevronsUpDown,
   LogIn,
   PanelLeft,
+  User,
+  Coins,
+  DollarSign,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { createClient } from "@/lib/supabase";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -73,15 +71,19 @@ export function AppSidebarTrigger({ className }: { className?: string }) {
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggle();
+      }}
       className={cn(
-        "flex h-8 w-8 items-center justify-center rounded-lg transition-colors duration-150",
+        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-150",
         "text-[var(--sidebar-icon)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--sidebar-fg)]",
         className
       )}
       aria-label="Toggle sidebar"
     >
-      <PanelLeft className="size-4" />
+      <PanelLeft className="size-[18px]" strokeWidth={2} />
     </button>
   );
 }
@@ -253,16 +255,133 @@ function NavDivider({ collapsed }: { collapsed: boolean }) {
   );
 }
 
+function AccountPopover({
+  collapsed,
+  userDisplayName,
+  userEmail,
+  userInitial,
+}: {
+  collapsed: boolean;
+  userDisplayName: string;
+  userEmail: string;
+  userInitial: string;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const rootRef = React.useRef<HTMLDivElement>(null);
+  const { signOut } = useAuth();
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (rootRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const itemClass =
+    "flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-[var(--fg-primary)] hover:bg-[var(--bg-overlay)] transition-colors";
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className={cn(
+          "flex w-full min-h-11 cursor-pointer items-center gap-2.5 rounded-lg border-0 bg-transparent px-2 py-1.5 text-left text-[13px] font-semibold text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--sidebar-fg)] transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--sidebar-bg)]",
+          collapsed && "justify-center px-0 py-2"
+        )}
+      >
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[var(--sidebar-border)] bg-[var(--sidebar-item-active)] text-sm font-bold text-[var(--sidebar-fg)]">
+          {userInitial}
+        </div>
+        {!collapsed && (
+          <>
+            <div className="flex min-w-0 flex-1 flex-col items-start truncate">
+              <span className="w-full truncate text-[13px] font-semibold leading-tight text-[var(--sidebar-fg)]">
+                {userDisplayName}
+              </span>
+              <span className="mt-0.5 w-full truncate text-[11px] font-medium leading-tight text-[var(--sidebar-fg-muted)]">
+                {userEmail}
+              </span>
+            </div>
+            <ChevronsUpDown className="size-4 shrink-0 text-[var(--sidebar-fg-muted)]" aria-hidden />
+          </>
+        )}
+      </button>
+
+      {open ? (
+        <div
+          role="menu"
+          className={cn(
+            "absolute z-[200] overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] py-1 shadow-lg",
+            collapsed
+              ? "bottom-0 left-full ml-2 w-56"
+              : "bottom-full left-0 right-0 mb-1.5"
+          )}
+        >
+          <div className="border-b border-[var(--border-subtle)] px-3 py-2.5">
+            <p className="truncate text-sm font-semibold text-[var(--fg-primary)]">{userDisplayName}</p>
+            <p className="truncate text-xs font-medium text-[var(--fg-muted)]">{userEmail}</p>
+          </div>
+          <div className="p-1">
+            <Link href="/settings" className={itemClass} onClick={() => setOpen(false)} role="menuitem">
+              <Settings className="size-4 shrink-0 opacity-80" />
+              Settings
+            </Link>
+            <Link
+              href="/settings?section=account"
+              className={itemClass}
+              onClick={() => setOpen(false)}
+              role="menuitem"
+            >
+              <User className="size-4 shrink-0 opacity-80" />
+              My account
+            </Link>
+            <Link href="/upgrade" className={itemClass} onClick={() => setOpen(false)} role="menuitem">
+              <Coins className="size-4 shrink-0 opacity-80" />
+              Credits
+            </Link>
+            <div className="my-1 h-px bg-[var(--border-subtle)]" />
+            <button
+              type="button"
+              role="menuitem"
+              className={cn(itemClass, "text-[var(--destructive)] hover:bg-[var(--destructive-soft)]")}
+              onClick={() => {
+                setOpen(false);
+                void signOut();
+              }}
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 // ─── Main Sidebar ─────────────────────────────────────────────────────────────
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { collapsed } = useSidebarState();
   const { user, loading: authLoading } = useAuth();
 
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [projectsReady, setProjectsReady] = React.useState(false);
+  const [revenueCriticalCount, setRevenueCriticalCount] = React.useState(0);
+  const [vendorCriticalCount, setVendorCriticalCount] = React.useState(0);
 
   React.useEffect(() => {
     if (!user) {
@@ -278,6 +397,96 @@ export function AppSidebar() {
       .finally(() => setProjectsReady(true));
   }, [user]);
 
+  React.useEffect(() => {
+    if (!user?.id) {
+      setRevenueCriticalCount(0);
+      return;
+    }
+
+    let mounted = true;
+    const supabase = createClient();
+
+    const loadCriticalCount = async () => {
+      const { count } = await supabase
+        .from("revenue_signals")
+        .select("id", { count: "exact", head: true })
+        .eq("account_id", user.id)
+        .eq("status", "open")
+        .eq("severity", "critical");
+
+      if (mounted) {
+        setRevenueCriticalCount(count ?? 0);
+      }
+    };
+
+    void loadCriticalCount();
+
+    const channel = supabase
+      .channel(`revenue-signals:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "revenue_signals",
+          filter: `account_id=eq.${user.id}`,
+        },
+        () => {
+          void loadCriticalCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
+  React.useEffect(() => {
+    if (!user?.id) {
+      setVendorCriticalCount(0);
+      return;
+    }
+
+    let mounted = true;
+    const supabase = createClient();
+
+    const loadCriticalCount = async () => {
+      const { count } = await supabase
+        .from("vendor_alerts")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "open")
+        .eq("severity", "critical");
+
+      if (mounted) {
+        setVendorCriticalCount(count ?? 0);
+      }
+    };
+
+    void loadCriticalCount();
+
+    const channel = supabase
+      .channel("vendor-alerts:critical")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "vendor_alerts",
+        },
+        () => {
+          void loadCriticalCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   const isProjectsActive = pathname.startsWith("/projects");
   const userEmail = user?.email ?? "";
   const userInitial = userEmail ? userEmail[0].toUpperCase() : "U";
@@ -291,31 +500,36 @@ export function AppSidebar() {
         collapsed ? "w-[4.25rem]" : "w-[15rem] sm:w-[16rem]"
       )}
     >
-      {/* Brand */}
+      {/* Brand: expanded = toggle inside sidebar + logo + wordmark; collapsed = toggle only (replaces logo) */}
       <div
         className={cn(
-          "flex items-center shrink-0 border-b border-transparent",
-          collapsed ? "justify-center py-5" : "px-4 pt-6 pb-4 gap-3"
+          "flex shrink-0 items-center border-b border-transparent",
+          collapsed ? "justify-center py-5" : "gap-2 px-3 pt-5 pb-4"
         )}
       >
-        <Link href="/dashboard" className={cn("flex items-center gap-3 min-w-0", collapsed && "justify-center")}>
-          <Image
-            src="/logo.png"
-            alt="Inceptive"
-            width={32}
-            height={32}
-            className="h-8 w-8 object-contain brightness-0 dark:invert"
-            priority
-          />
-          {!collapsed && (
-            <span
-              className="text-[15px] font-bold tracking-tight text-[var(--sidebar-fg)] truncate"
-              style={{ fontFamily: "var(--font-header)", textTransform: "uppercase" }}
-            >
-              INCEPTIVE
-            </span>
-          )}
-        </Link>
+        {collapsed ? (
+          <AppSidebarTrigger />
+        ) : (
+          <>
+            <Link href="/dashboard" className="flex min-w-0 flex-1 items-center gap-2.5">
+              <Image
+                src="/logo.png"
+                alt="Inceptive"
+                width={32}
+                height={32}
+                className="h-8 w-8 shrink-0 object-contain invert dark:invert-0"
+                priority
+              />
+              <span
+                className="truncate text-[15px] font-bold tracking-tight text-[var(--sidebar-fg)]"
+                style={{ fontFamily: "var(--font-header)", textTransform: "uppercase" }}
+              >
+                INCEPTIVE
+              </span>
+            </Link>
+            <AppSidebarTrigger />
+          </>
+        )}
       </div>
 
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 py-3 space-y-0.5 scrollbar-hide">
@@ -331,6 +545,23 @@ export function AppSidebar() {
         <NavItem href="/knowledge" icon={BookOpen} label="Knowledge Base" isActive={pathname === "/knowledge"} collapsed={collapsed} />
         <NavItem href="/email" icon={Mail} label="Email" isActive={pathname === "/email"} collapsed={collapsed} />
         <NavItem href="/research" icon={Search} label="Research" isActive={pathname === "/research"} collapsed={collapsed} />
+        <NavItem href="/dashboard/churn" icon={HeartPulse} label="Churn" isActive={pathname === "/dashboard/churn"} collapsed={collapsed} />
+        <NavItem
+          href="/dashboard/revenue"
+          icon={DollarSign}
+          label="Revenue Intelligence"
+          isActive={pathname === "/dashboard/revenue"}
+          collapsed={collapsed}
+          badge={revenueCriticalCount > 0 ? revenueCriticalCount : undefined}
+        />
+        <NavItem
+          href="/dashboard/vendors"
+          icon={Building2}
+          label="Vendors"
+          isActive={pathname === "/dashboard/vendors"}
+          collapsed={collapsed}
+          badge={vendorCriticalCount > 0 ? vendorCriticalCount : undefined}
+        />
 
         <NavDivider collapsed={collapsed} />
 
@@ -383,48 +614,12 @@ export function AppSidebar() {
             {!collapsed && <span>Sign in</span>}
           </Link>
         ) : (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className={cn(
-                "flex w-full min-h-11 cursor-pointer items-center gap-2.5 rounded-lg border-0 bg-transparent px-2 py-1.5 text-left text-[13px] font-semibold text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--sidebar-fg)] transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--sidebar-bg)]",
-                collapsed && "justify-center px-0 py-2"
-              )}
-            >
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--sidebar-item-active)] text-[var(--sidebar-fg)] text-sm font-bold border border-[var(--sidebar-border)]">
-                {userInitial}
-              </div>
-              {!collapsed && (
-                <>
-                  <div className="flex flex-col items-start truncate flex-1 min-w-0">
-                    <span className="text-[13px] font-semibold text-[var(--sidebar-fg)] truncate w-full leading-tight">
-                      {userDisplayName}
-                    </span>
-                    <span className="text-[11px] font-medium text-[var(--sidebar-fg-muted)] truncate w-full leading-tight mt-0.5">
-                      {userEmail}
-                    </span>
-                  </div>
-                  <ChevronsUpDown className="size-4 shrink-0 text-[var(--sidebar-fg-muted)]" aria-hidden />
-                </>
-              )}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 mb-1" align="end" side="top">
-              <DropdownMenuLabel className="font-semibold p-3 pb-2">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-semibold text-[var(--fg-primary)]">{userDisplayName}</span>
-                  <span className="text-xs font-medium text-[var(--fg-muted)]">{userEmail}</span>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer" onClick={() => router.push("/settings")}>
-                <Settings className="size-4 mr-2" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-[var(--destructive)] cursor-pointer" onClick={() => router.push("/login")}>
-                Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <AccountPopover
+            collapsed={collapsed}
+            userDisplayName={userDisplayName}
+            userEmail={userEmail}
+            userInitial={userInitial}
+          />
         )}
       </div>
     </aside>

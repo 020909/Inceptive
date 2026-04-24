@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
-import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { getOrgMembershipForUser } from "@/lib/supabase/org";
 import {
   queryGetOrganizationGovernanceSettings,
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const admin = createAdminSupabaseClient();
+    const admin = createAdminClient();
     const membership = await getOrgMembershipForUser(orgId, userId, admin);
 
     if (!membership) {
@@ -59,7 +59,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Missing orgId." }, { status: 400 });
     }
 
-    const admin = createAdminSupabaseClient();
+    const admin = createAdminClient();
     const membership = await getOrgMembershipForUser(body.orgId, userId, admin);
 
     if (!membership || membership.role !== "admin") {

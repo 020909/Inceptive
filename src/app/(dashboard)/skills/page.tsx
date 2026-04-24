@@ -185,10 +185,6 @@ export default function SkillsPage() {
         <div className="mb-8 animate-fade-in-up">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[var(--fg-muted)] mb-3">
-                <Sparkles size={12} />
-                Agent Library
-              </div>
               <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--fg-primary)]">Skills & Playbooks</h1>
               <p className="mt-2 text-sm text-[var(--fg-muted)]">One-click agents that run autonomously. Configure once, delegate forever.</p>
             </div>

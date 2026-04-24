@@ -3,7 +3,7 @@ import { AlertTriangle, Clock3, Settings, Shield, ShieldCheck } from "lucide-rea
 import { OrgGovernanceSettings } from "@/components/org/org-governance-settings";
 import { ReviewQueuePanel } from "@/components/org/review-queue-panel";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import {
   queryGetOrganizationGovernanceSettings,
@@ -48,7 +48,7 @@ export default async function OrgSettingsPage({ params }: OrgSettingsPageProps) 
     redirect("/dashboard?error=org-access-denied");
   }
 
-  const admin = createAdminSupabaseClient();
+  const admin = createAdminClient();
   const last24Hours = new Date();
   last24Hours.setHours(last24Hours.getHours() - 24);
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { z } from "zod";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
-import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 import MorningReportEmail, { type MorningReportEmailProps } from "@/emails/MorningReportEmail";
 import TaskCompleteEmail, { type TaskCompleteEmailProps } from "@/emails/TaskCompleteEmail";
 import TeamInviteEmail, { type TeamInviteEmailProps } from "@/emails/TeamInviteEmail";
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
     const payload = requestSchema.parse(await request.json());
 
     if (!internal && authenticatedUserId) {
-      const admin = createAdminSupabaseClient();
+      const admin = createAdminClient();
       const { data: authUser, error: authErr } = await admin.auth.admin.getUserById(authenticatedUserId);
       const userEmail = authUser?.user?.email?.trim();
       if (authErr || !userEmail) {

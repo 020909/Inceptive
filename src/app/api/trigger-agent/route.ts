@@ -3,7 +3,7 @@ import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 import { trackEvent } from "@/lib/analytics";
 import { inngest } from "@/lib/inngest/client";
 import { checkRateLimit, getClientIP, rateLimitResponse } from "@/lib/rate-limit";
-import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 import {
   createReviewRequestWithNotifications,
   queryGetOrganizationGovernanceSettings,
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: requestSchemaMessage }, { status: 400 });
     }
 
-    const admin = createAdminSupabaseClient();
+    const admin = createAdminClient();
     const { data: membership, error } = await admin
       .from("organization_members")
       .select("id")

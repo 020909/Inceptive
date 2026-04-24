@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
+import { createAdminClient } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const getAdmin = () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://localhost:3000";
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy";
-  return createClient(url, key);
-};
+const getAdmin = () => createAdminClient();
 
 // GET /api/style-memory — fetch user's style preferences
 export async function GET(req: Request) {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
-import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { logActivity } from "@/lib/supabase/activity";
 import { getOrgMembershipForUser } from "@/lib/supabase/org";
 import {
@@ -32,7 +32,7 @@ export async function PATCH(request: Request, { params }: WorkflowStatusRoutePro
       return NextResponse.json({ error: "A valid workflow status is required." }, { status: 400 });
     }
 
-    const admin = createAdminSupabaseClient();
+    const admin = createAdminClient();
     const { data: workflow, error } = await admin
       .from("org_workflows")
       .select(

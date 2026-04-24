@@ -140,7 +140,8 @@ async function upsertConnectedAccount(params: {
 function buildOAuthState(userId: string, provider: Provider, redirectTo: string) {
   const raw = JSON.stringify({ u: userId, p: provider, r: redirectTo, t: Date.now() });
   const payload = Buffer.from(raw, "utf8").toString("base64url");
-  const key = process.env.TOKEN_ENCRYPTION_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  const key = process.env.TOKEN_ENCRYPTION_KEY || "";
+  if (!key) throw new Error("Missing TOKEN_ENCRYPTION_KEY");
   const sig = crypto.createHmac("sha256", key).update(payload).digest("base64url");
   return `${payload}.${sig}`;
 }
@@ -149,7 +150,8 @@ function parseOAuthState(state: string): { u: string; p: Provider; r: string } |
   try {
     const [payload, sig] = state.split(".");
     if (!payload || !sig) return null;
-    const key = process.env.TOKEN_ENCRYPTION_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+    const key = process.env.TOKEN_ENCRYPTION_KEY || "";
+    if (!key) return null;
     const expected = crypto.createHmac("sha256", key).update(payload).digest("base64url");
     if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
 

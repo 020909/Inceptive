@@ -36,6 +36,15 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# python backend
+backend/.venv/
+backend/.mem0/
+backend/__pycache__/
+backend/**/*.pyc
+backend/vendor_refs/
+celerybeat-schedule.db
+dump.rdb
+
 # vercel
 .vercel
 

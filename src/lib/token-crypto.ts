@@ -6,18 +6,16 @@ function deriveKey(raw: string): Buffer {
 }
 
 function getPrimarySecret(): string {
-  const raw = process.env.TOKEN_ENCRYPTION_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  if (!raw) {
-    throw new Error("TOKEN_ENCRYPTION_KEY or SUPABASE_SERVICE_ROLE_KEY must be set for token encryption");
-  }
+  const raw = process.env.TOKEN_ENCRYPTION_KEY || "";
+  if (!raw) throw new Error("Missing TOKEN_ENCRYPTION_KEY");
   return raw;
 }
 
 function getFallbackSecrets(primary: string): string[] {
-  const out: string[] = [];
-  const service = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  if (service && service !== primary) out.push(service);
-  return out;
+  // Intentionally empty: do not reuse other secrets (like service-role) for encryption.
+  // If you need rotation, add TOKEN_ENCRYPTION_KEY_OLD and check it here explicitly.
+  void primary;
+  return [];
 }
 
 /** Encrypt a string token using AES-256-GCM */

@@ -1,4 +1,4 @@
-import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 
 export async function createNotification(params: {
   userId: string;
@@ -9,7 +9,7 @@ export async function createNotification(params: {
   link?: string;
 }) {
   try {
-    const supabase = createAdminSupabaseClient();
+    const supabase = createAdminClient();
     await supabase.from("notifications").insert({
       user_id: params.userId,
       organization_id: params.orgId,

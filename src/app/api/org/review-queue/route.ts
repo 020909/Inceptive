@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
-import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { getOrgMembershipForUser } from "@/lib/supabase/org";
 import { queryGetReviewQueue, type ReviewQueueStatus } from "@/lib/supabase/org-governance";
 
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const admin = createAdminSupabaseClient();
+    const admin = createAdminClient();
     const membership = await getOrgMembershipForUser(orgId, userId, admin);
 
     if (!membership) {

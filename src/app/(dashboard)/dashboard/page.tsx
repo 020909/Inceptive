@@ -380,10 +380,6 @@ export default function DashboardPage() {
     <div className="animate-fade-in-up page-enter">
       <div className="w-full py-5 max-w-none">
         <div className="mb-8 flex flex-col gap-3">
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[var(--fg-muted)]">
-            <Sparkles size={12} />
-            Analytics Overview
-          </div>
           <div className="flex items-end justify-between gap-4">
             <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--fg-primary)] md:text-4xl">
               Your AI operations, at a glance.

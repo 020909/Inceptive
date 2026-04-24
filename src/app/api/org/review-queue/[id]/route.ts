@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
-import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { getOrgMembershipForUser } from "@/lib/supabase/org";
 import { queryResolveReviewRequest, type ReviewQueueStatus } from "@/lib/supabase/org-governance";
 
@@ -28,7 +28,7 @@ export async function PATCH(request: Request, { params }: ReviewQueueRouteProps)
       return NextResponse.json({ error: "A final review status is required." }, { status: 400 });
     }
 
-    const admin = createAdminSupabaseClient();
+    const admin = createAdminClient();
     const { data: reviewItem, error } = await admin
       .from("agent_review_queue")
       .select("organization_id")

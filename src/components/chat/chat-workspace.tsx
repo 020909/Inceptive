@@ -1523,42 +1523,8 @@ function DashboardExperience() {
     <div
       ref={containerRef}
       className="flex flex-col h-full overflow-hidden"
-      style={{ background: "var(--ide-bg)", color: "var(--ide-text)", colorScheme: "dark" as any }}
+      style={{ background: "var(--ide-bg)", color: "var(--ide-text)" }}
     >
-      
-      {/* ── TOP BAR (40px) ── */}
-      <div className="flex items-center justify-between px-3 h-[44px] shrink-0 border-b" style={{ borderColor: "var(--ide-border)", background: "var(--ide-bg)" }}>
-        <div className="flex flex-1 items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-[#3b82f6]" />
-            <span className="text-[13px] font-medium tracking-tight text-white/90">Inceptive</span>
-          </div>
-          <button 
-            onClick={() => setLeftPanelOpen(!leftPanelOpen)}
-            className="flex h-7 w-7 items-center justify-center rounded-md transition-colors"
-            style={{ color: "var(--ide-muted)" }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "transparent")}
-          >
-            {leftPanelOpen ? <PanelLeftClose size={14} /> : <PanelLeft size={14} />}
-          </button>
-        </div>
-        
-        <div className="flex flex-1 justify-center items-center">
-          <span className="text-xs font-mono" style={{ color: "var(--ide-muted)" }}>
-            {activeProjectId ? "workspace/" + (activeProject?.name || "Code Studio") : "Code Studio"}
-          </span>
-        </div>
-        
-        <div className="flex flex-1 items-center justify-end gap-2">
-          <button className="flex h-[28px] items-center gap-1.5 rounded-md px-3 text-[11px] font-medium text-white transition-colors shadow-sm" style={{ background: "var(--ide-accent)" }}>
-            <Play size={10} className="fill-white" /> Run
-          </button>
-          <button className="flex h-7 w-7 items-center justify-center rounded-md transition-colors" style={{ color: "var(--ide-muted)" }}>
-            <Settings size={14} />
-          </button>
-        </div>
-      </div>
 
       <div className="flex min-h-0 flex-1">
         {/* ── PANEL 1: LEFT FILE TREE ── */}
@@ -1623,7 +1589,10 @@ function DashboardExperience() {
           onMouseDown={() => setActivePanel("editor")}
         >
           <div className="flex h-10 shrink-0 items-end px-2" style={{ background: "var(--ide-tabbar)", borderBottom: "1px solid var(--ide-border)" }}>
-            <div className="flex items-center gap-2 px-3 py-2 text-[12px] max-w-[240px] text-white/90 border-b-2" style={{ borderColor: "var(--ide-accent)" }}>
+            <div
+              className="flex items-center gap-2 px-3 py-2 text-[12px] max-w-[240px] border-b-2"
+              style={{ borderColor: "var(--ide-accent)", color: "var(--ide-text)" }}
+            >
               <Code2 size={13} className="text-[#60a5fa]" />
               <span className="truncate font-mono">{monacoLanguage === "javascript" ? "index.js" : "App.tsx"}</span>
             </div>
@@ -1635,7 +1604,16 @@ function DashboardExperience() {
           
           <div className="flex-1 relative" style={{ background: "var(--ide-panel)" }}>
             {monacoCode ? (
-              <Suspense fallback={<div className="absolute inset-0 bg-[#1e1e1e] flex items-center justify-center"><GeneratingEllipsis className="text-[#888]" /></div>}>
+              <Suspense
+                fallback={
+                  <div
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ background: "var(--ide-panel)", color: "var(--ide-muted)" }}
+                  >
+                    <GeneratingEllipsis className="text-current" />
+                  </div>
+                }
+              >
                 <MonacoEditorPanel 
                   code={monacoCode} 
                   language={monacoLanguage} 
@@ -1647,7 +1625,7 @@ function DashboardExperience() {
                   className="absolute inset-0 opacity-[0.22]"
                   style={{
                     backgroundImage:
-                      "radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)",
+                      "radial-gradient(var(--ide-grid-dot) 1px, transparent 1px)",
                     backgroundSize: "18px 18px",
                     maskImage:
                       "radial-gradient(closest-side, black 0%, black 35%, transparent 65%)",
@@ -1660,14 +1638,16 @@ function DashboardExperience() {
                   style={{
                     borderColor: "var(--ide-border)",
                     boxShadow: "0 0 28px rgba(59,130,246,0.14), inset 0 0 0 1px rgba(59,130,246,0.10)",
-                    background: "rgba(255,255,255,0.02)",
+                    background: "var(--ide-soft)",
                   }}
                 >
-                  <span className="font-mono text-lg" style={{ color: "rgba(255,255,255,0.78)" }}>
+                  <span className="font-mono text-lg" style={{ color: "var(--ide-empty-icon)" }}>
                     {"</>"}
                   </span>
                 </motion.div>
-                <p className="text-[15px] font-medium text-white/85">Ask Inceptive to start coding</p>
+                <p className="text-[15px] font-medium" style={{ color: "var(--ide-text)" }}>
+                  Ask Inceptive to start coding
+                </p>
                 <p className="mt-2 max-w-sm text-center text-[12px]" style={{ color: "var(--ide-muted)" }}>
                   Describe what you want to build. The agent will populate the editor as it works.
                 </p>
@@ -1690,7 +1670,9 @@ function DashboardExperience() {
           onMouseDown={() => setActivePanel("chat")}
         >
           <header className="relative flex h-[52px] shrink-0 items-center justify-between px-4 border-b" style={{ borderColor: "var(--ide-border)", background: "var(--ide-bg)" }}>
-            <span className="text-[13px] font-medium font-sans text-white/90">Code Studio</span>
+            <span className="text-[13px] font-medium font-sans" style={{ color: "var(--ide-text)" }}>
+              Code Studio
+            </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -1723,7 +1705,9 @@ function DashboardExperience() {
               )}
               {!hasChat && (
                 <div className="text-center py-6">
-                  <h2 className="text-sm font-medium text-white/85">How can I help?</h2>
+                  <h2 className="text-sm font-medium" style={{ color: "var(--ide-text)" }}>
+                    How can I help?
+                  </h2>
                   <p className="text-[11px] mt-2 px-4 leading-relaxed" style={{ color: "var(--ide-muted)" }}>
                     I can generate code, analyze context, and build web apps end-to-end. I&apos;ll write directly to your editor.
                   </p>
@@ -1789,21 +1773,29 @@ function DashboardExperience() {
 
             <div className="mb-3 flex w-full">
               <div
-                className="relative flex items-center bg-[#2a2a2a] rounded-full p-[3px] cursor-pointer"
+                className="relative flex items-center rounded-full p-[3px] cursor-pointer"
+                style={{ background: "var(--ide-pill-bg)" }}
                 onClick={() => setAgentMode(agentMode === 'build' ? 'plan' : 'build')}
               >
                 <div
-                  className="absolute bg-white rounded-full transition-all duration-150 ease-in-out"
+                  className="absolute rounded-full transition-all duration-150 ease-in-out"
                   style={{
                     width: agentMode === 'build' ? '46px' : '46px',
                     height: 'calc(100% - 6px)',
                     left: agentMode === 'build' ? '3px' : '49px',
+                    background: "var(--ide-pill-thumb)",
                   }}
                 />
-                <div className={`relative z-10 px-3 py-1 text-[11px] font-sans font-medium transition-colors ${agentMode === 'build' ? 'text-black' : 'text-[#93939f]'}`}>
+                <div
+                  className="relative z-10 px-3 py-1 text-[11px] font-sans font-medium transition-colors"
+                  style={{ color: agentMode === "build" ? "var(--ide-text)" : "var(--ide-muted)" }}
+                >
                   Build
                 </div>
-                <div className={`relative z-10 px-3 py-1 text-[11px] font-sans font-medium transition-colors ${agentMode === 'plan' ? 'text-black' : 'text-[#93939f]'}`}>
+                <div
+                  className="relative z-10 px-3 py-1 text-[11px] font-sans font-medium transition-colors"
+                  style={{ color: agentMode === "plan" ? "var(--ide-text)" : "var(--ide-muted)" }}
+                >
                   Plan
                 </div>
               </div>
@@ -1828,7 +1820,7 @@ function DashboardExperience() {
                 <div
                   className="rounded-[15px]"
                   style={{
-                    background: "rgba(255,255,255,0.03)",
+                    background: "var(--ide-input-bg)",
                     boxShadow: inputFocused
                       ? "0 0 0 1px rgba(59,130,246,0.18), 0 0 26px rgba(168,85,247,0.18)"
                       : "0 0 0 1px var(--ide-border)",
@@ -1868,9 +1860,10 @@ function DashboardExperience() {
                 className={`flex h-6 w-6 items-center justify-center rounded-md transition-colors ${
                   isMicListening
                     ? 'bg-red-500/20 text-red-400'
-                    : 'text-[#888888] hover:text-[#cccccc] hover:bg-[#333333]'
+                    : 'hover:bg-[var(--ide-hover)]'
                 }`}
                 title="Voice input"
+                style={isMicListening ? undefined : { color: "var(--ide-muted)" }}
               >
                 {isMicListening ? <MicOff size={12} /> : <Mic size={12} />}
               </button>
@@ -1885,7 +1878,7 @@ function DashboardExperience() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<div className="h-screen w-full bg-[#1e1e1e]" />}>
+    <Suspense fallback={<div className="h-screen w-full" style={{ background: "var(--ide-bg)" }} />}>
       <DashboardExperience />
     </Suspense>
   );

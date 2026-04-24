@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { BarChart2 } from "lucide-react";
 import { AnalyticsActivityChart } from "@/components/org/analytics-activity-chart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getOrgBySlug, getOrgMembershipForUser } from "@/lib/supabase/org";
 
@@ -35,7 +35,7 @@ export default async function OrgAnalyticsPage({ params }: OrgAnalyticsPageProps
     redirect("/dashboard?error=org-access-denied");
   }
 
-  const admin = createAdminSupabaseClient();
+  const admin = createAdminClient();
 
   const monthStart = new Date();
   monthStart.setDate(1);
@@ -118,7 +118,7 @@ export default async function OrgAnalyticsPage({ params }: OrgAnalyticsPageProps
     countByDay.set(key, (countByDay.get(key) ?? 0) + 1);
   }
 
-  const hoursSavedThisMonth = (monthlyReportRunsResult.data ?? []).reduce((total, row) => {
+  const hoursSavedThisMonth = (monthlyReportRunsResult.data ?? []).reduce((total: number, row: any) => {
     const metadata = (row.metadata ?? {}) as Record<string, unknown>;
     const hoursSaved = typeof metadata.hoursSaved === "number" ? metadata.hoursSaved : Number(metadata.hoursSaved ?? 0);
     return total + (Number.isFinite(hoursSaved) ? hoursSaved : 0);

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createAdminSupabaseClient } from "@/lib/supabase-admin";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import {
   getOrgBySlug,
@@ -53,7 +53,7 @@ export default async function OrgDashboardPage({ params }: OrgDashboardPageProps
     redirect("/dashboard?error=org-access-denied");
   }
 
-  const admin = createAdminSupabaseClient();
+  const admin = createAdminClient();
   const [members, activeWorkflowsResult, pendingReviewsResult, recentActivityResult] = await Promise.all([
     getOrgMembers(organization.id, supabase),
     admin

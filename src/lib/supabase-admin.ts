@@ -1,12 +1,25 @@
+import "server-only";
+
 import { createClient } from "@supabase/supabase-js";
 
-export function createAdminSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+function required(name: string, value: string | undefined): string {
+  const v = value?.trim();
+  if (!v) throw new Error(`Missing ${name}`);
+  return v;
+}
 
-  if (!url || !key) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-  }
+/**
+ * Server-only Supabase client using the service-role key.
+ * Never import this from a Client Component.
+ */
+export function createAdminClient() {
+  const url =
+    process.env.SUPABASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
-  return createClient(url, key);
+  return createClient(
+    required("SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL", url),
+    required("SUPABASE_SERVICE_ROLE_KEY", key)
+  );
 }

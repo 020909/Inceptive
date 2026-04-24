@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
@@ -67,7 +68,25 @@ function CardHeader({ title, description }: { title: string; description?: strin
   );
 }
 
-export default function SettingsPage() {
+function SettingsSectionFromQuery({ setActiveSection }: { setActiveSection: (s: Section) => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const tab = searchParams.get("section");
+    if (
+      tab === "ai" ||
+      tab === "account" ||
+      tab === "mail" ||
+      tab === "appearance" ||
+      tab === "memory" ||
+      tab === "agent"
+    ) {
+      setActiveSection(tab);
+    }
+  }, [searchParams, setActiveSection]);
+  return null;
+}
+
+function SettingsPageInner() {
   const { user, session } = useAuth();
   const { theme, setTheme } = useTheme();
   const { memoryEnabled, setMemoryEnabled } = useChat();
@@ -281,7 +300,11 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="page-frame">
+    <>
+      <Suspense fallback={null}>
+        <SettingsSectionFromQuery setActiveSection={setActiveSection} />
+      </Suspense>
+      <div className="page-frame">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -773,5 +796,10 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+    </>
   );
+}
+
+export default function SettingsPage() {
+  return <SettingsPageInner />;
 }
