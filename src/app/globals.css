@@ -120,6 +120,10 @@
     line-height: 1.6;
     min-height: 100vh;
   }
+  
+  *, *::before, *::after {
+    box-shadow: none !important;
+  }
 
   /* Display typography — Sora */
   h1 {

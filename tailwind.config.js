@@ -8,6 +8,14 @@ module.exports = {
   ],
   theme: {
     extend: {
+      boxShadow: {
+        none: 'none',
+      },
+      fontFamily: {
+        display: ['var(--font-display)'],
+        body: ['var(--font-body)'],
+        mono: ['var(--font-mono)'],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",

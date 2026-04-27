@@ -15,7 +15,7 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
   const isAgent = pathname === "/agent";
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--bg-base)]">
+    <div className="flex h-screen overflow-hidden bg-[var(--surface-deep)]">
       <AppSidebar />
       <div className="flex flex-col flex-1 min-w-0 relative min-h-0">
         <main
@@ -23,7 +23,7 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
         >
           <div
             className={
-              isAgent ? "h-full" : "w-full max-w-full min-h-0 px-4 sm:px-6 lg:px-8"
+              isAgent ? "h-full" : "w-full max-w-full min-h-0 p-6"
             }
           >
             <PageTransition className={isAgent ? "h-full" : undefined}>{children}</PageTransition>
