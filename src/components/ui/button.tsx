@@ -1,54 +1,74 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
-
 import { cn } from "@/lib/utils"
 
+/**
+ * Inceptive OS v3.0 Button System
+ * - 8px radius (radius-sm)
+ * - No shadows
+ * - Sora/DM Sans typography
+ * - Uppercase, tracked labels
+ */
+
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  // Base: inline-flex, no shadows, uppercase tracked text
+  "inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F3437] focus-visible:ring-offset-2 focus-visible:ring-offset-[#040506] disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        // Primary: White fill, dark text, 8px radius
+        default:
+          "bg-white text-[#070A0B] hover:bg-[#D0D5D9]",
+        // Ghost: Transparent with border
+        ghost:
+          "border border-[#2F3437] bg-transparent text-[#F0F2F3] hover:bg-[#181C1E]",
+        // Outline: Alias for ghost (compatibility)
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+          "border border-[#2F3437] bg-transparent text-[#F0F2F3] hover:bg-[#181C1E]",
+        // Secondary: Elevated surface
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-[#181C1E] text-[#F0F2F3] hover:bg-[#202527] border border-[#232829]",
+        // Destructive: Red signal
+        destructive:
+          "bg-[#220B0B] text-[#DC2626] border border-[#DC2626] hover:bg-[#220B0B]/80",
+        // Link: Text only
+        link:
+          "text-[#8A9AA8] underline-offset-4 hover:underline hover:text-[#F0F2F3]",
       },
-      size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
-        "icon-sm": "h-8 w-8",
-      },
+size: {
+      // Standard: 8px radius, uppercase 12px
+      default:
+        "h-9 px-5 text-[12px] font-bold tracking-[0.12em] uppercase rounded-[8px]",
+      // Small: Compact
+      sm:
+        "h-8 px-4 text-[11px] font-bold tracking-[0.12em] uppercase rounded-[8px]",
+      // Large: Prominent
+      lg:
+        "h-11 px-6 text-[12px] font-bold tracking-[0.12em] uppercase rounded-[8px]",
+      // Icon: Square-ish
+      icon:
+        "h-9 w-9 rounded-[8px]",
+      // Icon Small: Compact square
+      "icon-sm":
+        "h-8 w-8 rounded-[8px]",
+    },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
     },
-  },
+  }
 )
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
-  render?: React.ReactElement
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, render, ...props }, ref) => {
-    if (render) {
-      return React.cloneElement(render, {
-        ...props,
-        className: cn(buttonVariants({ variant, size, className }), (render as any).props.className),
-      } as any)
-    }
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     return (
       <Comp
@@ -57,7 +77,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       />
     )
-  },
+  }
 )
 Button.displayName = "Button"
 

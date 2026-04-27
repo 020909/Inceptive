@@ -27,10 +27,10 @@ interface ReviewQueuePanelProps {
   description?: string;
 }
 
-function statusVariant(status: ReviewQueueItemWithRequester["status"]) {
-  if (status === "approved") return "green";
-  if (status === "rejected") return "gray";
-  return "blue";
+function statusVariant(status: ReviewQueueItemWithRequester["status"]): "positive" | "negative" | "default" {
+  if (status === "approved") return "positive";
+  if (status === "rejected") return "negative";
+  return "default";
 }
 
 function requestSummary(item: ReviewQueueItemWithRequester) {

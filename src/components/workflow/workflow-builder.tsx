@@ -370,9 +370,11 @@ export function WorkflowBuilder({
     <div className="flex h-[calc(100vh-1.5rem)] overflow-hidden rounded-[28px] border border-[var(--border-default)] bg-zinc-950 text-white">
       <div className="absolute inset-x-0 top-0 z-20 flex h-14 items-center justify-between border-b border-white/10 bg-zinc-950/90 px-4 backdrop-blur">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon-sm" render={<Link href={`/org/${orgSlug}/workflows`} />}>
-            <ArrowLeft />
-          </Button>
+<Button asChild variant="ghost" size="icon-sm">
+              <Link href={`/org/${orgSlug}/workflows`}>
+                <ArrowLeft />
+              </Link>
+            </Button>
 
           {editingName ? (
             <Input
@@ -415,9 +417,9 @@ export function WorkflowBuilder({
               <DropdownMenuItem onClick={handleDuplicate}>Duplicate</DropdownMenuItem>
               <DropdownMenuItem onClick={handleDelete}>Delete</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem render={<Link href={`/org/${orgSlug}/activity`} />}>
-                View Run History
-              </DropdownMenuItem>
+<DropdownMenuItem onClick={() => window.location.href = `/org/${orgSlug}/activity`}>
+              View Run History
+            </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -180,14 +180,9 @@ export function WorkflowTemplatesGallery({
                     <Badge variant="outline" className="px-3 py-1 text-xs">
                       Active
                     </Badge>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="h-11 rounded-xl px-5"
-                      render={<Link href={`/org/${orgSlug}/workflows/active`} />}
-                    >
-                      Configure
-                    </Button>
+<Button asChild variant="outline" size="lg" className="h-11 rounded-xl px-5">
+              <Link href={`/org/${orgSlug}/workflows/active`}>Configure</Link>
+            </Button>
                   </div>
                 ) : (
                   <Button

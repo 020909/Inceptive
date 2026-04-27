@@ -18,17 +18,17 @@ interface OrgDashboardPageProps {
   params: Promise<{ slug: string }>;
 }
 
-function planVariant(plan: string) {
-  if (plan === "team") return "blue";
-  if (plan === "business") return "green";
-  return "gray";
+function planVariant(plan: string): "default" | "info" | "positive" | "warning" {
+  if (plan === "team") return "info";
+  if (plan === "business") return "positive";
+  return "default";
 }
 
-function roleVariant(role: OrganizationMemberWithProfile["role"]) {
+function roleVariant(role: OrganizationMemberWithProfile["role"]): "default" | "outline" {
   return role === "admin" ? "default" : "outline";
 }
 
-function statusVariant(status: OrganizationMemberWithProfile["status"]) {
+function statusVariant(status: OrganizationMemberWithProfile["status"]): "default" | "outline" {
   return status === "active" ? "default" : "outline";
 }
 
@@ -104,30 +104,16 @@ export default async function OrgDashboardPage({ params }: OrgDashboardPageProps
                 userEmail={user.email ?? ""}
                 userName={user.email?.split("@")[0] || "Admin"}
               />
-              <Button
-                size="lg"
-                className="h-11 rounded-xl px-5"
-                render={<Link href={`/org/${organization.slug}/workflows`} />}
-              >
-                Browse Workflows
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-11 rounded-xl px-5"
-                render={<Link href={`/org/${organization.slug}/settings`} />}
-              >
-                Open Governance
-              </Button>
-              <InviteMemberDialog orgId={organization.id} orgSlug={organization.slug} disabled={!canInvite} />
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-11 rounded-xl px-5"
-                render={<Link href={`/org/${organization.slug}/invite`} />}
-              >
-                Open Invite Page
-              </Button>
+            <Button asChild size="lg" className="h-11 rounded-xl px-5">
+              <Link href={`/org/${organization.slug}/workflows`}>Browse Workflows</Link>
+            </Button>
+            <Button asChild variant="ghost" size="lg" className="h-11 rounded-xl px-5">
+              <Link href={`/org/${organization.slug}/settings`}>Open Governance</Link>
+            </Button>
+            <InviteMemberDialog orgId={organization.id} orgSlug={organization.slug} disabled={!canInvite} />
+            <Button asChild variant="ghost" size="lg" className="h-11 rounded-xl px-5">
+              <Link href={`/org/${organization.slug}/invite`}>Open Invite Page</Link>
+            </Button>
             </div>
           </div>
         </div>

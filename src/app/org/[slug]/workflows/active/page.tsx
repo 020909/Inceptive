@@ -51,14 +51,9 @@ export default async function ActiveOrgWorkflowsPage({ params }: ActiveOrgWorkfl
               </p>
             </div>
 
-            <Button
-              variant="outline"
-              size="lg"
-              className="h-11 rounded-xl px-5"
-              render={<Link href={`/org/${organization.slug}/workflows`} />}
-            >
-              Browse Templates
-            </Button>
+          <Button asChild variant="ghost" size="lg" className="h-11 rounded-xl px-5">
+            <Link href={`/org/${organization.slug}/workflows`}>Browse Templates</Link>
+          </Button>
           </div>
         </div>
 

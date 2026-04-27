@@ -670,7 +670,7 @@ export default function EmailPage() {
                   {sending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                   {hasConnected ? "Send via Gmail" : "Save Draft"}
                 </Button>
-                <Button onClick={() => { setPreview(null); setComposeOpen(false); }} variant="outline" className="border bg-transparent border-[var(--border-subtle)] text-red-400">
+                <Button onClick={() => { setPreview(null); setComposeOpen(false); }} variant="ghost" className="border bg-transparent border-[var(--border-subtle)] text-red-400">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

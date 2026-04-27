@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import {
   LayoutGrid,
-  MessageSquare,
+  FolderOpen,
   GitBranch,
   BookOpen,
   Mail,
@@ -15,7 +15,7 @@ import {
   Sparkles,
   Plug,
   FileText,
-  HeartPulse,
+  Building2,
   Settings,
   ChevronDown,
   ChevronsUpDown,
@@ -23,8 +23,14 @@ import {
   PanelLeft,
   User,
   Coins,
-  DollarSign,
-  Building2,
+  Brain,
+  Shield,
+  AlertCircle,
+  FileSearch,
+  Scale,
+  Landmark,
+  Users,
+  Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -48,10 +54,9 @@ const SidebarCtx = React.createContext<SidebarContextValue>({
   toggle: () => {},
 });
 
-// ─── Custom Sidebar Provider ──────────────────────────────────────────────────
-
 export function AppSidebarProvider({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = React.useState(false);
+  const { signOut } = useAuth();
   const toggle = React.useCallback(() => setCollapsed((c) => !c), []);
   return (
     <SidebarCtx.Provider value={{ collapsed, toggle }}>
@@ -64,7 +69,7 @@ export function useSidebarState() {
   return React.useContext(SidebarCtx);
 }
 
-// ─── Sidebar Trigger (for use in TopBar) ─────────────────────────────────────
+// ─── Sidebar Trigger ──────────────────────────────────────────────────────────
 
 export function AppSidebarTrigger({ className }: { className?: string }) {
   const { toggle } = useSidebarState();
@@ -137,110 +142,20 @@ function NavItem({
   );
 }
 
-// ─── Collapsible Nav Group (Projects when list exists) ───────────────────────
+// ─── Nav Section Header ──────────────────────────────────────────────────────
 
-function CollapsibleNavGroup({
-  icon: Icon,
+function NavSectionHeader({
   label,
-  isGroupActive,
-  collapsed: sidebarCollapsed,
-  children,
-  defaultOpen = false,
+  collapsed,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
   label: string;
-  isGroupActive: boolean;
   collapsed: boolean;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = React.useState(defaultOpen);
-
-  React.useEffect(() => {
-    if (defaultOpen) setOpen(true);
-  }, [defaultOpen]);
-
-  if (sidebarCollapsed) {
-    return (
-      <Link
-        href="/projects"
-        title={label}
-        className={cn(
-          "flex h-9 w-full items-center justify-center rounded-lg text-[13px] font-semibold transition-colors duration-150",
-          isGroupActive
-            ? "bg-[var(--sidebar-item-active)] text-[var(--sidebar-fg)]"
-            : "text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--sidebar-fg)]"
-        )}
-      >
-        <Icon
-          className={cn(
-            "size-[18px] shrink-0",
-            isGroupActive ? "text-[var(--sidebar-icon-active)]" : "text-[var(--sidebar-icon)]"
-          )}
-        />
-      </Link>
-    );
-  }
-
+  if (collapsed) return null;
   return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={cn(
-          "group flex h-9 w-full items-center gap-3 rounded-lg px-2.5 text-[13px] font-semibold transition-colors duration-150",
-          isGroupActive
-            ? "bg-[var(--sidebar-item-active)] text-[var(--sidebar-fg)]"
-            : "text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--sidebar-fg)]"
-        )}
-      >
-        <Icon
-          className={cn(
-            "size-[18px] shrink-0",
-            isGroupActive ? "text-[var(--sidebar-icon-active)]" : "text-[var(--sidebar-icon)] group-hover:text-[var(--sidebar-icon-active)]"
-          )}
-        />
-        <span className="truncate flex-1 text-left">{label}</span>
-        <ChevronDown
-          className={cn(
-            "size-3.5 shrink-0 text-[var(--sidebar-fg-muted)] transition-transform duration-200",
-            open && "rotate-180"
-          )}
-        />
-      </button>
-      {open && <div className="mt-0.5 space-y-0.5 border-l border-[var(--sidebar-divider)] ml-3.5 pl-2.5">{children}</div>}
+    <div className="px-2.5 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--sidebar-fg-muted)]">
+      {label}
     </div>
-  );
-}
-
-function CollapsibleNavChild({
-  href,
-  label,
-  isActive,
-  badge,
-}: {
-  href: string;
-  label: string;
-  isActive: boolean;
-  badge?: number | string;
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "flex h-8 items-center gap-2 rounded-md pl-1 pr-2 text-[13px] font-medium transition-colors duration-150",
-        isActive
-          ? "text-[var(--sidebar-fg)] bg-[var(--sidebar-item-hover)]"
-          : "text-[var(--sidebar-fg-muted)] hover:text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-item-hover)]"
-      )}
-    >
-      <span className="truncate flex-1">{label}</span>
-      {badge !== undefined && (
-        <span className="ml-auto text-[11px] font-medium tabular-nums text-[var(--sidebar-badge-text)] bg-[var(--sidebar-badge-bg)] rounded px-1.5 py-0.5">
-          {badge}
-        </span>
-      )}
-    </Link>
   );
 }
 
@@ -254,6 +169,8 @@ function NavDivider({ collapsed }: { collapsed: boolean }) {
     />
   );
 }
+
+// ─── Account Popover ──────────────────────────────────────────────────────────
 
 function AccountPopover({
   collapsed,
@@ -377,62 +294,42 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { collapsed } = useSidebarState();
   const { user, loading: authLoading } = useAuth();
+  const [pendingApprovalsCount, setPendingApprovalsCount] = React.useState(0);
 
-  const [projects, setProjects] = React.useState<Project[]>([]);
-  const [projectsReady, setProjectsReady] = React.useState(false);
-  const [revenueCriticalCount, setRevenueCriticalCount] = React.useState(0);
-  const [vendorCriticalCount, setVendorCriticalCount] = React.useState(0);
-
-  React.useEffect(() => {
-    if (!user) {
-      setProjects([]);
-      setProjectsReady(true);
-      return;
-    }
-    setProjectsReady(false);
-    fetch("/api/projects")
-      .then((r) => r.json())
-      .then((d) => setProjects(d.projects || []))
-      .catch(() => setProjects([]))
-      .finally(() => setProjectsReady(true));
-  }, [user]);
-
+  // Load pending approvals count
   React.useEffect(() => {
     if (!user?.id) {
-      setRevenueCriticalCount(0);
+      setPendingApprovalsCount(0);
       return;
     }
 
     let mounted = true;
     const supabase = createClient();
 
-    const loadCriticalCount = async () => {
+    const loadPendingCount = async () => {
       const { count } = await supabase
-        .from("revenue_signals")
+        .from("approval_queue")
         .select("id", { count: "exact", head: true })
-        .eq("account_id", user.id)
-        .eq("status", "open")
-        .eq("severity", "critical");
+        .eq("status", "pending");
 
       if (mounted) {
-        setRevenueCriticalCount(count ?? 0);
+        setPendingApprovalsCount(count ?? 0);
       }
     };
 
-    void loadCriticalCount();
+    void loadPendingCount();
 
     const channel = supabase
-      .channel(`revenue-signals:${user.id}`)
+      .channel("approval-queue-count")
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
-          table: "revenue_signals",
-          filter: `account_id=eq.${user.id}`,
+          table: "approval_queue",
         },
         () => {
-          void loadCriticalCount();
+          void loadPendingCount();
         }
       )
       .subscribe();
@@ -443,55 +340,9 @@ export function AppSidebar() {
     };
   }, [user?.id]);
 
-  React.useEffect(() => {
-    if (!user?.id) {
-      setVendorCriticalCount(0);
-      return;
-    }
-
-    let mounted = true;
-    const supabase = createClient();
-
-    const loadCriticalCount = async () => {
-      const { count } = await supabase
-        .from("vendor_alerts")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "open")
-        .eq("severity", "critical");
-
-      if (mounted) {
-        setVendorCriticalCount(count ?? 0);
-      }
-    };
-
-    void loadCriticalCount();
-
-    const channel = supabase
-      .channel("vendor-alerts:critical")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "vendor_alerts",
-        },
-        () => {
-          void loadCriticalCount();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      mounted = false;
-      void supabase.removeChannel(channel);
-    };
-  }, [user?.id]);
-
-  const isProjectsActive = pathname.startsWith("/projects");
   const userEmail = user?.email ?? "";
   const userInitial = userEmail ? userEmail[0].toUpperCase() : "U";
   const userDisplayName = user?.user_metadata?.full_name || userEmail.split("@")[0] || "User";
-  const showProjectsDropdown = projectsReady && projects.length > 0;
 
   return (
     <aside
@@ -500,7 +351,7 @@ export function AppSidebar() {
         collapsed ? "w-[4.25rem]" : "w-[15rem] sm:w-[16rem]"
       )}
     >
-      {/* Brand: expanded = toggle inside sidebar + logo + wordmark; collapsed = toggle only (replaces logo) */}
+      {/* Brand */}
       <div
         className={cn(
           "flex shrink-0 items-center border-b border-transparent",
@@ -533,74 +384,144 @@ export function AppSidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 py-3 space-y-0.5 scrollbar-hide">
+        {/* MAIN Section */}
+        {!collapsed && <NavSectionHeader label="Main" collapsed={collapsed} />}
         <NavItem
           href="/dashboard"
           icon={LayoutGrid}
-          label="Command Center"
+          label="Operations Center"
           isActive={pathname === "/dashboard"}
           collapsed={collapsed}
         />
-        <NavItem href="/agent" icon={MessageSquare} label="Code Studio" isActive={pathname === "/agent"} collapsed={collapsed} />
-        <NavItem href="/workflows" icon={GitBranch} label="Workflows" isActive={pathname === "/workflows"} collapsed={collapsed} />
-        <NavItem href="/knowledge" icon={BookOpen} label="Knowledge Base" isActive={pathname === "/knowledge"} collapsed={collapsed} />
-        <NavItem href="/email" icon={Mail} label="Email" isActive={pathname === "/email"} collapsed={collapsed} />
-        <NavItem href="/research" icon={Search} label="Research" isActive={pathname === "/research"} collapsed={collapsed} />
-        <NavItem href="/dashboard/churn" icon={HeartPulse} label="Churn" isActive={pathname === "/dashboard/churn"} collapsed={collapsed} />
         <NavItem
-          href="/dashboard/revenue"
-          icon={DollarSign}
-          label="Revenue Intelligence"
-          isActive={pathname === "/dashboard/revenue"}
+          href="/cases"
+          icon={FolderOpen}
+          label="Cases"
+          isActive={pathname.startsWith("/cases")}
           collapsed={collapsed}
-          badge={revenueCriticalCount > 0 ? revenueCriticalCount : undefined}
         />
         <NavItem
-          href="/dashboard/vendors"
+          href="/approval-queue"
+          icon={AlertCircle}
+          label="Approval Queue"
+          isActive={pathname.startsWith("/approval-queue")}
+          collapsed={collapsed}
+          badge={pendingApprovalsCount > 0 ? pendingApprovalsCount : undefined}
+        />
+
+        <NavDivider collapsed={collapsed} />
+
+        {/* AI AGENTS Section */}
+        {!collapsed && <NavSectionHeader label="AI Agents" collapsed={collapsed} />}
+        <NavItem
+          href="/analyst"
+          icon={Brain}
+          label="Inceptive Analyst"
+          isActive={pathname.startsWith("/analyst")}
+          collapsed={collapsed}
+        />
+        <NavItem
+          href="/sar-drafter"
+          icon={FileText}
+          label="SAR Drafter"
+          isActive={pathname.startsWith("/sar-drafter")}
+          collapsed={collapsed}
+        />
+        <NavItem
+          href="/vendor-analyst"
           icon={Building2}
-          label="Vendors"
-          isActive={pathname === "/dashboard/vendors"}
+          label="Vendor Analyst"
+          isActive={pathname.startsWith("/vendor-analyst")}
           collapsed={collapsed}
-          badge={vendorCriticalCount > 0 ? vendorCriticalCount : undefined}
+        />
+        <NavItem
+          href="/aml-triage"
+          icon={Shield}
+          label="AML Triage"
+          isActive={pathname.startsWith("/aml-triage")}
+          collapsed={collapsed}
+        />
+        <NavItem
+          href="/reconciliation"
+          icon={Scale}
+          label="Reconciliation Tracer"
+          isActive={pathname.startsWith("/reconciliation")}
+          collapsed={collapsed}
         />
 
         <NavDivider collapsed={collapsed} />
 
-        {showProjectsDropdown ? (
-          <CollapsibleNavGroup
-            icon={Rows}
-            label="Projects"
-            isGroupActive={isProjectsActive}
-            collapsed={collapsed}
-            defaultOpen={isProjectsActive}
-          >
-            <CollapsibleNavChild
-              href="/projects"
-              label="View all"
-              isActive={pathname === "/projects"}
-              badge={projects.length}
-            />
-            {projects.slice(0, 12).map((p) => (
-              <CollapsibleNavChild key={p.id} href="/projects" label={p.name} isActive={false} />
-            ))}
-          </CollapsibleNavGroup>
-        ) : (
-          <NavItem
-            href="/projects"
-            icon={Rows}
-            label="Projects"
-            isActive={isProjectsActive}
-            collapsed={collapsed}
-          />
-        )}
+        {/* COMPLIANCE Section */}
+        {!collapsed && <NavSectionHeader label="Compliance" collapsed={collapsed} />}
+        <NavItem
+          href="/workflows"
+          icon={GitBranch}
+          label="Compliance Workflows"
+          isActive={pathname.startsWith("/workflows")}
+          collapsed={collapsed}
+        />
+        <NavItem
+          href="/playbooks"
+          icon={BookOpen}
+          label="Compliance Playbooks"
+          isActive={pathname.startsWith("/playbooks")}
+          collapsed={collapsed}
+        />
+        <NavItem
+          href="/policy-vault"
+          icon={Landmark}
+          label="Policy Vault"
+          isActive={pathname.startsWith("/policy-vault")}
+          collapsed={collapsed}
+        />
 
         <NavDivider collapsed={collapsed} />
 
-        <NavItem href="/skills" icon={Sparkles} label="Skills" isActive={pathname === "/skills"} collapsed={collapsed} />
-        <NavItem href="/social" icon={Plug} label="Connectors" isActive={pathname === "/social"} collapsed={collapsed} />
-        <NavItem href="/reports" icon={FileText} label="Reports" isActive={pathname === "/reports"} collapsed={collapsed} />
+        {/* REPORTING Section */}
+        {!collapsed && <NavSectionHeader label="Reporting" collapsed={collapsed} />}
+        <NavItem
+          href="/reports"
+          icon={FileSearch}
+          label="Compliance Reports"
+          isActive={pathname.startsWith("/reports")}
+          collapsed={collapsed}
+        />
+        <NavItem
+          href="/audit-trail"
+          icon={Search}
+          label="Audit Trail"
+          isActive={pathname.startsWith("/audit-trail")}
+          collapsed={collapsed}
+        />
+
+        <NavDivider collapsed={collapsed} />
+
+        {/* SETTINGS Section */}
+        {!collapsed && <NavSectionHeader label="Settings" collapsed={collapsed} />}
+        <NavItem
+          href="/integrations"
+          icon={Plug}
+          label="Integrations"
+          isActive={pathname.startsWith("/integrations")}
+          collapsed={collapsed}
+        />
+        <NavItem
+          href="/team"
+          icon={Users}
+          label="Team"
+          isActive={pathname.startsWith("/team")}
+          collapsed={collapsed}
+        />
+        <NavItem
+          href="/settings"
+          icon={Settings}
+          label="Organization Settings"
+          isActive={pathname === "/settings"}
+          collapsed={collapsed}
+        />
       </nav>
 
-      {/* Account — Settings only from chevron menu, not in nav */}
+      {/* Account */}
       <div className="shrink-0 border-t border-[var(--sidebar-border)] px-2 py-3">
         {!authLoading && !user ? (
           <Link

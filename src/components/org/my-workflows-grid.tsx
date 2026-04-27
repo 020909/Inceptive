@@ -54,8 +54,8 @@ export function MyWorkflowsGrid({
           <CardDescription>Build your first visual workflow from scratch or start from a template.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button size="lg" className="h-11 rounded-xl px-5" render={<Link href={`/org/${orgSlug}/workflows/builder`} />}>
-            New Workflow
+          <Button asChild size="lg" className="h-11 rounded-xl px-5">
+            <Link href={`/org/${orgSlug}/workflows/builder`}>New Workflow</Link>
           </Button>
         </CardContent>
       </Card>
@@ -85,14 +85,9 @@ export function MyWorkflowsGrid({
                 : "Never"}
             </p>
             <div className="flex flex-wrap gap-3">
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-11 rounded-xl px-5"
-                render={<Link href={`/org/${orgSlug}/workflows/builder?id=${workflow.id}`} />}
-              >
-                Edit
-              </Button>
+<Button asChild variant="outline" size="lg" className="h-11 rounded-xl px-5">
+              <Link href={`/org/${orgSlug}/workflows/builder?id=${workflow.id}`}>Edit</Link>
+            </Button>
               <Button
                 size="lg"
                 className="h-11 rounded-xl px-5"

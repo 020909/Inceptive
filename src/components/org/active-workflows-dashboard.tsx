@@ -69,13 +69,9 @@ export function ActiveWorkflowsDashboard({
           <CardDescription>Activate a workflow template to start your first automation.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button
-            size="lg"
-            className="h-11 rounded-xl px-5"
-            render={<Link href={`/org/${orgSlug}/workflows`} />}
-          >
-            Browse Workflows
-          </Button>
+<Button asChild size="lg" className="h-11 rounded-xl px-5">
+              <Link href={`/org/${orgSlug}/workflows`}>Browse Workflows</Link>
+            </Button>
         </CardContent>
       </Card>
     );
@@ -128,14 +124,9 @@ export function ActiveWorkflowsDashboard({
                   {workflow.status === "active" ? <PauseCircle /> : <PlayCircle />}
                   {workflow.status === "active" ? "Pause" : "Resume"}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="lg"
-                  className="h-11 rounded-xl px-5"
-                  render={<Link href={`/org/${orgSlug}/activity?workflow=${workflow.template.slug}`} />}
-                >
-                  View Activity
-                </Button>
+<Button asChild variant="ghost" size="lg" className="h-11 rounded-xl px-5">
+              <Link href={`/org/${orgSlug}/activity?workflow=${workflow.template.slug}`}>View Activity</Link>
+            </Button>
               </div>
             </CardContent>
           </Card>

@@ -350,7 +350,7 @@ export default function VendorsDashboardPage() {
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={invoiceUploading || authLoading || !user}
                   className="h-10 rounded-2xl border-[var(--border-subtle)] bg-[rgba(255,255,255,0.04)] text-white"

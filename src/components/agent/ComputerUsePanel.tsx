@@ -78,7 +78,7 @@ export function ComputerUsePanel() {
           {loading === "goto" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <MoveRight className="h-3.5 w-3.5 mr-1" />}
           Go to URL
         </Button>
-        <Button onClick={() => run("screenshot", {})} disabled={!!loading} variant="secondary" className="text-xs">
+        <Button onClick={() => run("screenshot", {})} disabled={!!loading} variant="default" className="text-xs">
           {loading === "screenshot" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Camera className="h-3.5 w-3.5 mr-1" />}
           Screenshot
         </Button>
@@ -87,18 +87,18 @@ export function ComputerUsePanel() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <Input type="number" value={x} onChange={(e) => setX(Number(e.target.value))} placeholder="x" />
         <Input type="number" value={y} onChange={(e) => setY(Number(e.target.value))} placeholder="y" />
-        <Button onClick={() => run("click", { x, y })} disabled={!!loading} variant="secondary" className="text-xs">
+        <Button onClick={() => run("click", { x, y })} disabled={!!loading} variant="default" className="text-xs">
           <MousePointerClick className="h-3.5 w-3.5 mr-1" />
           Click
         </Button>
-        <Button onClick={() => run("moveMouse", { x, y })} disabled={!!loading} variant="secondary" className="text-xs">
+        <Button onClick={() => run("moveMouse", { x, y })} disabled={!!loading} variant="default" className="text-xs">
           Move
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
         <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Type text..." className="md:col-span-3" />
-        <Button onClick={() => run("type", { text })} disabled={!!loading || !text.trim()} variant="secondary" className="text-xs">
+        <Button onClick={() => run("type", { text })} disabled={!!loading || !text.trim()} variant="default" className="text-xs">
           <Type className="h-3.5 w-3.5 mr-1" />
           Type
         </Button>
@@ -106,7 +106,7 @@ export function ComputerUsePanel() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
         <Input type="number" value={deltaY} onChange={(e) => setDeltaY(Number(e.target.value))} placeholder="Scroll deltaY" className="md:col-span-3" />
-        <Button onClick={() => run("scroll", { deltaY })} disabled={!!loading} variant="secondary" className="text-xs">
+        <Button onClick={() => run("scroll", { deltaY })} disabled={!!loading} variant="default" className="text-xs">
           <Scroll className="h-3.5 w-3.5 mr-1" />
           Scroll
         </Button>

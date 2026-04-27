@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 import { extractTextWithTika } from "@/lib/files/tika-extract";
-import pdfParse from "pdf-parse/lib/pdf-parse";
+import PDFParser from "pdf2json";
 
 const TIKA_OFFICE_EXT = new Set([
   "doc",
@@ -133,8 +133,13 @@ async function extractContentPreview(file: File, fileType: string): Promise<stri
 
     if (fileType === "pdf") {
       const buf = Buffer.from(await file.arrayBuffer());
-      const parsed = await pdfParse(buf);
-      return normalizeText(parsed.text || "", 12000);
+      const text = await new Promise<string>((resolve, reject) => {
+        const pdfParser = new PDFParser();
+        pdfParser.on("pdfParser_dataError", (errMsg: any) => reject(errMsg.parserError || errMsg));
+        pdfParser.on("pdfParser_dataReady", (data: any) => resolve(data.Text || ""));
+        pdfParser.parseBuffer(buf);
+      });
+      return normalizeText(text, 12000);
     }
 
     if (TIKA_OFFICE_EXT.has(extension)) {

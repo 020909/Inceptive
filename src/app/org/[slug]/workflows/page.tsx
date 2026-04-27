@@ -65,21 +65,12 @@ export default async function OrgWorkflowsPage({ params, searchParams }: OrgWork
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-11 rounded-xl px-5"
-                render={<Link href={`/org/${organization.slug}/workflows/active`} />}
-              >
-                View Active Workflows
-              </Button>
-              <Button
-                size="lg"
-                className="h-11 rounded-xl px-5"
-                render={<Link href={`/org/${organization.slug}/workflows/builder`} />}
-              >
-                New Workflow
-              </Button>
+            <Button asChild variant="ghost" size="lg" className="h-11 rounded-xl px-5">
+              <Link href={`/org/${organization.slug}/workflows/active`}>View Active Workflows</Link>
+            </Button>
+            <Button asChild size="lg" className="h-11 rounded-xl px-5">
+              <Link href={`/org/${organization.slug}/workflows/builder`}>New Workflow</Link>
+            </Button>
             </div>
           </div>
         </div>
