@@ -19,8 +19,6 @@ import {
   Activity,
   AlertCircle,
   CheckCircle,
-  XCircle,
-  AlertTriangle,
   ChevronRight,
   Loader2,
   Sparkles,
@@ -173,7 +171,7 @@ function MetricCard({
 }) {
   return (
     <Link href={href} className="block">
-      <Card className="group cursor-pointer transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.07)]">
+      <Card className="group cursor-pointer transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--border-strong)]">
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">

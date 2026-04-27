@@ -9,15 +9,11 @@ import {
   FolderOpen,
   GitBranch,
   BookOpen,
-  Mail,
   Search,
-  Rows,
-  Sparkles,
   Plug,
   FileText,
   Building2,
   Settings,
-  ChevronDown,
   ChevronsUpDown,
   LogIn,
   PanelLeft,
@@ -30,19 +26,12 @@ import {
   Scale,
   Landmark,
   Users,
-  Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-
-interface Project {
-  id: string;
-  name: string;
-  status: string;
-}
 
 interface SidebarContextValue {
   collapsed: boolean;
@@ -56,7 +45,6 @@ const SidebarCtx = React.createContext<SidebarContextValue>({
 
 export function AppSidebarProvider({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = React.useState(false);
-  const { signOut } = useAuth();
   const toggle = React.useCallback(() => setCollapsed((c) => !c), []);
   return (
     <SidebarCtx.Provider value={{ collapsed, toggle }}>
@@ -241,7 +229,7 @@ function AccountPopover({
         <div
           role="menu"
           className={cn(
-            "absolute z-[200] overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] py-1 shadow-lg",
+            "absolute z-[200] overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] py-1",
             collapsed
               ? "bottom-0 left-full ml-2 w-56"
               : "bottom-full left-0 right-0 mb-1.5"
@@ -347,8 +335,8 @@ export function AppSidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col h-screen border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] transition-[width] duration-200 ease-out shrink-0 relative z-20",
-        collapsed ? "w-[4.25rem]" : "w-[15rem] sm:w-[16rem]"
+        "flex flex-col h-screen border-r border-[#181C1E] bg-[#040506] shrink-0 relative z-20",
+        collapsed ? "w-[4.25rem]" : "w-[240px]"
       )}
     >
       {/* Brand */}
