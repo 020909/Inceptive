@@ -193,9 +193,6 @@ export default function ApprovalQueuePage() {
                 </Badge>
               )}
             </div>
-            <p className="mt-1 text-base text-[var(--fg-muted)]">
-              Review and approve AI-generated extractions and compliance decisions.
-            </p>
           </div>
 <Button
           onClick={fetchItems}

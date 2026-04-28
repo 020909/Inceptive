@@ -191,16 +191,12 @@ export default function UboPage() {
   return (
     <div className="flex flex-col gap-4" style={{ padding: 16 }}>
       <div>
-        <div className="text-xs label-caps">UBO</div>
-        <h2 className="mt-2" style={{ fontSize: 20, lineHeight: 1.2 }}>
+        <h2 style={{ fontSize: 20, lineHeight: 1.2 }}>
           Beneficial ownership extraction
         </h2>
-        <div className="mt-1 text-xs" style={{ color: "var(--text-secondary)" }}>
-          Upload documents and review extracted entities, citations, and ownership structure.
-        </div>
       </div>
 
-      <div className="grid gap-4" style={{ gridTemplateColumns: "2fr 3fr", alignItems: "stretch" }}>
+      <div className="grid gap-4" style={{ gridTemplateColumns: "2fr 3fr", alignItems: "start" }}>
         <div className="flex flex-col gap-4">
           <DocumentUpload onUploaded={onUploaded} />
           <Stepper steps={steps} activeIndex={activeStep} statusText={queueId ? `queue_id=${queueId}` : "—"} />
@@ -282,12 +278,6 @@ export default function UboPage() {
         </div>
 
         <div className="flex flex-col gap-4">
-          <div>
-            <div className="text-xs label-caps">Ownership tree</div>
-            <div className="mt-1 text-xs" style={{ color: "var(--text-secondary)" }}>
-              Top-down graph view. Sanctions hits are highlighted.
-            </div>
-          </div>
           <OwnershipTree data={ownershipData} />
         </div>
       </div>

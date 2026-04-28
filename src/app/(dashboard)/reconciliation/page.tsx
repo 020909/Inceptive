@@ -1,6 +1,7 @@
 "use client";
 
 import { Scale } from "lucide-react";
+import { Button } from "@/components/ui/button";
 export default function ReconciliationPage() {
   return (
     <main className="flex-1 overflow-auto p-8">
@@ -12,12 +13,13 @@ export default function ReconciliationPage() {
           <p className="text-lg text-[var(--fg-muted)] mb-8">
             Finds payment variances by comparing data from multiple sources and tracing unmatched transactions.
           </p>
-          <button
+          <Button
             onClick={() => console.log("Notify me when available")}
-            className="px-6 py-3 bg-[var(--accent)] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity"
+            size="lg"
+            className="px-6"
           >
             Notify me when available
-          </button>
+          </Button>
         </div>
       </main>
   );

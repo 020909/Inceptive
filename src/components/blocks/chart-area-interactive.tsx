@@ -8,7 +8,6 @@ import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -168,12 +167,6 @@ export function ChartAreaInteractive() {
     <Card className="@container/card">
       <CardHeader>
         <CardTitle>Compliance activity</CardTitle>
-        <CardDescription>
-          <span className="hidden @[540px]/card:block">
-            Cases reviewed in the selected window
-          </span>
-          <span className="@[540px]/card:hidden">Cases reviewed</span>
-        </CardDescription>
         <CardAction>
           <ToggleGroup
             multiple={false}

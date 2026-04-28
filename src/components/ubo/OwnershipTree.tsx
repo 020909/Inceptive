@@ -4,7 +4,6 @@ import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   Background,
   Controls,
-  MiniMap,
   ReactFlow,
   ReactFlowProvider,
   useEdgesState,
@@ -219,7 +218,7 @@ function OwnershipTreeInner({ input }: { input: OwnershipTreeInput }) {
         height: "100%",
         minHeight: 520,
       }}
-      className="relative"
+      className="relative ubo-flow"
       ref={wrapperRef}
     >
       <div className="absolute left-3 top-3 z-10 flex items-center gap-2" style={{ pointerEvents: "auto" }}>
@@ -274,11 +273,6 @@ function OwnershipTreeInner({ input }: { input: OwnershipTreeInput }) {
       >
         <Background color="var(--border-faint)" gap={18} />
         <Controls position="bottom-left" />
-        <MiniMap
-          position="bottom-right"
-          nodeColor={(n: any) => (n?.data?.sanctionsHit ? "rgba(220,38,38,0.9)" : "rgba(138,154,168,0.65)")}
-          maskColor="rgba(0,0,0,0.25)"
-        />
       </ReactFlow>
     </div>
   );

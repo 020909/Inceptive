@@ -42,7 +42,7 @@ function TabsList({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "inline-flex h-11 items-center gap-1 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] p-1",
+        "inline-flex h-11 items-center gap-1 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-container)] p-1",
         className
       )}
       {...props}
@@ -68,10 +68,10 @@ function TabsTrigger({
     <button
       type="button"
       className={cn(
-        "rounded-xl px-3 py-2 text-sm transition-colors",
+        "rounded-xl px-3 py-2 text-sm transition-[background-color,color,box-shadow] duration-150",
         active
-          ? "bg-[var(--bg-surface)] text-[var(--fg-primary)] shadow-[0_0_0_1px_rgba(232,230,220,0.68)]"
-          : "text-[var(--fg-muted)] hover:text-[var(--fg-primary)]",
+          ? "bg-[var(--surface-elevated)] text-[var(--text-primary)] shadow-[0_0_0_1px_var(--border-strong)]"
+          : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-elevated)]",
         className
       )}
       onClick={() => context.onValueChange?.(value)}

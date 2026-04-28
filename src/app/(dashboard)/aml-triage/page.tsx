@@ -1,6 +1,7 @@
 "use client";
 
 import { Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
 export default function AmlTriagePage() {
   return (
     <main className="flex-1 overflow-auto p-8">
@@ -12,12 +13,13 @@ export default function AmlTriagePage() {
           <p className="text-lg text-[var(--fg-muted)] mb-8">
             Pre-investigates AML alerts to identify false positives, assess risk levels, and recommend escalation or closure.
           </p>
-          <button
+          <Button
             onClick={() => console.log("Notify me when available")}
-            className="px-6 py-3 bg-[var(--accent)] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity"
+            size="lg"
+            className="px-6"
           >
             Notify me when available
-          </button>
+          </Button>
         </div>
       </main>
   );

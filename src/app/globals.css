@@ -46,12 +46,26 @@
     --border-faint: #181C1E;
     --border-subtle: #232829;
     --border-strong: #2F3437;
+    /* Back-compat token used across UI components */
+    --border-default: var(--border-subtle);
 
     /* ── Text Colors ── */
     --text-primary: #F0F2F3;
     --text-secondary: #8A9AA8;
     --text-muted: #3D464D;
     --text-inverse: #070A0B;
+
+    /* ── Legacy/alias tokens used across the app ── */
+    --fg-primary: var(--text-primary);
+    --fg-secondary: var(--text-secondary);
+    --fg-tertiary: var(--text-muted);
+    --fg-muted: var(--text-secondary);
+
+    --bg-base: var(--void);
+    --bg-primary: var(--surface-primary);
+    --bg-surface: var(--surface-container);
+    --bg-elevated: var(--surface-elevated);
+    --bg-overlay: var(--surface-bright);
 
     /* ── Semantic Signals (used surgically) ── */
     --signal-positive: #16A34A;
@@ -109,6 +123,62 @@
     --elevation-flat: var(--surface-primary);
     --elevation-raised: var(--surface-container);
     --elevation-floating: var(--surface-elevated);
+  }
+
+  :root.light {
+    /* Light theme — same token names, inverted palette */
+    --void: #F7F8FA;
+    --surface-deep: #FFFFFF;
+    --surface-primary: #FFFFFF;
+    --surface-container: #F2F4F7;
+    --surface-elevated: #FFFFFF;
+    --surface-bright: #E9EDF2;
+
+    --border-faint: #DDE3EA;
+    --border-subtle: #CBD5E1;
+    --border-strong: #94A3B8;
+    --border-default: var(--border-subtle);
+
+    --text-primary: #0B0D10;
+    --text-secondary: #475569;
+    --text-muted: #8B95A1;
+    --text-inverse: #FFFFFF;
+
+    --fg-primary: var(--text-primary);
+    --fg-secondary: var(--text-secondary);
+    --fg-tertiary: var(--text-muted);
+    --fg-muted: var(--text-secondary);
+
+    --bg-base: var(--void);
+    --bg-primary: var(--surface-primary);
+    --bg-surface: var(--surface-container);
+    --bg-elevated: var(--surface-elevated);
+    --bg-overlay: var(--surface-bright);
+
+    /* Actions */
+    --action-primary: #0B0D10;
+    --action-secondary: #F2F4F7;
+
+    /* Shadcn bridge (light theme) */
+    --background: var(--void);
+    --foreground: var(--text-primary);
+    --card: var(--surface-elevated);
+    --card-foreground: var(--text-primary);
+    --popover: var(--surface-elevated);
+    --popover-foreground: var(--text-primary);
+    --primary: var(--action-primary);
+    --primary-foreground: #FFFFFF;
+    --secondary: var(--surface-container);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--surface-container);
+    --muted-foreground: var(--text-secondary);
+    --accent: var(--action-primary);
+    --accent-foreground: #FFFFFF;
+    --destructive: var(--signal-negative);
+    --destructive-foreground: #FFFFFF;
+    --border: var(--border-subtle);
+    --input: var(--surface-elevated);
+    --ring: var(--border-strong);
   }
 
   /* Base styles */
@@ -175,8 +245,8 @@
 
   /* Selection */
   ::selection {
-    background: var(--surface-elevated);
-    color: var(--text-primary);
+    background: rgb(93, 120, 157);
+    color: #070A0B;
   }
 
   /* Scrollbar — minimal, dark */
@@ -258,6 +328,32 @@
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
     padding: 24px;
+  }
+
+  /* ── Ownership Tree (ReactFlow) controls styling ── */
+  .ubo-flow :where(.react-flow__controls) {
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(240, 242, 243, 0.92);
+    backdrop-filter: blur(8px);
+  }
+
+  .ubo-flow :where(.react-flow__controls button) {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    color: #070A0B; /* black icons as requested */
+  }
+
+  .ubo-flow :where(.react-flow__controls button:hover) {
+    background: rgba(7, 10, 11, 0.06);
+  }
+
+  .ubo-flow :where(.react-flow__controls button svg) {
+    fill: currentColor;
+    stroke: currentColor;
   }
 
   .widget-hover:hover {

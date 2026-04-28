@@ -15,7 +15,7 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        "rounded-[20px] border border-[var(--border-subtle)] bg-[var(--surface-container)] transition-colors duration-150",
+        "rounded-[20px] border border-[var(--border-subtle)] bg-[var(--surface-container)] transition-[background-color,border-color,transform] duration-150 will-change-transform hover:border-[var(--border-strong)] hover:bg-[var(--surface-elevated)] hover:-translate-y-[1px]",
         className
       )}
       {...props}

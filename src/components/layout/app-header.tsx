@@ -24,7 +24,6 @@ export function AppHeader() {
       <header
         className={cn(
           "h-14 shrink-0",
-          "border-b border-[var(--border-subtle)]",
           "bg-[var(--bg-elevated)]"
         )}
       >
