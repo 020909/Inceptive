@@ -6,11 +6,6 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import {
   LayoutGrid,
-  FolderOpen,
-  GitBranch,
-  BookOpen,
-  Search,
-  Plug,
   FileText,
   Building2,
   Settings,
@@ -18,14 +13,14 @@ import {
   LogIn,
   PanelLeft,
   User,
-  Coins,
-  Brain,
   Shield,
-  AlertCircle,
-  FileSearch,
   Scale,
   Landmark,
-  Users,
+  ListChecks,
+  FolderOpen,
+  ScrollText,
+  Search,
+  Coins,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -105,8 +100,8 @@ function NavItem({
       className={cn(
         "group flex h-9 items-center gap-3 rounded-lg px-2.5 text-[13px] font-semibold leading-none transition-colors duration-150",
         isActive
-          ? "bg-[var(--sidebar-item-active)] text-[var(--sidebar-fg)]"
-          : "text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--sidebar-fg)]",
+          ? "bg-[var(--surface-container)] text-[var(--sidebar-fg)] border-l-2 border-[var(--border-strong)]"
+          : "text-[var(--sidebar-fg-muted)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--sidebar-fg)] border-l-2 border-transparent",
         collapsed && "justify-center px-0"
       )}
     >
@@ -372,40 +367,23 @@ export function AppSidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 py-3 space-y-0.5 scrollbar-hide">
-        {/* MAIN Section */}
-        {!collapsed && <NavSectionHeader label="Main" collapsed={collapsed} />}
         <NavItem
           href="/dashboard"
           icon={LayoutGrid}
-          label="Operations Center"
+          label="Dashboard"
           isActive={pathname === "/dashboard"}
           collapsed={collapsed}
-        />
-        <NavItem
-          href="/cases"
-          icon={FolderOpen}
-          label="Cases"
-          isActive={pathname.startsWith("/cases")}
-          collapsed={collapsed}
-        />
-        <NavItem
-          href="/approval-queue"
-          icon={AlertCircle}
-          label="Approval Queue"
-          isActive={pathname.startsWith("/approval-queue")}
-          collapsed={collapsed}
-          badge={pendingApprovalsCount > 0 ? pendingApprovalsCount : undefined}
         />
 
         <NavDivider collapsed={collapsed} />
 
-        {/* AI AGENTS Section */}
-        {!collapsed && <NavSectionHeader label="AI Agents" collapsed={collapsed} />}
+        {!collapsed && <NavSectionHeader label="Compliance" collapsed={collapsed} />}
+        <NavItem href="/ubo" icon={Search} label="UBO / KYB" isActive={pathname.startsWith("/ubo")} collapsed={collapsed} />
         <NavItem
-          href="/analyst"
-          icon={Brain}
-          label="Inceptive Analyst"
-          isActive={pathname.startsWith("/analyst")}
+          href="/aml-triage"
+          icon={Shield}
+          label="AML Triage"
+          isActive={pathname.startsWith("/aml-triage")}
           collapsed={collapsed}
         />
         <NavItem
@@ -423,90 +401,38 @@ export function AppSidebar() {
           collapsed={collapsed}
         />
         <NavItem
-          href="/aml-triage"
-          icon={Shield}
-          label="AML Triage"
-          isActive={pathname.startsWith("/aml-triage")}
-          collapsed={collapsed}
-        />
-        <NavItem
           href="/reconciliation"
           icon={Scale}
-          label="Reconciliation Tracer"
+          label="Reconciliation"
           isActive={pathname.startsWith("/reconciliation")}
           collapsed={collapsed}
         />
 
         <NavDivider collapsed={collapsed} />
 
-        {/* COMPLIANCE Section */}
-        {!collapsed && <NavSectionHeader label="Compliance" collapsed={collapsed} />}
+        {!collapsed && <NavSectionHeader label="Operations" collapsed={collapsed} />}
         <NavItem
-          href="/workflows"
-          icon={GitBranch}
-          label="Compliance Workflows"
-          isActive={pathname.startsWith("/workflows")}
+          href="/approval-queue"
+          icon={ListChecks}
+          label="Approval Queue"
+          isActive={pathname.startsWith("/approval-queue")}
           collapsed={collapsed}
+          badge={pendingApprovalsCount > 0 ? pendingApprovalsCount : undefined}
         />
-        <NavItem
-          href="/playbooks"
-          icon={BookOpen}
-          label="Compliance Playbooks"
-          isActive={pathname.startsWith("/playbooks")}
-          collapsed={collapsed}
-        />
-        <NavItem
-          href="/policy-vault"
-          icon={Landmark}
-          label="Policy Vault"
-          isActive={pathname.startsWith("/policy-vault")}
-          collapsed={collapsed}
-        />
+        <NavItem href="/cases" icon={FolderOpen} label="Case Manager" isActive={pathname.startsWith("/cases")} collapsed={collapsed} />
+        <NavItem href="/policy-vault" icon={Landmark} label="Policy Vault" isActive={pathname.startsWith("/policy-vault")} collapsed={collapsed} />
 
         <NavDivider collapsed={collapsed} />
 
-        {/* REPORTING Section */}
-        {!collapsed && <NavSectionHeader label="Reporting" collapsed={collapsed} />}
-        <NavItem
-          href="/reports"
-          icon={FileSearch}
-          label="Compliance Reports"
-          isActive={pathname.startsWith("/reports")}
-          collapsed={collapsed}
-        />
+        {!collapsed && <NavSectionHeader label="System" collapsed={collapsed} />}
         <NavItem
           href="/audit-trail"
-          icon={Search}
+          icon={ScrollText}
           label="Audit Trail"
           isActive={pathname.startsWith("/audit-trail")}
           collapsed={collapsed}
         />
-
-        <NavDivider collapsed={collapsed} />
-
-        {/* SETTINGS Section */}
-        {!collapsed && <NavSectionHeader label="Settings" collapsed={collapsed} />}
-        <NavItem
-          href="/integrations"
-          icon={Plug}
-          label="Integrations"
-          isActive={pathname.startsWith("/integrations")}
-          collapsed={collapsed}
-        />
-        <NavItem
-          href="/team"
-          icon={Users}
-          label="Team"
-          isActive={pathname.startsWith("/team")}
-          collapsed={collapsed}
-        />
-        <NavItem
-          href="/settings"
-          icon={Settings}
-          label="Organization Settings"
-          isActive={pathname === "/settings"}
-          collapsed={collapsed}
-        />
+        <NavItem href="/settings" icon={Settings} label="Settings" isActive={pathname === "/settings"} collapsed={collapsed} />
       </nav>
 
       {/* Account */}

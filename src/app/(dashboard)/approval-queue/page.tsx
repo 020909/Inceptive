@@ -1,16 +1,13 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Check,
-  Clock,
   X,
-  AlertCircle,
-  Eye,
   Filter,
   RefreshCw,
-  User,
-  FileText,
+  ExternalLink,
+  AlertTriangle,
   Shield,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
@@ -34,198 +31,47 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type ApprovalStatus = "pending" | "approved" | "rejected";
-type ApprovalItemType = "ubo_extraction" | "document" | "compliance_check" | "risk_assessment";
-type Priority = "high" | "medium" | "low";
-
-interface ApprovalQueueItem {
-  id: string;
-  org_id: string;
-  item_type: ApprovalItemType;
-  item_id: string;
-  status: ApprovalStatus;
-  priority: Priority;
-  requested_by: string;
-  requester?: {
-    email: string;
-  } | null;
-  created_at: string;
-  updated_at: string;
-  metadata?: {
-    subject_name?: string;
-    confidence?: number;
-    extraction_data?: Record<string, unknown>;
-  } | null;
-}
-
-interface UBOExtractionDetail {
-  id: string;
-  case_id: string;
-  status: string;
-  confidence: number;
-  extracted_data: {
-    beneficial_owners?: Array<{
-      name: string;
-      ownership_percentage: number;
-      address?: string;
-      sanctions_match?: boolean;
-    }>;
-    ownership_tree?: Record<string, unknown>;
-    sanctions_matches?: Array<{
-      name: string;
-      list: string;
-      confidence: number;
-    }>;
-  };
-  created_at: string;
-  case?: {
-    subject_name: string;
-    subject_address?: string;
-  };
-}
+import type { ApprovalQueueRow } from "@/types/compliance";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const FILTER_OPTIONS: { value: ApprovalStatus | "all"; label: string }[] = [
+const FILTER_OPTIONS: { value: ApprovalQueueRow["status"] | "all"; label: string }[] = [
   { value: "all", label: "All" },
   { value: "pending", label: "Pending" },
   { value: "approved", label: "Approved" },
   { value: "rejected", label: "Rejected" },
+  { value: "escalated", label: "Escalated" },
 ];
-
-const ITEM_TYPE_LABELS: Record<ApprovalItemType, string> = {
-  ubo_extraction: "UBO Extraction",
-  document: "Document",
-  compliance_check: "Compliance Check",
-  risk_assessment: "Risk Assessment",
-};
-
-const PRIORITY_COLORS: Record<Priority, string> = {
-  high: "bg-red-500",
-  medium: "bg-amber-500",
-  low: "bg-emerald-500",
-};
-
-const PRIORITY_LABELS: Record<Priority, string> = {
-  high: "High",
-  medium: "Medium",
-  low: "Low",
-};
-
-const STATUS_COLORS: Record<ApprovalStatus, string> = {
-  pending: "bg-amber-500",
-  approved: "bg-emerald-500",
-  rejected: "bg-red-500",
-};
-
-const STATUS_LABELS: Record<ApprovalStatus, string> = {
-  pending: "Pending",
-  approved: "Approved",
-  rejected: "Rejected",
-};
-
-// ─── Helper Components ─────────────────────────────────────────────────────────
-
-function ItemTypeBadge({ type }: { type: ApprovalItemType }) {
-  return (
-    <Badge variant="outline" className="text-xs whitespace-nowrap">
-      {ITEM_TYPE_LABELS[type] || type}
-    </Badge>
-  );
-}
-
-function PriorityBadge({ priority }: { priority: Priority }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className={cn("h-2 w-2 rounded-full", PRIORITY_COLORS[priority])} />
-      <span className="text-sm text-[var(--fg-secondary)]">
-        {PRIORITY_LABELS[priority]}
-      </span>
-    </div>
-  );
-}
-
-function StatusBadge({ status }: { status: ApprovalStatus }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className={cn("h-2 w-2 rounded-full", STATUS_COLORS[status])} />
-      <span className="text-sm text-[var(--fg-secondary)]">
-        {STATUS_LABELS[status]}
-      </span>
-    </div>
-  );
-}
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function ApprovalQueuePage() {
   const { user, loading: authLoading } = useAuth();
-  const [items, setItems] = useState<ApprovalQueueItem[]>([]);
+  const [items, setItems] = useState<ApprovalQueueRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<ApprovalStatus | "all">("pending");
-  
-  // Detail modal state
-  const [selectedItem, setSelectedItem] = useState<ApprovalQueueItem | null>(null);
-  const [detailData, setDetailData] = useState<UBOExtractionDetail | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  
-  // Reject modal state
+  const [statusFilter, setStatusFilter] = useState<ApprovalQueueRow["status"] | "all">("pending");
+
+  const [selectedItem, setSelectedItem] = useState<ApprovalQueueRow | null>(null);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
-  const [rejectingItem, setRejectingItem] = useState<ApprovalQueueItem | null>(null);
+  const [rejectingItem, setRejectingItem] = useState<ApprovalQueueRow | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Fetch user's org_id
-  const fetchUserOrgId = useCallback(async () => {
-    if (!user?.id) return null;
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .select("org_id")
-      .eq("user_id", user.id)
-      .single();
-    if (error) {
-      console.error("Error fetching user profile:", error);
-      return null;
-    }
-    return data?.org_id;
-  }, [user?.id]);
-
-  // Fetch approval queue items
-  const fetchItems = useCallback(async () => {
-    if (!user?.id) return;
-
+  async function fetchItems() {
     setLoading(true);
     setError(null);
     const supabase = createClient();
 
     try {
-      const orgId = await fetchUserOrgId();
-      if (!orgId) {
-        setError("Unable to fetch organization data.");
-        setLoading(false);
-        return;
-      }
-
-      // Build query
       let query = supabase
         .from("approval_queue")
-        .select(
-          `*, requester:requested_by(email)`,
-          { count: "exact" }
-        )
-        .eq("org_id", orgId)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      // Apply status filter
       if (statusFilter !== "all") {
         query = query.eq("status", statusFilter);
       }
@@ -233,81 +79,29 @@ export default function ApprovalQueuePage() {
       const { data, error: queryError } = await query;
 
       if (queryError) throw queryError;
-
-      // Transform data
-      const transformedData = (data || []).map((item: unknown) => {
-        const rawItem = item as Record<string, unknown>;
-        const requesterData = rawItem.requester;
-        return {
-          ...rawItem,
-          requester: requesterData && Array.isArray(requesterData) && requesterData.length > 0
-            ? (requesterData[0] as { email: string })
-            : (requesterData as { email: string } | null) || null,
-        } as ApprovalQueueItem;
-      });
-
-      setItems(transformedData);
+      setItems((data || []) as any);
     } catch (err) {
       console.error("Error fetching approval queue:", err);
       setError("Failed to load approval queue. Please try again.");
     } finally {
       setLoading(false);
     }
-  }, [user?.id, statusFilter, fetchUserOrgId]);
+  }
 
-  // Fetch UBO extraction details
-  const fetchUBODetails = useCallback(async (itemId: string) => {
-    setDetailLoading(true);
-    const supabase = createClient();
-    
-    try {
-      const { data, error } = await supabase
-        .from("ubo_extractions")
-        .select(`
-          *,
-          case:case_id(subject_name, subject_address)
-        `)
-        .eq("id", itemId)
-        .maybeSingle();
-
-      if (error) throw error;
-      
-      setDetailData(data as UBOExtractionDetail);
-    } catch (err) {
-      console.error("Error fetching UBO details:", err);
-      setError("Failed to load extraction details.");
-    } finally {
-      setDetailLoading(false);
-    }
-  }, []);
-
-  // Initial fetch
   useEffect(() => {
     if (!authLoading && user) {
       void fetchItems();
     }
-  }, [authLoading, user, fetchItems]);
+  }, [authLoading, user, statusFilter]);
 
-  // Handle review click
-  const handleReview = useCallback((item: ApprovalQueueItem) => {
-    setSelectedItem(item);
-    if (item.item_type === "ubo_extraction") {
-      void fetchUBODetails(item.item_id);
-    }
-  }, [fetchUBODetails]);
-
-  // Handle approve
-  const handleApprove = useCallback(async (item: ApprovalQueueItem) => {
+  async function handleApprove(item: ApprovalQueueRow) {
     setActionLoading(true);
-    
     try {
       const response = await fetch("/api/approval-queue/approve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itemId: item.id,
-          itemType: item.item_type,
-          targetId: item.item_id,
         }),
       });
 
@@ -315,41 +109,31 @@ export default function ApprovalQueuePage() {
         throw new Error("Failed to approve item");
       }
 
-      // Refresh the list
       void fetchItems();
-      
-      // Close detail modal if open
       setSelectedItem(null);
-      setDetailData(null);
     } catch (err) {
       console.error("Error approving item:", err);
       setError("Failed to approve item. Please try again.");
     } finally {
       setActionLoading(false);
     }
-  }, [fetchItems]);
+  }
 
-  // Handle reject click
-  const handleRejectClick = useCallback((item: ApprovalQueueItem) => {
+  function handleRejectClick(item: ApprovalQueueRow) {
     setRejectingItem(item);
     setRejectReason("");
     setRejectModalOpen(true);
-  }, []);
+  }
 
-  // Handle confirm reject
-  const handleConfirmReject = useCallback(async () => {
+  async function handleConfirmReject() {
     if (!rejectingItem) return;
-    
     setActionLoading(true);
-    
     try {
       const response = await fetch("/api/approval-queue/reject", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itemId: rejectingItem.id,
-          itemType: rejectingItem.item_type,
-          targetId: rejectingItem.item_id,
           reason: rejectReason,
         }),
       });
@@ -358,22 +142,18 @@ export default function ApprovalQueuePage() {
         throw new Error("Failed to reject item");
       }
 
-      // Refresh the list
       void fetchItems();
-      
-      // Close modals
       setRejectModalOpen(false);
       setRejectingItem(null);
       setRejectReason("");
       setSelectedItem(null);
-      setDetailData(null);
     } catch (err) {
       console.error("Error rejecting item:", err);
       setError("Failed to reject item. Please try again.");
     } finally {
       setActionLoading(false);
     }
-  }, [rejectingItem, rejectReason, fetchItems]);
+  }
 
   // Calculate pending count
   const pendingCount = useMemo(() => {
@@ -498,11 +278,11 @@ export default function ApprovalQueuePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Item Type</TableHead>
-                    <TableHead>Priority</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Requested By</TableHead>
-                    <TableHead>Created At</TableHead>
+                    <TableHead>Case</TableHead>
+                    <TableHead>Entity</TableHead>
+                    <TableHead>Confidence</TableHead>
+                    <TableHead>Updated</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -510,28 +290,28 @@ export default function ApprovalQueuePage() {
                   {filteredItems.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-[var(--fg-muted)]" />
-                          <ItemTypeBadge type={item.item_type} />
-                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {item.status ?? "—"}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        <PriorityBadge priority={item.priority} />
+                        <span className="text-[var(--fg-secondary)] text-sm font-mono">
+                          {item.case_type ?? "—"}
+                        </span>
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={item.status} />
+                        <span className="text-[var(--fg-muted)] text-sm font-mono">
+                          {item.entity_type ?? "—"} {item.entity_id ? `• ${String(item.entity_id).slice(0, 8)}` : ""}
+                        </span>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-[var(--fg-muted)]" />
-                          <span className="text-[var(--fg-secondary)] text-sm">
-                            {item.requester?.email || "System"}
-                          </span>
-                        </div>
+                        <span className="text-[var(--fg-muted)] text-sm font-mono">
+                          {typeof item.ai_confidence === "number" ? item.ai_confidence.toFixed(2) : "—"}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <span className="text-[var(--fg-muted)] text-sm">
-                          {formatTimeAgo(new Date(item.created_at))}
+                          {formatTimeAgo(new Date(item.updated_at))}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
@@ -539,20 +319,20 @@ export default function ApprovalQueuePage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleReview(item)}
-                            className="text-[var(--accent)]"
+                            onClick={() => setSelectedItem(item)}
+                            className="text-[var(--fg-secondary)]"
                           >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Review
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            Open
                           </Button>
-                          {item.status === "pending" && (
+                          {item.status === "pending" ? (
                             <>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleApprove(item)}
                                 disabled={actionLoading}
-                                className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                                className="text-[var(--signal-positive)] hover:bg-[var(--surface-container)]"
                               >
                                 <Check className="h-4 w-4 mr-1" />
                                 Approve
@@ -562,13 +342,13 @@ export default function ApprovalQueuePage() {
                                 size="sm"
                                 onClick={() => handleRejectClick(item)}
                                 disabled={actionLoading}
-                                className="text-red-600 border-red-200 hover:bg-red-50"
+                                className="text-[var(--signal-negative)] hover:bg-[var(--surface-container)]"
                               >
                                 <X className="h-4 w-4 mr-1" />
                                 Reject
                               </Button>
                             </>
-                          )}
+                          ) : null}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -580,17 +360,82 @@ export default function ApprovalQueuePage() {
         </CardContent>
       </Card>
 
+      {/* Details drawer (simple dialog) */}
+      <Dialog
+        open={!!selectedItem}
+        onOpenChange={(open) => setSelectedItem(open ? selectedItem : null)}
+      >
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-[var(--fg-muted)]" />
+              Review AI draft
+              <span className="ml-2 text-xs font-mono text-[var(--fg-muted)]">
+                {selectedItem?.id ? String(selectedItem.id).slice(0, 8) : ""}
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-container)] p-3">
+              <div className="text-xs label-caps">AI draft</div>
+              <pre className="mt-2 max-h-[420px] overflow-auto text-[12px] leading-relaxed text-[var(--fg-primary)]">
+                {selectedItem?.ai_draft ? JSON.stringify(selectedItem.ai_draft, null, 2) : "—"}
+              </pre>
+            </div>
+            <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-container)] p-3">
+              <div className="text-xs label-caps">Citations</div>
+              <pre className="mt-2 max-h-[420px] overflow-auto text-[12px] leading-relaxed text-[var(--fg-primary)]">
+                {selectedItem?.citations ? JSON.stringify(selectedItem.citations, null, 2) : "—"}
+              </pre>
+            </div>
+          </div>
+
+          <DialogFooter>
+            {selectedItem?.status === "pending" ? (
+              <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedItem(null)}
+                  className="h-10"
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => (selectedItem ? handleApprove(selectedItem) : null)}
+                  disabled={actionLoading}
+                  className="h-10"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Approve
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => (selectedItem ? handleRejectClick(selectedItem) : null)}
+                  disabled={actionLoading}
+                  className="h-10"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Reject
+                </Button>
+              </div>
+            ) : (
+              <Button variant="outline" onClick={() => setSelectedItem(null)} className="h-10">
+                Close
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Reject Modal */}
       <Dialog open={rejectModalOpen} onOpenChange={setRejectModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500" />
+              <AlertTriangle className="h-5 w-5 text-[var(--signal-negative)]" />
               Reject Item
             </DialogTitle>
-            <DialogDescription>
-              Please provide a reason for rejecting this item. This will be logged for audit purposes.
-            </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Textarea

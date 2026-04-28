@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserIdFromRequest } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase-admin";
-import { logActivity } from "@/lib/supabase/activity";
-import { createNotification } from "@/lib/notifications";
+import { getIpAddressFromRequest, getTenantIdFromRequest } from "@/lib/ubo/requestContext";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,19 +12,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const tenantId = getTenantIdFromRequest(request);
+  if (!tenantId) {
+    return NextResponse.json({ error: "Missing tenant context" }, { status: 400 });
+  }
+
   try {
     const body = await request.json() as {
       itemId: string;
-      itemType: string;
-      targetId: string;
       notes?: string;
     };
 
-    const { itemId, itemType, targetId, notes } = body;
+    const { itemId, notes } = body;
 
-    if (!itemId || !itemType || !targetId) {
+    if (!itemId) {
       return NextResponse.json(
-        { error: "Missing required fields: itemId, itemType, targetId" },
+        { error: "Missing required field: itemId" },
         { status: 400 }
       );
     }
@@ -35,8 +37,9 @@ export async function POST(request: Request) {
     // Fetch the approval queue item
     const { data: queueItem, error: fetchError } = await admin
       .from("approval_queue")
-      .select("*, org:org_id(id, name)")
+      .select("*")
       .eq("id", itemId)
+      .eq("tenant_id", tenantId)
       .maybeSingle();
 
     if (fetchError) {
@@ -68,6 +71,7 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", itemId)
+      .eq("tenant_id", tenantId)
       .select()
       .single();
 
@@ -75,52 +79,19 @@ export async function POST(request: Request) {
       throw new Error(updateError.message);
     }
 
-    // Update the target item based on type
-    if (itemType === "ubo_extraction") {
-      const { error: uboError } = await admin
-        .from("ubo_extractions")
-        .update({
-          status: "approved",
-          approved_by: userId,
-          approved_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", targetId);
-
-      if (uboError) {
-        console.error("Failed to update UBO extraction status:", uboError);
-      }
-    }
-
-    // Create audit log
-    await logActivity(
-      {
-        organizationId: queueItem.org_id,
-        userId: userId,
-        actionType: "approval_approved",
-        title: `Approved ${itemType} extraction`,
-        description: notes || `Approved ${itemType} extraction`,
-        metadata: {
-          queue_item_id: itemId,
-          target_id: targetId,
-          item_type: itemType,
-          reviewer_id: userId,
-        },
-      },
-      admin
-    );
-
-    // Notify the requester if not the same as approver
-    if (queueItem.requested_by && queueItem.requested_by !== userId) {
-      await createNotification({
-        userId: queueItem.requested_by,
-        orgId: queueItem.org_id,
-        title: "Extraction Approved",
-        message: `Your ${itemType} extraction has been approved.`,
-        type: "success",
-        link: `/approval-queue`,
-      });
-    }
+    await admin.from("audit_log").insert({
+      tenant_id: tenantId,
+      actor_id: userId,
+      actor_email: "user@inceptive-ai.com",
+      action_type: "approval_queue_approved",
+      entity_type: "approval_queue",
+      entity_id: itemId,
+      before_state: { status: "pending" },
+      after_state: { status: "approved", review_notes: notes || null },
+      decision: "approved",
+      ip_address: getIpAddressFromRequest(request),
+      citations: queueItem.citations ?? null,
+    });
 
     return NextResponse.json({
       success: true,

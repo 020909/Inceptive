@@ -7,6 +7,7 @@ import { AgentProvider } from "@/lib/agent-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { OrgProvider } from "@/lib/org-context";
 import { AppSidebar, AppSidebarProvider } from "@/components/layout/app-sidebar";
+import { AppHeader } from "@/components/layout/app-header";
 import { PageTransition } from "@/components/ui/page-transition";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -18,6 +19,7 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-[var(--surface-deep)]">
       <AppSidebar />
       <div className="flex flex-col flex-1 min-w-0 relative min-h-0">
+        <AppHeader />
         <main
           className={`flex-1 min-w-0 overflow-y-auto scrollbar-hide ${isAgent ? "overflow-hidden flex flex-col" : ""}`}
         >
