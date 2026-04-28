@@ -26,4 +26,13 @@ Rules:
   - `npm run build`: PASS
   - `npm run lint`: PASS (warnings only)
 
+## Wave 1 — Compliance ontology + types (parent)
+- **Time**: 2026-04-27
+- **Changes**:
+  - Added DB migrations: `supabase/033_compliance_ontology.sql`, `supabase/034_compliance_rls.sql`, `supabase/035_case_number_sequence.sql`
+  - Added types/contracts: `src/types/compliance.ts` (Zod + inferred TS types)
+- **Build/Lint**:
+  - `npm run build`: PASS
+  - `npm run lint`: PASS (warnings only)
+
 
