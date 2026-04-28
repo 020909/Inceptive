@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getStripe, type PlanId } from "@/lib/stripe";
-import { resetCredits } from "@/lib/credits";
 import Stripe from "stripe";
 
 export const runtime = "nodejs";
@@ -50,11 +49,6 @@ export async function POST(req: NextRequest) {
           subscription_status: status,
           subscription_period_end: periodEnd,
         }).eq("id", userId);
-
-        // Reset credits to new plan amount
-        if (status === "active" || status === "trialing") {
-          await resetCredits(userId, planId);
-        }
         break;
       }
 
@@ -70,8 +64,6 @@ export async function POST(req: NextRequest) {
           stripe_subscription_id: null,
           subscription_period_end: null,
         }).eq("id", userId);
-
-        await resetCredits(userId, "free");
         break;
       }
 
@@ -124,11 +116,7 @@ export async function POST(req: NextRequest) {
         const planId = sub.metadata?.plan as PlanId;
         if (!userId || !planId) break;
 
-        // Only reset on renewal (not on first payment — subscription.created handles that)
-        const billingReason = (invoice as any).billing_reason ?? "";
-        if (billingReason === "subscription_cycle") {
-          await resetCredits(userId, planId);
-        }
+        // Compliance OS: billing is kept; credit resets are intentionally removed.
         break;
       }
     }

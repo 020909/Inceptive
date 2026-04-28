@@ -38,7 +38,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { ApprovalItemDetail } from "@/components/approval-queue/ApprovalItemDetail";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -580,21 +579,6 @@ export default function ApprovalQueuePage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Detail Modal */}
-      <ApprovalItemDetail
-        item={selectedItem}
-        detailData={detailData}
-        loading={detailLoading}
-        open={!!selectedItem}
-        onClose={() => {
-          setSelectedItem(null);
-          setDetailData(null);
-        }}
-        onApprove={selectedItem ? () => handleApprove(selectedItem) : undefined}
-        onReject={selectedItem ? () => handleRejectClick(selectedItem) : undefined}
-        actionLoading={actionLoading}
-      />
 
       {/* Reject Modal */}
       <Dialog open={rejectModalOpen} onOpenChange={setRejectModalOpen}>
