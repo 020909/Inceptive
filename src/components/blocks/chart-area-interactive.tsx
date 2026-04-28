@@ -31,6 +31,9 @@ import {
 
 export const description = "An interactive area chart"
 
+const ROBINHOOD_UP = "rgb(90, 197, 63)"
+const ROBINHOOD_DOWN = "rgb(183, 38, 39)"
+
 const chartData = [
   { date: "2024-04-01", desktop: 222, mobile: 150 },
   { date: "2024-04-02", desktop: 97, mobile: 180 },
@@ -125,20 +128,6 @@ const chartData = [
   { date: "2024-06-30", desktop: 446, mobile: 400 },
 ]
 
-const chartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  desktop: {
-    label: "Desktop",
-    color: "var(--primary)",
-  },
-  mobile: {
-    label: "Mobile",
-    color: "var(--primary)",
-  },
-} satisfies ChartConfig
-
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile()
   const [timeRange, setTimeRange] = React.useState("90d")
@@ -162,6 +151,25 @@ export function ChartAreaInteractive() {
     startDate.setDate(startDate.getDate() - daysToSubtract)
     return date >= startDate
   })
+
+  const trendColor = React.useMemo(() => {
+    if (filteredData.length < 2) return ROBINHOOD_UP
+    const first = filteredData[0]!
+    const last = filteredData[filteredData.length - 1]!
+    const start = (first.desktop ?? 0) + (first.mobile ?? 0)
+    const end = (last.desktop ?? 0) + (last.mobile ?? 0)
+    return end >= start ? ROBINHOOD_UP : ROBINHOOD_DOWN
+  }, [filteredData])
+
+  const chartConfig = React.useMemo(
+    () =>
+      ({
+        visitors: { label: "Visitors" },
+        desktop: { label: "Desktop", color: trendColor },
+        mobile: { label: "Mobile", color: trendColor },
+      }) satisfies ChartConfig,
+    [trendColor]
+  )
 
   return (
     <Card className="@container/card">
@@ -226,19 +234,19 @@ export function ChartAreaInteractive() {
                 <stop
                   offset="95%"
                   stopColor="var(--color-desktop)"
-                  stopOpacity={0.1}
+                  stopOpacity={0.08}
                 />
               </linearGradient>
               <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
                   stopColor="var(--color-mobile)"
-                  stopOpacity={0.8}
+                  stopOpacity={0.75}
                 />
                 <stop
                   offset="95%"
                   stopColor="var(--color-mobile)"
-                  stopOpacity={0.1}
+                  stopOpacity={0.08}
                 />
               </linearGradient>
             </defs>
@@ -258,7 +266,11 @@ export function ChartAreaInteractive() {
               }}
             />
             <ChartTooltip
-              cursor={false}
+              cursor={{
+                stroke: trendColor,
+                strokeWidth: 1,
+                strokeOpacity: 0.35,
+              }}
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => {
@@ -277,6 +289,8 @@ export function ChartAreaInteractive() {
               fill="url(#fillMobile)"
               stroke="var(--color-mobile)"
               stackId="a"
+              dot={false}
+              activeDot={{ r: 3, stroke: trendColor, strokeWidth: 2, fill: "var(--surface-container)" }}
             />
             <Area
               dataKey="desktop"
@@ -284,6 +298,8 @@ export function ChartAreaInteractive() {
               fill="url(#fillDesktop)"
               stroke="var(--color-desktop)"
               stackId="a"
+              dot={false}
+              activeDot={{ r: 3, stroke: trendColor, strokeWidth: 2, fill: "var(--surface-container)" }}
             />
           </AreaChart>
         </ChartContainer>

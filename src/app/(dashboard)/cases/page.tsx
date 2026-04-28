@@ -386,7 +386,7 @@ export default function CasesPage() {
           </div>
           <Button
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-[var(--accent)] text-white hover:bg-[var(--accent)]/90 rounded-lg px-4 h-10"
+            className="bg-white text-[#070A0B] hover:bg-[#D0D5D9] rounded-lg px-4 h-10"
           >
             <Plus className="h-4 w-4 mr-2" />
             New Case

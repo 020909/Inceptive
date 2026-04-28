@@ -77,8 +77,12 @@ function Stepper({ steps, activeIndex, statusText }: { steps: string[]; activeIn
         {steps.map((s, i) => {
           const done = i < activeIndex;
           const active = i === activeIndex;
-          const color = active ? "var(--text-primary)" : done ? "var(--text-secondary)" : "var(--text-muted)";
-          const dotBg = active ? "var(--text-primary)" : done ? "var(--border-strong)" : "var(--border-faint)";
+          const color = active
+            ? "var(--text-primary)"
+            : done
+              ? "var(--text-secondary)"
+              : "rgba(138, 154, 168, 0.55)";
+          const dotBg = active ? "var(--text-primary)" : done ? "var(--border-strong)" : "var(--border-subtle)";
           return (
             <div key={s} className="flex items-center gap-2">
               <div style={{ width: 10, height: 10, borderRadius: 9999, background: dotBg, border: "1px solid var(--border-subtle)" }} />

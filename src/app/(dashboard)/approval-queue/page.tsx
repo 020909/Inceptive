@@ -226,7 +226,7 @@ export default function ApprovalQueuePage() {
                 className={cn(
                   "h-9 px-4",
                   statusFilter === opt.value
-                    ? "bg-[var(--accent)] text-white"
+                    ? "bg-white text-[#070A0B]"
                     : "bg-transparent"
                 )}
               >
