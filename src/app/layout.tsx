@@ -34,13 +34,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      style={
-        {
-          '--font-body': "'DM Sans', Inter, Arial, ui-sans-serif, system-ui",
-          '--font-header': "'Libre Baskerville', Georgia, ui-serif, serif",
-          '--font-mono': "ui-monospace, 'Courier New', monospace",
-        } as React.CSSProperties
-      }
+  style={
+    {
+      '--font-body': "'DM Sans', system-ui, sans-serif",
+      '--font-header': "'Sora', system-ui, sans-serif",
+      '--font-mono': "'JetBrains Mono', 'SF Mono', Monaco, monospace",
+    } as React.CSSProperties
+  }
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />

@@ -77,7 +77,7 @@ export default function SignUpPage() {
 
   return (
     <div
-      className="min-h-screen flex bg-[#000000]"
+      className="min-h-screen flex bg-[var(--void)]"
       style={{ fontFamily: "var(--font-body)" }}
     >
       {/* ── Left branding panel ── */}
@@ -85,15 +85,15 @@ export default function SignUpPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="hidden lg:flex lg:w-[45%] flex-col items-center justify-center p-12 border-r border-white/10 bg-[#000000] relative overflow-hidden"
+        className="hidden lg:flex lg:w-[45%] flex-col items-center justify-center p-12 border-r border-[var(--border-faint)] bg-[var(--void)] relative overflow-hidden"
       >
         <div className="relative z-10 text-center max-w-sm">
           <div className="flex items-center justify-center gap-3 mb-10">
-            <div className="relative h-12 w-12 rounded-[10px] overflow-hidden border border-white/10 bg-white/5">
+            <div className="relative h-12 w-12 rounded-[10px] overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface-elevated)]">
               <Image src="/logo.png" alt="Inceptive" fill sizes="48px" className="object-cover" />
             </div>
             <span
-              className="text-white"
+              className="text-[var(--text-primary)]"
               style={{ fontFamily: "var(--font-header)", fontSize: "26px", fontWeight: 400 }}
             >
               Inceptive
@@ -101,7 +101,7 @@ export default function SignUpPage() {
           </div>
 
           <h2
-            className="text-white mb-4"
+            className="text-[var(--text-primary)] mb-4"
             style={{
               fontFamily: "var(--font-header)",
               fontSize: "clamp(32px, 3.5vw, 48px)",
@@ -112,25 +112,25 @@ export default function SignUpPage() {
           >
             The first AI that works while you sleep.
           </h2>
-          <p className="text-[16px] text-[#93939f] leading-relaxed">
+          <p className="text-[16px] text-[var(--text-secondary)] leading-relaxed">
             Not when you ask.
           </p>
 
           {/* Mini stat */}
-          <div className="mt-10 rounded-[22px] border border-white/10 bg-[#121212] p-6 text-left">
+          <div className="mt-10 rounded-[22px] border border-[var(--border-subtle)] bg-[var(--surface-container)] p-6 text-left">
             <p
-              className="text-[#93939f]"
+              className="text-[var(--text-secondary)]"
               style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.28px" }}
             >
               Avg. time saved
             </p>
             <p
-              className="mt-2 text-white"
+              className="mt-2 text-[var(--text-primary)]"
               style={{ fontFamily: "var(--font-header)", fontSize: "36px", fontWeight: 400 }}
             >
               23h / week
             </p>
-            <p className="mt-1 text-[13px] text-[#93939f]">per employee, replacing manual workflows.</p>
+            <p className="mt-1 text-[13px] text-[var(--text-secondary)]">per employee, replacing manual workflows.</p>
           </div>
         </div>
       </motion.div>
@@ -140,15 +140,15 @@ export default function SignUpPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="flex flex-1 items-center justify-center p-6 lg:p-16 bg-[#000000]"
+        className="flex flex-1 items-center justify-center p-6 lg:p-16 bg-[var(--void)]"
       >
         <div className="w-full max-w-[480px]">
           {/* Mobile logo */}
           <div className="flex items-center gap-2.5 mb-10 lg:hidden">
-            <div className="relative h-8 w-8 rounded-[8px] overflow-hidden border border-white/10">
+            <div className="relative h-8 w-8 rounded-[8px] overflow-hidden border border-[var(--border-subtle)]">
               <Image src="/logo.png" alt="Inceptive" fill sizes="32px" className="object-cover" />
             </div>
-            <span className="text-white" style={{ fontFamily: "var(--font-header)", fontSize: "18px" }}>
+            <span className="text-[var(--text-primary)]" style={{ fontFamily: "var(--font-header)", fontSize: "18px" }}>
               Inceptive
             </span>
           </div>
@@ -156,13 +156,13 @@ export default function SignUpPage() {
           {/* Heading */}
           <div className="mb-8">
             <p
-              className="text-[#93939f] mb-2"
+              className="text-[var(--text-secondary)] mb-2"
               style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.28px" }}
             >
               New account
             </p>
             <h2
-              className="text-white mb-1"
+              className="text-[var(--text-primary)] mb-1"
               style={{
                 fontFamily: "var(--font-header)",
                 fontSize: "clamp(26px, 3vw, 36px)",
@@ -173,7 +173,7 @@ export default function SignUpPage() {
             >
               Create your account
             </h2>
-            <p className="text-[14px] text-[#93939f]">Get started with your 24/7 AI employee</p>
+            <p className="text-[14px] text-[var(--text-secondary)]">Get started with your 24/7 AI employee</p>
           </div>
 
           {/* Google OAuth */}
@@ -182,7 +182,7 @@ export default function SignUpPage() {
               type="button"
               disabled={!!oauthLoading}
               onClick={() => handleOAuth("google")}
-              className="w-full h-12 rounded-full border border-white/10 bg-white/5 text-white text-[14px] hover:border-[#3b82f6] transition-colors flex items-center justify-center disabled:opacity-50"
+              className="w-full h-12 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-primary)] text-[14px] hover:border-[var(--text-secondary)] transition-colors flex items-center justify-center disabled:opacity-50"
             >
               {oauthLoading === "google" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -203,11 +203,11 @@ export default function SignUpPage() {
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10" />
+              <div className="w-full border-t border-[var(--border-subtle)]" />
             </div>
             <div className="relative flex justify-center">
               <span
-                className="px-3 text-[#93939f] bg-[#000000]"
+                className="px-3 text-[var(--text-secondary)] bg-[var(--void)]"
                 style={{ fontFamily: "var(--font-mono)", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.16px" }}
               >
                 or continue with email
@@ -218,34 +218,34 @@ export default function SignUpPage() {
           {/* Form */}
           <form onSubmit={handleSignUp} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-[11px] font-medium text-[#93939f] uppercase tracking-widest">Email</Label>
+              <Label htmlFor="email" className="text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-widest">Email</Label>
               <Input
                 id="email" type="email" placeholder="you@example.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setErrors(p => ({ ...p, email: undefined })); }}
-                className="h-11 rounded-[8px] text-sm bg-white/5 border-white/10 text-white placeholder:text-[#93939f] focus:border-[#3b82f6] focus:ring-0 transition-colors"
+                className="h-11 rounded-[8px] text-sm bg-[var(--surface-elevated)] border-[var(--border-subtle)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--text-secondary)] focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 focus:ring-offset-[var(--surface-container)] transition-colors"
               />
               {errors.email && <p className="text-[11px] text-[var(--destructive)]">{errors.email}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-[11px] font-medium text-[#93939f] uppercase tracking-widest">Password</Label>
+              <Label htmlFor="password" className="text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-widest">Password</Label>
               <Input
                 id="password" type="password" placeholder="Create a password"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setErrors(p => ({ ...p, password: undefined })); }}
-                className="h-11 rounded-[8px] text-sm bg-white/5 border-white/10 text-white placeholder:text-[#93939f] focus:border-[#3b82f6] focus:ring-0 transition-colors"
+                className="h-11 rounded-[8px] text-sm bg-[var(--surface-elevated)] border-[var(--border-subtle)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--text-secondary)] focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 focus:ring-offset-[var(--surface-container)] transition-colors"
               />
               {errors.password && <p className="text-[11px] text-[var(--destructive)]">{errors.password}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-[11px] font-medium text-[#93939f] uppercase tracking-widest">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-widest">Confirm Password</Label>
               <Input
                 id="confirmPassword" type="password" placeholder="Confirm your password"
                 value={confirmPassword}
                 onChange={(e) => { setConfirmPassword(e.target.value); setErrors(p => ({ ...p, confirmPassword: undefined })); }}
-                className="h-11 rounded-[8px] text-sm bg-white/5 border-white/10 text-white placeholder:text-[#93939f] focus:border-[#3b82f6] focus:ring-0 transition-colors"
+                className="h-11 rounded-[8px] text-sm bg-[var(--surface-elevated)] border-[var(--border-subtle)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--text-secondary)] focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 focus:ring-offset-[var(--surface-container)] transition-colors"
               />
               {errors.confirmPassword && <p className="text-[11px] text-[var(--destructive)]">{errors.confirmPassword}</p>}
             </div>
@@ -254,7 +254,7 @@ export default function SignUpPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 rounded-full bg-white text-black text-[14px] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center"
+                className="w-full h-11 rounded-full bg-[var(--action-primary)] text-[var(--text-inverse)] text-[14px] hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
               </button>
@@ -267,9 +267,9 @@ export default function SignUpPage() {
             )}
           </form>
 
-          <p className="mt-8 text-center text-[13px] text-[#93939f]">
+          <p className="mt-8 text-center text-[13px] text-[var(--text-secondary)]">
             Already have an account?{" "}
-            <Link href={loginHref} className="text-white hover:text-[#3b82f6] transition-colors">
+            <Link href={loginHref} className="text-[var(--text-primary)] hover:text-[var(--text-secondary)] transition-colors">
               Sign in
             </Link>
           </p>
