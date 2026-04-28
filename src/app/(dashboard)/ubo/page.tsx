@@ -158,6 +158,13 @@ export default function UboPage() {
     setQueueError(null);
     setSelectedEntityId(null);
     setCitationsOpen(false);
+
+    // Onboarding: mark first workflow run (UBO upload)
+    try {
+      localStorage.setItem("inceptive:onboarding:ran_workflow", "true");
+    } catch {
+      // ignore
+    }
   }, []);
 
   const openCitationsFor = useCallback((id: string) => {

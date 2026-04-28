@@ -219,7 +219,7 @@ export default function LiveTaskFeed({ className = "" }: { className?: string })
     } finally {
       setLoading(false);
     }
-  }, [session?.access_token]);
+  }, [session]);
 
   // Initial fetch + polling every 3s
   useEffect(() => {

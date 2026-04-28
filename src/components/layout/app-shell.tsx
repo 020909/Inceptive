@@ -10,6 +10,7 @@ import { AppSidebar, AppSidebarProvider } from "@/components/layout/app-sidebar"
 import { AppHeader } from "@/components/layout/app-header";
 import { PageTransition } from "@/components/ui/page-transition";
 import { Toaster } from "@/components/ui/sonner";
+import { OnboardingController } from "@/components/onboarding/onboarding-controller";
 
 function LayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -45,6 +46,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <AppSidebarProvider>
               <LayoutInner>{children}</LayoutInner>
               <Toaster />
+              <React.Suspense fallback={null}>
+                <OnboardingController />
+              </React.Suspense>
             </AppSidebarProvider>
           </OrgProvider>
         </ChatProvider>

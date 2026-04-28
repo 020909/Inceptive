@@ -64,6 +64,7 @@ export function AppSidebarTrigger({ className }: { className?: string }) {
         e.stopPropagation();
         toggle();
       }}
+      data-tour="sidebar-toggle"
       className={cn(
         "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-150",
         "text-[var(--sidebar-icon)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--sidebar-fg)]",
@@ -85,6 +86,7 @@ function NavItem({
   isActive,
   collapsed,
   badge,
+  dataTour,
 }: {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -92,11 +94,13 @@ function NavItem({
   isActive: boolean;
   collapsed: boolean;
   badge?: number | string;
+  dataTour?: string;
 }) {
   return (
     <Link
       href={href}
       title={collapsed ? label : undefined}
+      data-tour={dataTour}
       className={cn(
         "group flex h-9 items-center gap-3 rounded-lg px-2.5 text-[13px] font-semibold leading-none transition-colors duration-150",
         isActive
@@ -329,6 +333,7 @@ export function AppSidebar() {
 
   return (
     <aside
+      data-tour="sidebar"
       className={cn(
         "flex flex-col h-screen border-r border-[#181C1E] bg-[#040506] shrink-0 relative z-20",
         collapsed ? "w-[4.25rem]" : "w-[240px]"
@@ -373,12 +378,20 @@ export function AppSidebar() {
           label="Dashboard"
           isActive={pathname === "/dashboard"}
           collapsed={collapsed}
+          dataTour="nav-dashboard"
         />
 
         <NavDivider collapsed={collapsed} />
 
         {!collapsed && <NavSectionHeader label="Compliance" collapsed={collapsed} />}
-        <NavItem href="/ubo" icon={Search} label="UBO / KYB" isActive={pathname.startsWith("/ubo")} collapsed={collapsed} />
+        <NavItem
+          href="/ubo"
+          icon={Search}
+          label="UBO / KYB"
+          isActive={pathname.startsWith("/ubo")}
+          collapsed={collapsed}
+          dataTour="nav-ubo"
+        />
         <NavItem
           href="/aml-triage"
           icon={Shield}
@@ -418,8 +431,16 @@ export function AppSidebar() {
           isActive={pathname.startsWith("/approval-queue")}
           collapsed={collapsed}
           badge={pendingApprovalsCount > 0 ? pendingApprovalsCount : undefined}
+          dataTour="nav-approvals"
         />
-        <NavItem href="/cases" icon={FolderOpen} label="Case Manager" isActive={pathname.startsWith("/cases")} collapsed={collapsed} />
+        <NavItem
+          href="/cases"
+          icon={FolderOpen}
+          label="Case Manager"
+          isActive={pathname.startsWith("/cases")}
+          collapsed={collapsed}
+          dataTour="nav-cases"
+        />
         <NavItem href="/policy-vault" icon={Landmark} label="Policy Vault" isActive={pathname.startsWith("/policy-vault")} collapsed={collapsed} />
 
         <NavDivider collapsed={collapsed} />
@@ -449,12 +470,14 @@ export function AppSidebar() {
             {!collapsed && <span>Sign in</span>}
           </Link>
         ) : (
-          <AccountPopover
+          <div data-tour="account-menu">
+            <AccountPopover
             collapsed={collapsed}
             userDisplayName={userDisplayName}
             userEmail={userEmail}
             userInitial={userInitial}
-          />
+            />
+          </div>
         )}
       </div>
     </aside>

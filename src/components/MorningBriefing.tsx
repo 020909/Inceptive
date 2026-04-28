@@ -12,6 +12,23 @@ export default function MorningBriefing() {
   const [logs, setLogs] = useState<TaskLog[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchBriefingLogs = useCallback(async () => {
+    if (!session?.access_token) return;
+    try {
+      setLoading(true);
+      const res = await fetch("/api/task-logs?briefing=true", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setLogs(data.logs || []);
+    } catch (e) {
+      console.error("Briefing logs fetch error", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [session]);
+
   const checkBriefingVisibility = useCallback(() => {
     // If not authenticated, do not show
     if (!session?.access_token) return false;
@@ -36,7 +53,7 @@ export default function MorningBriefing() {
     }
 
     return false;
-  }, [session?.access_token]);
+  }, [session]);
 
   useEffect(() => {
     // Determine visibility
@@ -59,24 +76,7 @@ export default function MorningBriefing() {
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [checkBriefingVisibility]);
-
-  const fetchBriefingLogs = async () => {
-    if (!session?.access_token) return;
-    try {
-      setLoading(true);
-      const res = await fetch("/api/task-logs?briefing=true", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      setLogs(data.logs || []);
-    } catch (e) {
-      console.error("Briefing logs fetch error", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [checkBriefingVisibility, fetchBriefingLogs]);
 
   const handleDismiss = () => {
     setShow(false);

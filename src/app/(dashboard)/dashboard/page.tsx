@@ -66,31 +66,41 @@ export default function DashboardHomePage() {
   ];
 
   return (
-    <div className="flex flex-col gap-4" style={{ padding: 16 }}>
-      <div>
-        <div className="text-xs label-caps">Operations Center</div>
-        <h2 className="mt-2" style={{ fontSize: 22, lineHeight: 1.2 }}>
-          Compliance activity
-        </h2>
-        <div className="mt-1 text-xs" style={{ color: "var(--text-secondary)" }}>
-          Live queue snapshot + immutable audit trail.
+    <div className="@container/main flex flex-col gap-6 px-4 py-6 lg:px-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+            Operations Center
+          </div>
+          <h2 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.02em]">
+            Compliance activity
+          </h2>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+            Live queue snapshot + immutable audit trail.
+          </p>
         </div>
+        <Badge variant="outline" className="hidden sm:inline-flex">
+          Live
+        </Badge>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
         {stats.map((s) => {
           const Icon = s.icon;
           return (
-            <Card key={s.label} className="bg-[var(--surface-container)] border-[var(--border-subtle)]">
+            <Card
+              key={s.label}
+              className="border-[var(--border-subtle)] bg-linear-to-t from-primary/5 to-[var(--card)] shadow-xs dark:bg-[var(--card)]"
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center justify-between text-sm font-semibold">
-                  <span>{s.label}</span>
-                  <Icon className="size-4 text-[var(--fg-muted)]" />
+                  <span className="text-[var(--muted-foreground)]">{s.label}</span>
+                  <Icon className="size-4 text-[var(--muted-foreground)]" />
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-semibold tabular-nums">{s.value}</div>
-                {s.hint ? <div className="mt-1 text-xs text-[var(--fg-muted)]">{s.hint}</div> : null}
+                <div className="text-2xl font-semibold tabular-nums tracking-[-0.02em]">{s.value}</div>
+                {s.hint ? <div className="mt-1 text-xs text-[var(--muted-foreground)]">{s.hint}</div> : null}
               </CardContent>
             </Card>
           );
@@ -98,10 +108,10 @@ export default function DashboardHomePage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="bg-[var(--surface-container)] border-[var(--border-subtle)]">
+        <Card className="border-[var(--border-subtle)] bg-[var(--card)]">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-              <ListChecks className="size-4 text-[var(--fg-muted)]" />
+              <ListChecks className="size-4 text-[var(--muted-foreground)]" />
               Queue snapshot
               <Badge variant="outline" className="ml-auto text-xs">
                 {loading ? "loading" : `${pending} pending`}
@@ -112,13 +122,13 @@ export default function DashboardHomePage() {
             {(loading ? [] : queue.slice(0, 8)).map((q) => (
               <div
                 key={q.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2"
+                className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-2"
               >
                 <div className="min-w-0">
                   <div className="truncate text-[13px] font-semibold">
                     {q.case_type ?? "case"} • {q.entity_type ?? "entity"}
                   </div>
-                  <div className="mt-0.5 text-[11px] font-mono text-[var(--fg-muted)]">
+                  <div className="mt-0.5 text-[11px] font-mono text-[var(--muted-foreground)]">
                     {String(q.id).slice(0, 8)} • conf={typeof q.ai_confidence === "number" ? q.ai_confidence.toFixed(2) : "—"}
                   </div>
                 </div>
@@ -128,15 +138,15 @@ export default function DashboardHomePage() {
               </div>
             ))}
             {!loading && queue.length === 0 ? (
-              <div className="text-xs text-[var(--fg-muted)]">No queue items yet.</div>
+              <div className="text-sm text-[var(--muted-foreground)]">No queue items yet.</div>
             ) : null}
           </CardContent>
         </Card>
 
-        <Card className="bg-[var(--surface-container)] border-[var(--border-subtle)]">
+        <Card className="border-[var(--border-subtle)] bg-[var(--card)]">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-              <Activity className="size-4 text-[var(--fg-muted)]" />
+              <Activity className="size-4 text-[var(--muted-foreground)]" />
               Recent activity
             </CardTitle>
           </CardHeader>
@@ -144,21 +154,21 @@ export default function DashboardHomePage() {
             {(loading ? [] : activity).map((a) => (
               <div
                 key={a.id}
-                className="flex items-start justify-between gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2"
+                className="flex items-start justify-between gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 py-2"
               >
                 <div className="min-w-0">
                   <div className="truncate text-[13px] font-semibold">{a.action_type}</div>
-                  <div className="mt-0.5 text-[11px] font-mono text-[var(--fg-muted)]">
+                  <div className="mt-0.5 text-[11px] font-mono text-[var(--muted-foreground)]">
                     {a.entity_type ?? "—"} • {a.entity_id ? String(a.entity_id).slice(0, 8) : "—"} • {a.actor_email}
                   </div>
                 </div>
-                <div className="shrink-0 text-[11px] font-mono text-[var(--fg-muted)]">
+                <div className="shrink-0 text-[11px] font-mono text-[var(--muted-foreground)]">
                   {formatTimeAgo(new Date(a.created_at))}
                 </div>
               </div>
             ))}
             {!loading && activity.length === 0 ? (
-              <div className="text-xs text-[var(--fg-muted)]">No audit activity yet.</div>
+              <div className="text-sm text-[var(--muted-foreground)]">No audit activity yet.</div>
             ) : null}
           </CardContent>
         </Card>

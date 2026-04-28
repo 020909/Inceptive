@@ -243,7 +243,7 @@ export default function CasesPage() {
       return null;
     }
     return data?.org_id;
-  }, [user?.id]);
+  }, [user]);
 
   // Fetch cases
   const fetchCases = useCallback(async () => {
@@ -308,7 +308,7 @@ export default function CasesPage() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, typeFilter, statusFilter, priorityFilter, searchQuery, page, fetchUserOrgId]);
+  }, [user, typeFilter, statusFilter, priorityFilter, searchQuery, page, fetchUserOrgId]);
 
   // Initial fetch
   useEffect(() => {

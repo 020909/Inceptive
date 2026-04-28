@@ -31,6 +31,9 @@ const badgeVariants = cva(
         // Default: Muted
         default:
           "text-[#8A9AA8] bg-[#111416] border border-[#232829]",
+        // Secondary: Elevated muted (shadcn compatibility)
+        secondary:
+          "text-[#F0F2F3] bg-[#181C1E] border border-[#232829]",
         // Outline: Transparent bg
         outline:
           "text-[#F0F2F3] bg-transparent border border-[#2F3437]",

@@ -125,7 +125,7 @@ export function CreateCaseModal({
     } finally {
       setLoadingMembers(false);
     }
-  }, [user?.id, isOpen]);
+  }, [user, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -185,6 +185,12 @@ export function CreateCaseModal({
       }
 
       const data = await response.json();
+      // Onboarding: mark first case created
+      try {
+        localStorage.setItem("inceptive:onboarding:created_case", "true");
+      } catch {
+        // ignore
+      }
       onCaseCreated(data.case.id);
     } catch (err) {
       console.error("Error creating case:", err);

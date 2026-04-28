@@ -1,10 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { Search } from "lucide-react";
+import { HelpCircle, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppSidebarTrigger } from "@/components/layout/app-sidebar";
 import { CommandPalette, useCommandPalette } from "@/components/layout/command-palette";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import Link from "next/link";
+import { startTour } from "@/lib/onboarding/tour";
 
 export function AppHeader() {
   const { open, setOpen } = useCommandPalette();
@@ -24,6 +34,7 @@ export function AppHeader() {
           <button
             type="button"
             onClick={() => setOpen(true)}
+            data-tour="command-palette"
             className={cn(
               "flex h-9 flex-1 items-center gap-2 rounded-lg",
               "border border-[var(--border-subtle)] bg-[var(--surface-container)]",
@@ -41,6 +52,41 @@ export function AppHeader() {
               Foundry Black
             </span>
           </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  aria-label="Help"
+                  data-tour="help-menu"
+                />
+              }
+            >
+              <HelpCircle className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem
+                onClick={() => {
+                  window.setTimeout(() => startTour("product-intro"), 50);
+                }}
+              >
+                Take product tour
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  window.dispatchEvent(new Event("inceptive:onboarding:open"));
+                }}
+              >
+                Get started checklist
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem render={<Link href="/email" />}>Open connectors</DropdownMenuItem>
+              <DropdownMenuItem render={<Link href="/cases" />}>Open cases</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 

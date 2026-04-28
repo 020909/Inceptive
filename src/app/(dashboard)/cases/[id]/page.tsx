@@ -650,7 +650,7 @@ export default function CaseDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [caseId, user?.id]);
+  }, [caseId, user]);
 
   useEffect(() => {
     if (!authLoading && user && caseId) {
