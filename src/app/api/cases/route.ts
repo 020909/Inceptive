@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { getTenantIdFromRequest } from "@/lib/ubo/requestContext";
 import { NextRequest, NextResponse } from "next/server";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -132,8 +133,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Parse query parameters
-    const { searchParams } = new URL(request.url);
+const tenantId = getTenantIdFromRequest(request) ?? "";
+
+  if (!tenantId) {
+    return NextResponse.json({ error: "Tenant ID not found" }, { status: 403 });
+  }
+
+  // Parse query parameters
+  const { searchParams } = new URL(request.url);
     const filters: CaseFilters = {
       caseType: searchParams.get("caseType") || undefined,
       status: searchParams.get("status") || undefined,
@@ -144,7 +151,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Fetch cases
-    const { data: cases, error: casesError, count } = await buildCasesQuery(supabase, profile.org_id, filters);
+    const { data: cases, error: casesError, count } = await buildCasesQuery(supabase, tenantId, filters);
 
     if (casesError) {
       console.error("Error fetching cases:", casesError);

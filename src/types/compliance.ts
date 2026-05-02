@@ -193,3 +193,113 @@ export const UboExtractionResultSchema = z.object({
 });
 export type UboExtractionResult = z.infer<typeof UboExtractionResultSchema>;
 
+export const AlertSeveritySchema = z.enum(["low", "medium", "high", "critical"]);
+export type AlertSeverity = z.infer<typeof AlertSeveritySchema>;
+
+export const AlertStatusSchema = z.enum(["new", "triaging", "escalated", "closed", "false_positive"]);
+export type AlertStatus = z.infer<typeof AlertStatusSchema>;
+
+export const AlertRowSchema = z.object({
+  id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
+  alert_number: z.string().min(1),
+  alert_type: z.string().min(1),
+  source: z.string().nullable().optional(),
+  severity: AlertSeveritySchema,
+  status: AlertStatusSchema,
+  risk_score: z.number().nullable().optional(),
+  description: z.string().nullable().optional(),
+  entity_name: z.string().nullable().optional(),
+  entity_type: z.string().nullable().optional(),
+  entity_id: z.string().uuid().nullable().optional(),
+  transaction_ids: z.array(z.string().uuid()).nullable().optional(),
+  triage_result: z.unknown().nullable().optional(),
+  triaged_by: z.string().uuid().nullable().optional(),
+  triaged_at: z.string().nullable().optional(),
+  assigned_to: z.string().uuid().nullable().optional(),
+  case_id: z.string().uuid().nullable().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+export type AlertRow = z.infer<typeof AlertRowSchema>;
+
+export const TransactionRowSchema = z.object({
+  id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
+  transaction_id: z.string().min(1),
+  source_system: z.string(),
+  amount: z.number(),
+  currency: z.string().default("USD"),
+  direction: z.enum(["credit", "debit"]),
+  counterparty_name: z.string().nullable().optional(),
+  counterparty_account: z.string().nullable().optional(),
+  account_number: z.string().nullable().optional(),
+  transaction_date: z.string(),
+  posted_date: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  category: z.string().nullable().optional(),
+  matched: z.boolean().default(false),
+  match_group_id: z.string().uuid().nullable().optional(),
+  reconciliation_run_id: z.string().uuid().nullable().optional(),
+  created_at: z.string(),
+});
+export type TransactionRow = z.infer<typeof TransactionRowSchema>;
+
+export const PolicyRowSchema = z.object({
+  id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
+  title: z.string().min(1),
+  policy_number: z.string().nullable().optional(),
+  category: z.string().default("general"),
+  version: z.string().default("1.0"),
+  status: z.enum(["draft", "active", "archived", "deprecated"]).default("active"),
+  content: z.string().nullable().optional(),
+  summary: z.string().nullable().optional(),
+  effective_date: z.string().nullable().optional(),
+  review_date: z.string().nullable().optional(),
+  owner: z.string().nullable().optional(),
+  tags: z.array(z.string()).nullable().optional(),
+  file_url: z.string().nullable().optional(),
+  file_name: z.string().nullable().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+export type PolicyRow = z.infer<typeof PolicyRowSchema>;
+
+export const ReconciliationRunRowSchema = z.object({
+  id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
+  run_number: z.string().min(1),
+  source_a_name: z.string().min(1),
+  source_b_name: z.string().min(1),
+  total_source_a: z.number().int().default(0),
+  total_source_b: z.number().int().default(0),
+  matched_count: z.number().int().default(0),
+  exception_count: z.number().int().default(0),
+  status: z.enum(["running", "completed", "failed"]).default("running"),
+  exceptions: z.unknown().nullable().optional(),
+  started_at: z.string(),
+  completed_at: z.string().nullable().optional(),
+  created_at: z.string(),
+});
+export type ReconciliationRunRow = z.infer<typeof ReconciliationRunRowSchema>;
+
+export const VendorAssessmentRowSchema = z.object({
+  id: z.string().uuid(),
+  tenant_id: z.string().uuid(),
+  vendor_id: z.string().uuid(),
+  assessment_type: z.enum(["soc2", "security_questionnaire", "penetration_test", "financial_review"]).default("soc2"),
+  risk_score: z.number().nullable().optional(),
+  risk_tier: z.enum(["low", "medium", "high", "critical"]).nullable().optional(),
+  findings: z.unknown().nullable().optional(),
+  recommendations: z.string().nullable().optional(),
+  report_url: z.string().nullable().optional(),
+  report_file_name: z.string().nullable().optional(),
+  assessed_by: z.string().uuid().nullable().optional(),
+  assessed_at: z.string().nullable().optional(),
+  status: z.enum(["pending", "approved", "rejected", "requires_review"]).default("pending"),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+export type VendorAssessmentRow = z.infer<typeof VendorAssessmentRowSchema>;
+

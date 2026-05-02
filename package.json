@@ -11,7 +11,8 @@
     "smoke:canary": "node scripts/smoke-canary.mjs",
     "worker": "node scripts/agent-worker.mjs",
     "docker:up": "docker compose up --build -d",
-    "deploy:vercel": "vercel --prod",
+    "seed:compliance": "npx tsx scripts/seed-compliance.ts",
+"deploy:vercel": "vercel --prod",
     "postinstall": "npx playwright install chromium 2>/dev/null || true"
   },
   "dependencies": {
