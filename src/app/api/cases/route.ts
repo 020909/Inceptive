@@ -1,5 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { getTenantIdFromRequest } from "@/lib/ubo/requestContext";
+import { getTenantIdFromRequestWithDbFallback } from "@/lib/ubo/requestContext";
 import { NextRequest, NextResponse } from "next/server";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -59,16 +59,16 @@ async function generateCaseNumber(supabase: Awaited<ReturnType<typeof createServ
  */
 function buildCasesQuery(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
-  orgId: string,
+  tenantId: string,
   filters: CaseFilters
 ) {
   let query = supabase
     .from("cases")
     .select(
-      "id, case_number, title, case_type, status, priority, description, assigned_to, org_id, created_at, due_date, assigned_user:assigned_to(full_name, email)",
+      "id, case_number, title, case_type, status, priority, description, assigned_to, tenant_id, created_at, due_date, assigned_user:assigned_to(full_name, email)",
       { count: "exact" }
     )
-    .eq("org_id", orgId);
+    .eq("tenant_id", tenantId);
 
   // Apply filters
   if (filters.caseType && filters.caseType !== "all") {
@@ -118,28 +118,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user's org_id from user_profiles
-    const { data: profile, error: profileError } = await supabase
-      .from("user_profiles")
-      .select("org_id")
-      .eq("user_id", user.id)
-      .single();
+    const tenantId = await getTenantIdFromRequestWithDbFallback(request, user.id);
 
-    if (profileError || !profile?.org_id) {
-      console.error("Error fetching user profile:", profileError);
-      return NextResponse.json(
-        { error: "User profile not found" },
-        { status: 403 }
-      );
+    if (!tenantId) {
+      return NextResponse.json({ error: "Tenant context not found" }, { status: 403 });
     }
 
-const tenantId = getTenantIdFromRequest(request) ?? "";
-
-  if (!tenantId) {
-    return NextResponse.json({ error: "Tenant ID not found" }, { status: 403 });
-  }
-
-  // Parse query parameters
+    // Parse query parameters
   const { searchParams } = new URL(request.url);
     const filters: CaseFilters = {
       caseType: searchParams.get("caseType") || undefined,
@@ -197,19 +182,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's org_id from user_profiles
-    const { data: profile, error: profileError } = await supabase
-      .from("user_profiles")
-      .select("org_id")
-      .eq("user_id", user.id)
-      .single();
+    const tenantId = await getTenantIdFromRequestWithDbFallback(request, user.id);
 
-    if (profileError || !profile?.org_id) {
-      console.error("Error fetching user profile:", profileError);
-      return NextResponse.json(
-        { error: "User profile not found" },
-        { status: 403 }
-      );
+    if (!tenantId) {
+      return NextResponse.json({ error: "Tenant context not found" }, { status: 403 });
     }
 
     // Parse request body
@@ -277,7 +253,7 @@ export async function POST(request: NextRequest) {
         description: body.description?.trim() || null,
         assigned_to: body.assigned_to || null,
         due_date: body.due_date || null,
-        org_id: profile.org_id,
+        tenant_id: tenantId,
         status: "pending",
         created_by: user.id,
       })

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+
 export function getBearerJwtFromRequest(request: Request): string | null {
   const authHeader = request.headers.get("authorization");
   if (authHeader?.startsWith("Bearer ")) {
@@ -31,6 +33,20 @@ export function getTenantIdFromRequest(request: Request): string | null {
   } catch {
     return null;
   }
+}
+
+export async function getTenantIdFromRequestWithDbFallback(request: Request, userId: string): Promise<string | null> {
+  const fromJwt = getTenantIdFromRequest(request);
+  if (fromJwt) return fromJwt;
+
+  const supabase = await createServerSupabaseClient();
+  const { data: userProfile } = await supabase
+    .from("users")
+    .select("tenant_id")
+    .eq("id", userId)
+    .single();
+
+  return userProfile?.tenant_id || null;
 }
 
 export function getIpAddressFromRequest(request: Request): string | null {

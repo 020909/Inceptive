@@ -95,30 +95,35 @@ export function CreateCaseModal({
     setLoadingMembers(true);
     const supabase = createClient();
     try {
-      // Get user"s org_id first
-      const { data: profile, error: profileError } = await supabase
-        .from("user_profiles")
-        .select("org_id")
-        .eq("user_id", user.id)
+      // Get user's tenant_id first
+      const { data: currentUser, error: userError } = await supabase
+        .from("users")
+        .select("tenant_id")
+        .eq("id", user.id)
         .single();
 
-      if (profileError || !profile?.org_id) {
-        console.error("Error fetching user profile:", profileError);
+      if (userError || !currentUser?.tenant_id) {
+        console.error("Error fetching user tenant:", userError);
         setLoadingMembers(false);
         return;
       }
 
-      // Fetch team members from the same org
+      // Fetch team members from the same tenant
       const { data: members, error: membersError } = await supabase
-        .from("user_profiles")
-        .select("user_id, full_name, email, role")
-        .eq("org_id", profile.org_id)
-        .neq("user_id", user.id);
+        .from("users")
+        .select("id, full_name, email, role")
+        .eq("tenant_id", currentUser.tenant_id)
+        .neq("id", user.id);
 
       if (membersError) {
         console.error("Error fetching team members:", membersError);
       } else {
-        setTeamMembers(members || []);
+        setTeamMembers((members || []).map((m: any) => ({
+          user_id: m.id,
+          full_name: m.full_name,
+          email: m.email,
+          role: m.role,
+        })));
       }
     } catch (err) {
       console.error("Error fetching team members:", err);

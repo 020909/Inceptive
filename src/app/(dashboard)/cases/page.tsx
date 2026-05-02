@@ -57,7 +57,7 @@ interface Case {
     full_name: string | null;
     email: string;
   } | null;
-  org_id: string;
+  tenant_id: string;
   created_at: string;
   due_date: string | null;
 }
@@ -76,7 +76,7 @@ interface RawCaseData {
     full_name: string | null;
     email: string;
   }[] | null;
-  org_id: string;
+  tenant_id: string;
   created_at: string;
   due_date: string | null;
 }
@@ -229,20 +229,20 @@ export default function CasesPage() {
   const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 25;
 
-  // Fetch user's org_id
-  const fetchUserOrgId = useCallback(async () => {
+  // Fetch user's tenant_id
+  const fetchUserTenantId = useCallback(async () => {
     if (!user?.id) return null;
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("user_profiles")
-      .select("org_id")
-      .eq("user_id", user.id)
+      .from("users")
+      .select("tenant_id")
+      .eq("id", user.id)
       .single();
     if (error) {
-      console.error("Error fetching user profile:", error);
+      console.error("Error fetching user tenant:", error);
       return null;
     }
-    return data?.org_id;
+    return data?.tenant_id;
   }, [user]);
 
   // Fetch cases
@@ -254,22 +254,21 @@ export default function CasesPage() {
     const supabase = createClient();
 
     try {
-      const orgId = await fetchUserOrgId();
-      if (!orgId) {
+      const tenantId = await fetchUserTenantId();
+      if (!tenantId) {
         setError("Unable to fetch organization data.");
         setLoading(false);
         return;
       }
 
-      // Build query
       let query = supabase
         .from("cases")
         .select(
-          `id, case_number, title, case_type, status, priority, description, assigned_to, org_id, created_at, due_date,
-           assigned_user:assigned_to(full_name, email)`,
+          `id, case_number, title, case_type, status, priority, description, assigned_to, tenant_id, created_at, due_date,
+          assigned_user:assigned_to(full_name, email)`,
           { count: "exact" }
         )
-        .eq("org_id", orgId);
+        .eq("tenant_id", tenantId);
 
       // Apply filters
       if (typeFilter !== "all") {
@@ -308,7 +307,7 @@ export default function CasesPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, typeFilter, statusFilter, priorityFilter, searchQuery, page, fetchUserOrgId]);
+  }, [user, typeFilter, statusFilter, priorityFilter, searchQuery, page, fetchUserTenantId]);
 
   // Initial fetch
   useEffect(() => {

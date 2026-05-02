@@ -58,7 +58,7 @@ interface Case {
     full_name: string | null;
     email: string;
   } | null;
-  org_id: string;
+  tenant_id: string;
   created_at: string;
   updated_at: string;
   due_date: string | null;
@@ -595,11 +595,11 @@ export default function CaseDetailPage() {
     const supabase = createClient();
 
     try {
-      // Get user's org_id
-      const { data: profile, error: profileError } = await supabase
-        .from("user_profiles")
-        .select("org_id")
-        .eq("user_id", user.id)
+      // Get user's tenant_id
+      const { data: userProfile, error: profileError } = await supabase
+        .from("users")
+        .select("tenant_id")
+        .eq("id", user.id)
         .single();
 
       if (profileError) throw profileError;
@@ -611,7 +611,7 @@ export default function CaseDetailPage() {
           `*, assigned_user:assigned_to(id, full_name, email)`
         )
         .eq("id", caseId)
-        .eq("org_id", profile.org_id)
+        .eq("tenant_id", userProfile.tenant_id)
         .single();
 
       if (caseError) throw caseError;

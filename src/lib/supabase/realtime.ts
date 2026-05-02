@@ -10,7 +10,7 @@ type AgentRunStatus = "running" | "completed" | "failed" | "paused";
 
 export interface AgentRun {
   id: string;
-  org_id: string;
+  tenant_id: string;
   agent_type: string;
   status: AgentRunStatus;
   input_data: Record<string, unknown> | null;
@@ -35,7 +35,7 @@ type Priority = "high" | "medium" | "low";
 
 export interface ApprovalQueueItem {
   id: string;
-  org_id: string;
+  tenant_id: string;
   item_type: ApprovalItemType;
   item_id: string;
   status: ApprovalStatus;
@@ -61,7 +61,7 @@ type DocumentStatus = "pending" | "parsing" | "completed" | "failed";
 export interface CaseDocument {
   id: string;
   case_id: string;
-  org_id: string;
+  tenant_id: string;
   file_name: string;
   file_type: string;
   file_size: number;
@@ -78,7 +78,7 @@ export interface CaseDocument {
 export interface UBOExtraction {
   id: string;
   case_id: string;
-  org_id: string;
+  tenant_id: string;
   status: string;
   confidence: number;
   extracted_data: {
@@ -106,7 +106,7 @@ export interface UBOExtraction {
 
 export interface AuditTrailEntry {
   id: string;
-  org_id: string;
+  tenant_id: string;
   event_type: string;
   event_description: string;
   actor: string | null;
@@ -118,23 +118,23 @@ export interface AuditTrailEntry {
 // ─── Hooks ───────────────────────────────────────────────────────────────────
 
 /**
- * Subscribe to agent_runs changes for an organization
- * @param orgId - The organization ID to filter by
+ * Subscribe to agent_runs changes for a tenant
+ * @param tenantId - The tenant ID to filter by
  * @returns Array of agent runs sorted by creation date (newest first)
  */
-export function useAgentRunsRealtime(orgId: string): AgentRun[] {
+export function useAgentRunsRealtime(tenantId: string): AgentRun[] {
   const [runs, setRuns] = useState<AgentRun[]>([]);
   const supabase = createClient();
 
   useEffect(() => {
-    if (!orgId) return;
+    if (!tenantId) return;
 
     // Initial fetch
     const fetchRuns = async () => {
       const { data, error } = await supabase
         .from("agent_runs")
         .select("*")
-        .eq("org_id", orgId)
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -148,14 +148,14 @@ export function useAgentRunsRealtime(orgId: string): AgentRun[] {
 
     // Subscribe to changes
     const channel = supabase
-      .channel(`agent_runs:${orgId}`)
+      .channel(`agent_runs:${tenantId}`)
       .on(
         "postgres_changes" as any,
         {
           event: "*",
           schema: "public",
           table: "agent_runs",
-          filter: `org_id=eq.${orgId}`,
+          filter: `tenant_id=eq.${tenantId}`,
         },
         (payload: any) => {
           if (payload.eventType === "INSERT") {
@@ -174,29 +174,29 @@ export function useAgentRunsRealtime(orgId: string): AgentRun[] {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [orgId, supabase]);
+  }, [tenantId, supabase]);
 
   return runs;
 }
 
 /**
- * Subscribe to approval_queue changes for an organization
- * @param orgId - The organization ID to filter by
+ * Subscribe to approval_queue changes for a tenant
+ * @param tenantId - The tenant ID to filter by
  * @returns Array of approval queue items sorted by creation date (newest first)
  */
-export function useApprovalQueueRealtime(orgId: string): ApprovalQueueItem[] {
+export function useApprovalQueueRealtime(tenantId: string): ApprovalQueueItem[] {
   const [items, setItems] = useState<ApprovalQueueItem[]>([]);
   const supabase = createClient();
 
   useEffect(() => {
-    if (!orgId) return;
+    if (!tenantId) return;
 
     // Initial fetch
     const fetchItems = async () => {
       const { data, error } = await supabase
         .from("approval_queue")
         .select("*")
-        .eq("org_id", orgId)
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -210,14 +210,14 @@ export function useApprovalQueueRealtime(orgId: string): ApprovalQueueItem[] {
 
     // Subscribe to changes
     const channel = supabase
-      .channel(`approval_queue:${orgId}`)
+      .channel(`approval_queue:${tenantId}`)
       .on(
         "postgres_changes" as any,
         {
           event: "*",
           schema: "public",
           table: "approval_queue",
-          filter: `org_id=eq.${orgId}`,
+          filter: `tenant_id=eq.${tenantId}`,
         },
         (payload: any) => {
           if (payload.eventType === "INSERT") {
@@ -236,7 +236,7 @@ export function useApprovalQueueRealtime(orgId: string): ApprovalQueueItem[] {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [orgId, supabase]);
+  }, [tenantId, supabase]);
 
   return items;
 }
@@ -368,23 +368,23 @@ export function useUBOExtractionsRealtime(caseId: string): UBOExtraction[] {
 }
 
 /**
- * Subscribe to audit_trail changes for an organization
- * @param orgId - The organization ID to filter by
+ * Subscribe to audit_trail changes for a tenant
+ * @param tenantId - The tenant ID to filter by
  * @returns Array of audit trail entries sorted by creation date (newest first)
  */
-export function useAuditTrailRealtime(orgId: string): AuditTrailEntry[] {
+export function useAuditTrailRealtime(tenantId: string): AuditTrailEntry[] {
   const [entries, setEntries] = useState<AuditTrailEntry[]>([]);
   const supabase = createClient();
 
   useEffect(() => {
-    if (!orgId) return;
+    if (!tenantId) return;
 
     // Initial fetch
     const fetchEntries = async () => {
       const { data, error } = await supabase
         .from("audit_trail")
         .select("*")
-        .eq("org_id", orgId)
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -398,14 +398,14 @@ export function useAuditTrailRealtime(orgId: string): AuditTrailEntry[] {
 
     // Subscribe to changes
     const channel = supabase
-      .channel(`audit_trail:${orgId}`)
+      .channel(`audit_trail:${tenantId}`)
       .on(
         "postgres_changes" as any,
         {
           event: "*",
           schema: "public",
           table: "audit_trail",
-          filter: `org_id=eq.${orgId}`,
+          filter: `tenant_id=eq.${tenantId}`,
         },
         (payload: any) => {
           if (payload.eventType === "INSERT") {
@@ -424,7 +424,7 @@ export function useAuditTrailRealtime(orgId: string): AuditTrailEntry[] {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [orgId, supabase]);
+  }, [tenantId, supabase]);
 
   return entries;
 }
