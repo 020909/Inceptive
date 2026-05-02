@@ -10,13 +10,11 @@ This document mirrors the Step 0–2 audit and roadmap. The codebase is **Next.j
 | API | Route handlers | `src/app/api/**/route.ts` |
 | Auth | Supabase Auth (cookies + Bearer), middleware guards | `src/middleware.ts`, `src/lib/supabase*.ts`, `src/lib/api-auth.ts` |
 | DB | Supabase Postgres + RLS | `supabase/*.sql` |
-| Agent (sync) | `streamText` + tools in API route + shared search provider | `src/app/api/agent/stream/route.ts`, `src/lib/search/provider.ts` |
+| Compliance AI | AML triage, SAR drafter, policy vault, reconciliation, vendor analyst | `src/app/api/aml-triage`, `src/app/api/sar-drafter`, `src/app/api/policy-vault`, `src/app/api/reconciliation`, `src/app/api/vendor-analyst` |
+| Approval queue | Maker-checker pattern with real audit attribution | `src/app/api/approval-queue/{approve,reject}` |
 | Billing | Stripe Checkout, webhooks, credits | `src/lib/stripe.ts`, `src/lib/credits.ts`, `src/app/api/stripe/*` |
 | Connectors (OAuth) | Per-provider connect/callback routes | `src/app/api/auth/*/connect|callback/route.ts` |
-| Connector registry (code) | Typed modules + browser/gmail/slack/computer stubs | `src/lib/connectors/` |
-| Autonomy (async) | `agent_jobs` table + tick API + worker script | `supabase/009_agent_autonomy.sql`, `src/lib/agent/*`, `src/app/api/internal/agent-tick` |
-| Research persistence | `research_reports` + `research_sessions` | `src/app/api/agent/research/route.ts`, `supabase/024_research_sessions.sql` |
-| Code execution (optional) | Judge0 proxy route (requires external `JUDGE0_URL`) | `src/app/api/code/execute/route.ts` |
+| Background jobs | Inngest (already wired) | `src/inngest/` |
 
 ## Live site
 
@@ -26,26 +24,27 @@ This document mirrors the Step 0–2 audit and roadmap. The codebase is **Next.j
 ## What is done (~production-shaped MVP)
 
 - Auth, protected dashboard, signup/login.
-- BYOK AI (OpenAI / Anthropic / Gemini / OpenRouter) via Settings; agent stream + research + email + social generators.
+- BYOK AI (OpenAI / Anthropic / Gemini / OpenRouter) via Settings; compliance AI routes (AML, SAR, policy, reconciliation, vendor).
 - OAuth connectors: Google (Gmail/YouTube), Microsoft (Outlook), Meta (FB/IG), LinkedIn, Twitter/X, TikTok, Telegram; tokens encrypted at rest (`token-crypto`).
-- CRUD-style product surfaces: emails, social posts, goals, tasks, research reports, weekly-style reports, chat sessions, credits + Stripe plans.
-- Security hardening: OAuth redirect allowlisting, SSRF guard on agent browse, JWT/cookie auth on agent routes, Stripe webhook signature verification.
+- Compliance modules: AML triage, SAR drafter, policy vault, reconciliation, vendor analyst, approval queue (maker-checker).
+- Security hardening: OAuth redirect allowlisting, SSRF guard on agent browse, JWT/cookie auth on routes, Stripe webhook signature verification.
 
 ## Partially done
 
-- **Agent UX:** Dashboard chat is strong; `/agent` was a redirect-only shell — replaced with a **live jobs** view.
+- **Agent UX:** Dashboard chat is strong; Inngest handles background jobs natively.
 - **Connectors:** Many OAuth flows exist; **Slack / WhatsApp / Calendar / GitHub** are not wired as first-class connector modules.
 - **Memory:** `memory_enabled` + `chat_sessions` exist; no vector/graph RAG pipeline.
 - **Observability:** console logs only; no tracing, no task timeline UI beyond new jobs list.
-- **README:** still default `create-next-app` text (superseded by this doc).
+- **README:** updated to reflect compliance OS scope.
 
-## Missing (vs OpenClaw / Manus / Perplexity Computer–class)
+## Missing (vs regulated-action-kernel requirements)
 
-- Real **desktop automation across all local apps** (current scope is browser automation + web retrieval).
-- **24/7 process model** on Vercel is limited — baseline uses DB + tick, with optional external workers for heavier workloads.
+- **Regulated Action Kernel**: Evidence In → AI Draft → Human Approves → Warrant Issued → Execute → Ledger → Replay → Export. Not yet end-to-end.
+- **Unified tenancy**: `org_id` references in cases/realtime must migrate to `tenant_id`.
+- **Real audit attribution**: Some routes still hardcode `"system@inceptive-ai.com"` or `"user@inceptive-ai.com"`.
+- **Demo data removal**: `data.json` hardcoded filler still shipped in dashboard.
 - **Triggers:** Slack events, GitHub webhooks, PagerDuty, inbound email rules — not implemented.
 - **Multi-agent** planner/worker/judge, reflection loop, sandboxed computer-use.
-- **Skill/plugin hot-reload** system.
 - **E2E test suite** in CI (smoke scripts + optional Vitest later).
 
 ## Current alignment rules (Inceptive 2.0)
@@ -55,14 +54,14 @@ This document mirrors the Step 0–2 audit and roadmap. The codebase is **Next.j
    - Default: DuckDuckGo
    - Optional upgrade: SearXNG via `SEARXNG_URL`
 3. Keep memory in Supabase pgvector (`agent_memory`) and avoid parallel vector stores unless there is a proven bottleneck.
-4. Treat self-hosted services (SearXNG, Judge0, Apache Tika) as optional external dependencies pointed to by env vars, not in-process services on Vercel.
+4. Treat self-hosted services (SearXNG, Apache Tika) as optional external dependencies pointed to by env vars, not in-process services on Vercel.
+5. Every audit log entry must carry the real authenticated user's email — no hardcoded fallbacks.
+6. All tenant-scoped queries use `tenant_id` (never `org_id`).
 
-## One-week focused roadmap (bullet)
+## Near-term roadmap (compliance kernel)
 
-1. **Day 1–2:** Ship DB-backed `agent_jobs`, `/api/internal/agent-tick`, Docker + worker loop; document `CRON_SECRET`.
-2. **Day 3:** Shared search provider + research session persistence + code-execution proxy gate.
-3. **Day 4:** Live agent UI + logs column; pause/resume job actions.
-4. **Day 5:** Inbox-monitor template job (stub + hooks to Gmail API read when scopes allow).
-5. **Day 6–7:** Playwright sidecar (optional service) OR webhook trigger MVP; tighten observability.
-
-See chat output for the full prioritized table.
+1. **PR1:** Kill config/drift — remove dead route references, clean scripts/docs.
+2. **PR2:** Unify tenancy to `tenant_id` across all API routes and realtime subscriptions.
+3. **PR3:** Fix audit attribution — replace all hardcoded actor emails with real auth user email.
+4. **PR4:** Delete demo data (`data.json`) — wire consumers to real queries or empty states.
+5. **PR5:** Ship kernel schema (evidence_artifacts, evidence_packs, execution_warrants, ledger_entries, policy_versions).

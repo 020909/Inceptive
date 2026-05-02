@@ -1,30 +1,16 @@
-# Self-hosted stack: web + worker that hits /api/internal/agent-tick on a timer.
-# Copy .env.example values into .env — include CRON_SECRET, Supabase, etc.
+# Copy .env.example values into .env — include Supabase, etc.
 
 services:
   web:
     build: .
     ports:
-      - "3000:3000"
+    - "3000:3000"
     env_file: .env
     environment:
-      - NODE_ENV=production
+    - NODE_ENV=production
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 40s
-
-  agent-worker:
-    image: node:22-alpine
-    working_dir: /app
-    volumes:
-      - ./scripts:/app/scripts:ro
-    env_file: .env
-    environment:
-      AGENT_TICK_URL: http://web:3000
-    command: ["node", "/app/scripts/agent-worker.mjs"]
-    depends_on:
-      web:
-        condition: service_healthy

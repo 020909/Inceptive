@@ -20,23 +20,23 @@ Everything else (landing page, "10-agent council," SAR/AML/vendor/reconciliation
 
 | Claim | Status | Evidence |
 |---|---|---|
-| `/api/agent/stream` exists | **FALSE** | `vercel.json:29` references it; no `src/app/api/agent/` folder |
-| `/api/internal/agent-tick` exists | **FALSE** | `vercel.json:4` references it; no `src/app/api/internal/` folder |
-| `/api/cron/*` endpoints exist | **FALSE** | `vercel.json:8-25` lists 5 cron paths; no `src/app/api/cron/` folder |
+| `/api/agent/stream` exists | **FALSE — config drift removed** | Dead reference removed from `vercel.json`; no route ever existed |
+| `/api/internal/agent-tick` exists | **FALSE — config drift removed** | Dead reference removed from `vercel.json`; worker script deleted |
+| `/api/cron/*` endpoints exist | **FALSE — config drift removed** | Dead cron entries removed from `vercel.json`; Inngest handles scheduling |
 | Approval queue is placeholder | **FALSE** | `src/app/api/approval-queue/approve/route.ts` is real, DB-backed, tenant-scoped |
 | Audit attribution is real | **FALSE** | `src/app/api/approval-queue/approve/route.ts:86` hardcodes `actor_email: "user@inceptive-ai.com"` |
 | Tenancy is unified | **FALSE** | `src/app/api/cases/route.ts:67,70,147` uses `org_id`; approval-queue uses `tenant_id` |
 | Dashboard data is real | **FALSE** | `src/components/blocks/data.json` is hardcoded proposal-doc demo data, not even fintech themed |
 | Real APIs that exist | **TRUE** | `approval-queue/{approve,reject}`, `auth/{google,microsoft,meta,linkedin,twitter,tiktok,telegram}`, `cases`, `health`, `inngest`, `stripe/{webhook,portal,checkout,setup}`, `ubo/upload` |
 
-**Stop-ship implications:** vercel cron 404s, fictional audit log (legal risk), two competing tenancy models (one bypasses RLS), hardcoded demo data shipped to prod.
+**Stop-ship implications:** ~~vercel cron 404s~~ (fixed), fictional audit log (legal risk), two competing tenancy models (one bypasses RLS), hardcoded demo data shipped to prod.
 
 ---
 
 ## Status (check boxes as you complete)
 
 ### Day 1 Morning — Stop-Ship Block
-- [ ] PR #1: Kill config drift in `vercel.json`
+- [x] PR #1: Kill config drift in `vercel.json` + docs + scripts
 - [ ] PR #2: Unify tenancy to `tenant_id`
 - [ ] PR #3: Fix audit attribution (real user email)
 - [ ] PR #4: Delete `data.json` + fix consumers

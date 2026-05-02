@@ -9,7 +9,6 @@
     "lint": "eslint",
     "test:smoke": "playwright test -c playwright.config.ts",
     "smoke:canary": "node scripts/smoke-canary.mjs",
-    "worker": "node scripts/agent-worker.mjs",
     "docker:up": "docker compose up --build -d",
     "seed:compliance": "npx tsx scripts/seed-compliance.ts",
 "deploy:vercel": "vercel --prod",

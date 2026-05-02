@@ -18,26 +18,21 @@ async function run() {
     });
   }
 
-  // Reports write check (requires auth token)
+  // Approval-queue read check (requires auth token)
   if (token) {
-    const res = await fetch(`${baseUrl}/api/reports`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ template: "Weekly Summary" }),
+    const res = await fetch(`${baseUrl}/api/approval-queue`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     const json = await res.json().catch(() => ({}));
     results.push({
-      check: "reports_post",
-      ok: res.ok && Boolean(json?.report),
+      check: "approval_queue",
+      ok: res.ok,
       status: res.status,
       body: json,
     });
   } else {
     results.push({
-      check: "reports_post",
+      check: "approval_queue",
       ok: false,
       status: 0,
       body: { error: "SMOKE_BEARER_TOKEN not set" },
